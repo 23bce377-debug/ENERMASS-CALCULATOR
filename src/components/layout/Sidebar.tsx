@@ -36,9 +36,8 @@ const NAV_ITEMS: NavItem[] = [
 
 // ─── Desktop Sidebar ────────────────────────────────────────────────────────────
 
-export function Sidebar() {
+export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (v: boolean) => void }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <aside

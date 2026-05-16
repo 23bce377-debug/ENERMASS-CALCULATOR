@@ -4,7 +4,7 @@ import { Sidebar, MobileTabBar, Header } from './Sidebar';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { SYSTEMS } from '@/lib/data/bom';
 import { ToastProvider } from '@/components/ui/Toast';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useSettings } from '@/lib/hooks/useSettings';
 
@@ -32,32 +32,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       };
     }
 
-    if (pathname.startsWith('/dashboard')) {
-      return { contextLabel: 'Page', contextValue: 'Dashboard overview' };
-    }
-    if (pathname.startsWith('/quotes')) {
-      return { contextLabel: 'Page', contextValue: 'Quote management' };
-    }
-    if (pathname.startsWith('/systems')) {
-      return { contextLabel: 'Page', contextValue: 'System browser' };
-    }
-    if (pathname.startsWith('/rate-master')) {
-      return { contextLabel: 'Page', contextValue: 'Rate master' };
-    }
-    if (pathname.startsWith('/settings')) {
-      return { contextLabel: 'Page', contextValue: 'Settings' };
-    }
-
-    return { contextLabel: 'Page', contextValue: 'EnerMass Solar' };
+    return { contextLabel: 'Page', contextValue: 'Solar Solutions' };
   }, [pathname, systemName]);
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <ToastProvider>
       {/* Desktop sidebar */}
-      <Sidebar />
+      <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
 
-      {/* Main area — offset by sidebar width on desktop */}
-      <div className="md:ml-[240px] flex flex-col min-h-screen transition-all duration-300">
+      {/* Main area — responsive offset based on sidebar state */}
+      <div className={`flex flex-col min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'md:ml-[68px]' : 'md:ml-[240px]'}`}>
         <Header
           contextLabel={headerContext.contextLabel}
           contextValue={headerContext.contextValue}
