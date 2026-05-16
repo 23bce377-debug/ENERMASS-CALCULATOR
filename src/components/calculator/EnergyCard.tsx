@@ -1,0 +1,291 @@
+'use client';
+
+import { useMemo, useState, useCallback } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { useCalculatorStore } from '@/lib/store/calculatorStore';
+import { STATE_DATA, BATTERY_BRANDS } from '@/lib/data/masters';
+import { formatINR } from '@/lib/engine/calculator';
+import { useSettings } from '@/lib/hooks/useSettings';
+
+// Seasonal variation factors (derived from real Indian solar irradiance patterns)
+const SEASONAL_FACTORS = [0.85, 0.88, 0.95, 1.05, 1.10, 1.05, 0.95, 0.98, 1.02, 1.00, 0.92, 0.85];
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const DEGRADATION_RATE = 0.005; // 0.5% per year panel degradation
+const LIFETIME_YEARS = 25;
+const BATTERY_DOD = 0.80; // 80% depth of discharge (conservative for LFP)
+const INVERTER_EFFICIENCY = 0.93; // Typical inverter efficiency during discharge
+
+export function EnergyCard() {
+  const calcResult = useCalculatorStore((s) => s.calcResult);
+  const selectedState = useCalculatorStore((s) => s.selectedState);
+  const selectedBatteryMix = useCalculatorStore((s) => s.selectedBatteryMix);
+  const backupLoadW = useCalculatorStore((s) => s.backupLoadW);
+  const setBackupLoadW = useCalculatorStore((s) => s.setBackupLoadW);
+  const orientation = useCalculatorStore((s) => s.orientation);
+  const setOrientation = useCalculatorStore((s) => s.setOrientation);
+  const electricityInflationRate = useCalculatorStore((s) => s.electricityInflationRate);
+  const setElectricityInflationRate = useCalculatorStore((s) => s.setElectricityInflationRate);
+  const { settings } = useSettings();
+
+  // Local slider state — only commit to store on release
+  const [localSlider, setLocalSlider] = useState<number | null>(null);
+  const displayLoadW = localSlider ?? backupLoadW;
+
+  const commitSlider = useCallback(() => {
+    if (localSlider !== null) {
+      setBackupLoadW(localSlider);
+      setLocalSlider(null);
+    }
+  }, [localSlider, setBackupLoadW]);
+
+  const allBatteries = useMemo(
+    () => [...BATTERY_BRANDS, ...(settings.customBatteries ?? [])],
+    [settings.customBatteries],
+  );
+
+  const totalBatteryCapacityKWh = useMemo(() => {
+    const batteryById = new Map(allBatteries.map((battery) => [battery.id, battery]));
+    return Object.entries(selectedBatteryMix).reduce((sum, [batteryId, qty]) => {
+      const battery = batteryById.get(batteryId);
+      if (!battery || !Number.isFinite(qty) || qty <= 0) return sum;
+      return sum + battery.capacityKWh * qty;
+    }, 0);
+  }, [allBatteries, selectedBatteryMix]);
+
+  const maxDischargeKW = useMemo(() => {
+    const batteryById = new Map(allBatteries.map((battery) => [battery.id, battery]));
+    return Object.entries(selectedBatteryMix).reduce((sum, [batteryId, qty]) => {
+      const battery = batteryById.get(batteryId);
+      if (!battery || !Number.isFinite(qty) || qty <= 0) return sum;
+      return sum + (('maxDischargeKW' in battery && typeof battery.maxDischargeKW === 'number') ? battery.maxDischargeKW : (battery.capacityKWh * 0.5)) * qty;
+    }, 0);
+  }, [allBatteries, selectedBatteryMix]);
+
+  const isLoadTooHigh = maxDischargeKW > 0 && (displayLoadW / 1000) > maxDischargeKW;
+
+  // Usable capacity = Total × DoD × Inverter efficiency
+  const usableCapacityKWh = totalBatteryCapacityKWh * BATTERY_DOD * INVERTER_EFFICIENCY;
+  const activeLoadW = displayLoadW;
+  const backupHours = activeLoadW > 0 ? usableCapacityKWh / (activeLoadW / 1000) : 0;
+
+  if (!calcResult) return null;
+
+  const stateData = STATE_DATA[selectedState];
+  let lifetimeSavings = 0;
+  for (let year = 0; year < LIFETIME_YEARS; year++) {
+    const inflatedSavings = calcResult.annualSavingsINR * Math.pow(1 + electricityInflationRate, year);
+    lifetimeSavings += inflatedSavings * Math.pow(1 - DEGRADATION_RATE, year);
+  }
+
+  // Monthly breakdown for chart
+  const baseMonthlyGen = calcResult.annualGenerationKWh / 12;
+  const chartData = SEASONAL_FACTORS.map((factor, i) => ({
+    month: MONTH_LABELS[i],
+    gen: Math.round(baseMonthlyGen * factor),
+  }));
+  
+  const maxGen = Math.max(...chartData.map(d => d.gen));
+
+  return (
+    <div className="rounded-xl border border-border bg-surface overflow-hidden shadow-lg shadow-black/20" id="energy-card">
+      <div className="px-5 py-4 border-b border-border bg-surface-active flex items-center justify-between">
+        <h3 className="text-xs font-bold text-text-primary tracking-widest uppercase">Energy & Returns</h3>
+      </div>
+
+      <div className="p-5 space-y-6">
+        {/* Context Info */}
+        <div className="flex flex-wrap gap-4 p-3 rounded-lg bg-background border border-border">
+          <InfoBox label="State" value={selectedState} />
+          <InfoBox label="Sun Hours" value={`${stateData.sunHoursPerDay} h/day`} />
+          <InfoBox label="PR" value={`${(stateData.performanceRatio * 100).toFixed(0)}%`} />
+        </div>
+
+        {/* Site & Financial Config */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider">Roof Orientation</label>
+            <select
+              value={orientation}
+              onChange={(e) => setOrientation(e.target.value as any)}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium text-text-primary outline-none focus:border-accent/40 transition-colors"
+            >
+              <option value="South">South (100% Yield)</option>
+              <option value="East/West">East/West (~85% Yield)</option>
+              <option value="Flat">Flat (~90% Yield)</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider">Utility Inflation / Yr</label>
+            <select
+              value={electricityInflationRate}
+              onChange={(e) => setElectricityInflationRate(parseFloat(e.target.value))}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium text-text-primary outline-none focus:border-accent/40 transition-colors"
+            >
+              <option value={0}>0%</option>
+              <option value={0.02}>2%</option>
+              <option value={0.04}>4%</option>
+              <option value={0.06}>6%</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Backup Load Control — slider commits only on release */}
+        <div className="p-4 rounded-xl border border-border bg-background space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">Backup Load</div>
+              <div className="text-xs text-text-secondary">Set the expected load to estimate battery backup duration.</div>
+            </div>
+            <div className="text-sm font-mono font-semibold text-accent tabular-nums">
+              {displayLoadW.toLocaleString('en-IN')} W
+            </div>
+          </div>
+          <div className="space-y-2">
+            <input
+              type="range"
+              min={100}
+              max={10000}
+              step={50}
+              value={displayLoadW}
+              onChange={(e) => setLocalSlider(parseInt(e.target.value, 10))}
+              onPointerUp={commitSlider}
+              onTouchEnd={commitSlider}
+              className="w-full h-1.5 rounded-full appearance-none bg-border 
+                [&::-webkit-slider-thumb]:appearance-none 
+                [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
+                [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent 
+                [&::-webkit-slider-thumb]:cursor-pointer 
+                [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-accent/30 
+                cursor-pointer"
+            />
+            <div className="flex items-center justify-between text-[10px] text-text-muted font-mono">
+              <span>100 W</span>
+              <span>10,000 W</span>
+            </div>
+          </div>
+
+          {/* Live backup result */}
+          {totalBatteryCapacityKWh > 0 && (
+            <div className="mt-2 p-3 rounded-lg border border-accent/20 bg-accent-glow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] text-text-muted uppercase tracking-wider">Estimated Backup</div>
+                  <div className="text-[10px] text-text-muted mt-0.5">
+                    {usableCapacityKWh.toFixed(1)} kWh usable ({(BATTERY_DOD * 100).toFixed(0)}% DoD × {(INVERTER_EFFICIENCY * 100).toFixed(0)}% inv. eff.)
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-lg font-mono font-bold ${backupHours >= 4 ? 'text-success' : backupHours >= 1 ? 'text-warning' : 'text-error'}`}>
+                    {backupHours >= 1 ? `${Math.floor(backupHours)}h ${Math.round((backupHours % 1) * 60)}m` : `${Math.round(backupHours * 60)}m`}
+                  </div>
+                  <div className="text-[10px] text-text-muted">at {displayLoadW.toLocaleString('en-IN')} W</div>
+                </div>
+              </div>
+              {isLoadTooHigh && (
+                <div className="mt-2 text-[10px] text-error font-medium bg-error/10 px-2 py-1 rounded">
+                  <AlertTriangle size={12} className="inline mr-1" /> Load exceeds continuous battery discharge rate ({maxDischargeKW.toFixed(1)} kW). System will trip.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Core Metrics Grid */}
+        <div className="grid grid-cols-2 gap-4">
+          <MetricBox label="Daily Generation" value={`${calcResult.dailyGenerationKWh.toFixed(1)} kWh`} />
+          <MetricBox label="Monthly Gen." value={`${Math.round(calcResult.monthlyGenerationKWh)} kWh`} />
+          <MetricBox label="Annual Gen." value={`${Math.round(calcResult.annualGenerationKWh).toLocaleString()} kWh`} />
+          <MetricBox label="Monthly Savings" value={formatINR(calcResult.monthlySavingsINR)} success />
+          <MetricBox label="Annual Savings" value={formatINR(calcResult.annualSavingsINR)} success />
+          <MetricBox 
+            label="Simple Payback" 
+            value={calcResult.paybackYears === Infinity ? 'N/A' : `${calcResult.paybackYears.toFixed(1)} years`} 
+          />
+          <MetricBox 
+            label="Levelized Cost" 
+            value={`₹${calcResult.lcoe.toFixed(2)} / kWh`} 
+            accent 
+          />
+          <MetricBox
+            label="Backup Time"
+            value={activeLoadW > 0 && totalBatteryCapacityKWh > 0 ? `${backupHours.toFixed(1)} hrs` : '—'}
+            success={backupHours >= 4}
+          />
+          <MetricBox
+            label="Battery Capacity"
+            value={`${totalBatteryCapacityKWh.toFixed(1)} kWh`}
+          />
+        </div>
+
+        {totalBatteryCapacityKWh === 0 && (
+          <div className="p-3 rounded-xl border border-warning/30 bg-warning/5 text-xs text-warning">
+            No batteries selected. Add batteries in the Equipment tab to see backup time estimates.
+          </div>
+        )}
+
+        {/* Lifetime Highlight */}
+        <div className="p-4 rounded-xl border border-success/30 bg-success/5 flex items-center justify-between">
+          <div>
+            <div className="text-xs font-semibold text-success/80 uppercase tracking-wider">Lifetime Savings (25 yrs)</div>
+            <div className="text-[10px] text-text-muted mt-0.5">Includes {electricityInflationRate * 100}%/yr utility inflation & degradation</div>
+          </div>
+          <div className="text-xl font-mono font-bold text-success">
+            {formatINR(lifetimeSavings)}
+          </div>
+        </div>
+
+        {/* Generation Chart — full month labels + kWh values visible */}
+        <div className="space-y-3 pt-2 border-t border-border/60">
+          <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Monthly Generation Estimate</h4>
+          <div className="flex items-end justify-between gap-1" style={{ height: '180px' }}>
+            {chartData.map((d) => {
+              const heightPct = maxGen > 0 ? (d.gen / maxGen) * 100 : 0;
+              return (
+                <div key={d.month} className="flex flex-col items-center flex-1 gap-1 group" style={{ height: '100%' }}>
+                  {/* kWh value above bar */}
+                  <div className="text-[9px] font-mono font-semibold text-text-muted group-hover:text-accent transition-colors shrink-0 tabular-nums">
+                    {d.gen}
+                  </div>
+                  {/* Bar container */}
+                  <div className="w-full flex-1 relative flex items-end justify-center rounded-md bg-surface-hover overflow-hidden">
+                    <div 
+                      className="w-full bg-accent/70 transition-all duration-500 group-hover:bg-accent rounded-t-md"
+                      style={{ height: `${heightPct}%` }}
+                    />
+                  </div>
+                  {/* Month label */}
+                  <span className="text-[10px] font-medium text-text-muted group-hover:text-text-primary transition-colors shrink-0">
+                    {d.month}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex-1 min-w-[80px]">
+      <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">{label}</div>
+      <div className="text-xs font-semibold text-text-primary">{value}</div>
+    </div>
+  );
+}
+
+function MetricBox({ label, value, success, accent }: { label: string; value: string; success?: boolean; accent?: boolean }) {
+  return (
+    <div className="p-3 rounded-lg border border-border bg-surface-hover/50 transition-colors hover:border-border-light">
+      <div className="text-[10px] text-text-secondary uppercase tracking-wider mb-1.5">{label}</div>
+      <div className={`text-sm font-mono font-semibold tabular-nums ${
+        success ? 'text-success' : accent ? 'text-accent' : 'text-text-primary'
+      }`}>
+        {value}
+      </div>
+    </div>
+  );
+}

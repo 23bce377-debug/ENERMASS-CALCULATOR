@@ -1,26 +1,417 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ─── ENERMASS Design System ─────────────────────────────────────────────── */
+/* Tailwind v4 token registration — values are overridden by :root / .dark    */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-surface: var(--srf);
+  --color-surface-hover: var(--srf-hover);
+  --color-surface-active: var(--srf-active);
+  --color-border: var(--bdr);
+  --color-border-light: var(--bdr-light);
+  --color-accent: #B8860B;
+  --color-accent-hover: #CC9A1D;
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-glow: var(--accent-glow);
+  --color-text-primary: var(--txt);
+  --color-text-secondary: var(--txt-sec);
+  --color-text-muted: var(--txt-muted);
+
+  /* Category colors */
+  --color-cat-on-grid: #16A34A;
+  --color-cat-3-phase: #2563EB;
+  --color-cat-micro: #9333EA;
+  --color-cat-hybrid: #D97706;
+  --color-cat-upgrade: #475569;
+  --color-cat-commercial: #DC2626;
+
+  /* Status colors */
+  --color-success: #16A34A;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+  --color-info: #2563EB;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Light Mode (Default) ───────────────────────────────────────────────── */
+
+:root,
+html.light {
+  --bg: #F8F9FA;
+  --srf: #FFFFFF;
+  --srf-hover: #F1F3F5;
+  --srf-active: #E9ECEF;
+  --bdr: #DEE2E6;
+  --bdr-light: #CED4DA;
+  --accent-dim: rgba(184, 134, 11, 0.10);
+  --accent-glow: rgba(184, 134, 11, 0.06);
+  --txt: #1A1A1A;
+  --txt-sec: #495057;
+  --txt-muted: #868E96;
+  color-scheme: light;
+}
+
+/* ─── Dark Mode ──────────────────────────────────────────────────────────── */
+
+html.dark {
+  --bg: #0a0a0a;
+  --srf: #141414;
+  --srf-hover: #1a1a1a;
+  --srf-active: #1e1e1e;
+  --bdr: #2a2a2a;
+  --bdr-light: #333333;
+  --accent-dim: rgba(184, 134, 11, 0.15);
+  --accent-glow: rgba(184, 134, 11, 0.08);
+  --txt: #F5F5F5;
+  --txt-sec: #A0A0A0;
+  --txt-muted: #666666;
+  color-scheme: dark;
+}
+
+/* ─── Base Styles ────────────────────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-light);
+}
+
+/* ─── Selection ──────────────────────────────────────────────────────────── */
+
+::selection {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+}
+
+/* ─── Focus Rings ────────────────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 67, 0); }
+  50% { box-shadow: 0 0 12px 2px rgba(212, 168, 67, 0.15); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out both;
+}
+
+.animate-slide-in {
+  animation: slide-in-left 0.3s ease-out both;
+}
+
+/* ─── Utility Classes ────────────────────────────────────────────────────── */
+
+.glass {
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+html.dark .glass {
+  background: rgba(20, 20, 20, 0.8);
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, #B8860B 0%, #CC9A1D 50%, #B8860B 100%);
+}
+
+.gold-text {
+  background: linear-gradient(135deg, #B8860B 0%, #CC9A1D 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Category Badge Colors ──────────────────────────────────────────────── */
+
+.badge-on-grid { background: rgba(22, 163, 74, 0.10); color: #16A34A; border: 1px solid rgba(22, 163, 74, 0.25); }
+.badge-3-phase { background: rgba(37, 99, 235, 0.10); color: #2563EB; border: 1px solid rgba(37, 99, 235, 0.25); }
+.badge-micro-inverter { background: rgba(147, 51, 234, 0.10); color: #9333EA; border: 1px solid rgba(147, 51, 234, 0.25); }
+.badge-hybrid { background: rgba(217, 119, 6, 0.10); color: #D97706; border: 1px solid rgba(217, 119, 6, 0.25); }
+.badge-upgrade { background: rgba(71, 85, 105, 0.10); color: #475569; border: 1px solid rgba(71, 85, 105, 0.25); }
+.badge-commercial { background: rgba(220, 38, 38, 0.10); color: #DC2626; border: 1px solid rgba(220, 38, 38, 0.25); }
+
+/* ─── Mobile Bottom Tab Bar ──────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .sidebar-desktop {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-tab-bar {
+    display: none !important;
+  }
+}
+
+/* ─── Print-Only Component ───────────────────────────────────────────────── */
+
+.print-only {
+  display: none !important;
+}
+
+/* ─── Print Styles ───────────────────────────────────────────────────────── */
+
+@media print {
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    background: white !important;
+    color: #111 !important;
+    font-size: 11px !important;
+  }
+
+  /* Hide all screen UI */
+  .no-print,
+  .sidebar-desktop,
+  .mobile-tab-bar,
+  header,
+  nav,
+  main > *:not(.print-only) {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 12mm 15mm;
+  }
+
+  .pdf-page-break {
+    page-break-before: always;
+  }
+
+  .pdf-page {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .pdf-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .pdf-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pdf-logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #D4A843, #e0b954);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #111;
+  }
+
+  .pdf-brand {
+    font-size: 16px;
+    font-weight: 800;
+    color: #111;
+    letter-spacing: 0.5px;
+  }
+
+  .pdf-tagline {
+    font-size: 10px;
+    color: #666;
+    letter-spacing: 0.3px;
+  }
+
+  .pdf-meta {
+    text-align: right;
+    font-size: 10px;
+    color: #444;
+  }
+
+  .pdf-meta-row {
+    margin-bottom: 2px;
+  }
+
+  .pdf-meta-row span {
+    margin-right: 4px;
+  }
+
+  .pdf-divider {
+    height: 2px;
+    background: linear-gradient(90deg, #D4A843, transparent);
+    margin: 10px 0;
+  }
+
+  .pdf-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .pdf-info-block {
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+  }
+
+  .pdf-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #D4A843;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+  }
+
+  .pdf-info-row {
+    font-size: 10px;
+    color: #333;
+    padding: 2px 0;
+  }
+
+  .pdf-info-row span {
+    color: #888;
+    margin-right: 4px;
+  }
+
+  .pdf-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    margin-bottom: 8px;
+  }
+
+  .pdf-table th,
+  .pdf-table td {
+    padding: 4px 6px;
+    border: 1px solid #e0e0e0;
+    text-align: left;
+    color: #333;
+  }
+
+  .pdf-table th {
+    background: #f5f5f5;
+    font-weight: 700;
+    color: #444;
+    text-transform: uppercase;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .pdf-table.pdf-bom {
+    font-size: 9px;
+  }
+
+  .pdf-highlight-row td {
+    background: #fef9ee !important;
+    font-weight: 700;
+    border-top: 2px solid #D4A843;
+  }
+
+  .pdf-terms {
+    font-size: 9px;
+    color: #555;
+    padding-left: 16px;
+    margin: 8px 0;
+    line-height: 1.6;
+  }
+
+  .pdf-terms li {
+    margin-bottom: 2px;
+  }
+
+  .pdf-signature {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+    padding-top: 20px;
+  }
+
+  .pdf-sig-block {
+    text-align: center;
+    font-size: 10px;
+    color: #666;
+    width: 200px;
+  }
+
+  .pdf-sig-line {
+    border-bottom: 1px solid #333;
+    margin-bottom: 6px;
+    height: 40px;
+  }
+
+  .pdf-sig-name {
+    font-weight: 600;
+    color: #333;
+    margin-top: 2px;
+  }
+
+  .pdf-footer {
+    text-align: center;
+    font-size: 8px;
+    color: #999;
+    margin-top: 20px;
+    padding-top: 8px;
+    border-top: 1px solid #e0e0e0;
+  }
 }
