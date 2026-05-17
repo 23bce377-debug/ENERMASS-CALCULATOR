@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { formatINR } from '@/lib/engine/calculator';
@@ -12,6 +12,7 @@ import {
   ChevronDown, ArrowUpDown, Printer, PenSquare, Copy,
   Mail, MessageCircle,
 } from 'lucide-react';
+import { QuotePDF } from '@/components/print/QuotePDF';
 
 // ─── Status Config ──────────────────────────────────────────────────────────────
 
@@ -43,7 +44,9 @@ function getQuoteShareText(quote: Quote, companyName: string): string {
 }
 
 function toWhatsappNumber(phone: string): string {
-  return phone.replace(/\D/g, '').replace(/^0+/, '');
+  const digits = phone.replace(/\D/g, '').replace(/^0+/, '');
+  if (digits.length === 10) return `91${digits}`;
+  return digits;
 }
 
 // ─── Quote Detail Modal ─────────────────────────────────────────────────────────
@@ -73,8 +76,10 @@ function QuoteDetailModal({
 
   const handleEmailShare = () => {
     const subject = `Solar Quote ${quote.quoteId}`;
-    const body = getQuoteShareText(quote, companyName);
-    const mailto = `mailto:${quote.customer.email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const bodyText = getQuoteShareText(quote, companyName);
+    // Standard mailto newlines
+    const body = encodeURIComponent(bodyText).replace(/%0A/g, '%0D%0A');
+    const mailto = `mailto:${quote.customer.email || ''}?subject=${encodeURIComponent(subject)}&body=${body}`;
     window.location.href = mailto;
   };
 
@@ -89,8 +94,9 @@ function QuoteDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-100 flex items-start justify-center bg-black/70 backdrop-blur-sm overflow-y-auto p-4 md:p-8 print:hidden">
-      <div className="w-full max-w-4xl bg-surface border border-border rounded-2xl shadow-2xl animate-fade-in print-hidden">
+    <>
+      <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/70 backdrop-blur-sm overflow-y-auto p-4 md:p-8 print:hidden">
+        <div className="w-full max-w-4xl bg-surface border border-border rounded-2xl shadow-2xl animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border print:border-gray-300">
           <div>
@@ -221,8 +227,9 @@ function QuoteDetailModal({
           </InfoSection>
         </div>
       </div>
-      <QuotePrintView quote={quote} companyName={companyName} system={system} />
-    </div>
+      </div>
+      <QuotePDF quote={quote} companyName={companyName} />
+    </>
   );
 }
 
@@ -254,136 +261,6 @@ function StatBox({ label, value, highlight }: { label: string; value: string; hi
 }
 
 // ─── Print View & Styles ────────────────────────────────────────────────────────
-
-function PrintStyles() {
-  return (
-    <style>{`
-      @media print {
-        @page { size: A4 portrait; margin: 15mm; }
-        html, body { 
-          background: #ffffff !important; 
-          color: #000000 !important; 
-          -webkit-print-color-adjust: exact !important; 
-          print-color-adjust: exact !important; 
-        }
-        body > *:not(.print-container) { display: none !important; }
-        .print-container { 
-          display: block !important; 
-          position: absolute; 
-          left: 0; top: 0; right: 0; 
-          background: white !important;
-          color: black !important;
-        }
-        .print-hidden { display: none !important; }
-        .print-break-inside-avoid { break-inside: avoid; }
-        * { text-shadow: none !important; box-shadow: none !important; }
-      }
-    `}</style>
-  );
-}
-
-function QuotePrintView({ quote, companyName, system }: { quote: Quote; companyName: string; system?: SolarSystem }) {
-  const calc = quote.calculations;
-
-  return (
-    <div className="hidden print:block print-container font-sans w-full max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-start border-b-2 border-gray-800 pb-6 mb-6">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-gray-900">{companyName.toUpperCase()}</h1>
-          <p className="text-sm text-gray-600 mt-1 uppercase font-semibold tracking-widest">Solar Energy Proposal</p>
-        </div>
-        <div className="text-right">
-          <h2 className="text-2xl font-bold text-gray-800">{quote.quoteId}</h2>
-          <p className="text-sm text-gray-600 mt-1 font-semibold">{quote.sales.projectTitle || quote.systemName}</p>
-          <p className="text-sm text-gray-600 mt-1">{new Date(quote.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-        </div>
-      </div>
-
-      {/* Two Column Details */}
-      <div className="flex gap-8 mb-8">
-        <div className="flex-1">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2 border-b border-gray-200 pb-1">Prepared For</h3>
-          <p className="font-bold text-gray-900 text-lg">{quote.customer.name}</p>
-          <p className="text-sm text-gray-700 mt-1">{quote.address.line1}</p>
-          {quote.address.line2 && <p className="text-sm text-gray-700">{quote.address.line2}</p>}
-          <p className="text-sm text-gray-700">{quote.address.city}, {quote.address.state} - {quote.address.pin}</p>
-          <div className="mt-2 text-sm text-gray-700">
-            <p>Phone: {quote.customer.phone}</p>
-            {quote.customer.email && <p>Email: {quote.customer.email}</p>}
-          </div>
-        </div>
-        
-        <div className="flex-1 bg-gray-50 p-4 rounded-xl border border-gray-200">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 border-b border-gray-200 pb-1">System Specifications</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between"><span className="text-gray-600 text-sm">System Name</span><span className="font-bold text-sm text-gray-900">{quote.systemName}</span></div>
-            <div className="flex justify-between"><span className="text-gray-600 text-sm">Capacity</span><span className="font-bold text-sm text-gray-900">{system?.capacityKW ?? '—'} kW</span></div>
-            <div className="flex justify-between"><span className="text-gray-600 text-sm">Panels</span><span className="font-semibold text-sm text-gray-800">{system?.panelQty ?? '—'} × {system?.panelWattage ?? '—'}W</span></div>
-            <div className="flex justify-between"><span className="text-gray-600 text-sm">Grid Type</span><span className="font-semibold text-sm text-gray-800 uppercase">{quote.category}</span></div>
-            <div className="flex justify-between"><span className="text-gray-600 text-sm">Sanctioned Load</span><span className="font-semibold text-sm text-gray-800">{quote.site.sanctionedLoad} kW</span></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Financials & ROI */}
-      <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2 border-b border-gray-200 pb-1">Financial Investment</h3>
-      <div className="border border-gray-300 rounded-lg overflow-hidden mb-8">
-        <div className="flex justify-between p-3 border-b border-gray-200 bg-gray-50">
-          <span className="text-sm text-gray-700 font-medium">Base Cost (Excl. GST)</span>
-          <span className="text-sm text-gray-900 font-bold">{formatINR(calc.costBeforeGST)}</span>
-        </div>
-        <div className="flex justify-between p-3 border-b border-gray-200">
-          <span className="text-sm text-gray-700 font-medium">Input GST</span>
-          <span className="text-sm text-gray-900 font-bold">{formatINR(calc.totalInputGST)}</span>
-        </div>
-        {calc.discountAmount > 0 && (
-          <div className="flex justify-between p-3 border-b border-gray-200">
-            <span className="text-sm text-gray-700 font-medium">Special Discount</span>
-            <span className="text-sm text-red-600 font-bold">-{formatINR(calc.discountAmount)}</span>
-          </div>
-        )}
-        {calc.additionalCostTotal > 0 && (
-          <div className="flex justify-between p-3 border-b border-gray-200">
-            <span className="text-sm text-gray-700 font-medium">Additional Customizations</span>
-            <span className="text-sm text-gray-900 font-bold">+{formatINR(calc.additionalCostTotal)}</span>
-          </div>
-        )}
-        {calc.subsidyAmount > 0 && (
-          <div className="flex justify-between p-3 border-b border-gray-200 bg-green-50">
-            <span className="text-sm text-green-800 font-medium">Govt. Subsidy (Estimated)</span>
-            <span className="text-sm text-green-800 font-bold">-{formatINR(calc.subsidyAmount)}</span>
-          </div>
-        )}
-        <div className="flex justify-between p-4 bg-gray-900 text-white">
-          <span className="text-lg font-bold">Net Payable Amount</span>
-          <span className="text-2xl font-black">{formatINR(calc.beneficiaryContribution)}</span>
-        </div>
-      </div>
-
-      {/* Performance Estimates */}
-      <div className="grid grid-cols-3 gap-4 mb-8 print-break-inside-avoid">
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Daily Generation</p>
-          <p className="text-xl font-bold text-gray-900">{calc.dailyGenerationKWh.toFixed(1)} <span className="text-sm font-normal text-gray-600">kWh</span></p>
-        </div>
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Monthly Savings</p>
-          <p className="text-xl font-bold text-green-700">{formatINR(calc.monthlySavingsINR)}</p>
-        </div>
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Est. Payback Period</p>
-          <p className="text-xl font-bold text-blue-700">{calc.paybackYears === Infinity ? '—' : `${calc.paybackYears.toFixed(1)} yrs`}</p>
-        </div>
-      </div>
-
-      <div className="mt-12 text-center text-xs text-gray-400 pt-4 border-t border-gray-200">
-        <p>This is a computer generated document and does not require a physical signature.</p>
-        <p>Subsidy amounts and generation estimates are indicative and subject to site conditions and govt policies.</p>
-      </div>
-    </div>
-  );
-}
 
 // ─── Main Page ──────────────────────────────────────────────────────────────────
 
@@ -472,7 +349,6 @@ export default function QuotesPage() {
 
   return (
     <>
-      <PrintStyles />
       <div className="p-4 md:p-6 space-y-6 animate-fade-in">
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
