@@ -12,11 +12,12 @@ import { EnergyCard } from '@/components/calculator/EnergyCard';
 import { DiscountPanel } from '@/components/calculator/DiscountPanel';
 import { AdditionalCostsPanel } from '@/components/calculator/AdditionalCostsPanel';
 import { QuoteSaveModal } from '@/components/calculator/QuoteSaveModal';
-import { CalculatorPrintView } from '@/components/print/CalculatorPrintView';
+import { QuotePDF } from '@/components/print/QuotePDF';
 import { STATE_DATA } from '@/lib/data/masters';
 import { formatINR } from '@/lib/engine/calculator';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useToast } from '@/components/ui/Toast';
+import type { Quote } from '@/lib/types/quote';
 import { Download, Share2, Save, ChevronDown, Search, MapPin, Settings, Trash2, Edit3, X } from 'lucide-react';
 
 // ─── Left Panel Components ────────────────────────────────────────────────────────
@@ -91,7 +92,7 @@ function StateSelector() {
             </div>
           </div>
 
-          <div className="max-h-[240px] overflow-y-auto py-1">
+          <div className="max-h-60 overflow-y-auto py-1">
             {filteredStates.length === 0 ? (
               <div className="px-4 py-4 text-center text-sm text-text-muted">
                 No states found
@@ -185,15 +186,11 @@ function PresetManager() {
 }
 
 
-function ActionBar({ onSaveQuote }: { onSaveQuote: () => void }) {
+function ActionBar({ onSaveQuote, onCreateQuote }: { onSaveQuote: () => void; onCreateQuote: () => void }) {
   const selectedSystemId = useCalculatorStore((s) => s.selectedSystemId);
   const result = useCalculatorStore((s) => s.calcResult);
   const disabled = !selectedSystemId || !result;
   const { toast } = useToast();
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   const handleShare = async () => {
     if (!result) return;
@@ -211,29 +208,29 @@ function ActionBar({ onSaveQuote }: { onSaveQuote: () => void }) {
   return (
     <div className="flex flex-wrap items-center gap-3 p-4 bg-surface border border-border rounded-xl shadow-lg shadow-black/20">
       <button
-        onClick={onSaveQuote}
+        onClick={onCreateQuote}
         disabled={disabled}
-        className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg
+        className="flex-1 min-w-35 flex items-center justify-center gap-2 py-3 px-4 rounded-lg
           bg-accent hover:bg-accent-hover text-background font-bold text-sm transition-colors
           disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-accent/20"
       >
-        <Save size={18} />
-        Save Quote
+        <Download size={18} />
+        Create Quote PDF
       </button>
       <button
-        onClick={handlePrint}
+        onClick={onSaveQuote}
         disabled={disabled}
-        className="flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg
+        className="flex-1 min-w-30 flex items-center justify-center gap-2 py-3 px-4 rounded-lg
           border border-border hover:bg-surface-hover text-text-primary font-medium text-sm transition-colors
           disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <Download size={18} />
-        Print PDF
+        <Save size={18} />
+        Save Draft
       </button>
       <button
         onClick={handleShare}
         disabled={disabled}
-        className="flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg
+        className="flex-1 min-w-30 flex items-center justify-center gap-2 py-3 px-4 rounded-lg
           border border-border hover:bg-surface-hover text-text-primary font-medium text-sm transition-colors
           disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -244,11 +241,15 @@ function ActionBar({ onSaveQuote }: { onSaveQuote: () => void }) {
   );
 }
 
+
 // ─── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function CalculatorPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalIntent, setModalIntent] = useState<'print' | 'draft'>('print');
+  const [pendingQuote, setPendingQuote] = useState<Quote | null>(null);
   const { settings } = useSettings();
+  const { toast } = useToast();
 
   const selectedSystemId = useCalculatorStore((s) => s.selectedSystemId);
   const selectSystem = useCalculatorStore((s) => s.selectSystem);
@@ -281,8 +282,35 @@ export default function CalculatorPage() {
     return system?.panelWattage ?? null;
   }, [selectedSystemId, settings.customSystems]);
 
+  useEffect(() => {
+    if (!pendingQuote) return;
+
+    const timer = window.setTimeout(() => window.print(), 200);
+    const handleAfterPrint = () => setPendingQuote(null);
+
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, [pendingQuote]);
+
+  const handleOpenModal = (intent: 'print' | 'draft') => {
+    setModalIntent(intent);
+    setIsModalOpen(true);
+  };
+
+  const handleQuoteSaved = (quote: Quote) => {
+    setIsModalOpen(false);
+    if (modalIntent === 'print') {
+      setPendingQuote(quote);
+    } else {
+      toast(`Quote ${quote.quoteId} saved as draft!`, 'success');
+    }
+  };
+
   return (
-    <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto animate-fade-in pb-32 md:pb-8">
+    <div className="p-4 md:p-6 lg:p-8 max-w-400 mx-auto animate-fade-in pb-32 md:pb-8">
       {/* Title */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-text-primary">Calculator</h1>
@@ -343,16 +371,29 @@ export default function CalculatorPage() {
           </div>
 
           {/* Actions */}
-          <ActionBar onSaveQuote={() => setIsModalOpen(true)} />
+          <ActionBar
+            onCreateQuote={() => handleOpenModal('print')}
+            onSaveQuote={() => handleOpenModal('draft')}
+          />
         </div>
 
       </div>
 
       {/* Modals */}
-      <QuoteSaveModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <QuoteSaveModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSaved={handleQuoteSaved}
+      />
 
-      {/* Print-only view — hidden on screen, shown when window.print() fires */}
-      <CalculatorPrintView />
+      {pendingQuote && (
+        <QuotePDF
+          quote={pendingQuote}
+          companyName={settings.company.name || 'ENERMASS Solar'}
+          companyAddress={settings.company.address || ''}
+        />
+      )}
     </div>
   );
 }
+

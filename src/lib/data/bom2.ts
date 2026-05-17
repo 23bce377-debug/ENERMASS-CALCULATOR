@@ -71,7 +71,7 @@ export const SYSTEMS: SolarSystem[] = [
     capacityKW: 1.62,
     panelWattage: 540,
     panelQty: 3,
-    targetMarginPct: 0.94,
+    targetMarginPct: 0.19,
     items: [
       { description: 'PANEL', qty: 3, ratePerUnit: 12350, gstPct: 0.05 },
       { description: 'INVERTER', qty: 1, ratePerUnit: 11000, gstPct: 0.12 },
@@ -109,7 +109,7 @@ export const SYSTEMS: SolarSystem[] = [
     capacityKW: 2.18,
     panelWattage: 545,
     panelQty: 4,
-    targetMarginPct: 0.72,
+    targetMarginPct: 0.19,
     items: [
       { description: 'PANEL', qty: 4, ratePerUnit: 12535, gstPct: 0.05 },
       { description: 'INVERTER', qty: 1, ratePerUnit: 12800, gstPct: 0.12 },
@@ -223,7 +223,7 @@ export const SYSTEMS: SolarSystem[] = [
     capacityKW: 3.1,
     panelWattage: 620,
     panelQty: 5,
-    targetMarginPct: 0.85,
+    targetMarginPct: 0.25,
     items: [
       { description: 'PANEL', qty: 5, ratePerUnit: 12800, gstPct: 0.05 },
       { description: 'INVERTER', qty: 1, ratePerUnit: 14500, gstPct: 0.12 },
@@ -261,7 +261,7 @@ export const SYSTEMS: SolarSystem[] = [
     capacityKW: 4.96,
     panelWattage: 620,
     panelQty: 8,
-    targetMarginPct: 0.64,
+    targetMarginPct: 0.21,
     items: [
       { description: 'PANEL', qty: 8, ratePerUnit: 12800, gstPct: 0.05 },
       { description: 'INVERTER', qty: 1, ratePerUnit: 18500, gstPct: 0.12 },
@@ -299,7 +299,7 @@ export const SYSTEMS: SolarSystem[] = [
     capacityKW: 4.96,
     panelWattage: 620,
     panelQty: 8,
-    targetMarginPct: 0.86,
+    targetMarginPct: 0.20,
     items: [
       { description: 'PANEL', qty: 8, ratePerUnit: 12800, gstPct: 0.05 },
       { description: 'INVERTER', qty: 1, ratePerUnit: 18500, gstPct: 0.12 },
@@ -337,7 +337,7 @@ export const SYSTEMS: SolarSystem[] = [
     capacityKW: 6.2,
     panelWattage: 620,
     panelQty: 10,
-    targetMarginPct: 0.87,
+    targetMarginPct: 0.10,
     items: [
       { description: 'PANEL', qty: 10, ratePerUnit: 12800, gstPct: 0.05 },
       { description: 'INVERTER', qty: 1, ratePerUnit: 22500, gstPct: 0.12 },
@@ -375,7 +375,7 @@ export const SYSTEMS: SolarSystem[] = [
     capacityKW: 5.58,
     panelWattage: 620,
     panelQty: 9,
-    targetMarginPct: 1.00,
+    targetMarginPct: 0.22,
     items: [
       { description: 'PANEL', qty: 9, ratePerUnit: 12800, gstPct: 0.05 },
       { description: 'INVERTER', qty: 1, ratePerUnit: 21000, gstPct: 0.12 },
@@ -413,7 +413,7 @@ export const SYSTEMS: SolarSystem[] = [
     capacityKW: 9.92,
     panelWattage: 620,
     panelQty: 16,
-    targetMarginPct: 0.42,
+    targetMarginPct: 0.20,
     items: [
       { description: 'PANEL', qty: 16, ratePerUnit: 12800, gstPct: 0.05 },
       { description: 'INVERTER', qty: 1, ratePerUnit: 35000, gstPct: 0.12 },

@@ -9,7 +9,16 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 import { SYSTEMS, type BomItem, type SolarSystem } from '../data/bom';
-import { MAX_VARIANTS, PANEL_BRANDS, INVERTER_BRANDS, BATTERY_BRANDS } from '../data/masters';
+import {
+  MAX_VARIANTS,
+  type PanelBrand,
+  type InverterBrand,
+  type BatteryBrand,
+  type EquipmentCatalogSource,
+  getActivePanelBrands,
+  getActiveInverterBrands,
+  getActiveBatteryBrands,
+} from '../data/masters';
 
 import {
   calculateSystem,
@@ -196,6 +205,53 @@ function getAllSystemsFromSettings(): SolarSystem[] {
   return [...SYSTEMS, ...getCustomSystemsFromSettings()];
 }
 
+function getEquipmentCatalogsFromSettings(): {
+  panels: ReturnType<typeof getActivePanelBrands>;
+  inverters: ReturnType<typeof getActiveInverterBrands>;
+  batteries: ReturnType<typeof getActiveBatteryBrands>;
+} {
+  if (typeof window === 'undefined') {
+    return {
+      panels: getActivePanelBrands(),
+      inverters: getActiveInverterBrands(),
+      batteries: getActiveBatteryBrands(),
+    };
+  }
+
+  try {
+    const rawSettings = window.localStorage.getItem('enermass-settings');
+    if (!rawSettings) {
+      return {
+        panels: getActivePanelBrands(),
+        inverters: getActiveInverterBrands(),
+        batteries: getActiveBatteryBrands(),
+      };
+    }
+
+    const settings = JSON.parse(rawSettings) as EquipmentCatalogSource;
+    const normalizedSettings: EquipmentCatalogSource = {
+      ...settings,
+      currentEquipmentRates: {
+        panels: settings.currentEquipmentRates?.panels ?? {},
+        inverters: settings.currentEquipmentRates?.inverters ?? {},
+        batteries: settings.currentEquipmentRates?.batteries ?? {},
+      },
+    };
+
+    return {
+      panels: getActivePanelBrands(normalizedSettings),
+      inverters: getActiveInverterBrands(normalizedSettings),
+      batteries: getActiveBatteryBrands(normalizedSettings),
+    };
+  } catch {
+    return {
+      panels: getActivePanelBrands(),
+      inverters: getActiveInverterBrands(),
+      batteries: getActiveBatteryBrands(),
+    };
+  }
+}
+
 function normalizeMixEntries(selectionMix: Record<string, number>): Array<[string, number]> {
   return Object.entries(selectionMix).filter(([, qty]) => Number.isFinite(qty) && qty > 0);
 }
@@ -243,11 +299,7 @@ function runCalculation(state: CalculatorState): {
   }
 
   try {
-    // Use statically imported brand lookups to resolve equipment rates
-    
-    let allPanels = [...PANEL_BRANDS];
-    let allInverters = [...INVERTER_BRANDS];
-    let allBatteries = [...BATTERY_BRANDS];
+    const { panels: allPanels, inverters: allInverters, batteries: allBatteries } = getEquipmentCatalogsFromSettings();
     let customSystems: SolarSystem[] = [];
     let gridTariffPerKWh: number | undefined;
 
@@ -256,9 +308,6 @@ function runCalculation(state: CalculatorState): {
         const rawSettings = window.localStorage.getItem('enermass-settings');
         if (rawSettings) {
           const settings = JSON.parse(rawSettings);
-          if (settings.customPanels) allPanels.push(...settings.customPanels);
-          if (settings.customInverters) allInverters.push(...settings.customInverters);
-          if (settings.customBatteries) allBatteries.push(...settings.customBatteries);
           if (Array.isArray(settings.customSystems)) customSystems = settings.customSystems;
           if (typeof settings.defaultGridTariff === 'number' && settings.defaultGridTariff >= 0) {
             gridTariffPerKWh = settings.defaultGridTariff;
@@ -393,9 +442,7 @@ export const useCalculatorStore = create<CalculatorState>()(
       // ── System Selection ──────────────────────────────────────────────
 
       selectSystem: (id: string) => {
-        let allPanels = [...PANEL_BRANDS];
-        let allInverters = [...INVERTER_BRANDS];
-        let allBatteries = [...BATTERY_BRANDS];
+        const { panels: allPanels, inverters: allInverters, batteries: allBatteries } = getEquipmentCatalogsFromSettings();
         let customSystems: SolarSystem[] = [];
 
         if (typeof window !== 'undefined') {
@@ -403,9 +450,6 @@ export const useCalculatorStore = create<CalculatorState>()(
             const rawSettings = window.localStorage.getItem('enermass-settings');
             if (rawSettings) {
               const settings = JSON.parse(rawSettings);
-              if (settings.customPanels) allPanels.push(...settings.customPanels);
-              if (settings.customInverters) allInverters.push(...settings.customInverters);
-              if (settings.customBatteries) allBatteries.push(...settings.customBatteries);
               if (Array.isArray(settings.customSystems)) customSystems = settings.customSystems;
             }
           } catch (e) {}

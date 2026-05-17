@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { SYSTEMS, type SolarSystem } from '@/lib/data/bom';
-import { PANEL_BRANDS, INVERTER_BRANDS, BATTERY_BRANDS } from '@/lib/data/masters';
+import { getActivePanelBrands, getActiveInverterBrands, getActiveBatteryBrands } from '@/lib/data/masters';
 import { Bookmark, Settings as SettingsIcon, Trash2, Edit3, Plus, ArrowRight, Zap, Component } from 'lucide-react';
 import Link from 'next/link';
 
@@ -40,7 +40,7 @@ export default function PresetsPage() {
     if (!Number.isFinite(panelQty) || panelQty <= 0) return setCustomSystemError('Panel quantity must be greater than 0.');
     if (!Number.isFinite(targetMarginPct) || targetMarginPct < 0) return setCustomSystemError('Target margin must be 0 or higher.');
 
-    const panel = PANEL_BRANDS.find(p => p.id === customSystemDraft.panelId);
+    const panel = getActivePanelBrands(settings).find(p => p.id === customSystemDraft.panelId);
     const panelWattage = panel ? panel.wattage : parseInt(customSystemDraft.panelWattage, 10);
     if (!Number.isFinite(panelWattage) || panelWattage <= 0) return setCustomSystemError('Panel wattage must be greater than 0.');
 
@@ -199,7 +199,7 @@ export default function PresetsPage() {
                     className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50"
                   >
                     <option value="">Generic (Use custom wattage below)</option>
-                    {PANEL_BRANDS.map((p) => (
+                    {getActivePanelBrands(settings).map((p) => (
                       <option key={p.id} value={p.id}>{p.brand} {p.wattage}W {p.type}</option>
                     ))}
                   </select>
@@ -254,7 +254,7 @@ export default function PresetsPage() {
                       className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50"
                     >
                       <option value="">None / Default</option>
-                      {INVERTER_BRANDS.map((i) => (
+                      {getActiveInverterBrands(settings).map((i) => (
                         <option key={i.id} value={i.id}>{i.brand} {i.model}</option>
                       ))}
                     </select>
@@ -279,7 +279,7 @@ export default function PresetsPage() {
                       className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50"
                     >
                       <option value="">None / Default</option>
-                      {BATTERY_BRANDS.map((b) => (
+                      {getActiveBatteryBrands(settings).map((b) => (
                         <option key={b.id} value={b.id}>{b.brand} {b.model}</option>
                       ))}
                     </select>
@@ -329,7 +329,7 @@ export default function PresetsPage() {
 
         {/* Right Col: Preset List */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="bg-surface rounded-xl border border-border p-5 h-full min-h-[500px]">
+          <div className="bg-surface rounded-xl border border-border p-5 h-full min-h-125">
             <h2 className="text-sm font-bold text-text-primary flex items-center gap-2 mb-4">
               <SettingsIcon size={16} className="text-accent" />
               Your Custom Presets
@@ -339,7 +339,7 @@ export default function PresetsPage() {
               <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border/50 rounded-xl bg-background/50">
                 <Bookmark size={32} className="text-text-muted/30 mb-3" />
                 <p className="text-sm text-text-primary font-medium">No custom presets yet</p>
-                <p className="text-xs text-text-muted mt-1 max-w-[250px]">
+                <p className="text-xs text-text-muted mt-1 max-w-62.5">
                   Add a basic preset from the left, or save a detailed one from the calculator.
                 </p>
               </div>

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { formatINR, type LineResult } from '@/lib/engine/calculator';
-import { PANEL_BRANDS } from '@/lib/data/masters';
+import { getActivePanelBrands } from '@/lib/data/masters';
 import { useSettings } from '@/lib/hooks/useSettings';
 
 // ─── BOM Row Grouping ───────────────────────────────────────────────────────────
@@ -224,7 +224,7 @@ const BOMRow = memo(function BOMRow({
       </td>
 
       {/* Qty — editable */}
-      <td className="py-1 px-1 w-[72px]">
+      <td className="py-1 px-1 w-18">
         <InlineCell
           value={line.effectiveQty}
           onCommit={(v) => onOverrideQty(line.index, v)}
@@ -232,7 +232,7 @@ const BOMRow = memo(function BOMRow({
       </td>
 
       {/* Rate/Unit — editable */}
-      <td className="py-1 px-1 w-[90px]">
+      <td className="py-1 px-1 w-22.5">
         <InlineCell
           value={line.effectiveRate}
           onCommit={(v) => onOverrideRate(line.index, v)}
@@ -246,7 +246,7 @@ const BOMRow = memo(function BOMRow({
       </td>
 
       {/* GST % — editable */}
-      <td className="py-1 px-1 w-[60px]">
+      <td className="py-1 px-1 w-15">
         <InlineCell
           value={line.effectiveGstPct * 100}
           onCommit={(v) => onOverrideGst(line.index, v / 100)}
@@ -547,7 +547,7 @@ export function BOMTable() {
   }, []);
 
   const panelCatalog = useMemo(() => {
-    const allPanels = [...PANEL_BRANDS, ...(settings.customPanels ?? [])];
+    const allPanels = getActivePanelBrands(settings);
     return new Map(
       allPanels.map((panel) => [
         panel.id,
@@ -636,17 +636,17 @@ export function BOMTable() {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-xs min-w-[900px]">
+        <table className="w-full text-xs min-w-225">
           <thead className="bg-background/60 sticky top-0 z-10">
             <tr className="border-b border-border">
               <th className="py-2.5 px-2 text-center text-text-muted font-medium w-10">#</th>
               <th className="py-2.5 px-2 text-left text-text-muted font-medium">Description</th>
               <th className="py-2.5 px-2 text-left text-text-muted font-medium w-20">Remarks</th>
               <th className="py-2.5 px-2 text-center text-text-muted font-medium w-12">Unit</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-[72px]">Qty</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-[90px]">Rate/Unit</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-18">Qty</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-22.5">Rate/Unit</th>
               <th className="py-2.5 px-2 text-right text-text-muted font-medium w-24">Total</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-[60px]">GST%</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-15">GST%</th>
               <th className="py-2.5 px-2 text-right text-text-muted font-medium w-20">GST Amt</th>
               <th className="py-2.5 px-2 text-right text-text-muted font-medium w-24">SubTotal</th>
               <th className="py-2.5 px-2 w-8"></th>

@@ -5,7 +5,13 @@ import Link from 'next/link';
 import { useSettings, type CategoryMargins } from '@/lib/hooks/useSettings';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { useToast } from '@/components/ui/Toast';
-import { STATE_DATA } from '@/lib/data/masters';
+import {
+  STATE_DATA,
+  getActivePanelBrands,
+  getActiveInverterBrands,
+  getActiveBatteryBrands,
+  EMPTY_EQUIPMENT_RATE_OVERRIDES,
+} from '@/lib/data/masters';
 import { SYSTEMS, type SolarSystem } from '@/lib/data/bom';
 import {
   Settings as SettingsIcon, MapPin, Percent, Zap, Building2,
@@ -22,6 +28,61 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
         {title}
       </h2>
       {children}
+    </div>
+  );
+}
+
+function EquipmentRateTable({
+  title,
+  rows,
+  onChange,
+}: {
+  title: string;
+  rows: Array<{ id: string; label: string; defaultRate: number; currentRate: number; suffix: string }>;
+  onChange: (id: string, value: string) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border overflow-hidden bg-background/30">
+      <div className="px-4 py-3 border-b border-border bg-surface-hover/40">
+        <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-xs uppercase tracking-wider text-text-muted">
+              <th className="px-4 py-3 text-left font-semibold">Component</th>
+              <th className="px-4 py-3 text-right font-semibold">Default</th>
+              <th className="px-4 py-3 text-right font-semibold">Current</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id} className="border-b border-border/60 last:border-0">
+                <td className="px-4 py-3 text-text-primary">
+                  <div className="font-medium">{row.label}</div>
+                  <div className="text-[11px] text-text-muted">{row.suffix === '₹/W' ? 'Rate per watt' : 'Item price'}</div>
+                </td>
+                <td className="px-4 py-3 text-right text-text-secondary font-mono">
+                  {row.suffix === '₹/W' ? `₹${row.defaultRate.toFixed(2)}` : `₹${row.defaultRate.toFixed(0)}`}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <input
+                      type="number"
+                      value={row.currentRate}
+                      min={0}
+                      step={row.suffix === '₹/W' ? 0.1 : 1}
+                      onChange={(e) => onChange(row.id, e.target.value)}
+                      className="w-32 px-3 py-2 rounded-lg bg-background border border-border text-sm text-right font-mono text-text-primary outline-none focus:border-accent/50"
+                    />
+                    <span className="text-xs text-text-muted w-10 text-left">{row.suffix}</span>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -85,6 +146,34 @@ export default function SettingsPage() {
   };
 
   const customSystems = settings.customSystems ?? [];
+  const panelCatalog = getActivePanelBrands(settings);
+  const inverterCatalog = getActiveInverterBrands(settings);
+  const batteryCatalog = getActiveBatteryBrands(settings);
+
+  const updateEquipmentRate = (
+    category: 'panels' | 'inverters' | 'batteries',
+    id: string,
+    value: string,
+  ) => {
+    const nextRate = parseFloat(value);
+    if (!Number.isFinite(nextRate) || nextRate < 0) return;
+
+    setSettings({
+      currentEquipmentRates: {
+        ...settings.currentEquipmentRates,
+        [category]: {
+          ...settings.currentEquipmentRates[category],
+          [id]: nextRate,
+        },
+      },
+    });
+    flash();
+  };
+
+  const resetEquipmentRates = () => {
+    setSettings({ currentEquipmentRates: EMPTY_EQUIPMENT_RATE_OVERRIDES });
+    flash();
+  };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -266,6 +355,61 @@ export default function SettingsPage() {
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs">/kWh</span>
           </div>
         </FieldLabel>
+      </Section>
+
+      {/* Equipment Rates */}
+      <Section title="Equipment Rates" icon={<Image size={18} />}>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <p className="text-sm text-text-muted">
+            Edit the current selling rate for each component. The default rate stays visible for comparison.
+          </p>
+          <button
+            onClick={resetEquipmentRates}
+            className="shrink-0 px-3 py-2 rounded-lg border border-border text-xs font-semibold text-text-secondary hover:text-error hover:border-error/30 transition-colors"
+          >
+            Reset Current Rates
+          </button>
+        </div>
+
+        <EquipmentRateTable
+          title="Panels"
+          rows={panelCatalog.map((panel) => ({
+            id: panel.id,
+            label: `${panel.brand} ${panel.model}`,
+            defaultRate: panel.ratePerWatt,
+            currentRate: settings.currentEquipmentRates.panels[panel.id] ?? panel.ratePerWatt,
+            suffix: '₹/W',
+          }))}
+          onChange={(id, value) => updateEquipmentRate('panels', id, value)}
+        />
+
+        <div className="h-4" />
+
+        <EquipmentRateTable
+          title="Inverters"
+          rows={inverterCatalog.map((inverter) => ({
+            id: inverter.id,
+            label: `${inverter.brand} ${inverter.model}`,
+            defaultRate: inverter.rate,
+            currentRate: settings.currentEquipmentRates.inverters[inverter.id] ?? inverter.rate,
+            suffix: '₹',
+          }))}
+          onChange={(id, value) => updateEquipmentRate('inverters', id, value)}
+        />
+
+        <div className="h-4" />
+
+        <EquipmentRateTable
+          title="Batteries"
+          rows={batteryCatalog.map((battery) => ({
+            id: battery.id,
+            label: `${battery.brand} ${battery.model}`,
+            defaultRate: battery.rate,
+            currentRate: settings.currentEquipmentRates.batteries[battery.id] ?? battery.rate,
+            suffix: '₹',
+          }))}
+          onChange={(id, value) => updateEquipmentRate('batteries', id, value)}
+        />
       </Section>
 
       {/* Company Info */}

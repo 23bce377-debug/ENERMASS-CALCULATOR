@@ -1,0 +1,130 @@
+[
+  {
+    "__EMPTY": "Plant Capacity in KW",
+    "__EMPTY_1": "No of Panels",
+    "__EMPTY_2": "Inverter",
+    "__EMPTY_3": "Type",
+    "__EMPTY_4": "Beneficiary Contribution",
+    "__EMPTY_5": "subsidy",
+    "__EMPTY_6": "System Price"
+  },
+  {
+    "__EMPTY": 1.5,
+    "__EMPTY_1": 3,
+    "__EMPTY_2": 2,
+    "__EMPTY_3": "premium",
+    "__EMPTY_4": 82000,
+    "__EMPTY_5": 48600,
+    "__EMPTY_6": 130600
+  },
+  {
+    "__EMPTY_3": "standard",
+    "__EMPTY_4": 75000,
+    "__EMPTY_6": 123600
+  },
+  {
+    "__EMPTY": 2,
+    "__EMPTY_1": 4,
+    "__EMPTY_2": 2.2,
+    "__EMPTY_3": "premium",
+    "__EMPTY_4": 92500,
+    "__EMPTY_5": 62880,
+    "__EMPTY_6": 155380
+  },
+  {
+    "__EMPTY_3": "standard",
+    "__EMPTY_4": 87500,
+    "__EMPTY_6": 150380
+  },
+  {
+    "__EMPTY": 3,
+    "__EMPTY_1": 6,
+    "__EMPTY_2": 3.4,
+    "__EMPTY_3": "premium",
+    "__EMPTY_4": 125000,
+    "__EMPTY_5": 78000,
+    "__EMPTY_6": 203000
+  },
+  {
+    "__EMPTY_3": "standard",
+    "__EMPTY_4": 115000,
+    "__EMPTY_6": 193000
+  },
+  {
+    "__EMPTY": 4,
+    "__EMPTY_1": 8,
+    "__EMPTY_2": 4.4,
+    "__EMPTY_3": "premium",
+    "__EMPTY_4": 185000,
+    "__EMPTY_6": 263000
+  },
+  {
+    "__EMPTY_3": "standard",
+    "__EMPTY_4": 175000,
+    "__EMPTY_6": 253000
+  },
+  {
+    "__EMPTY": 5,
+    "__EMPTY_1": 9,
+    "__EMPTY_2": 5,
+    "__EMPTY_3": "premium",
+    "__EMPTY_4": 220000,
+    "__EMPTY_6": 298000
+  },
+  {
+    "__EMPTY_3": "standard",
+    "__EMPTY_4": 200000,
+    "__EMPTY_6": 278000
+  },
+  {
+    "__EMPTY_1": 10,
+    "__EMPTY_3": "premium",
+    "__EMPTY_4": 235000,
+    "__EMPTY_6": 313000
+  },
+  {
+    "__EMPTY_3": "standard",
+    "__EMPTY_4": 220000,
+    "__EMPTY_6": 298000
+  },
+  {
+    "__EMPTY": 6,
+    "__EMPTY_1": 11,
+    "__EMPTY_2": 6,
+    "__EMPTY_3": "premium",
+    "__EMPTY_4": 290000,
+    "__EMPTY_6": 368000
+  },
+  {
+    "__EMPTY_3": "standard",
+    "__EMPTY_4": 270000,
+    "__EMPTY_6": 348000
+  },
+  {
+    "__EMPTY": 8,
+    "__EMPTY_1": 15,
+    "__EMPTY_2": 8,
+    "__EMPTY_3": "premium",
+    "__EMPTY_4": 358000,
+    "__EMPTY_5": "No Subsidy",
+    "__EMPTY_6": 358000
+  },
+  {
+    "__EMPTY_3": "standard",
+    "__EMPTY_4": 325000,
+    "__EMPTY_6": 325000
+  },
+  {
+    "__EMPTY": 10,
+    "__EMPTY_1": 19,
+    "__EMPTY_2": 10,
+    "__EMPTY_3": "premium",
+    "__EMPTY_4": 430000,
+    "__EMPTY_6": 430000
+  },
+  {
+    "__EMPTY_3": "standard",
+    "__EMPTY_4": 415000,
+    "__EMPTY_6": 415000
+  }
+]

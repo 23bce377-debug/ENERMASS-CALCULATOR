@@ -1,19 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { STATE_DATA } from '@/lib/data/masters';
 import { X, CheckCircle2 } from 'lucide-react';
-import type { CustomerInfo, AddressInfo, SiteInfo, SalesInfo } from '@/lib/types/quote';
+import type { CustomerInfo, AddressInfo, SiteInfo, SalesInfo, Quote } from '@/lib/types/quote';
 
 interface QuoteSaveModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSaved: (quote: Quote) => void;
 }
 
-const STEPS = ['Customer', 'Address', 'Site', 'Sales'];
+const STEPS = ['Project', 'Address', 'Site', 'Sales'];
 
-export function QuoteSaveModal({ isOpen, onClose }: QuoteSaveModalProps) {
+export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps) {
   const saveQuote = useCalculatorStore((s) => s.saveQuote);
   
   const [step, setStep] = useState(0);
@@ -24,9 +26,23 @@ export function QuoteSaveModal({ isOpen, onClose }: QuoteSaveModalProps) {
   const [customer, setCustomer] = useState<CustomerInfo>({ name: '', phone: '', whatsapp: '', email: '' });
   const [address, setAddress] = useState<AddressInfo>({ line1: '', line2: '', city: '', state: 'Gujarat', pin: '' });
   const [site, setSite] = useState<SiteInfo>({ meterNo: '', sanctionedLoad: '', monthlyBill: 0, roofType: 'RCC', roofArea: 0 });
-  const [sales, setSales] = useState<SalesInfo>({ execName: '', notes: '', saleType: 'New' });
+  const [sales, setSales] = useState<SalesInfo>({ projectTitle: '', execName: '', notes: '', saleType: 'New' });
 
-  if (!isOpen) return null;
+  // Client-side mounting for portal
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  if (!isOpen || !mounted) return null;
 
   const handleSave = () => {
     const validationError = validateQuoteBasics(customer, sales);
@@ -39,6 +55,7 @@ export function QuoteSaveModal({ isOpen, onClose }: QuoteSaveModalProps) {
       setFormError(null);
       const quote = saveQuote({ customer, address, site, sales });
       setSavedQuoteId(quote.quoteId);
+      onSaved(quote);
     } catch (err) {
       alert('Error saving quote. Please ensure a system is selected and calculations are complete.');
     }
@@ -51,7 +68,7 @@ export function QuoteSaveModal({ isOpen, onClose }: QuoteSaveModalProps) {
     onClose();
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="w-full max-w-lg bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
@@ -94,7 +111,7 @@ export function QuoteSaveModal({ isOpen, onClose }: QuoteSaveModalProps) {
                       {s}
                     </span>
                     {i < STEPS.length - 1 && (
-                      <div className={`absolute top-4 left-1/2 w-full h-[2px] -z-10 ${i < step ? 'bg-accent/40' : 'bg-border'}`} />
+                      <div className={`absolute top-4 left-1/2 w-full h-0.5 -z-10 ${i < step ? 'bg-accent/40' : 'bg-border'}`} />
                     )}
                   </div>
                 ))}
@@ -109,6 +126,7 @@ export function QuoteSaveModal({ isOpen, onClose }: QuoteSaveModalProps) {
 
               {step === 0 && (
                 <div className="space-y-4 animate-fade-in">
+                  <Input label="Project Title" value={sales.projectTitle} onChange={(v) => setSales({...sales, projectTitle: v})} required />
                   <Input label="Customer Name" value={customer.name} onChange={(v) => setCustomer({...customer, name: v})} required />
                   <Input label="Phone Number" value={customer.phone} onChange={(v) => setCustomer({...customer, phone: v})} required />
                   <Input label="WhatsApp Number" value={customer.whatsapp} onChange={(v) => setCustomer({...customer, whatsapp: v})} />
@@ -188,7 +206,7 @@ export function QuoteSaveModal({ isOpen, onClose }: QuoteSaveModalProps) {
                     <textarea 
                       value={sales.notes} 
                       onChange={(e) => setSales({...sales, notes: e.target.value})}
-                      className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent min-h-[80px]"
+                      className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent min-h-20"
                       placeholder="Special requirements or observations..."
                     />
                   </div>
@@ -232,17 +250,19 @@ export function QuoteSaveModal({ isOpen, onClose }: QuoteSaveModalProps) {
                 }} 
                 className="px-6 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background font-bold transition-colors text-sm"
               >
-                {step === 3 ? 'Save Quote' : 'Next'}
+                {step === 3 ? 'Create Quote PDF' : 'Next'}
               </button>
             </>
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
 function validateQuoteBasics(customer: CustomerInfo, sales: SalesInfo, skipSalesCheck = false): string | null {
+  if (!sales.projectTitle.trim()) return 'Project Title is required.';
   if (!customer.name.trim()) return 'Customer Name is required.';
   if (!customer.phone.trim()) return 'Phone Number is required.';
   const phoneDigits = customer.phone.replace(/\D/g, '');
@@ -267,3 +287,4 @@ function Input({ label, value, onChange, type = 'text', required }: { label: str
     </div>
   );
 }
+

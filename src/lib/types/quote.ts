@@ -41,6 +41,7 @@ export interface SiteInfo {
 }
 
 export interface SalesInfo {
+  projectTitle: string;
   execName: string;
   notes: string;
   saleType: 'New' | 'Upgrade' | 'Referral';

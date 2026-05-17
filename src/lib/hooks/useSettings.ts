@@ -17,7 +17,7 @@ export interface CompanyInfo {
   logoUrl: string; // placeholder or data-url
 }
 
-import type { PanelBrand, InverterBrand, BatteryBrand } from '../data/masters';
+import type { PanelBrand, InverterBrand, BatteryBrand, EquipmentRateOverrides } from '../data/masters';
 import type { SolarSystem } from '../data/bom';
 
 export interface CategoryMargins {
@@ -38,6 +38,7 @@ export interface AppSettings {
   customPanels: PanelBrand[];
   customInverters: InverterBrand[];
   customBatteries: BatteryBrand[];
+  currentEquipmentRates: EquipmentRateOverrides;
 }
 
 const STORAGE_KEY = 'enermass-settings';
@@ -62,6 +63,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   customPanels: [],
   customInverters: [],
   customBatteries: [],
+  currentEquipmentRates: {
+    panels: {},
+    inverters: {},
+    batteries: {},
+  },
 };
 
 // ─── Hook ───────────────────────────────────────────────────────────────────────
@@ -76,7 +82,24 @@ export function useSettings() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<AppSettings>;
-        setSettingsState({ ...DEFAULT_SETTINGS, ...parsed });
+        setSettingsState({
+          ...DEFAULT_SETTINGS,
+          ...parsed,
+          currentEquipmentRates: {
+            panels: {
+              ...DEFAULT_SETTINGS.currentEquipmentRates.panels,
+              ...(parsed.currentEquipmentRates?.panels ?? {}),
+            },
+            inverters: {
+              ...DEFAULT_SETTINGS.currentEquipmentRates.inverters,
+              ...(parsed.currentEquipmentRates?.inverters ?? {}),
+            },
+            batteries: {
+              ...DEFAULT_SETTINGS.currentEquipmentRates.batteries,
+              ...(parsed.currentEquipmentRates?.batteries ?? {}),
+            },
+          },
+        });
       }
     } catch {
       // Corrupted data — reset

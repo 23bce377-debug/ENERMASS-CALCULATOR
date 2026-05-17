@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Check, X, Sun, Cpu, Battery, Plus, Minus } from 'lucide-react';
-import { PANEL_BRANDS, INVERTER_BRANDS, BATTERY_BRANDS } from '@/lib/data/masters';
+import { Check, X, Sun, Cpu, Battery, Plus, Minus, Edit3, RotateCcw } from 'lucide-react';
+import { getActivePanelBrands, getActiveInverterBrands, getActiveBatteryBrands, PANEL_BRANDS, INVERTER_BRANDS, BATTERY_BRANDS } from '@/lib/data/masters';
 import type { PanelBrand, InverterBrand, BatteryBrand } from '@/lib/data/masters';
 import { useSettings } from '@/lib/hooks/useSettings';
 
@@ -136,9 +136,9 @@ export function EquipmentSelector({
 
   const { settings, setSettings } = useSettings();
 
-  const allPanels = useMemo(() => [...PANEL_BRANDS, ...(settings?.customPanels || [])], [settings?.customPanels]);
-  const allInverters = useMemo(() => [...INVERTER_BRANDS, ...(settings?.customInverters || [])], [settings?.customInverters]);
-  const allBatteries = useMemo(() => [...BATTERY_BRANDS, ...(settings?.customBatteries || [])], [settings?.customBatteries]);
+  const allPanels = useMemo(() => getActivePanelBrands(settings), [settings]);
+  const allInverters = useMemo(() => getActiveInverterBrands(settings), [settings]);
+  const allBatteries = useMemo(() => getActiveBatteryBrands(settings), [settings]);
 
   const selectedSolarWattage = useMemo(() => {
     const panelById = new Map(allPanels.map((panel) => [panel.id, panel]));
@@ -196,8 +196,20 @@ export function EquipmentSelector({
             onClearPanelMix={onClearPanelMix}
             range={panelRange}
             onRangeChange={setPanelRange}
-            onAdd={(brand) => setSettings({ customPanels: [...(settings?.customPanels || []), brand] })}
-            onRemove={(id) => setSettings({ customPanels: (settings?.customPanels || []).filter(p => p.id !== id) })}
+            onAdd={(brand) => setSettings({
+              customPanels: [...(settings?.customPanels || []), brand],
+              currentEquipmentRates: {
+                ...settings.currentEquipmentRates,
+                panels: { ...settings.currentEquipmentRates.panels, [brand.id]: brand.ratePerWatt },
+              },
+            })}
+            onRemove={(id) => setSettings({
+              customPanels: (settings?.customPanels || []).filter((p) => p.id !== id),
+              currentEquipmentRates: {
+                ...settings.currentEquipmentRates,
+                panels: Object.fromEntries(Object.entries(settings.currentEquipmentRates.panels).filter(([key]) => key !== id)),
+              },
+            })}
           />
         )}
         {activeTab === 'inverter' && (
@@ -209,8 +221,20 @@ export function EquipmentSelector({
             solarCapacityWattage={selectedSolarWattage}
             range={inverterRange}
             onRangeChange={setInverterRange}
-            onAdd={(brand) => setSettings({ customInverters: [...(settings?.customInverters || []), brand] })}
-            onRemove={(id) => setSettings({ customInverters: (settings?.customInverters || []).filter(i => i.id !== id) })}
+            onAdd={(brand) => setSettings({
+              customInverters: [...(settings?.customInverters || []), brand],
+              currentEquipmentRates: {
+                ...settings.currentEquipmentRates,
+                inverters: { ...settings.currentEquipmentRates.inverters, [brand.id]: brand.rate },
+              },
+            })}
+            onRemove={(id) => setSettings({
+              customInverters: (settings?.customInverters || []).filter((i) => i.id !== id),
+              currentEquipmentRates: {
+                ...settings.currentEquipmentRates,
+                inverters: Object.fromEntries(Object.entries(settings.currentEquipmentRates.inverters).filter(([key]) => key !== id)),
+              },
+            })}
           />
         )}
         {activeTab === 'battery' && (
@@ -221,8 +245,20 @@ export function EquipmentSelector({
             onClearMix={onClearBatteryMix}
             range={batteryRange}
             onRangeChange={setBatteryRange}
-            onAdd={(brand) => setSettings({ customBatteries: [...(settings?.customBatteries || []), brand] })}
-            onRemove={(id) => setSettings({ customBatteries: (settings?.customBatteries || []).filter(b => b.id !== id) })}
+            onAdd={(brand) => setSettings({
+              customBatteries: [...(settings?.customBatteries || []), brand],
+              currentEquipmentRates: {
+                ...settings.currentEquipmentRates,
+                batteries: { ...settings.currentEquipmentRates.batteries, [brand.id]: brand.rate },
+              },
+            })}
+            onRemove={(id) => setSettings({
+              customBatteries: (settings?.customBatteries || []).filter((b) => b.id !== id),
+              currentEquipmentRates: {
+                ...settings.currentEquipmentRates,
+                batteries: Object.fromEntries(Object.entries(settings.currentEquipmentRates.batteries).filter(([key]) => key !== id)),
+              },
+            })}
           />
         )}
       </div>
@@ -521,7 +557,7 @@ function PanelTable({
               <th className="text-left py-2 px-2 text-text-muted font-medium">Model</th>
               <th className="text-right py-2 px-2 text-text-muted font-medium">Wattage</th>
               <th className="text-left py-2 px-2 text-text-muted font-medium">Type</th>
-              <th className="text-right py-2 px-2 text-text-muted font-medium">₹/W</th>
+              <th className="text-right py-2 px-2 text-text-muted font-medium">₹/Panel</th>
               <th className="text-center py-2 px-2 text-text-muted font-medium">Qty</th>
               <th className="w-10"></th>
             </tr>
@@ -555,8 +591,8 @@ function PanelTable({
                       {brand.type}
                     </span>
                   </td>
-                  <td className="py-2.5 px-2 text-right font-mono text-accent font-semibold">
-                    ₹{formatRate(brand.ratePerWatt)}
+                  <td className="py-2.5 px-2" onClick={(e) => e.stopPropagation()}>
+                    <PanelRateCell brand={brand} />
                   </td>
                   <td className="py-2.5 px-2">
                     <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -889,8 +925,8 @@ function InverterTable({
                       {brand.type}
                     </span>
                   </td>
-                  <td className="py-2.5 px-2 text-right font-mono text-accent font-semibold">
-                    ₹{formatRate(brand.rate)}
+                  <td className="py-2.5 px-2" onClick={(e) => e.stopPropagation()}>
+                    <InverterRateCell brand={brand} />
                   </td>
                   <td className="py-2.5 px-2">
                     <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -1130,8 +1166,8 @@ function BatteryTable({
                       {brand.chemistry}
                     </span>
                   </td>
-                  <td className="py-2.5 px-2 text-right font-mono text-accent font-semibold">
-                    ₹{formatRate(brand.rate)}
+                  <td className="py-2.5 px-2" onClick={(e) => e.stopPropagation()}>
+                    <BatteryRateCell brand={brand} />
                   </td>
                   <td className="py-2.5 px-2">
                     <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -1263,6 +1299,270 @@ function RangeFilter({
           className="w-full px-2 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
         />
       </div>
+    </div>
+  );
+}
+
+// ─── Inline Rate Editor Cells ─────────────────────────────────────────────────
+
+function PanelRateCell({ brand }: { brand: PanelBrand }) {
+  const { settings, setSettings } = useSettings();
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+
+  const defaultBrand = PANEL_BRANDS.find((p) => p.id === brand.id);
+  const defaultRatePerWatt = defaultBrand?.ratePerWatt ?? brand.ratePerWatt;
+  const currentRatePerWatt = brand.ratePerWatt;
+  const isOverridden = settings.currentEquipmentRates.panels[brand.id] !== undefined;
+
+  // Per-panel prices
+  const defaultPanelPrice = defaultRatePerWatt * brand.wattage;
+  const currentPanelPrice = currentRatePerWatt * brand.wattage;
+
+  const handleSave = () => {
+    const panelPrice = parseFloat(editValue);
+    if (!Number.isFinite(panelPrice) || panelPrice <= 0 || brand.wattage <= 0) {
+      setEditing(false);
+      return;
+    }
+    // Convert ₹/Panel back to ₹/W for storage
+    const newRatePerWatt = panelPrice / brand.wattage;
+    setSettings({
+      currentEquipmentRates: {
+        ...settings.currentEquipmentRates,
+        panels: { ...settings.currentEquipmentRates.panels, [brand.id]: newRatePerWatt },
+      },
+    });
+    setEditing(false);
+  };
+
+  const handleReset = () => {
+    const next = { ...settings.currentEquipmentRates.panels };
+    delete next[brand.id];
+    setSettings({
+      currentEquipmentRates: { ...settings.currentEquipmentRates, panels: next },
+    });
+  };
+
+  if (editing) {
+    return (
+      <div className="flex flex-col items-end gap-0.5">
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-text-muted">₹</span>
+          <input
+            autoFocus
+            type="number"
+            step="100"
+            min="0"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false); }}
+            onBlur={handleSave}
+            className="w-20 px-1.5 py-0.5 rounded bg-background border border-accent/50 text-right text-xs font-mono text-text-primary outline-none"
+          />
+        </div>
+        {editValue && Number.isFinite(parseFloat(editValue)) && parseFloat(editValue) > 0 && brand.wattage > 0 && (
+          <span className="text-[9px] font-mono text-text-muted">
+            = ₹{(parseFloat(editValue) / brand.wattage).toFixed(2)}/W
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-1.5 group/rate">
+      <div className="flex flex-col items-end">
+        {isOverridden && (
+          <span className="text-[9px] font-mono text-text-muted line-through">₹{formatRate(defaultPanelPrice)}</span>
+        )}
+        <span className={`text-xs font-mono font-semibold ${isOverridden ? 'text-warning' : 'text-accent'}`}>
+          ₹{formatRate(currentPanelPrice)}
+        </span>
+        <span className="text-[9px] font-mono text-text-muted">
+          ₹{currentRatePerWatt.toFixed(2)}/W
+        </span>
+      </div>
+      <button
+        onClick={() => { setEditValue(String(Math.round(currentPanelPrice))); setEditing(true); }}
+        className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-accent/10 text-text-muted hover:text-accent transition-all"
+        title="Edit panel price"
+      >
+        <Edit3 size={10} />
+      </button>
+      {isOverridden && (
+        <button
+          onClick={handleReset}
+          className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-error/10 text-text-muted hover:text-error transition-all"
+          title="Reset to default"
+        >
+          <RotateCcw size={10} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function InverterRateCell({ brand }: { brand: InverterBrand }) {
+  const { settings, setSettings } = useSettings();
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+
+  const defaultBrand = INVERTER_BRANDS.find((i) => i.id === brand.id);
+  const defaultRate = defaultBrand?.rate ?? brand.rate;
+  const currentRate = brand.rate;
+  const isOverridden = settings.currentEquipmentRates.inverters[brand.id] !== undefined;
+
+  const handleSave = () => {
+    const val = parseFloat(editValue);
+    if (!Number.isFinite(val) || val <= 0) {
+      setEditing(false);
+      return;
+    }
+    setSettings({
+      currentEquipmentRates: {
+        ...settings.currentEquipmentRates,
+        inverters: { ...settings.currentEquipmentRates.inverters, [brand.id]: val },
+      },
+    });
+    setEditing(false);
+  };
+
+  const handleReset = () => {
+    const next = { ...settings.currentEquipmentRates.inverters };
+    delete next[brand.id];
+    setSettings({
+      currentEquipmentRates: { ...settings.currentEquipmentRates, inverters: next },
+    });
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center justify-end gap-1">
+        <span className="text-[10px] text-text-muted">₹</span>
+        <input
+          autoFocus
+          type="number"
+          step="100"
+          min="0"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false); }}
+          onBlur={handleSave}
+          className="w-20 px-1.5 py-0.5 rounded bg-background border border-accent/50 text-right text-xs font-mono text-text-primary outline-none"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-1.5 group/rate">
+      <div className="flex flex-col items-end">
+        {isOverridden && (
+          <span className="text-[9px] font-mono text-text-muted line-through">₹{formatRate(defaultRate)}</span>
+        )}
+        <span className={`text-xs font-mono font-semibold ${isOverridden ? 'text-warning' : 'text-accent'}`}>
+          ₹{formatRate(currentRate)}
+        </span>
+      </div>
+      <button
+        onClick={() => { setEditValue(String(currentRate)); setEditing(true); }}
+        className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-accent/10 text-text-muted hover:text-accent transition-all"
+        title="Edit rate"
+      >
+        <Edit3 size={10} />
+      </button>
+      {isOverridden && (
+        <button
+          onClick={handleReset}
+          className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-error/10 text-text-muted hover:text-error transition-all"
+          title="Reset to default"
+        >
+          <RotateCcw size={10} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function BatteryRateCell({ brand }: { brand: BatteryBrand }) {
+  const { settings, setSettings } = useSettings();
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+
+  const defaultBrand = BATTERY_BRANDS.find((b) => b.id === brand.id);
+  const defaultRate = defaultBrand?.rate ?? brand.rate;
+  const currentRate = brand.rate;
+  const isOverridden = settings.currentEquipmentRates.batteries[brand.id] !== undefined;
+
+  const handleSave = () => {
+    const val = parseFloat(editValue);
+    if (!Number.isFinite(val) || val <= 0) {
+      setEditing(false);
+      return;
+    }
+    setSettings({
+      currentEquipmentRates: {
+        ...settings.currentEquipmentRates,
+        batteries: { ...settings.currentEquipmentRates.batteries, [brand.id]: val },
+      },
+    });
+    setEditing(false);
+  };
+
+  const handleReset = () => {
+    const next = { ...settings.currentEquipmentRates.batteries };
+    delete next[brand.id];
+    setSettings({
+      currentEquipmentRates: { ...settings.currentEquipmentRates, batteries: next },
+    });
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center justify-end gap-1">
+        <span className="text-[10px] text-text-muted">₹</span>
+        <input
+          autoFocus
+          type="number"
+          step="100"
+          min="0"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false); }}
+          onBlur={handleSave}
+          className="w-20 px-1.5 py-0.5 rounded bg-background border border-accent/50 text-right text-xs font-mono text-text-primary outline-none"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-1.5 group/rate">
+      <div className="flex flex-col items-end">
+        {isOverridden && (
+          <span className="text-[9px] font-mono text-text-muted line-through">₹{formatRate(defaultRate)}</span>
+        )}
+        <span className={`text-xs font-mono font-semibold ${isOverridden ? 'text-warning' : 'text-accent'}`}>
+          ₹{formatRate(currentRate)}
+        </span>
+      </div>
+      <button
+        onClick={() => { setEditValue(String(currentRate)); setEditing(true); }}
+        className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-accent/10 text-text-muted hover:text-accent transition-all"
+        title="Edit rate"
+      >
+        <Edit3 size={10} />
+      </button>
+      {isOverridden && (
+        <button
+          onClick={handleReset}
+          className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-error/10 text-text-muted hover:text-error transition-all"
+          title="Reset to default"
+        >
+          <RotateCcw size={10} />
+        </button>
+      )}
     </div>
   );
 }

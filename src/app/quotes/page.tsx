@@ -34,6 +34,7 @@ function getQuoteShareText(quote: Quote, companyName: string): string {
   return [
     `${companyName} Solar Quote`,
     `Quote ID: ${quote.quoteId}`,
+    `Project: ${quote.sales.projectTitle || quote.systemName}`,
     `Customer: ${quote.customer.name}`,
     `System: ${quote.systemName}`,
     `Final Price: ${formatINR(calc.finalCustomerPrice)}`,
@@ -88,7 +89,7 @@ function QuoteDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/70 backdrop-blur-sm overflow-y-auto p-4 md:p-8 print:hidden">
+    <div className="fixed inset-0 z-100 flex items-start justify-center bg-black/70 backdrop-blur-sm overflow-y-auto p-4 md:p-8 print:hidden">
       <div className="w-full max-w-4xl bg-surface border border-border rounded-2xl shadow-2xl animate-fade-in print-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border print:border-gray-300">
@@ -157,6 +158,7 @@ function QuoteDetailModal({
           {/* Site & Sales */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InfoSection title="Site Details">
+              <InfoRow label="Project" value={quote.sales.projectTitle} />
               <InfoRow label="Meter No" value={quote.site.meterNo} />
               <InfoRow label="Sanctioned Load" value={quote.site.sanctionedLoad} />
               <InfoRow label="Monthly Bill" value={formatINR(quote.site.monthlyBill)} />
@@ -186,9 +188,6 @@ function QuoteDetailModal({
               <StatBox label="Cost (excl GST)" value={formatINR(calc.costBeforeGST)} />
               <StatBox label="Input GST" value={formatINR(calc.totalInputGST)} />
               <StatBox label="Cost (incl GST)" value={formatINR(calc.totalIncGST)} />
-              <StatBox label="Margin" value={`${(calc.effectiveMarginPct * 100).toFixed(1)}%`} />
-              <StatBox label="MRP (excl GST)" value={formatINR(calc.mrpExclGST)} />
-              <StatBox label="MRP (incl GST)" value={formatINR(calc.mrpInclGST)} highlight />
               <StatBox label="Discount" value={formatINR(calc.discountAmount)} />
               <StatBox label="Additional Costs" value={formatINR(calc.additionalCostTotal)} />
               <StatBox label="Final Price" value={formatINR(calc.finalCustomerPrice)} highlight />
@@ -296,6 +295,7 @@ function QuotePrintView({ quote, companyName, system }: { quote: Quote; companyN
         </div>
         <div className="text-right">
           <h2 className="text-2xl font-bold text-gray-800">{quote.quoteId}</h2>
+          <p className="text-sm text-gray-600 mt-1 font-semibold">{quote.sales.projectTitle || quote.systemName}</p>
           <p className="text-sm text-gray-600 mt-1">{new Date(quote.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
       </div>
@@ -330,8 +330,12 @@ function QuotePrintView({ quote, companyName, system }: { quote: Quote; companyN
       <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2 border-b border-gray-200 pb-1">Financial Investment</h3>
       <div className="border border-gray-300 rounded-lg overflow-hidden mb-8">
         <div className="flex justify-between p-3 border-b border-gray-200 bg-gray-50">
-          <span className="text-sm text-gray-700 font-medium">System Price (Incl. GST)</span>
-          <span className="text-sm text-gray-900 font-bold">{formatINR(calc.mrpInclGST)}</span>
+          <span className="text-sm text-gray-700 font-medium">Base Cost (Excl. GST)</span>
+          <span className="text-sm text-gray-900 font-bold">{formatINR(calc.costBeforeGST)}</span>
+        </div>
+        <div className="flex justify-between p-3 border-b border-gray-200">
+          <span className="text-sm text-gray-700 font-medium">Input GST</span>
+          <span className="text-sm text-gray-900 font-bold">{formatINR(calc.totalInputGST)}</span>
         </div>
         {calc.discountAmount > 0 && (
           <div className="flex justify-between p-3 border-b border-gray-200">
@@ -543,7 +547,7 @@ export default function QuotesPage() {
                       <td className="px-4 py-3 font-mono text-xs text-accent">{quote.quoteId}</td>
                       <td className="px-4 py-3 text-text-secondary">{quote.date}</td>
                       <td className="px-4 py-3 text-text-primary font-medium">{quote.customer.name}</td>
-                      <td className="px-4 py-3 text-text-secondary hidden md:table-cell truncate max-w-[160px]">{quote.systemName}</td>
+                      <td className="px-4 py-3 text-text-secondary hidden md:table-cell truncate max-w-40">{quote.systemName}</td>
                       <td className="px-4 py-3 text-right text-text-secondary hidden lg:table-cell">{system?.capacityKW ?? '—'} kW</td>
                       <td className="px-4 py-3 text-right font-semibold text-text-primary font-mono">{formatINR(quote.calculations.finalCustomerPrice)}</td>
                       <td className="px-4 py-3 text-center">

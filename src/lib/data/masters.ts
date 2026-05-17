@@ -241,6 +241,49 @@ export const BATTERY_BRANDS: BatteryBrand[] = [
   { id: 'amaze_5kwh_liion', brand: 'Amaze', model: 'Amaze 5kWh Li-Ion', capacityKWh: 5, chemistry: 'Li-Ion', rate: 72000, maxDischargeKW: 2.5 },
 ];
 
+export interface EquipmentRateOverrides {
+  panels: Record<string, number>;
+  inverters: Record<string, number>;
+  batteries: Record<string, number>;
+}
+
+export interface EquipmentCatalogSource {
+  customPanels?: PanelBrand[];
+  customInverters?: InverterBrand[];
+  customBatteries?: BatteryBrand[];
+  currentEquipmentRates?: EquipmentRateOverrides;
+}
+
+export const EMPTY_EQUIPMENT_RATE_OVERRIDES: EquipmentRateOverrides = {
+  panels: {},
+  inverters: {},
+  batteries: {},
+};
+
+export function getActivePanelBrands(source?: EquipmentCatalogSource): PanelBrand[] {
+  const rateOverrides = source?.currentEquipmentRates?.panels ?? {};
+  return [...PANEL_BRANDS, ...(source?.customPanels ?? [])].map((panel) => ({
+    ...panel,
+    ratePerWatt: rateOverrides[panel.id] ?? panel.ratePerWatt,
+  }));
+}
+
+export function getActiveInverterBrands(source?: EquipmentCatalogSource): InverterBrand[] {
+  const rateOverrides = source?.currentEquipmentRates?.inverters ?? {};
+  return [...INVERTER_BRANDS, ...(source?.customInverters ?? [])].map((inverter) => ({
+    ...inverter,
+    rate: rateOverrides[inverter.id] ?? inverter.rate,
+  }));
+}
+
+export function getActiveBatteryBrands(source?: EquipmentCatalogSource): BatteryBrand[] {
+  const rateOverrides = source?.currentEquipmentRates?.batteries ?? {};
+  return [...BATTERY_BRANDS, ...(source?.customBatteries ?? [])].map((battery) => ({
+    ...battery,
+    rate: rateOverrides[battery.id] ?? battery.rate,
+  }));
+}
+
 export interface PricingRef {
   capacityKW: number;
   panels: number;

@@ -3,7 +3,7 @@
 import { useMemo, useState, useCallback } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
-import { STATE_DATA, BATTERY_BRANDS } from '@/lib/data/masters';
+import { STATE_DATA, getActiveBatteryBrands } from '@/lib/data/masters';
 import { formatINR } from '@/lib/engine/calculator';
 import { useSettings } from '@/lib/hooks/useSettings';
 
@@ -39,10 +39,7 @@ export function EnergyCard() {
     }
   }, [localSlider, setBackupLoadW]);
 
-  const allBatteries = useMemo(
-    () => [...BATTERY_BRANDS, ...(settings.customBatteries ?? [])],
-    [settings.customBatteries],
-  );
+  const allBatteries = useMemo(() => getActiveBatteryBrands(settings), [settings]);
 
   const totalBatteryCapacityKWh = useMemo(() => {
     const batteryById = new Map(allBatteries.map((battery) => [battery.id, battery]));
@@ -270,7 +267,7 @@ export function EnergyCard() {
 
 function InfoBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex-1 min-w-[80px]">
+    <div className="flex-1 min-w-20">
       <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">{label}</div>
       <div className="text-xs font-semibold text-text-primary">{value}</div>
     </div>
