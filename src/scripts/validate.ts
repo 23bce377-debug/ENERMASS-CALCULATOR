@@ -12,6 +12,7 @@ const result = calculateSystem({
   systemId: '3kwp',
   state: 'Gujarat',
   projectType: 'residential',
+  targetMarginPct: 0.25,
 });
 
 console.log('System: 3.1 KWp On-Grid (3kwp)');

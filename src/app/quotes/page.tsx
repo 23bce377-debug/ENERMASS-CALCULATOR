@@ -13,6 +13,7 @@ import {
   Mail, MessageCircle,
 } from 'lucide-react';
 import { QuotePDF } from '@/components/print/QuotePDF';
+import { useConfirm } from '@/components/ui/Confirm';
 
 // ─── Status Config ──────────────────────────────────────────────────────────────
 
@@ -270,6 +271,7 @@ export default function QuotesPage() {
   const loadQuote = useCalculatorStore((s) => s.loadQuote);
   const duplicateQuote = useCalculatorStore((s) => s.duplicateQuote);
   const { settings } = useSettings();
+  const confirm = useConfirm();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<Quote['status'] | 'All'>('All');
@@ -310,8 +312,15 @@ export default function QuotesPage() {
     useCalculatorStore.setState({ quotes: updated });
   };
 
-  const deleteQuote = (quoteId: string) => {
-    if (!confirm('Delete this quote permanently?')) return;
+  const deleteQuote = async (quoteId: string) => {
+    const confirmed = await confirm({
+      title: 'Delete Quote Permanently?',
+      message: 'Are you sure you want to delete this quote? This action is permanent and cannot be undone.',
+      confirmLabel: 'Delete Quote',
+      cancelLabel: 'Keep Quote',
+      type: 'danger',
+    });
+    if (!confirmed) return;
     const store = useCalculatorStore.getState();
     useCalculatorStore.setState({ quotes: store.quotes.filter((q) => q.quoteId !== quoteId) });
     if (selectedQuote?.quoteId === quoteId) {

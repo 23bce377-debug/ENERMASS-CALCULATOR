@@ -18,6 +18,7 @@ import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { formatINR, type LineResult } from '@/lib/engine/calculator';
 import { getActivePanelBrands } from '@/lib/data/masters';
 import { useSettings } from '@/lib/hooks/useSettings';
+import { useToast } from '@/components/ui/Toast';
 
 // ─── BOM Row Grouping ───────────────────────────────────────────────────────────
 
@@ -165,6 +166,7 @@ interface BOMRowProps {
   onOverrideGst: (index: number, gst: number) => void;
   onClearOverride: (index: number) => void;
   onRemoveCustomItem: (index: number) => void;
+  onToggleItemSelection: (index: number) => void;
   isPanelInteractive?: boolean;
   panelExpanded?: boolean;
   onTogglePanelDetails?: () => void;
@@ -177,36 +179,55 @@ const BOMRow = memo(function BOMRow({
   onOverrideGst,
   onClearOverride,
   onRemoveCustomItem,
+  onToggleItemSelection,
   isPanelInteractive = false,
   panelExpanded = false,
   onTogglePanelDetails,
 }: BOMRowProps) {
-  const isZeroQty = line.effectiveQty === 0;
-  const dimClass = isZeroQty ? 'opacity-40' : '';
+  const isMandatory = line.description.toUpperCase() === 'PANEL' || line.description.toUpperCase() === 'INVERTER';
+  const isDimmed = line.isDisabled;
+  const dimClass = isDimmed ? 'opacity-35' : '';
 
   return (
     <tr className={`border-b border-border/30 group transition-colors hover:bg-surface-hover ${dimClass}
       ${line.isOverridden ? 'border-l-2 border-l-warning/60' : ''}`}>
       {/* # */}
       <td className="py-2 px-2 text-center text-text-muted text-xs">
-        <span className="flex items-center justify-center gap-1">
-          {line.isOverridden && (
-            <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block" title="Overridden" />
-          )}
-          {line.index + 1}
-        </span>
+        <div className="flex items-center justify-center gap-2">
+          <input
+            type="checkbox"
+            checked={isMandatory ? true : !line.isDisabled}
+            disabled={isMandatory}
+            onChange={() => {
+              if (!isMandatory) {
+                onToggleItemSelection(line.index);
+              }
+            }}
+            className={`w-3.5 h-3.5 rounded border border-border bg-surface text-accent focus:ring-accent/30 focus:ring-offset-0 focus:ring-1 transition-all ${
+              isMandatory ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+            }`}
+            title={isMandatory ? 'Mandatory Item' : 'Toggle item selection'}
+          />
+          <span className="flex items-center gap-1 min-w-[14px] justify-center">
+            {line.isOverridden && (
+              <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block" title="Overridden" />
+            )}
+            {line.index + 1}
+          </span>
+        </div>
       </td>
 
       {/* Description */}
-      <td className="py-2 px-2 text-xs font-medium text-text-primary whitespace-nowrap">
+      <td className={`py-2 px-2 text-xs font-medium whitespace-nowrap ${line.isDisabled ? 'line-through text-text-muted' : 'text-text-primary'}`}>
         {isPanelInteractive ? (
           <button
             onClick={onTogglePanelDetails}
-            className="inline-flex items-center gap-1.5 hover:text-accent transition-colors"
+            className="inline-flex items-center gap-1.5 hover:text-accent transition-colors disabled:pointer-events-none"
             title="Show selected panel details"
+            disabled={line.isDisabled}
           >
             {panelExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            <span>{line.description}</span>
+            <span className={line.isDisabled ? 'line-through' : ''}>{line.description}</span>
           </button>
         ) : (
           line.description
@@ -214,54 +235,99 @@ const BOMRow = memo(function BOMRow({
       </td>
 
       {/* Remarks */}
-      <td className="py-2 px-2 text-xs text-text-muted whitespace-nowrap">
+      <td className={`py-2 px-2 text-xs text-text-muted whitespace-nowrap ${line.isDisabled ? 'line-through' : ''}`}>
         {line.remarks || '–'}
       </td>
 
       {/* Unit */}
-      <td className="py-2 px-2 text-xs text-text-muted text-center">
+      <td className={`py-2 px-2 text-xs text-text-muted text-center ${line.isDisabled ? 'line-through' : ''}`}>
         {line.unit || 'Nos'}
       </td>
 
       {/* Qty — editable */}
       <td className="py-1 px-1 w-18">
-        <InlineCell
-          value={line.effectiveQty}
-          onCommit={(v) => onOverrideQty(line.index, v)}
-        />
+        {line.isDisabled ? (
+          <div className="w-full text-right font-mono text-xs text-text-muted px-1.5 py-0.5 line-through">
+            {line.effectiveQty}
+          </div>
+        ) : (
+          <InlineCell
+            value={line.effectiveQty}
+            onCommit={(v) => onOverrideQty(line.index, v)}
+          />
+        )}
       </td>
 
       {/* Rate/Unit — editable */}
       <td className="py-1 px-1 w-22.5">
-        <InlineCell
-          value={line.effectiveRate}
-          onCommit={(v) => onOverrideRate(line.index, v)}
-          isRate
-        />
+        {line.isDisabled ? (
+          <div className="w-full text-right font-mono text-xs text-text-muted px-1.5 py-0.5 line-through">
+            {`₹${new Intl.NumberFormat('en-IN').format(line.effectiveRate)}`}
+          </div>
+        ) : (
+          <InlineCell
+            value={line.effectiveRate}
+            onCommit={(v) => onOverrideRate(line.index, v)}
+            isRate
+          />
+        )}
       </td>
 
       {/* Total */}
-      <td className="py-2 px-2 text-xs font-mono text-right text-text-primary">
-        {formatINR(line.lineTotal)}
+      <td className={`py-2 px-2 text-xs font-mono text-right ${line.isDisabled ? 'text-text-muted font-normal' : 'text-text-primary'}`}>
+        {line.isDisabled ? (
+          <span>
+            <span className="line-through text-text-muted mr-1.5 opacity-60">
+              {formatINR(line.effectiveQty * line.effectiveRate)}
+            </span>
+            <span>₹0</span>
+          </span>
+        ) : (
+          formatINR(line.lineTotal)
+        )}
       </td>
 
       {/* GST % — editable */}
       <td className="py-1 px-1 w-15">
-        <InlineCell
-          value={line.effectiveGstPct * 100}
-          onCommit={(v) => onOverrideGst(line.index, v / 100)}
-          format={(v) => `${v}%`}
-        />
+        {line.isDisabled ? (
+          <div className="w-full text-right font-mono text-xs text-text-muted px-1.5 py-0.5 line-through">
+            {`${line.effectiveGstPct * 100}%`}
+          </div>
+        ) : (
+          <InlineCell
+            value={line.effectiveGstPct * 100}
+            onCommit={(v) => onOverrideGst(line.index, v / 100)}
+            format={(v) => `${v}%`}
+          />
+        )}
       </td>
 
       {/* GST Amt */}
-      <td className="py-2 px-2 text-xs font-mono text-right text-text-muted">
-        {formatINR(line.lineGST)}
+      <td className={`py-2 px-2 text-xs font-mono text-right ${line.isDisabled ? 'text-text-muted font-normal' : 'text-text-muted'}`}>
+        {line.isDisabled ? (
+          <span>
+            <span className="line-through text-text-muted mr-1.5 opacity-60">
+              {formatINR(line.effectiveQty * line.effectiveRate * line.effectiveGstPct)}
+            </span>
+            <span>₹0</span>
+          </span>
+        ) : (
+          formatINR(line.lineGST)
+        )}
       </td>
 
       {/* SubTotal */}
-      <td className="py-2 px-2 text-xs font-mono text-right font-semibold text-text-primary">
-        {formatINR(line.lineSubTotal)}
+      <td className={`py-2 px-2 text-xs font-mono text-right font-semibold ${line.isDisabled ? 'text-text-muted font-normal' : 'text-text-primary'}`}>
+        {line.isDisabled ? (
+          <span>
+            <span className="line-through text-text-muted mr-1.5 opacity-60 font-normal">
+              {formatINR(line.effectiveQty * line.effectiveRate * (1 + line.effectiveGstPct))}
+            </span>
+            <span>₹0</span>
+          </span>
+        ) : (
+          formatINR(line.lineSubTotal)
+        )}
       </td>
 
       <td className="py-2 px-2 text-center w-8">
@@ -512,10 +578,12 @@ export function BOMTable() {
   const clearRowOverride = useCalculatorStore((s) => s.clearRowOverride);
   const setMarginOverride = useCalculatorStore((s) => s.setMarginOverride);
   const removeCustomItem = useCalculatorStore((s) => s.removeCustomItem);
+  const toggleItemSelection = useCalculatorStore((s) => s.toggleItemSelection);
   const dcCableLengthM = useCalculatorStore((s) => s.dcCableLengthM);
   const acCableLengthM = useCalculatorStore((s) => s.acCableLengthM);
   const setCableLengths = useCalculatorStore((s) => s.setCableLengths);
   const { settings } = useSettings();
+  const { toast } = useToast();
 
   // Collapsed groups
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -678,6 +746,7 @@ export function BOMTable() {
                             onOverrideGst={handleOverrideGst}
                             onClearOverride={clearRowOverride}
                             onRemoveCustomItem={removeCustomItem}
+                            onToggleItemSelection={toggleItemSelection}
                             isPanelInteractive={isPanelLine}
                             panelExpanded={isPanelExpanded}
                             onTogglePanelDetails={
@@ -752,7 +821,7 @@ export function BOMTable() {
                       const descNormalized = newItemDesc.trim().toLowerCase();
                       if (!descNormalized) { setIsAddingItem(false); return; }
                       const hasDuplicate = calcResult.lines.some((line) => line.description.trim().toLowerCase() === descNormalized);
-                      if (hasDuplicate) return alert('An item with the same description already exists.');
+                      if (hasDuplicate) return toast('An item with the same description already exists.', 'error');
                       const qty = parseFloat(newItemQty) || 0;
                       const rate = parseFloat(newItemRate) || 0;
                       const gstRaw = parseFloat(newItemGst) / 100;

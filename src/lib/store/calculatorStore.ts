@@ -47,6 +47,7 @@ export interface Variant {
   systemId: string;
   overrides: Record<number, RowOverride>;
   customItems: BomItem[];
+  disabledItemIndices?: Record<number, boolean>;
   targetMarginPct?: number;
   additionalCosts: AdditionalCost[];
   discountType: DiscountType;
@@ -79,6 +80,7 @@ export interface CalculatorState {
   overrides: Record<number, RowOverride>;
   customItems: BomItem[];
   rateMaster: RateMaster;
+  disabledItemIndices: Record<number, boolean>;
   additionalCosts: AdditionalCost[];
   discountType: DiscountType;
   discountVal: number;
@@ -118,6 +120,7 @@ export interface CalculatorState {
   addCustomItem: (item: BomItem) => void;
   removeCustomItem: (index: number) => void;
   setRateMaster: (desc: string, rate: number, active: boolean) => void;
+  toggleItemSelection: (index: number) => void;
   addAdditionalCost: (cost: Omit<AdditionalCost, 'id'>) => void;
   removeAdditionalCost: (id: string) => void;
   setDiscount: (type: DiscountType, val: number) => void;
@@ -157,6 +160,7 @@ const INITIAL_STATE = {
   overrides: {} as Record<number, RowOverride>,
   customItems: [] as BomItem[],
   rateMaster: {} as RateMaster,
+  disabledItemIndices: {} as Record<number, boolean>,
   additionalCosts: [] as AdditionalCost[],
   discountType: 'none' as DiscountType,
   discountVal: 0,
@@ -186,7 +190,12 @@ const INITIAL_STATE = {
 
 /** Generate a short random ID for internal entities */
 function randomId(): string {
-  return Math.random().toString(36).substring(2, 10);
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let id = '';
+  for (let i = 0; i < 8; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
 }
 
 function getCustomSystemsFromSettings(): SolarSystem[] {
@@ -404,6 +413,7 @@ function runCalculation(state: CalculatorState): {
       targetMarginPct: state.targetMarginPct ?? undefined,
       overrides: state.overrides,
       rateMaster: state.rateMaster,
+      disabledItemIndices: state.disabledItemIndices,
       discountType: state.discountType,
       discountVal: state.discountVal,
       additionalCosts: state.additionalCosts,
@@ -479,7 +489,8 @@ export const useCalculatorStore = create<CalculatorState>()(
           // Find a panel matching the system's default wattage
           const matchingPanel = allPanels.find(
             (p: { wattage: number }) => p.wattage === system.panelWattage,
-          );
+          ) || allPanels[0];
+          
           if (matchingPanel) {
             newPanelMix[matchingPanel.id] = system.panelQty;
             newSelectedPanelId = matchingPanel.id;
@@ -531,6 +542,7 @@ export const useCalculatorStore = create<CalculatorState>()(
         set({
           selectedSystemId: id,
           overrides: {},
+          disabledItemIndices: {},
           panelMix: newPanelMix,
           selectedPanelId: newSelectedPanelId,
           selectedInverterMix: newInverterMix,
@@ -600,6 +612,18 @@ export const useCalculatorStore = create<CalculatorState>()(
             [desc]: { rate, active },
           },
         });
+        get().recalculate();
+      },
+
+      toggleItemSelection: (index: number) => {
+        const current = get().disabledItemIndices;
+        const next = { ...current };
+        if (next[index]) {
+          delete next[index];
+        } else {
+          next[index] = true;
+        }
+        set({ disabledItemIndices: next });
         get().recalculate();
       },
 
@@ -737,6 +761,7 @@ export const useCalculatorStore = create<CalculatorState>()(
           systemId: state.selectedSystemId,
           overrides: { ...state.overrides },
           customItems: [...state.customItems],
+          disabledItemIndices: { ...state.disabledItemIndices },
           targetMarginPct: state.targetMarginPct ?? undefined,
           additionalCosts: [...state.additionalCosts],
           discountType: state.discountType,
@@ -770,6 +795,7 @@ export const useCalculatorStore = create<CalculatorState>()(
           selectedSystemId: variant.systemId,
           overrides: { ...variant.overrides },
           customItems: [...variant.customItems],
+          disabledItemIndices: { ...variant.disabledItemIndices },
           targetMarginPct: variant.targetMarginPct ?? null,
           additionalCosts: [...variant.additionalCosts],
           discountType: variant.discountType,
@@ -855,6 +881,7 @@ export const useCalculatorStore = create<CalculatorState>()(
           discountVal: state.discountVal,
           overrides: { ...state.overrides },
           customItems: [...state.customItems],
+          disabledItemIndices: { ...state.disabledItemIndices },
           targetMarginPct: state.targetMarginPct ?? undefined,
 
           calculations: { ...state.calcResult },
@@ -910,6 +937,7 @@ export const useCalculatorStore = create<CalculatorState>()(
           targetMarginPct: quote.targetMarginPct ?? null,
           overrides: { ...quote.overrides },
           customItems: [...(quote.customItems ?? [])],
+          disabledItemIndices: { ...(quote.disabledItemIndices ?? {}) },
           additionalCosts: [...quote.additionalCosts],
           discountType: quote.discountType,
           discountVal: quote.discountVal,
@@ -953,6 +981,7 @@ export const useCalculatorStore = create<CalculatorState>()(
         targetMarginPct: state.targetMarginPct,
         overrides: state.overrides,
         rateMaster: state.rateMaster,
+        disabledItemIndices: state.disabledItemIndices,
         additionalCosts: state.additionalCosts,
         discountType: state.discountType,
         discountVal: state.discountVal,

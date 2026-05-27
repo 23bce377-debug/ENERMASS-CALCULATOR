@@ -102,6 +102,7 @@ export interface Quote {
   overrides: Record<number, RowOverride>;
   targetMarginPct?: number;
   customItems?: import('../data/bom').BomItem[];
+  disabledItemIndices?: Record<number, boolean>;
 
   // Frozen calculation snapshot at quote creation
   calculations: CalcResult;

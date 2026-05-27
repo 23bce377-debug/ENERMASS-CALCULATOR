@@ -145,7 +145,7 @@ function PresetManager() {
 
     const newPreset = {
       ...baseSystem,
-      id: `preset_${Date.now()}`,
+      id: `preset_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       name: name.trim(),
       defaultEquipment: {
         panelMix: { ...panelMix },

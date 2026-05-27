@@ -38,6 +38,7 @@ export interface CalcInput {
   gstOnOutput?: number;
   overrides?: Record<number, RowOverride>;
   rateMaster?: RateMaster;
+  disabledItemIndices?: Record<number, boolean>;
   discountType?: DiscountType;
   discountVal?: number;
   additionalCosts?: AdditionalCost[];
@@ -74,6 +75,7 @@ export interface LineResult {
   isOverridden: boolean;
   isCustomItem?: boolean;
   customItemIndex?: number;
+  isDisabled?: boolean;
 }
 
 export interface CalcResult {
@@ -126,6 +128,19 @@ const BATTERY_KEY = 'BATTERY';
 // ─── Rate Resolution ────────────────────────────────────────────────────────────
 
 /**
+ * Helper to perform case-insensitive lookup in RateMaster.
+ */
+export function getMasterEntry(description: string, rateMaster?: RateMaster) {
+  if (!rateMaster) return undefined;
+  const target = description.toUpperCase();
+  // Exact match first
+  if (rateMaster[description]) return rateMaster[description];
+  // Case-insensitive key match
+  const matchKey = Object.keys(rateMaster).find(k => k.toUpperCase() === target);
+  return matchKey ? rateMaster[matchKey] : undefined;
+}
+
+/**
  * Resolve the effective rate for a BOM item.
  *
  * Priority chain (first non-undefined wins):
@@ -152,7 +167,7 @@ export function resolveRate(
   }
 
   // 2. Rate master
-  const masterEntry = rateMaster?.[item.description];
+  const masterEntry = getMasterEntry(item.description, rateMaster);
   if (masterEntry && masterEntry.active && masterEntry.rate > 0) {
     return masterEntry.rate;
   }
@@ -248,6 +263,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const allItems = [...system.items, ...(input.customItems || [])];
   const lines: LineResult[] = allItems.map((item, index) => {
     const rowOverride = input.overrides?.[index];
+    const isDisabled = input.disabledItemIndices?.[index] === true;
 
     // Resolve effective values
     const effectiveQty =
@@ -279,12 +295,13 @@ export function calculateSystem(input: CalcInput): CalcResult {
     const effectiveGstPct =
       rowOverride?.gstPct !== undefined ? rowOverride.gstPct : item.gstPct;
 
-    // Compute line totals — NO rounding
-    const lineTotal = effectiveQty * effectiveRate;
-    const lineGST = lineTotal * effectiveGstPct;
+    // Compute line totals — NO rounding (set to 0 if item is unchecked/disabled)
+    const lineTotal = isDisabled ? 0 : effectiveQty * effectiveRate;
+    const lineGST = isDisabled ? 0 : lineTotal * effectiveGstPct;
     const lineSubTotal = lineTotal + lineGST;
 
     // Determine if anything was overridden
+    const masterEntry = getMasterEntry(item.description, input.rateMaster);
     const isOverridden =
       rowOverride?.qty !== undefined ||
       rowOverride?.ratePerUnit !== undefined ||
@@ -296,7 +313,9 @@ export function calculateSystem(input: CalcInput): CalcResult {
         (input.inverterRateOverride !== undefined || input.inverterQtyOverride !== undefined)) ||
       (item.description.toUpperCase() === BATTERY_KEY &&
         (input.batteryRateOverride !== undefined || input.batteryQtyOverride !== undefined)) ||
-      (input.rateMaster?.[item.description]?.active === true) ||
+      (item.description.toUpperCase() === 'DC CABLE' && input.dcCableLengthM !== undefined) ||
+      (item.description.toUpperCase() === 'AC CABLE' && input.acCableLengthM !== undefined) ||
+      (masterEntry?.active === true) ||
       false;
 
     const isCustomItem = index >= system.items.length;
@@ -316,6 +335,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
       isOverridden,
       isCustomItem,
       customItemIndex,
+      isDisabled,
     };
   });
 

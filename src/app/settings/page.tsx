@@ -5,17 +5,11 @@ import Link from 'next/link';
 import { useSettings, type CategoryMargins } from '@/lib/hooks/useSettings';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { useToast } from '@/components/ui/Toast';
-import {
-  STATE_DATA,
-  getActivePanelBrands,
-  getActiveInverterBrands,
-  getActiveBatteryBrands,
-  EMPTY_EQUIPMENT_RATE_OVERRIDES,
-} from '@/lib/data/masters';
-import { SYSTEMS, type SolarSystem } from '@/lib/data/bom';
+import { useConfirm } from '@/components/ui/Confirm';
+import { STATE_DATA } from '@/lib/data/masters';
 import {
   Settings as SettingsIcon, MapPin, Percent, Zap, Building2,
-  Download, Upload, RotateCcw, Check, AlertCircle, ChevronDown, Image, Sun, Moon
+  Download, Upload, RotateCcw, Check, ChevronDown, Sun, Moon
 } from 'lucide-react';
 
 // ─── Section Wrapper ────────────────────────────────────────────────────────────
@@ -28,61 +22,6 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
         {title}
       </h2>
       {children}
-    </div>
-  );
-}
-
-function EquipmentRateTable({
-  title,
-  rows,
-  onChange,
-}: {
-  title: string;
-  rows: Array<{ id: string; label: string; defaultRate: number; currentRate: number; suffix: string }>;
-  onChange: (id: string, value: string) => void;
-}) {
-  return (
-    <div className="rounded-xl border border-border overflow-hidden bg-background/30">
-      <div className="px-4 py-3 border-b border-border bg-surface-hover/40">
-        <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-xs uppercase tracking-wider text-text-muted">
-              <th className="px-4 py-3 text-left font-semibold">Component</th>
-              <th className="px-4 py-3 text-right font-semibold">Default</th>
-              <th className="px-4 py-3 text-right font-semibold">Current</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id} className="border-b border-border/60 last:border-0">
-                <td className="px-4 py-3 text-text-primary">
-                  <div className="font-medium">{row.label}</div>
-                  <div className="text-[11px] text-text-muted">{row.suffix === '₹/W' ? 'Rate per watt' : 'Item price'}</div>
-                </td>
-                <td className="px-4 py-3 text-right text-text-secondary font-mono">
-                  {row.suffix === '₹/W' ? `₹${row.defaultRate.toFixed(2)}` : `₹${row.defaultRate.toFixed(0)}`}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <input
-                      type="number"
-                      value={row.currentRate}
-                      min={0}
-                      step={row.suffix === '₹/W' ? 0.1 : 1}
-                      onChange={(e) => onChange(row.id, e.target.value)}
-                      className="w-32 px-3 py-2 rounded-lg bg-background border border-border text-sm text-right font-mono text-text-primary outline-none focus:border-accent/50"
-                    />
-                    <span className="text-xs text-text-muted w-10 text-left">{row.suffix}</span>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
@@ -111,24 +50,14 @@ const CATEGORY_LABELS: Record<keyof CategoryMargins, string> = {
 
 export default function SettingsPage() {
   const {
-    settings, loaded, setSettings, resetSettings, exportData, importData, DEFAULT_SETTINGS,
+    settings, loaded, setSettings, resetSettings, exportData, importData,
   } = useSettings();
   const { theme, setTheme } = useTheme();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [saveFlash, setSaveFlash] = useState(false);
-  const [customSystemError, setCustomSystemError] = useState<string | null>(null);
-  const [customSystemDraft, setCustomSystemDraft] = useState({
-    name: '',
-    baseSystemId: SYSTEMS[0]?.id ?? '',
-    category: 'on-grid' as SolarSystem['category'],
-    capacityKW: '',
-    panelWattage: '',
-    panelQty: '',
-    targetMarginPct: '20',
-  });
   const { toast } = useToast();
+  const confirm = useConfirm();
 
   if (!loaded) {
     return (
@@ -143,36 +72,6 @@ export default function SettingsPage() {
   const flash = () => {
     setSaveFlash(true);
     setTimeout(() => setSaveFlash(false), 1500);
-  };
-
-  const customSystems = settings.customSystems ?? [];
-  const panelCatalog = getActivePanelBrands(settings);
-  const inverterCatalog = getActiveInverterBrands(settings);
-  const batteryCatalog = getActiveBatteryBrands(settings);
-
-  const updateEquipmentRate = (
-    category: 'panels' | 'inverters' | 'batteries',
-    id: string,
-    value: string,
-  ) => {
-    const nextRate = parseFloat(value);
-    if (!Number.isFinite(nextRate) || nextRate < 0) return;
-
-    setSettings({
-      currentEquipmentRates: {
-        ...settings.currentEquipmentRates,
-        [category]: {
-          ...settings.currentEquipmentRates[category],
-          [id]: nextRate,
-        },
-      },
-    });
-    flash();
-  };
-
-  const resetEquipmentRates = () => {
-    setSettings({ currentEquipmentRates: EMPTY_EQUIPMENT_RATE_OVERRIDES });
-    flash();
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -196,57 +95,6 @@ export default function SettingsPage() {
         [key]: num / 100,
       },
     });
-    flash();
-  };
-
-  const handleAddCustomSystem = () => {
-    const name = customSystemDraft.name.trim();
-    const capacityKW = parseFloat(customSystemDraft.capacityKW);
-    const panelWattage = parseInt(customSystemDraft.panelWattage, 10);
-    const panelQty = parseInt(customSystemDraft.panelQty, 10);
-    const targetMarginPct = parseFloat(customSystemDraft.targetMarginPct);
-    const template = SYSTEMS.find((s) => s.id === customSystemDraft.baseSystemId);
-
-    if (!name) return setCustomSystemError('System name is required.');
-    if (!template) return setCustomSystemError('Please choose a valid base template.');
-    if (!Number.isFinite(capacityKW) || capacityKW <= 0) return setCustomSystemError('Capacity must be greater than 0.');
-    if (!Number.isFinite(panelWattage) || panelWattage <= 0) return setCustomSystemError('Panel wattage must be greater than 0.');
-    if (!Number.isFinite(panelQty) || panelQty <= 0) return setCustomSystemError('Panel quantity must be greater than 0.');
-    if (!Number.isFinite(targetMarginPct) || targetMarginPct < 0) return setCustomSystemError('Target margin must be 0 or higher.');
-
-    const items = template.items.map((item) =>
-      item.description.toUpperCase() === 'PANEL'
-        ? { ...item, qty: panelQty }
-        : { ...item },
-    );
-
-    const customSystem: SolarSystem = {
-      id: `custom_sys_${Date.now()}`,
-      name,
-      category: customSystemDraft.category,
-      capacityKW,
-      panelWattage,
-      panelQty,
-      targetMarginPct: targetMarginPct / 100,
-      items,
-    };
-
-    setSettings({ customSystems: [...customSystems, customSystem] });
-    setCustomSystemError(null);
-    setCustomSystemDraft({
-      name: '',
-      baseSystemId: SYSTEMS[0]?.id ?? '',
-      category: 'on-grid',
-      capacityKW: '',
-      panelWattage: '',
-      panelQty: '',
-      targetMarginPct: '20',
-    });
-    flash();
-  };
-
-  const removeCustomSystem = (id: string) => {
-    setSettings({ customSystems: customSystems.filter((sys) => sys.id !== id) });
     flash();
   };
 
@@ -358,58 +206,18 @@ export default function SettingsPage() {
       </Section>
 
       {/* Equipment Rates */}
-      <Section title="Equipment Rates" icon={<Image size={18} />}>
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <p className="text-sm text-text-muted">
-            Edit the current selling rate for each component. The default rate stays visible for comparison.
-          </p>
-          <button
-            onClick={resetEquipmentRates}
-            className="shrink-0 px-3 py-2 rounded-lg border border-border text-xs font-semibold text-text-secondary hover:text-error hover:border-error/30 transition-colors"
-          >
-            Reset Current Rates
-          </button>
+      <Section title="Equipment Rates" icon={<Zap size={18} />}>
+        <div className="p-4 rounded-xl border border-dashed border-accent/30 bg-accent/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-accent mb-1">Adjust Equipment Rates</h3>
+            <p className="text-xs text-text-muted">
+              Individual solar panel, inverter, and battery brand rates have migrated to their own dedicated tab inside the Rate Master page.
+            </p>
+          </div>
+          <Link href="/rate-master" className="shrink-0 px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background text-sm font-semibold transition-colors">
+            Go to Rate Master
+          </Link>
         </div>
-
-        <EquipmentRateTable
-          title="Panels"
-          rows={panelCatalog.map((panel) => ({
-            id: panel.id,
-            label: `${panel.brand} ${panel.model}`,
-            defaultRate: panel.ratePerWatt,
-            currentRate: settings.currentEquipmentRates.panels[panel.id] ?? panel.ratePerWatt,
-            suffix: '₹/W',
-          }))}
-          onChange={(id, value) => updateEquipmentRate('panels', id, value)}
-        />
-
-        <div className="h-4" />
-
-        <EquipmentRateTable
-          title="Inverters"
-          rows={inverterCatalog.map((inverter) => ({
-            id: inverter.id,
-            label: `${inverter.brand} ${inverter.model}`,
-            defaultRate: inverter.rate,
-            currentRate: settings.currentEquipmentRates.inverters[inverter.id] ?? inverter.rate,
-            suffix: '₹',
-          }))}
-          onChange={(id, value) => updateEquipmentRate('inverters', id, value)}
-        />
-
-        <div className="h-4" />
-
-        <EquipmentRateTable
-          title="Batteries"
-          rows={batteryCatalog.map((battery) => ({
-            id: battery.id,
-            label: `${battery.brand} ${battery.model}`,
-            defaultRate: battery.rate,
-            currentRate: settings.currentEquipmentRates.batteries[battery.id] ?? battery.rate,
-            suffix: '₹',
-          }))}
-          onChange={(id, value) => updateEquipmentRate('batteries', id, value)}
-        />
       </Section>
 
       {/* Company Info */}
@@ -484,8 +292,15 @@ export default function SettingsPage() {
           <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
 
           <button
-            onClick={() => {
-              if (window.confirm('Are you sure you want to reset all settings to defaults? This action cannot be undone.')) {
+            onClick={async () => {
+              const confirmed = await confirm({
+                title: 'Reset Settings to Default?',
+                message: 'Are you sure you want to reset all global application configurations and company information to baseline system defaults? This action cannot be undone.',
+                confirmLabel: 'Reset Settings',
+                cancelLabel: 'Keep Current Settings',
+                type: 'danger',
+              });
+              if (confirmed) {
                 resetSettings();
                 toast('Settings reset to defaults', 'success');
                 flash();

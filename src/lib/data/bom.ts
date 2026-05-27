@@ -255,7 +255,7 @@ export const SYSTEMS: SolarSystem[] = [
     ],
   },
   {
-    id: '4kwp',
+    id: '4.96kwp',
     name: '4.96 KWp On-Grid',
     category: 'on-grid',
     capacityKW: 4.96,
@@ -293,7 +293,7 @@ export const SYSTEMS: SolarSystem[] = [
     ],
   },
   {
-    id: '5kwp',
+    id: '4.96kwp-std',
     name: '4.96 KWp On-Grid (Std)',
     category: 'on-grid',
     capacityKW: 4.96,
@@ -369,7 +369,7 @@ export const SYSTEMS: SolarSystem[] = [
     ],
   },
   {
-    id: '8kwp',
+    id: '5.58kwp',
     name: '5.58 KWp On-Grid',
     category: 'on-grid',
     capacityKW: 5.58,

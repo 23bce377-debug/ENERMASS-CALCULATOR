@@ -212,12 +212,15 @@ export function Header({ contextLabel = 'System', contextValue, quoteCount = 0 }
 
       {/* Right: Quote counter + branding */}
       <div className="flex items-center gap-4">
-        {/* Quote counter */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent-glow border border-accent/20">
+        {/* Quote counter link */}
+        <Link
+          href="/quotes"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent-glow border border-accent/20 cursor-pointer hover:bg-accent/10 active:scale-95 transition-all"
+        >
           <FileText size={14} className="text-accent" />
           <span className="text-xs font-semibold text-accent">{quoteCount}</span>
           <span className="hidden sm:inline text-xs text-text-muted">Quotes</span>
-        </div>
+        </Link>
 
         {/* Removed duplicate Logo badge from Header */}
       </div>

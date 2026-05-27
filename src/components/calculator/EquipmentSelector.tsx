@@ -295,6 +295,7 @@ function PanelTable({
   onAdd: (brand: PanelBrand) => void;
   onRemove: (id: string) => void;
 }) {
+  const { settings } = useSettings();
   const [selectionMode, setSelectionMode] = useState<'preset' | 'custom'>('custom');
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
@@ -421,7 +422,7 @@ function PanelTable({
       return;
     }
 
-    const customId = `custom_${Date.now()}`;
+    const customId = `custom_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     onAdd({
       id: customId,
       brand,
@@ -557,6 +558,7 @@ function PanelTable({
               <th className="text-left py-2 px-2 text-text-muted font-medium">Model</th>
               <th className="text-right py-2 px-2 text-text-muted font-medium">Wattage</th>
               <th className="text-left py-2 px-2 text-text-muted font-medium">Type</th>
+              <th className="text-right py-2 px-2 text-text-muted font-medium">₹/W</th>
               <th className="text-right py-2 px-2 text-text-muted font-medium">₹/Panel</th>
               <th className="text-center py-2 px-2 text-text-muted font-medium">Qty</th>
               <th className="w-10"></th>
@@ -567,6 +569,13 @@ function PanelTable({
               const selectedQty = panelMix[brand.id] ?? 0;
               const isLegacySelected = selectedPanelQty === 0 && brand.id === selectedId;
               const isSelected = selectedQty > 0 || isLegacySelected;
+              
+              const defaultBrand = PANEL_BRANDS.find((p) => p.id === brand.id);
+              const defaultRatePerWatt = defaultBrand?.ratePerWatt ?? brand.ratePerWatt;
+              const isOverridden = settings.currentEquipmentRates.panels[brand.id] !== undefined;
+              const defaultPanelPrice = defaultRatePerWatt * brand.wattage;
+              const currentPanelPrice = brand.ratePerWatt * brand.wattage;
+
               return (
                 <tr
                   key={brand.id}
@@ -593,6 +602,16 @@ function PanelTable({
                   </td>
                   <td className="py-2.5 px-2" onClick={(e) => e.stopPropagation()}>
                     <PanelRateCell brand={brand} />
+                  </td>
+                  <td className="py-2.5 px-2 text-right font-mono" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex flex-col items-end">
+                      {isOverridden && (
+                        <span className="text-[9px] text-text-muted line-through">₹{formatRate(defaultPanelPrice)}</span>
+                      )}
+                      <span className={`font-semibold ${isOverridden ? 'text-warning' : 'text-text-primary'}`}>
+                        ₹{formatRate(currentPanelPrice)}
+                      </span>
+                    </div>
                   </td>
                   <td className="py-2.5 px-2">
                     <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -817,7 +836,7 @@ function InverterTable({
       return setCustomError('Inverter already exists.');
     }
 
-    const customId = `custom_inv_${Date.now()}`;
+    const customId = `custom_inv_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     onAdd({ id: customId, brand, model, capacityKW: capacity, type: customInv.type, rate });
     if (qty > 0) onSetMixQty(customId, qty);
     
@@ -1089,7 +1108,7 @@ function BatteryTable({
       return setCustomError('Battery already exists.');
     }
 
-    const customId = `custom_bat_${Date.now()}`;
+    const customId = `custom_bat_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     onAdd({ id: customId, brand, model, capacityKWh: capacity, chemistry: customBat.chemistry, rate, maxDischargeKW: capacity * 0.5 });
     if (qty > 0) onSetMixQty(customId, qty);
     
@@ -1315,22 +1334,16 @@ function PanelRateCell({ brand }: { brand: PanelBrand }) {
   const currentRatePerWatt = brand.ratePerWatt;
   const isOverridden = settings.currentEquipmentRates.panels[brand.id] !== undefined;
 
-  // Per-panel prices
-  const defaultPanelPrice = defaultRatePerWatt * brand.wattage;
-  const currentPanelPrice = currentRatePerWatt * brand.wattage;
-
   const handleSave = () => {
-    const panelPrice = parseFloat(editValue);
-    if (!Number.isFinite(panelPrice) || panelPrice <= 0 || brand.wattage <= 0) {
+    const newRate = parseFloat(editValue);
+    if (!Number.isFinite(newRate) || newRate <= 0) {
       setEditing(false);
       return;
     }
-    // Convert ₹/Panel back to ₹/W for storage
-    const newRatePerWatt = panelPrice / brand.wattage;
     setSettings({
       currentEquipmentRates: {
         ...settings.currentEquipmentRates,
-        panels: { ...settings.currentEquipmentRates.panels, [brand.id]: newRatePerWatt },
+        panels: { ...settings.currentEquipmentRates.panels, [brand.id]: newRate },
       },
     });
     setEditing(false);
@@ -1352,20 +1365,16 @@ function PanelRateCell({ brand }: { brand: PanelBrand }) {
           <input
             autoFocus
             type="number"
-            step="100"
+            step="0.1"
             min="0"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false); }}
             onBlur={handleSave}
-            className="w-20 px-1.5 py-0.5 rounded bg-background border border-accent/50 text-right text-xs font-mono text-text-primary outline-none"
+            className="w-16 px-1.5 py-0.5 rounded bg-background border border-accent/50 text-right text-xs font-mono text-text-primary outline-none"
           />
+          <span className="text-[9px] text-text-muted font-mono">/W</span>
         </div>
-        {editValue && Number.isFinite(parseFloat(editValue)) && parseFloat(editValue) > 0 && brand.wattage > 0 && (
-          <span className="text-[9px] font-mono text-text-muted">
-            = ₹{(parseFloat(editValue) / brand.wattage).toFixed(2)}/W
-          </span>
-        )}
       </div>
     );
   }
@@ -1374,19 +1383,16 @@ function PanelRateCell({ brand }: { brand: PanelBrand }) {
     <div className="flex items-center justify-end gap-1.5 group/rate">
       <div className="flex flex-col items-end">
         {isOverridden && (
-          <span className="text-[9px] font-mono text-text-muted line-through">₹{formatRate(defaultPanelPrice)}</span>
+          <span className="text-[9px] font-mono text-text-muted line-through">₹{defaultRatePerWatt.toFixed(2)}/W</span>
         )}
         <span className={`text-xs font-mono font-semibold ${isOverridden ? 'text-warning' : 'text-accent'}`}>
-          ₹{formatRate(currentPanelPrice)}
-        </span>
-        <span className="text-[9px] font-mono text-text-muted">
           ₹{currentRatePerWatt.toFixed(2)}/W
         </span>
       </div>
       <button
-        onClick={() => { setEditValue(String(Math.round(currentPanelPrice))); setEditing(true); }}
+        onClick={() => { setEditValue(currentRatePerWatt.toFixed(2)); setEditing(true); }}
         className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-accent/10 text-text-muted hover:text-accent transition-all"
-        title="Edit panel price"
+        title="Edit rate per watt"
       >
         <Edit3 size={10} />
       </button>

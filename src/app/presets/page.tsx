@@ -6,9 +6,11 @@ import { SYSTEMS, type SolarSystem } from '@/lib/data/bom';
 import { getActivePanelBrands, getActiveInverterBrands, getActiveBatteryBrands } from '@/lib/data/masters';
 import { Bookmark, Settings as SettingsIcon, Trash2, Edit3, Plus, ArrowRight, Zap, Component } from 'lucide-react';
 import Link from 'next/link';
+import { useConfirm } from '@/components/ui/Confirm';
 
 export default function PresetsPage() {
   const { settings, setSettings } = useSettings();
+  const confirm = useConfirm();
   const [customSystemError, setCustomSystemError] = useState<string | null>(null);
   const [customSystemDraft, setCustomSystemDraft] = useState({
     name: '',
@@ -71,7 +73,7 @@ export default function PresetsPage() {
     }
 
     const customSystem: SolarSystem = {
-      id: `custom_sys_${Date.now()}`,
+      id: `custom_sys_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       name,
       category: customSystemDraft.category,
       capacityKW,
@@ -100,8 +102,15 @@ export default function PresetsPage() {
     });
   };
 
-  const removeCustomSystem = (id: string) => {
-    if (!confirm('Are you sure you want to delete this preset?')) return;
+  const removeCustomSystem = async (id: string) => {
+    const confirmed = await confirm({
+      title: 'Delete Preset?',
+      message: 'Are you sure you want to delete this custom system preset? This action is permanent and cannot be undone.',
+      confirmLabel: 'Delete Preset',
+      cancelLabel: 'Keep Preset',
+      type: 'danger',
+    });
+    if (!confirmed) return;
     setSettings({ customSystems: customSystems.filter((sys) => sys.id !== id) });
   };
 

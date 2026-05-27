@@ -73,16 +73,30 @@ export function CalculatorPrintView() {
             </tr>
           </thead>
           <tbody>
-            {calc.lines.map((line, i) => (
-              <tr key={i}>
-                <td>{i + 1}</td>
-                <td>{line.description}</td>
-                <td>{line.effectiveQty}</td>
-                <td>{formatINR(line.effectiveRate)}</td>
-                <td>{(line.effectiveGstPct * 100).toFixed(0)}%</td>
-                <td style={{ textAlign: 'right' }}>{formatINR(line.lineSubTotal)}</td>
-              </tr>
-            ))}
+            {calc.lines.map((line, i) => {
+              const originalSubTotal = line.effectiveQty * line.effectiveRate * (1 + line.effectiveGstPct);
+              return (
+                <tr key={i} style={line.isDisabled ? { opacity: 0.5, textDecoration: 'line-through' } : {}}>
+                  <td>{i + 1}</td>
+                  <td>{line.description}</td>
+                  <td>{line.effectiveQty}</td>
+                  <td>{formatINR(line.effectiveRate)}</td>
+                  <td>{(line.effectiveGstPct * 100).toFixed(0)}%</td>
+                  <td style={{ textAlign: 'right' }}>
+                    {line.isDisabled ? (
+                      <span style={{ textDecoration: 'line-through text-decoration-color-muted' }}>
+                        <span style={{ textDecoration: 'line-through', marginRight: '6px', opacity: 0.6 }}>
+                          {formatINR(originalSubTotal)}
+                        </span>
+                        <span style={{ textDecoration: 'none', display: 'inline-block' }}>₹0</span>
+                      </span>
+                    ) : (
+                      formatINR(line.lineSubTotal)
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
