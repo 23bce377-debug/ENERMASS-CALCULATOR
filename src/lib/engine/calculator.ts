@@ -108,6 +108,13 @@ export interface CalcInput {
   dbLAs?: any[];
   dbStructureParts?: any[];
   dbOrientationMultipliers?: Record<string, number>;
+  dbPanels?: any[];
+  dbInverters?: any[];
+  dbBatteries?: any[];
+  panelMix?: Record<string, number>;
+  selectedInverterMix?: Record<string, number>;
+  selectedBatteryMix?: Record<string, number>;
+  selectedPanelId?: string | null;
 }
 
 export interface LineResult {
@@ -217,7 +224,10 @@ export function resolveRate(
 
   // 2. Rate master — only for non-equipment BOM items
   const descUpper = item.description.toUpperCase();
-  if (!EQUIPMENT_DESCRIPTIONS.has(descUpper)) {
+  const isEquipment = ['PANEL', 'INVERTER', 'BATTERY'].some(prefix =>
+    descUpper === prefix || descUpper.startsWith(prefix + ' ') || descUpper.startsWith(prefix + ':')
+  );
+  if (!isEquipment) {
     const masterEntry = getMasterEntry(item.description, rateMaster);
     if (masterEntry && masterEntry.active && masterEntry.rate > 0) {
       return masterEntry.rate;
@@ -329,8 +339,116 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const capacityKW = system.capacityKW || 0.001;
   const capacityWatts = capacityKW * 1000;
 
-  // Clone system items to resolve them
-  let resolvedItems = system.items.map(item => ({ ...item }));
+  // Clone system items and expand generic placeholders to specific selected models
+  let resolvedItems: import('../data/bom').BomItem[] = [];
+
+  for (const item of system.items) {
+    const descUpper = item.description.toUpperCase();
+
+    if (descUpper === 'PANEL') {
+      const panelMixEntries = Object.entries(input.panelMix ?? {}).filter(
+        ([, qty]) => Number.isFinite(qty) && qty > 0
+      );
+      if (panelMixEntries.length > 0 && input.dbPanels && input.dbPanels.length > 0) {
+        for (const [panelId, qty] of panelMixEntries) {
+          const p = input.dbPanels.find(x => x.id === panelId);
+          if (p) {
+            resolvedItems.push({
+              description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
+              qty: qty,
+              ratePerUnit: p.ratePerWatt * p.wattage,
+              gstPct: p.gst_pct ?? 0.05,
+              unit: 'Nos',
+              remarks: item.remarks ?? '',
+            });
+          }
+        }
+      } else if (input.selectedPanelId && input.dbPanels && input.dbPanels.length > 0) {
+        const p = input.dbPanels.find(x => x.id === input.selectedPanelId);
+        if (p) {
+          const qty = input.panelQtyOverride !== undefined ? input.panelQtyOverride : (system.panelQty ?? item.qty);
+          resolvedItems.push({
+            description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
+            qty: qty,
+            ratePerUnit: p.ratePerWatt * p.wattage,
+            gstPct: p.gst_pct ?? 0.05,
+            unit: 'Nos',
+            remarks: item.remarks ?? '',
+          });
+        }
+      } else {
+        // Fallback to generic row if no db information is loaded
+        const rate = input.panelRateOverride !== undefined ? input.panelRateOverride : item.ratePerUnit;
+        const qty = input.panelQtyOverride !== undefined ? input.panelQtyOverride : item.qty;
+        resolvedItems.push({
+          ...item,
+          ratePerUnit: rate,
+          qty: qty
+        });
+      }
+    }
+    else if (descUpper === 'INVERTER') {
+      const inverterMixEntries = Object.entries(input.selectedInverterMix ?? {}).filter(
+        ([, qty]) => Number.isFinite(qty) && qty > 0
+      );
+      if (inverterMixEntries.length > 0 && input.dbInverters && input.dbInverters.length > 0) {
+        for (const [invId, qty] of inverterMixEntries) {
+          const inv = input.dbInverters.find(x => x.id === invId);
+          if (inv) {
+            resolvedItems.push({
+              description: `INVERTER ${inv.brand} ${inv.model}`,
+              qty: qty,
+              ratePerUnit: inv.rate,
+              gstPct: inv.gst_pct ?? 0.12,
+              unit: 'Nos',
+              remarks: item.remarks ?? '',
+            });
+          }
+        }
+      } else {
+        // Fallback to generic row if no db information is loaded
+        const rate = input.inverterRateOverride !== undefined ? input.inverterRateOverride : item.ratePerUnit;
+        const qty = input.inverterQtyOverride !== undefined ? input.inverterQtyOverride : item.qty;
+        resolvedItems.push({
+          ...item,
+          ratePerUnit: rate,
+          qty: qty
+        });
+      }
+    }
+    else if (descUpper === 'BATTERY') {
+      const batteryMixEntries = Object.entries(input.selectedBatteryMix ?? {}).filter(
+        ([, qty]) => Number.isFinite(qty) && qty > 0
+      );
+      if (batteryMixEntries.length > 0 && input.dbBatteries && input.dbBatteries.length > 0) {
+        for (const [batId, qty] of batteryMixEntries) {
+          const bat = input.dbBatteries.find(x => x.id === batId);
+          if (bat) {
+            resolvedItems.push({
+              description: `BATTERY ${bat.brand} ${bat.model}`,
+              qty: qty,
+              ratePerUnit: bat.rate,
+              gstPct: bat.gst_pct ?? 0.18,
+              unit: 'Nos',
+              remarks: item.remarks ?? '',
+            });
+          }
+        }
+      } else {
+        // Fallback to generic row if no db information is loaded
+        const rate = input.batteryRateOverride !== undefined ? input.batteryRateOverride : item.ratePerUnit;
+        const qty = input.batteryQtyOverride !== undefined ? input.batteryQtyOverride : item.qty;
+        resolvedItems.push({
+          ...item,
+          ratePerUnit: rate,
+          qty: qty
+        });
+      }
+    }
+    else {
+      resolvedItems.push({ ...item });
+    }
+  }
 
   // Helper to find or update/create an item in BOM
   const upsertItem = (description: string, itemData: Partial<import('../data/bom').BomItem>, forceAdd = false) => {
@@ -569,8 +687,11 @@ export function calculateSystem(input: CalcInput): CalcResult {
     const lineGST = isDisabled ? 0 : lineTotal * effectiveGstPct;
     const lineSubTotal = lineTotal + lineGST;
 
-    // Determine if anything was overridden
-    const masterEntry = getMasterEntry(item.description, input.rateMaster);
+    const descUpper = item.description.toUpperCase();
+    const isEquipment = ['PANEL', 'INVERTER', 'BATTERY'].some(prefix =>
+      descUpper === prefix || descUpper.startsWith(prefix + ' ') || descUpper.startsWith(prefix + ':')
+    );
+    const masterEntry = isEquipment ? undefined : getMasterEntry(item.description, input.rateMaster);
     const isOverridden =
       rowOverride?.qty !== undefined ||
       rowOverride?.ratePerUnit !== undefined ||

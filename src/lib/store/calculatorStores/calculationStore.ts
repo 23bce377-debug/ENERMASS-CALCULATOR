@@ -47,6 +47,7 @@ export const createCalculationSlice: StateCreator<
     | 'dbLAs'
     | 'dbStructureParts'
     | 'inventorySummary'
+    | 'dbOrientationMultipliers'
     | 'dbLoaded'
     | 'showInventoryInfo'
     | 'setShowInventoryInfo'
@@ -106,6 +107,7 @@ export const createCalculationSlice: StateCreator<
   dbMeters: [],
   dbLAs: [],
   dbStructureParts: [],
+  dbOrientationMultipliers: { South: 1.0, 'East/West': 0.85, Flat: 0.90 } as Record<string, number>,
   inventorySummary: [],
   dbLoaded: false,
 
@@ -473,6 +475,13 @@ export const createCalculationSlice: StateCreator<
         };
       }
 
+      // Default orientation multipliers - can be extended to load from app_settings
+      const orientationMultipliers = {
+        South: 1.0,
+        'East/West': 0.85,
+        Flat: 0.90
+      };
+
       const sortedSlabs = [...bootstrap.slabs].sort((a, b) => a.slab_index - b.slab_index).map(s => ({
         start_kw: Number(s.start_kw),
         end_kw: s.end_kw !== null ? Number(s.end_kw) : null,
@@ -685,6 +694,7 @@ export const createCalculationSlice: StateCreator<
         dbMeters: mappedMeters,
         dbLAs: mappedLAs,
         dbStructureParts: mappedBomItems,
+        dbOrientationMultipliers: orientationMultipliers,
         inventorySummary: bootstrap.inventorySummary,
         quotes: mappedQuotes,
         dbLoaded: true

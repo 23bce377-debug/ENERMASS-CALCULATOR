@@ -172,6 +172,7 @@ export interface CalculatorState {
   dbMeters: any[];
   dbLAs: any[];
   dbStructureParts: any[];
+  dbOrientationMultipliers: Record<string, number>;
   inventorySummary: import('@/backend/orm/acquisition').InventorySummary[];
   dbLoaded: boolean;
   rpcSubsidyAmount: number | null;
@@ -185,7 +186,7 @@ export const INITIAL_STATE = {
   showInventoryInfo: true,
   inventorySummary: [] as import('@/backend/orm/acquisition').InventorySummary[],
   selectedSystemId: null as string | null,
-  selectedState: 'Gujarat',
+  selectedState: '' as string,
   projectType: 'residential' as ProjectType,
 
   targetMarginPct: null as number | null,
@@ -201,7 +202,7 @@ export const INITIAL_STATE = {
   panelMix: {} as Record<string, number>,
   selectedInverterMix: {} as Record<string, number>,
   selectedBatteryMix: {} as Record<string, number>,
-  backupLoadW: 1000,
+  backupLoadW: 0,
 
   selectedStructureId: null as string | null,
   structurePricingMode: 'weight' as 'weight' | 'per_watt' | 'flat',
@@ -227,9 +228,9 @@ export const INITIAL_STATE = {
   targetMRPPerWatt: null as number | null,
 
   orientation: 'South' as 'South' | 'East/West' | 'Flat',
-  dcCableLengthM: 15,
-  acCableLengthM: 10,
-  electricityInflationRate: 0.04,
+  dcCableLengthM: 0,
+  acCableLengthM: 0,
+  electricityInflationRate: 0,
 
   calcResult: null as CalcResult | null,
   calcError: null as string | null,
@@ -252,6 +253,7 @@ export const INITIAL_STATE = {
   dbMeters: [] as any[],
   dbLAs: [] as any[],
   dbStructureParts: [] as any[],
+  dbOrientationMultipliers: { South: 1.0, 'East/West': 0.85, Flat: 0.90 } as Record<string, number>,
   dbLoaded: false,
   rpcSubsidyAmount: null as number | null,
 };
@@ -441,7 +443,7 @@ export function runCalculation(state: CalculatorState): {
       }
     }
 
-    const result = calculateSystem({
+const result = calculateSystem({
       systemId: state.selectedSystemId,
       systems: state.dbLoaded ? state.dbSystems : [...SYSTEMS, ...customSystems],
       state: state.selectedState,
@@ -490,6 +492,7 @@ export function runCalculation(state: CalculatorState): {
       dbMeters: state.dbMeters,
       dbLAs: state.dbLAs,
       dbStructureParts: state.dbStructureParts,
+      dbOrientationMultipliers: state.dbOrientationMultipliers,
       gstOnOutputOverride: state.gstOnOutputOverride ?? undefined,
       targetMRPInclGST: state.targetMRPInclGST ?? undefined,
       targetMRPPerWatt: state.targetMRPPerWatt ?? undefined,
