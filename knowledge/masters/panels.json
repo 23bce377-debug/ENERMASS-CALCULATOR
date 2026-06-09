@@ -1,0 +1,986 @@
+[
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 545,
+    "panel_type": "Unknown",
+    "rate_per_panel": 12535,
+    "gst_pct": 6016.8,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "2kwp",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kwp",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 16430,
+    "gst_pct": 7886.4,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet1",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet1",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "10kw hybrid",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 5kw",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 550,
+    "panel_type": "Unknown",
+    "rate_per_panel": 13750,
+    "gst_pct": 3300,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "1kw admn",
+      "sourceRow": 3
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1kw admn",
+        "sourceRow": 3
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 15810,
+    "gst_pct": 9486,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3Kwp",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3Kwp",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 15500,
+    "gst_pct": 14880,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3KW MICRO INVERTER",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3KW MICRO INVERTER",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5kw micro",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 9300,
+    "gst_pct": 5580,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "2-3upgrade",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 16120,
+    "gst_pct": 9672,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3kw hibrid",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3kw hibrid",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kwp",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 580,
+    "panel_type": "Unknown",
+    "rate_per_panel": 15080,
+    "gst_pct": 10857.6,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "mat 3 kw",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "mat 3 kw",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 580,
+    "panel_type": "Unknown",
+    "rate_per_panel": 13340,
+    "gst_pct": 6003,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "UPGRADE 5 KW hybrid",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 8680,
+    "gst_pct": 8332.8,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "4KWp",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "4KWp",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 10540,
+    "gst_pct": 4216,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "5Kwp",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5Kwp",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5kw 3 PH",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kwp",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw30kwhr",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 550,
+    "panel_type": "Unknown",
+    "rate_per_panel": 8800,
+    "gst_pct": 4224,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet6",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet6",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Hoymiles",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 17050,
+    "gst_pct": 16368,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hoymiles5kw",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 9610,
+    "gst_pct": 10378.8,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "upgrade 5kw ",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet8",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "30KW Hybrid",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 10230,
+    "gst_pct": 11048.4,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "8kwp",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "8kwp",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "15kwp",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 9920,
+    "gst_pct": 19046.4,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "10KWp",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "10KWp",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "15kwHibrid",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "25kw",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet11",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 7167,
+    "panel_type": "Unknown",
+    "rate_per_panel": 11610,
+    "gst_pct": 4179.6,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "1.5kw",
+      "sourceRow": 2
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1.5kw",
+        "sourceRow": 2
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "NUT BOLTS(PANEL)",
+    "wattage_w": null,
+    "panel_type": "Unknown",
+    "rate_per_panel": null,
+    "gst_pct": 0,
+    "description": "NUT BOLTS(PANEL)",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "1.5kw",
+      "sourceRow": 12
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1.5kw",
+        "sourceRow": 12
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kw",
+        "sourceRow": 12
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet3",
+        "sourceRow": 12
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kw",
+        "sourceRow": 12
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 3 kw",
+        "sourceRow": 12
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5ke 3P TN",
+        "sourceRow": 12
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet4",
+        "sourceRow": 12
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet5",
+        "sourceRow": 12
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 5250,
+    "panel_type": "Unknown",
+    "rate_per_panel": 11340,
+    "gst_pct": 5443.2,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "2kw",
+      "sourceRow": 2
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kw",
+        "sourceRow": 2
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 6125,
+    "panel_type": "Unknown",
+    "rate_per_panel": 13230,
+    "gst_pct": 6350.4,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet3",
+      "sourceRow": 2
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet3",
+        "sourceRow": 2
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 545,
+    "panel_type": "Unknown",
+    "rate_per_panel": 7020,
+    "gst_pct": null,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "6kw",
+      "sourceRow": 2
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kw",
+        "sourceRow": 2
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 585,
+    "panel_type": "Unknown",
+    "rate_per_panel": 15502.5,
+    "gst_pct": 26044.2,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet9",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet9",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 540,
+    "panel_type": "Unknown",
+    "rate_per_panel": 8100,
+    "gst_pct": 9720,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hibrid upgrade 5kw",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 4167,
+    "panel_type": "Unknown",
+    "rate_per_panel": 13500,
+    "gst_pct": 9720,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hibrid 3 kw",
+      "sourceRow": 2
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 3 kw",
+        "sourceRow": 2
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": null,
+    "panel_type": "Unknown",
+    "rate_per_panel": 12690,
+    "gst_pct": null,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "5ke 3P TN",
+      "sourceRow": 2
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5ke 3P TN",
+        "sourceRow": 2
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 222,
+    "panel_type": "Unknown",
+    "rate_per_panel": 6534,
+    "gst_pct": 14113.44,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet4",
+      "sourceRow": 2
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet4",
+        "sourceRow": 2
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 179,
+    "panel_type": "Unknown",
+    "rate_per_panel": 8680,
+    "gst_pct": 29164.8,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet5",
+      "sourceRow": 2
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet5",
+        "sourceRow": 2
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": null,
+    "panel_type": "Unknown",
+    "rate_per_panel": 8912.5,
+    "gst_pct": 49197,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet7",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet7",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 590,
+    "panel_type": "Unknown",
+    "rate_per_panel": 7965,
+    "gst_pct": 5734.8,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3 to 3 upgradation",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3 to 3 upgradation",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20KW HIBRID",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Inkel",
+    "model": "PANEL",
+    "wattage_w": null,
+    "panel_type": "Unknown",
+    "rate_per_panel": 8370,
+    "gst_pct": 0,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Inkel250bos",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "STM",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 9920,
+    "gst_pct": 190464,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "100kw STM",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Newen",
+    "model": "PANEL",
+    "wattage_w": 585,
+    "panel_type": "Unknown",
+    "rate_per_panel": 9067.5,
+    "gst_pct": 365601.6,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "newen",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 590,
+    "panel_type": "Unknown",
+    "rate_per_panel": 10030,
+    "gst_pct": 7221.6,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "mis working",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "mis working",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Solinteg",
+    "model": "PANEL",
+    "wattage_w": 580,
+    "panel_type": "Unknown",
+    "rate_per_panel": 9860,
+    "gst_pct": 41412,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "20kw hibrid solinteg",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 585,
+    "panel_type": "Unknown",
+    "rate_per_panel": 9067.5,
+    "gst_pct": 365601.6,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet10",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet10",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 580,
+    "panel_type": "Unknown",
+    "rate_per_panel": 9860,
+    "gst_pct": 41412,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet2",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet2",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 9424,
+    "gst_pct": 147014.4,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "80kw",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kw",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Enphase",
+    "model": "PANEL",
+    "wattage_w": 620,
+    "panel_type": "Unknown",
+    "rate_per_panel": 9424,
+    "gst_pct": 147014.4,
+    "description": "PANEL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "80kwenphase",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 4
+      }
+    ]
+  }
+]

@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { SYSTEMS } from '@/lib/data/bom';
 import { formatINR } from '@/lib/engine/calculator';
@@ -8,15 +9,24 @@ import { useSettings } from '@/lib/hooks/useSettings';
 export function SummaryCard() {
   const calcResult = useCalculatorStore((s) => s.calcResult);
   const selectedSystemId = useCalculatorStore((s) => s.selectedSystemId);
+  const dbSystems = useCalculatorStore((s) => s.dbSystems);
+  const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
 
   const { settings } = useSettings();
 
+  const setMarginOverride = useCalculatorStore((s) => s.setMarginOverride);
+  const setGSTOnOutputOverride = useCalculatorStore((s) => s.setGSTOnOutputOverride);
+  const setTargetMRP = useCalculatorStore((s) => s.setTargetMRP);
+
   if (!calcResult || !selectedSystemId) return null;
 
-  const allSystems = [...SYSTEMS, ...(settings.customSystems ?? [])];
+  const allSystems = dbLoaded && dbSystems.length > 0
+    ? [...dbSystems, ...(settings.customSystems ?? [])]
+    : [...SYSTEMS, ...(settings.customSystems ?? [])];
   const system = allSystems.find((s) => s.id === selectedSystemId);
   const systemName = system?.name || '';
   const capacityKW = system?.capacityKW || 0;
+  const capacityWatts = capacityKW * 1000;
 
   // Subsidy eligibility based on capacity
   const showNoSubsidy = capacityKW > 10;
@@ -42,16 +52,42 @@ export function SummaryCard() {
 
         {/* Margin & MRP */}
         <div className="space-y-2">
-          <Row label="Margin" value={`${(calcResult.effectiveMarginPct * 100).toFixed(1)}%`} />
+          <EditableRow 
+            label="Margin" 
+            value={calcResult.effectiveMarginPct * 100} 
+            suffix="%" 
+            onCommit={(v) => setMarginOverride(v / 100)} 
+          />
           <Row label="MRP (excl. GST)" value={formatINR(calcResult.mrpExclGST)} />
-          <Row label={`Output GST (${(calcResult.gstOutputRate * 100).toFixed(1)}%)`} value={formatINR(calcResult.mrpInclGST - calcResult.mrpExclGST)} muted />
+          <EditableRow 
+            label={`Output GST (${(calcResult.gstOutputRate * 100).toFixed(1)}%)`} 
+            value={calcResult.gstOutputRate * 100} 
+            suffix="%" 
+            muted 
+            onCommit={(v) => setGSTOnOutputOverride(v / 100)} 
+          />
           
-          <div className="mt-2 p-3 rounded-lg border border-accent/30 bg-accent-glow flex items-center justify-between">
-            <span className="text-sm font-bold text-accent uppercase tracking-wider flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              MRP (incl. GST)
-            </span>
-            <span className="text-base font-mono font-bold text-accent">{formatINR(calcResult.mrpInclGST)}</span>
+          <div className="space-y-1 mt-2">
+            <EditableRow 
+              label="MRP Per Watt" 
+              value={calcResult.mrpInclGST / capacityWatts} 
+              prefix="₹" 
+              bold 
+              onCommit={(v) => setTargetMRP(v, 'per_watt')} 
+            />
+            
+            <div className="p-3 rounded-lg border border-accent/30 bg-accent-glow flex items-center justify-between">
+              <span className="text-sm font-bold text-accent uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                MRP (incl. GST)
+              </span>
+              <EditableInline 
+                value={calcResult.mrpInclGST} 
+                onCommit={(v) => setTargetMRP(v, 'total')} 
+                className="text-base font-mono font-bold text-accent" 
+                isCurrency
+              />
+            </div>
           </div>
         </div>
 
@@ -103,3 +139,85 @@ function Row({ label, value, bold, muted, error, success }: { label: string; val
     </div>
   );
 }
+
+function EditableRow({ label, value, onCommit, prefix, suffix, bold, muted }: { label: string; value: number; onCommit: (v: number) => void; prefix?: string; suffix?: string; bold?: boolean; muted?: boolean }) {
+  return (
+    <div className="flex items-center justify-between group">
+      <span className={`text-xs transition-colors duration-200 ${
+        muted ? 'text-text-muted group-hover:text-text-secondary' : 'text-text-secondary group-hover:text-text-primary'
+      }`}>
+        {label}
+      </span>
+      <EditableInline 
+        value={value} 
+        onCommit={onCommit} 
+        prefix={prefix} 
+        suffix={suffix} 
+        bold={bold} 
+        muted={muted} 
+      />
+    </div>
+  );
+}
+
+function EditableInline({ value, onCommit, prefix, suffix, bold, muted, isCurrency, className }: { value: number; onCommit: (v: number) => void; prefix?: string; suffix?: string; bold?: boolean; muted?: boolean; isCurrency?: boolean; className?: string }) {
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState('');
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  const startEdit = () => {
+    setDraft(value.toFixed(2));
+    setEditing(true);
+  };
+
+  const commit = () => {
+    const parsed = parseFloat(draft);
+    if (!isNaN(parsed) && parsed >= 0) {
+      onCommit(parsed);
+    }
+    setEditing(false);
+  };
+
+  const cancel = () => setEditing(false);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') commit();
+    if (e.key === 'Escape') cancel();
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        type="number"
+        step="any"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        className="w-24 px-1 py-0.5 rounded bg-background border border-accent text-right text-sm font-mono focus:outline-none"
+      />
+    );
+  }
+
+  let display = isCurrency ? formatINR(value) : `${prefix ?? ''}${value.toFixed(2)}${suffix ?? ''}`;
+
+  return (
+    <button
+      onClick={startEdit}
+      className={`text-sm font-mono transition-colors duration-200 cursor-text hover:text-accent rounded px-1 hover:bg-accent-glow/30 ${
+        className ?? (bold ? 'font-bold text-text-primary' : muted ? 'text-text-muted' : 'text-text-primary')
+      }`}
+    >
+      {display}
+    </button>
+  );
+}
+

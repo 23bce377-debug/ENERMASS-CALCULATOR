@@ -25,7 +25,12 @@ import { Download, Share2, Save, ChevronDown, Search, MapPin, Settings, Trash2, 
 function StateSelector() {
   const selectedState = useCalculatorStore((s) => s.selectedState);
   const setState = useCalculatorStore((s) => s.setState);
-  const states = Object.keys(STATE_DATA).sort();
+  const dbStateData = useCalculatorStore((s) => s.dbStateData);
+  const states = useMemo(() => {
+    const keys = Object.keys(dbStateData);
+    if (keys.length > 0) return keys.sort();
+    return Object.keys(STATE_DATA).sort();
+  }, [dbStateData]);
   
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -147,6 +152,7 @@ function PresetManager() {
       ...baseSystem,
       id: `preset_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       name: name.trim(),
+      category: 'custom' as any,
       defaultEquipment: {
         panelMix: { ...panelMix },
         inverterMix: { ...selectedInverterMix },
@@ -265,22 +271,28 @@ export default function CalculatorPage() {
   const clearInverterMix = useCalculatorStore((s) => s.clearInverterMix);
   const setBatteryMixQty = useCalculatorStore((s) => s.setBatteryMixQty);
   const clearBatteryMix = useCalculatorStore((s) => s.clearBatteryMix);
+  const dbSystems = useCalculatorStore((s) => s.dbSystems);
+  const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
 
   const requiredPanelQty = useMemo(() => {
     if (!selectedSystemId) return null;
-    const allSystems = [...SYSTEMS, ...(settings.customSystems ?? [])];
+    const allSystems = dbLoaded && dbSystems.length > 0
+      ? [...dbSystems, ...(settings.customSystems ?? [])]
+      : [...SYSTEMS, ...(settings.customSystems ?? [])];
     const system = allSystems.find((s) => s.id === selectedSystemId);
     if (!system) return null;
     const panelLine = system.items.find((item) => item.description.toUpperCase() === 'PANEL');
     return panelLine?.qty ?? system.panelQty;
-  }, [selectedSystemId, settings.customSystems]);
+  }, [selectedSystemId, settings.customSystems, dbSystems, dbLoaded]);
 
   const requiredPanelWattage = useMemo(() => {
     if (!selectedSystemId) return null;
-    const allSystems = [...SYSTEMS, ...(settings.customSystems ?? [])];
+    const allSystems = dbLoaded && dbSystems.length > 0
+      ? [...dbSystems, ...(settings.customSystems ?? [])]
+      : [...SYSTEMS, ...(settings.customSystems ?? [])];
     const system = allSystems.find((s) => s.id === selectedSystemId);
     return system?.panelWattage ?? null;
-  }, [selectedSystemId, settings.customSystems]);
+  }, [selectedSystemId, settings.customSystems, dbSystems, dbLoaded]);
 
   useEffect(() => {
     if (!pendingQuote) return;

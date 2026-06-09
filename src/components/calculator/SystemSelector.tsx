@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, ChevronDown, X, Zap } from 'lucide-react';
 import { SYSTEMS, type SolarSystem } from '@/lib/data/bom';
 import { useSettings } from '@/lib/hooks/useSettings';
+import { useCalculatorStore } from '@/lib/store/calculatorStore';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -17,6 +18,7 @@ type Category = SolarSystem['category'];
 // ─── Category Config ────────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<Category, { label: string; color: string; dotClass: string; badgeClass: string }> = {
+  custom:           { label: 'Custom',          color: '#C6973F', dotClass: 'bg-accent',       badgeClass: 'badge-custom' },
   'on-grid':        { label: 'On-Grid',        color: '#22C55E', dotClass: 'bg-cat-on-grid',  badgeClass: 'badge-on-grid' },
   '3-phase':        { label: '3-Phase',         color: '#3B82F6', dotClass: 'bg-cat-3-phase',  badgeClass: 'badge-3-phase' },
   'micro-inverter': { label: 'Micro-Inverter',  color: '#A855F7', dotClass: 'bg-cat-micro',    badgeClass: 'badge-micro-inverter' },
@@ -25,7 +27,7 @@ const CATEGORY_CONFIG: Record<Category, { label: string; color: string; dotClass
   'commercial':     { label: 'Commercial',      color: '#EF4444', dotClass: 'bg-cat-commercial', badgeClass: 'badge-commercial' },
 };
 
-const CATEGORY_ORDER: Category[] = ['on-grid', '3-phase', 'micro-inverter', 'hybrid', 'upgrade', 'commercial'];
+const CATEGORY_ORDER: Category[] = ['custom', 'on-grid', '3-phase', 'micro-inverter', 'hybrid', 'upgrade', 'commercial'];
 
 // ─── Component ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +37,8 @@ export function SystemSelector({ value, onChange }: SystemSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dbSystems = useCalculatorStore((s) => s.dbSystems);
+  const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
 
   // Close on outside click
   useEffect(() => {
@@ -55,8 +59,12 @@ export function SystemSelector({ value, onChange }: SystemSelectorProps) {
   }, [isOpen]);
 
   const allSystems = useMemo(
-    () => [...SYSTEMS, ...(settings.customSystems ?? [])],
-    [settings.customSystems],
+    () => {
+      return dbLoaded && dbSystems.length > 0
+        ? [...dbSystems, ...(settings.customSystems ?? [])]
+        : [...SYSTEMS, ...(settings.customSystems ?? [])];
+    },
+    [settings.customSystems, dbSystems, dbLoaded],
   );
 
   // Get selected system
@@ -73,7 +81,13 @@ export function SystemSelector({ value, onChange }: SystemSelectorProps) {
           (s) =>
             s.name.toLowerCase().includes(q) ||
             s.category.toLowerCase().includes(q) ||
-            s.capacityKW.toString().includes(q),
+            s.capacityKW.toString().includes(q) ||
+            (s.panelWattage && s.panelWattage.toString().includes(q)) ||
+            (s.defaultEquipment && (
+              Object.keys(s.defaultEquipment.panelMix ?? {}).some(k => k.toLowerCase().includes(q)) ||
+              Object.keys(s.defaultEquipment.inverterMix ?? {}).some(k => k.toLowerCase().includes(q)) ||
+              Object.keys(s.defaultEquipment.batteryMix ?? {}).some(k => k.toLowerCase().includes(q))
+            ))
         )
       : allSystems;
 

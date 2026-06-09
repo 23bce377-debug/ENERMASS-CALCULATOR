@@ -16,9 +16,9 @@ import {
 } from 'lucide-react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { formatINR, type LineResult } from '@/lib/engine/calculator';
-import { getActivePanelBrands } from '@/lib/data/masters';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useToast } from '@/components/ui/Toast';
+import { Select } from '@/components/ui/Select';
 
 // ─── BOM Row Grouping ───────────────────────────────────────────────────────────
 
@@ -30,12 +30,12 @@ interface RowGroup {
 const ROW_GROUPS: RowGroup[] = [
   { label: 'Solar Panels',            keys: ['PANEL'] },
   { label: 'Power Electronics',       keys: ['INVERTER', 'COMMUNICATION DEVICE', 'BATTERY'] },
-  { label: 'Metering',                keys: ['SOLAR METER'] },
+  { label: 'Metering',                keys: ['SOLAR METER', 'NET METER'] },
   { label: 'Mounting & Structure',    keys: ['STRUCTURE', 'ACCESSORIES'] },
   { label: 'Electrical Protection',   keys: ['ACDB', 'DCDB', 'ISOLATOR', 'METER BOX'] },
   { label: 'Earthing',                keys: ['EARTH ROD', 'GI STRIP', 'EARTH COMPOUND', 'CHAMBER BOX', 'EARTH BENCH'] },
   { label: 'Cabling',                 keys: ['DC CABLE', 'AC CABLE', 'ALUM CABLE 50 SQMM', 'ALUM CABLE 10 SQMM', 'COPPER', 'MC4(ADDITIONAL)'] },
-  { label: 'Wiring',                  keys: ['WIRING PIPE', 'WIRING ACCESSORIES', 'L/A'] },
+  { label: 'Wiring',                  keys: ['WIRING PIPE', 'WIRING ACCESSORIES', 'L/A', 'LIGHTNING ARRESTER'] },
   { label: 'Services',                keys: ['TRANSPORTATION', 'COMMISSION', 'SITE VISIT', 'INSTALLATION'] },
 ];
 
@@ -51,9 +51,14 @@ function groupLines(lines: LineResult[]): GroupedLines[] {
   const groups: GroupedLines[] = [];
 
   for (const group of ROW_GROUPS) {
-    const matching = lines.filter(
-      (l) => group.keys.includes(l.description) && !assigned.has(l.index),
-    );
+    const matching = lines.filter((l) => {
+      if (assigned.has(l.index)) return false;
+      // Match exact keys or prefixes (e.g., 'STRUCTURE RAFTER' matches 'STRUCTURE')
+      return group.keys.some(k => 
+        l.description.toUpperCase() === k.toUpperCase() || 
+        l.description.toUpperCase().startsWith(k.toUpperCase() + ' ')
+      );
+    });
     matching.forEach((l) => assigned.add(l.index));
 
     if (matching.length > 0) {
@@ -170,6 +175,14 @@ interface BOMRowProps {
   isPanelInteractive?: boolean;
   panelExpanded?: boolean;
   onTogglePanelDetails?: () => void;
+  inventorySummary?: import('@/backend/orm/acquisition').InventorySummary[];
+  dbMeters?: any[];
+  dbLAs?: any[];
+  solarMeterId?: string | null;
+  netMeterId?: string | null;
+  lightningArresterId?: string | null;
+  onSelectMeter?: (type: 'solar' | 'net', id: string | null) => void;
+  onSelectLA?: (id: string | null) => void;
 }
 
 const BOMRow = memo(function BOMRow({
@@ -183,13 +196,27 @@ const BOMRow = memo(function BOMRow({
   isPanelInteractive = false,
   panelExpanded = false,
   onTogglePanelDetails,
+  inventorySummary,
+  dbMeters,
+  dbLAs,
+  solarMeterId,
+  netMeterId,
+  lightningArresterId,
+  onSelectMeter,
+  onSelectLA,
 }: BOMRowProps) {
   const isMandatory = line.description.toUpperCase() === 'PANEL' || line.description.toUpperCase() === 'INVERTER';
   const isDimmed = line.isDisabled;
   const dimClass = isDimmed ? 'opacity-35' : '';
 
+  const inventoryItem = inventorySummary?.find(
+    (item) => item.item_description.toUpperCase() === line.description.toUpperCase()
+  );
+
   return (
-    <tr className={`border-b border-border/30 group transition-colors hover:bg-surface-hover ${dimClass}
+    <tr className={`border-b border-border/30 group transition-all duration-200 hover:bg-surface-hover/50
+      ${line.index % 2 === 1 ? 'bg-surface-hover/20' : 'bg-surface'}
+      ${dimClass}
       ${line.isOverridden ? 'border-l-2 border-l-warning/60' : ''}`}>
       {/* # */}
       <td className="py-2 px-2 text-center text-text-muted text-xs">
@@ -229,8 +256,78 @@ const BOMRow = memo(function BOMRow({
             {panelExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
             <span className={line.isDisabled ? 'line-through' : ''}>{line.description}</span>
           </button>
+        ) : line.description.toUpperCase() === 'SOLAR METER' && dbMeters ? (
+          <div className="flex flex-col gap-1 w-64">
+            <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">{line.description}</span>
+            <Select
+              size="sm"
+              value={solarMeterId || ''}
+              onChange={(val) => onSelectMeter?.('solar', val === '' ? null : val)}
+              placeholder="None (Unselected)"
+              options={[
+                { value: '', label: 'None (Unselected)' },
+                ...dbMeters
+                  .filter((m: any) => m.meter_type === 'solar_meter')
+                  .map((m: any) => ({
+                    value: m.id,
+                    label: `${m.brand || ''} ${m.model || ''} (${m.phases} Phase)`,
+                    hint: `₹${new Intl.NumberFormat('en-IN').format(m.rate)}`
+                  })),
+                { value: 'custom', label: 'Custom Solar Meter' }
+              ]}
+            />
+          </div>
+        ) : line.description.toUpperCase() === 'NET METER' && dbMeters ? (
+          <div className="flex flex-col gap-1 w-64">
+            <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">{line.description}</span>
+            <Select
+              size="sm"
+              value={netMeterId || ''}
+              onChange={(val) => onSelectMeter?.('net', val === '' ? null : val)}
+              placeholder="None (Unselected)"
+              options={[
+                { value: '', label: 'None (Unselected)' },
+                ...dbMeters
+                  .filter((m: any) => m.meter_type === 'net_meter')
+                  .map((m: any) => ({
+                    value: m.id,
+                    label: `${m.brand || ''} ${m.model || ''} (${m.phases} Phase)`,
+                    hint: `₹${new Intl.NumberFormat('en-IN').format(m.rate)}`
+                  })),
+                { value: 'custom', label: 'Custom Net Meter' }
+              ]}
+            />
+          </div>
+        ) : (line.description.toUpperCase() === 'LIGHTNING ARRESTER' || line.description.toUpperCase() === 'L/A') && dbLAs ? (
+          <div className="flex flex-col gap-1 w-64">
+            <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">{line.description}</span>
+            <Select
+              size="sm"
+              value={lightningArresterId || ''}
+              onChange={(val) => onSelectLA?.(val === '' ? null : val)}
+              placeholder="None (Unselected)"
+              options={[
+                { value: '', label: 'None (Unselected)' },
+                ...dbLAs.map((l: any) => ({
+                  value: l.id,
+                  label: l.description || l.model || 'Standard L/A',
+                  hint: `₹${new Intl.NumberFormat('en-IN').format(l.rate)}`
+                })),
+                { value: 'custom', label: 'Custom Lightning Arrester' }
+              ]}
+            />
+          </div>
         ) : (
-          line.description
+          <div className="flex flex-col">
+            <span className={line.isDisabled ? 'line-through text-text-muted' : 'text-text-primary'}>
+              {line.description}
+            </span>
+            {line.description.toUpperCase() === 'STRUCTURE' && line.unit?.toLowerCase() === 'kg' && (
+              <span className="text-[10px] text-accent font-medium mt-0.5">
+                Total Weight: {line.effectiveQty.toFixed(1)} kg
+              </span>
+            )}
+          </div>
         )}
       </td>
 
@@ -258,7 +355,23 @@ const BOMRow = memo(function BOMRow({
         )}
       </td>
 
-      {/* Rate/Unit — editable */}
+      {/* Buying Price (WAC) */}
+      <td className="py-2 px-2 text-right">
+        {inventoryItem ? (
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] font-mono text-success font-bold" title="Weighted Average Purchase Cost">
+              {formatINR(inventoryItem.weighted_avg_cost)}
+            </span>
+            <span className={`text-[9px] font-bold ${inventoryItem.current_qty > 0 ? 'text-success' : 'text-error'}`}>
+              Stock: {inventoryItem.current_qty}
+            </span>
+          </div>
+        ) : (
+          <span className="text-[10px] text-text-muted italic">No Stock</span>
+        )}
+      </td>
+
+      {/* Rate/Unit — editable (Selling Price) */}
       <td className="py-1 px-1 w-22.5">
         {line.isDisabled ? (
           <div className="w-full text-right font-mono text-xs text-text-muted px-1.5 py-0.5 line-through">
@@ -582,6 +695,13 @@ export function BOMTable() {
   const dcCableLengthM = useCalculatorStore((s) => s.dcCableLengthM);
   const acCableLengthM = useCalculatorStore((s) => s.acCableLengthM);
   const setCableLengths = useCalculatorStore((s) => s.setCableLengths);
+  const dbMeters = useCalculatorStore((s) => s.dbMeters);
+  const dbLAs = useCalculatorStore((s) => s.dbLAs);
+  const solarMeterId = useCalculatorStore((s) => s.solarMeterId);
+  const netMeterId = useCalculatorStore((s) => s.netMeterId);
+  const lightningArresterId = useCalculatorStore((s) => s.lightningArresterId);
+  const setMeterSelection = useCalculatorStore((s) => s.setMeterSelection);
+  const setLASelection = useCalculatorStore((s) => s.setLASelection);
   const { settings } = useSettings();
   const { toast } = useToast();
 
@@ -592,6 +712,8 @@ export function BOMTable() {
   // Inline Add Custom Item State
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemDesc, setNewItemDesc] = useState('');
+  const [newItemRemarks, setNewItemRemarks] = useState('');
+  const [newItemUnit, setNewItemUnit] = useState('Nos');
   const [newItemQty, setNewItemQty] = useState('');
   const [newItemRate, setNewItemRate] = useState('');
   const [newItemGst, setNewItemGst] = useState('18');
@@ -614,8 +736,16 @@ export function BOMTable() {
     });
   }, []);
 
+  const dbPanels = useCalculatorStore((s) => s.dbPanels);
+  const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
+
   const panelCatalog = useMemo(() => {
-    const allPanels = getActivePanelBrands(settings);
+    const base = dbLoaded && dbPanels.length > 0 ? dbPanels : [];
+    const rateOverrides = settings?.currentEquipmentRates?.panels ?? {};
+    const allPanels = [...base, ...(settings?.customPanels ?? [])].map((panel) => ({
+      ...panel,
+      ratePerWatt: rateOverrides[panel.id] ?? panel.ratePerWatt,
+    }));
     return new Map(
       allPanels.map((panel) => [
         panel.id,
@@ -627,13 +757,23 @@ export function BOMTable() {
         },
       ]),
     );
-  }, [settings.customPanels]);
+  }, [dbLoaded, dbPanels, settings]);
 
   // Group the BOM lines
   const groups = useMemo(
     () => (calcResult ? groupLines(calcResult.lines) : []),
     [calcResult],
   );
+
+  const inventorySummary = useCalculatorStore((s) => s.inventorySummary);
+
+  const totalBuyingPrice = useMemo(() => {
+    if (!calcResult) return 0;
+    return calcResult.lines.reduce((sum, line) => {
+      const inv = inventorySummary.find(i => i.item_description.toUpperCase() === line.description.toUpperCase());
+      return sum + (line.effectiveQty * (inv?.weighted_avg_cost || 0));
+    }, 0);
+  }, [calcResult, inventorySummary]);
 
   // Row action handlers
   const handleOverrideQty = useCallback(
@@ -712,8 +852,9 @@ export function BOMTable() {
               <th className="py-2.5 px-2 text-left text-text-muted font-medium w-20">Remarks</th>
               <th className="py-2.5 px-2 text-center text-text-muted font-medium w-12">Unit</th>
               <th className="py-2.5 px-2 text-right text-text-muted font-medium w-18">Qty</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-22.5">Rate/Unit</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-24">Total</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-24">Buying Price</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-22.5">Selling Rate</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-24">Line Total</th>
               <th className="py-2.5 px-2 text-right text-text-muted font-medium w-15">GST%</th>
               <th className="py-2.5 px-2 text-right text-text-muted font-medium w-20">GST Amt</th>
               <th className="py-2.5 px-2 text-right text-text-muted font-medium w-24">SubTotal</th>
@@ -752,6 +893,14 @@ export function BOMTable() {
                             onTogglePanelDetails={
                               isPanelLine ? () => togglePanelRow(line.index) : undefined
                             }
+                            inventorySummary={inventorySummary}
+                            dbMeters={dbMeters}
+                            dbLAs={dbLAs}
+                            solarMeterId={solarMeterId}
+                            netMeterId={netMeterId}
+                            lightningArresterId={lightningArresterId}
+                            onSelectMeter={setMeterSelection}
+                            onSelectLA={setLASelection}
                           />
                           {isPanelLine && isPanelExpanded && (
                             <PanelSelectionDetailRow
@@ -768,82 +917,131 @@ export function BOMTable() {
               );
             })}
             {isAddingItem ? (
-              <tr className="bg-surface-active">
-                <td className="py-2 px-2 border-b border-border text-center text-text-muted">-</td>
-                <td className="py-2 px-2 border-b border-border">
-                  <input
-                    type="text"
-                    placeholder="Description"
-                    value={newItemDesc}
-                    onChange={e => setNewItemDesc(e.target.value)}
-                    className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-text-primary focus:border-accent focus:outline-none"
-                    autoFocus
-                  />
-                </td>
-                <td colSpan={2} className="py-2 px-2 border-b border-border"></td>
-                <td className="py-2 px-2 border-b border-border">
-                  <input
-                    type="number"
-                    placeholder="Qty"
-                    min="0"
-                    value={newItemQty}
-                    onChange={e => setNewItemQty(e.target.value)}
-                    className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-right text-text-primary focus:border-accent focus:outline-none"
-                  />
-                </td>
-                <td className="py-2 px-2 border-b border-border">
-                  <input
-                    type="number"
-                    placeholder="Rate"
-                    min="0"
-                    value={newItemRate}
-                    onChange={e => setNewItemRate(e.target.value)}
-                    className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-right text-text-primary focus:border-accent focus:outline-none"
-                  />
-                </td>
-                <td className="py-2 px-2 border-b border-border"></td>
-                <td className="py-2 px-2 border-b border-border">
-                  <select
-                    value={newItemGst}
-                    onChange={e => setNewItemGst(e.target.value)}
-                    className="w-full bg-background border border-border rounded px-1 py-1 text-xs text-right text-text-primary focus:border-accent focus:outline-none"
-                  >
-                    <option value="0">0%</option>
-                    <option value="5">5%</option>
-                    <option value="12">12%</option>
-                    <option value="18">18%</option>
-                  </select>
-                </td>
-                <td colSpan={2} className="py-2 px-2 border-b border-border"></td>
-                <td className="py-2 px-2 border-b border-border text-right whitespace-nowrap">
-                  <button
-                    onClick={() => {
-                      const descNormalized = newItemDesc.trim().toLowerCase();
-                      if (!descNormalized) { setIsAddingItem(false); return; }
-                      const hasDuplicate = calcResult.lines.some((line) => line.description.trim().toLowerCase() === descNormalized);
-                      if (hasDuplicate) return toast('An item with the same description already exists.', 'error');
-                      const qty = parseFloat(newItemQty) || 0;
-                      const rate = parseFloat(newItemRate) || 0;
-                      const gstRaw = parseFloat(newItemGst) / 100;
-                      // Constrain GST to valid GstPct values
-                      const VALID_GST: Array<0 | 0.05 | 0.12 | 0.18> = [0, 0.05, 0.12, 0.18];
-                      const gst = VALID_GST.reduce((prev, curr) => Math.abs(curr - gstRaw) < Math.abs(prev - gstRaw) ? curr : prev);
-                      if (qty > 0 && rate >= 0) {
-                        useCalculatorStore.getState().addCustomItem({
-                          description: newItemDesc.trim(),
-                          qty, ratePerUnit: rate, gstPct: gst, unit: 'Nos'
-                        });
-                      }
-                      setIsAddingItem(false);
-                      setNewItemDesc(''); setNewItemQty(''); setNewItemRate(''); setNewItemGst('18');
-                    }}
-                    className="px-2 py-1 bg-accent text-background rounded hover:bg-accent-hover transition-colors font-semibold mr-1"
-                  >
-                    Save
-                  </button>
-                  <button onClick={() => setIsAddingItem(false)} className="px-2 py-1 bg-surface-hover hover:bg-surface-active text-text-primary rounded transition-colors font-semibold">
-                    Cancel
-                  </button>
+              <tr className="bg-accent/5 border-b border-accent/20">
+                <td colSpan={11} className="py-3 px-4">
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-2 mb-2">
+                    {/* Description */}
+                    <div className="col-span-2">
+                      <label className="block text-[9px] text-text-muted uppercase font-semibold mb-1">Description *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. SOLAR METER"
+                        value={newItemDesc}
+                        onChange={e => setNewItemDesc(e.target.value)}
+                        className="w-full bg-background border border-border rounded px-2 py-1.5 text-xs text-text-primary focus:border-accent focus:outline-none"
+                        autoFocus
+                      />
+                    </div>
+                    {/* Remarks */}
+                    <div className="col-span-2">
+                      <label className="block text-[9px] text-text-muted uppercase font-semibold mb-1">Remarks / Spec</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Brand, Model, Rating"
+                        value={newItemRemarks}
+                        onChange={e => setNewItemRemarks(e.target.value)}
+                        className="w-full bg-background border border-border rounded px-2 py-1.5 text-xs text-text-primary focus:border-accent focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] text-text-muted uppercase font-semibold mb-1">Unit</label>
+                      <Select
+                        size="sm"
+                        value={newItemUnit}
+                        onChange={setNewItemUnit}
+                        options={[
+                          { value: 'Nos', label: 'Nos' },
+                          { value: 'Set', label: 'Set' },
+                          { value: 'Mtr', label: 'Mtr' },
+                          { value: 'Rmt', label: 'Rmt' },
+                          { value: 'kg', label: 'kg' },
+                          { value: 'Ltr', label: 'Ltr' },
+                          { value: 'Lot', label: 'Lot' },
+                          { value: 'LS', label: 'LS' },
+                        ]}
+                      />
+                    </div>
+                    {/* Qty */}
+                    <div>
+                      <label className="block text-[9px] text-text-muted uppercase font-semibold mb-1">Qty *</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        min="0"
+                        value={newItemQty}
+                        onChange={e => setNewItemQty(e.target.value)}
+                        className="w-full bg-background border border-border rounded px-2 py-1.5 text-xs text-right text-text-primary focus:border-accent focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
+                    {/* Rate */}
+                    <div>
+                      <label className="block text-[9px] text-text-muted uppercase font-semibold mb-1">Selling Rate (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        min="0"
+                        value={newItemRate}
+                        onChange={e => setNewItemRate(e.target.value)}
+                        className="w-full bg-background border border-border rounded px-2 py-1.5 text-xs text-right text-text-primary focus:border-accent focus:outline-none"
+                      />
+                    </div>
+                    {/* GST */}
+                    <div>
+                      <label className="block text-[9px] text-text-muted uppercase font-semibold mb-1">GST %</label>
+                      <Select
+                        size="sm"
+                        value={newItemGst}
+                        onChange={setNewItemGst}
+                        options={[
+                          { value: '0', label: '0%' },
+                          { value: '5', label: '5%' },
+                          { value: '12', label: '12%' },
+                          { value: '18', label: '18%' },
+                        ]}
+                      />
+                    </div>
+                    {/* Actions */}
+                    <div className="col-span-4 flex items-end gap-2 justify-end">
+                      <button
+                        onClick={() => {
+                          const descNormalized = newItemDesc.trim().toLowerCase();
+                          if (!descNormalized) { setIsAddingItem(false); return; }
+                          const hasDuplicate = calcResult.lines.some((line) => line.description.trim().toLowerCase() === descNormalized);
+                          if (hasDuplicate) return toast('An item with the same description already exists.', 'error');
+                          const qty = parseFloat(newItemQty) || 0;
+                          const rate = parseFloat(newItemRate) || 0;
+                          const gstRaw = parseFloat(newItemGst) / 100;
+                          const VALID_GST: Array<0 | 0.05 | 0.12 | 0.18> = [0, 0.05, 0.12, 0.18];
+                          const gst = VALID_GST.reduce((prev, curr) => Math.abs(curr - gstRaw) < Math.abs(prev - gstRaw) ? curr : prev);
+                          if (qty > 0 && rate >= 0) {
+                            useCalculatorStore.getState().addCustomItem({
+                              description: newItemDesc.trim(),
+                              remarks: newItemRemarks.trim() || undefined,
+                              qty, ratePerUnit: rate, gstPct: gst, unit: newItemUnit
+                            });
+                          }
+                          setIsAddingItem(false);
+                          setNewItemDesc(''); setNewItemRemarks(''); setNewItemUnit('Nos');
+                          setNewItemQty(''); setNewItemRate(''); setNewItemGst('18');
+                        }}
+                        className="px-3 py-1.5 bg-accent text-background rounded hover:bg-accent-hover transition-colors font-semibold text-xs"
+                      >
+                        + Add to BOM
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsAddingItem(false);
+                          setNewItemDesc(''); setNewItemRemarks(''); setNewItemUnit('Nos');
+                          setNewItemQty(''); setNewItemRate(''); setNewItemGst('18');
+                        }}
+                        className="px-3 py-1.5 bg-surface-hover hover:bg-surface-active text-text-primary rounded transition-colors font-semibold text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -868,7 +1066,8 @@ export function BOMTable() {
         <div className="px-4 py-3 space-y-2">
           <FooterRow label="Cost Before GST" value={formatINR(calcResult.costBeforeGST)} />
           <FooterRow label="Total Input GST" value={formatINR(calcResult.totalInputGST)} muted />
-          <FooterRow label="Total Incl. GST" value={formatINR(calcResult.totalIncGST)} bold />
+          <FooterRow label="Total Incl. GST (Selling)" value={formatINR(calcResult.totalIncGST)} bold />
+          <FooterRow label="Total Buying Price (WAC)" value={formatINR(totalBuyingPrice)} success />
         </div>
 
         {/* Divider */}
@@ -929,6 +1128,7 @@ function FooterRow({
   muted,
   accent,
   gold,
+  success,
 }: {
   label: string;
   value: string;
@@ -936,6 +1136,7 @@ function FooterRow({
   muted?: boolean;
   accent?: boolean;
   gold?: boolean;
+  success?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between">
@@ -946,6 +1147,8 @@ function FooterRow({
         className={`text-xs font-mono ${
           gold
             ? 'text-accent font-bold text-sm'
+            : success
+            ? 'text-success font-bold'
             : accent
             ? 'text-accent font-semibold'
             : bold
@@ -960,3 +1163,4 @@ function FooterRow({
     </div>
   );
 }
+

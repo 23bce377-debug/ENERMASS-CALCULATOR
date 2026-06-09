@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Check, X, Sun, Cpu, Battery, Plus, Minus, Edit3, RotateCcw } from 'lucide-react';
-import { getActivePanelBrands, getActiveInverterBrands, getActiveBatteryBrands, PANEL_BRANDS, INVERTER_BRANDS, BATTERY_BRANDS } from '@/lib/data/masters';
+import { Check, X, Sun, Cpu, Battery, Plus, Minus, ChevronDown, Edit3, RotateCcw, SlidersHorizontal, Layers } from 'lucide-react';
+import { Select } from '@/components/ui/Select';
 import type { PanelBrand, InverterBrand, BatteryBrand } from '@/lib/data/masters';
 import { useSettings } from '@/lib/hooks/useSettings';
+import { useCalculatorStore } from '@/lib/store/calculatorStore';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -24,12 +25,13 @@ interface EquipmentSelectorProps {
   onClearBatteryMix: () => void;
 }
 
-type TabKey = 'panel' | 'inverter' | 'battery';
+type TabKey = 'panel' | 'inverter' | 'battery' | 'structure';
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'panel', label: 'Panels', icon: <Sun size={15} /> },
   { key: 'inverter', label: 'Inverters', icon: <Cpu size={15} /> },
   { key: 'battery', label: 'Batteries', icon: <Battery size={15} /> },
+  { key: 'structure', label: 'Structure', icon: <Layers size={15} /> },
 ];
 
 // ─── Formatters ─────────────────────────────────────────────────────────────────
@@ -128,17 +130,50 @@ export function EquipmentSelector({
     [panelMix],
   );
 
+  const selectedStructureId = useCalculatorStore((s) => s.selectedStructureId);
+  const solarMeterId = useCalculatorStore((s) => s.solarMeterId);
+  const netMeterId = useCalculatorStore((s) => s.netMeterId);
+  const lightningArresterId = useCalculatorStore((s) => s.lightningArresterId);
+
   const selectionCounts = useMemo(() => ({
     panel: selectedPanelQty > 0 ? selectedPanelQty : (selectedPanelId ? 1 : 0),
     inverter: Object.values(selectedInverterMix).reduce((sum, qty) => sum + (Number.isFinite(qty) ? qty : 0), 0),
     battery: Object.values(selectedBatteryMix).reduce((sum, qty) => sum + (Number.isFinite(qty) ? qty : 0), 0),
-  }), [selectedPanelQty, selectedPanelId, selectedInverterMix, selectedBatteryMix]);
+    structure: selectedStructureId ? 1 : 0,
+  }), [selectedPanelQty, selectedPanelId, selectedInverterMix, selectedBatteryMix, selectedStructureId]);
 
   const { settings, setSettings } = useSettings();
+  const dbPanels = useCalculatorStore((s) => s.dbPanels);
+  const dbInverters = useCalculatorStore((s) => s.dbInverters);
+  const dbBatteries = useCalculatorStore((s) => s.dbBatteries);
+  const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
 
-  const allPanels = useMemo(() => getActivePanelBrands(settings), [settings]);
-  const allInverters = useMemo(() => getActiveInverterBrands(settings), [settings]);
-  const allBatteries = useMemo(() => getActiveBatteryBrands(settings), [settings]);
+  const allPanels = useMemo(() => {
+    const base = dbLoaded && dbPanels.length > 0 ? dbPanels : [];
+    const rateOverrides = settings?.currentEquipmentRates?.panels ?? {};
+    return [...base, ...(settings?.customPanels ?? [])].map((panel) => ({
+      ...panel,
+      ratePerWatt: rateOverrides[panel.id] ?? panel.ratePerWatt,
+    }));
+  }, [dbLoaded, dbPanels, settings]);
+
+  const allInverters = useMemo(() => {
+    const base = dbLoaded && dbInverters.length > 0 ? dbInverters : [];
+    const rateOverrides = settings?.currentEquipmentRates?.inverters ?? {};
+    return [...base, ...(settings?.customInverters ?? [])].map((inverter) => ({
+      ...inverter,
+      rate: rateOverrides[inverter.id] ?? inverter.rate,
+    }));
+  }, [dbLoaded, dbInverters, settings]);
+
+  const allBatteries = useMemo(() => {
+    const base = dbLoaded && dbBatteries.length > 0 ? dbBatteries : [];
+    const rateOverrides = settings?.currentEquipmentRates?.batteries ?? {};
+    return [...base, ...(settings?.customBatteries ?? [])].map((battery) => ({
+      ...battery,
+      rate: rateOverrides[battery.id] ?? battery.rate,
+    }));
+  }, [dbLoaded, dbBatteries, settings]);
 
   const selectedSolarWattage = useMemo(() => {
     const panelById = new Map(allPanels.map((panel) => [panel.id, panel]));
@@ -149,37 +184,54 @@ export function EquipmentSelector({
     }, 0);
   }, [allPanels, panelMix]);
 
+  const showInventoryInfo = useCalculatorStore((s) => s.showInventoryInfo);
+  const setShowInventoryInfo = useCalculatorStore((s) => s.setShowInventoryInfo);
+
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden" id="equipment-selector">
-      {/* Tab bar */}
-      <div className="flex border-b border-border">
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.key;
-          const hasSelection = selectionCounts[tab.key] > 0;
+      {/* Tab bar with ERP stock toggle */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between border-b border-border px-1 gap-2 bg-surface">
+        <div className="flex flex-1 overflow-x-auto min-w-0">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            const hasSelection = selectionCounts[tab.key] > 0;
 
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3
-                text-xs font-semibold uppercase tracking-wider
-                transition-all duration-200 relative
-                ${isActive
-                  ? 'text-accent bg-accent-glow'
-                  : 'text-text-muted hover:text-text-secondary hover:bg-surface-hover'
-                }`}
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-              {hasSelection && (
-                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              )}
-              {isActive && (
-                <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-accent rounded-t-full" />
-              )}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3
+                  text-xs font-semibold uppercase tracking-wider
+                  transition-all duration-200 relative
+                  ${isActive
+                    ? 'text-accent bg-accent-glow'
+                    : 'text-text-muted hover:text-text-secondary hover:bg-surface-hover'
+                  }`}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+                {hasSelection && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                )}
+                {isActive && (
+                  <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-accent rounded-t-full" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2 shrink-0 border-t md:border-t-0 border-border/50">
+          <input
+            type="checkbox"
+            id="toggle-inventory-info"
+            checked={showInventoryInfo}
+            onChange={(e) => setShowInventoryInfo(e.target.checked)}
+            className="rounded border-border text-accent focus:ring-accent bg-background cursor-pointer"
+          />
+          <label htmlFor="toggle-inventory-info" className="text-xs text-text-muted cursor-pointer hover:text-text-secondary select-none font-semibold uppercase tracking-wider text-[9px]">
+            Show ERP Stock Details
+          </label>
+        </div>
       </div>
 
       {/* Tab content */}
@@ -261,6 +313,9 @@ export function EquipmentSelector({
             })}
           />
         )}
+        {activeTab === 'structure' && (
+          <StructureConfigTable />
+        )}
       </div>
     </div>
   );
@@ -296,6 +351,19 @@ function PanelTable({
   onRemove: (id: string) => void;
 }) {
   const { settings } = useSettings();
+  const dbPanels = useCalculatorStore((s) => s.dbPanels);
+  const activePanels = useMemo(() => {
+    const mixEntries = Object.entries(panelMix).filter(([, qty]) => qty > 0);
+    if (mixEntries.length > 0) {
+      return mixEntries.map(([id]) => brands.find(p => p.id === id)).filter(Boolean);
+    }
+    if (selectedId) {
+      const p = brands.find(x => x.id === selectedId);
+      if (p) return [p];
+    }
+    return [];
+  }, [panelMix, selectedId, brands]);
+
   const [selectionMode, setSelectionMode] = useState<'preset' | 'custom'>('custom');
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
@@ -569,8 +637,7 @@ function PanelTable({
               const selectedQty = panelMix[brand.id] ?? 0;
               const isLegacySelected = selectedPanelQty === 0 && brand.id === selectedId;
               const isSelected = selectedQty > 0 || isLegacySelected;
-              
-              const defaultBrand = PANEL_BRANDS.find((p) => p.id === brand.id);
+              const defaultBrand = dbPanels.find((p) => p.id === brand.id);
               const defaultRatePerWatt = defaultBrand?.ratePerWatt ?? brand.ratePerWatt;
               const isOverridden = settings.currentEquipmentRates.panels[brand.id] !== undefined;
               const defaultPanelPrice = defaultRatePerWatt * brand.wattage;
@@ -694,14 +761,15 @@ function PanelTable({
                         placeholder="Wattage"
                         className="w-full px-2.5 py-2 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
                       />
-                      <select
+                      <Select
+                        size="sm"
                         value={customPanel.type}
-                        onChange={(e) => setCustomPanel({ ...customPanel, type: e.target.value as PanelBrand['type'] })}
-                        className="w-full px-2.5 py-2 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
-                      >
-                        <option value="Mono PERC">Mono PERC</option>
-                        <option value="TOPCon">TOPCon</option>
-                      </select>
+                        onChange={(v) => setCustomPanel({ ...customPanel, type: v as PanelBrand['type'] })}
+                        options={[
+                          { value: 'Mono PERC', label: 'Mono PERC' },
+                          { value: 'TOPCon', label: 'TOPCon' },
+                        ]}
+                      />
                       <input
                         type="number"
                         min={0.01}
@@ -754,6 +822,35 @@ function PanelTable({
           </tbody>
         </table>
       </div>
+
+      {activePanels.length > 0 && (
+        <div className="mt-6 space-y-4 border-t border-border pt-4">
+          <h4 className="text-xs uppercase font-bold text-text-secondary tracking-wider">Active Panel Detail Overview</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {activePanels.map((panel: any) => {
+              const qty = panelMix[panel.id] || requiredPanelQty || 0;
+              return (
+                <EquipmentDetailCard
+                  key={panel.id}
+                  title="Solar Panel"
+                  brand={panel.brand}
+                  model={panel.model}
+                  category={`${panel.type} PV Module`}
+                  specs={[
+                    `Wattage: ${panel.wattage}W`,
+                    `Type: ${panel.type}`,
+                    `Quantity: ${qty} Nos`,
+                    `Total Wattage: ${panel.wattage * qty}W`
+                  ]}
+                  gstPct={panel.gst_pct || 0.05}
+                  sellingPrice={panel.ratePerWatt * panel.wattage}
+                  itemDescForInventory={`${panel.brand} ${panel.model} ${Number(panel.wattage)}W Panel`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -790,6 +887,11 @@ function InverterTable({
       return true;
     });
   }, [brands, range.min, range.max]);
+
+  const activeInverters = useMemo(() => {
+    const mixEntries = Object.entries(selectedMix).filter(([, qty]) => qty > 0);
+    return mixEntries.map(([id]) => brands.find(i => i.id === id)).filter(Boolean);
+  }, [selectedMix, brands]);
 
   const selectedQty = useMemo(
     () => Object.values(selectedMix).reduce((sum, qty) => sum + (Number.isFinite(qty) ? qty : 0), 0),
@@ -1009,12 +1111,17 @@ function InverterTable({
                         value={customInv.model} onChange={(e) => setCustomInv({ ...customInv, model: e.target.value })} />
                       <input type="number" placeholder="kW" className="w-16 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
                         value={customInv.capacity} onChange={(e) => setCustomInv({ ...customInv, capacity: e.target.value })} />
-                      <select className="w-24 px-2 py-1 rounded bg-background border border-border text-xs focus:border-accent focus:outline-none"
-                        value={customInv.type} onChange={(e) => setCustomInv({ ...customInv, type: e.target.value as InverterBrand['type'] })}>
-                        <option value="on-grid">On-Grid</option>
-                        <option value="hybrid">Hybrid</option>
-                        <option value="micro">Micro</option>
-                      </select>
+                      <Select
+                        size="sm"
+                        value={customInv.type}
+                        onChange={(v) => setCustomInv({ ...customInv, type: v as InverterBrand['type'] })}
+                        className="w-24"
+                        options={[
+                          { value: 'on-grid', label: 'On-Grid' },
+                          { value: 'hybrid', label: 'Hybrid' },
+                          { value: 'micro', label: 'Micro' },
+                        ]}
+                      />
                       <input type="number" placeholder="Rate (₹)" className="w-20 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
                         value={customInv.rate} onChange={(e) => setCustomInv({ ...customInv, rate: e.target.value })} />
                       <input type="number" placeholder="Qty (opt)" className="w-20 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
@@ -1039,6 +1146,34 @@ function InverterTable({
           </tbody>
         </table>
       </div>
+
+      {activeInverters.length > 0 && (
+        <div className="mt-6 space-y-4 border-t border-border pt-4">
+          <h4 className="text-xs uppercase font-bold text-text-secondary tracking-wider">Active Inverter Detail Overview</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {activeInverters.map((inverter: any) => {
+              const qty = selectedMix[inverter.id] || 0;
+              return (
+                <EquipmentDetailCard
+                  key={inverter.id}
+                  title="Inverter"
+                  brand={inverter.brand}
+                  model={inverter.model}
+                  category={`${inverter.type} Inverter`}
+                  specs={[
+                    `Capacity: ${inverter.capacityKW} kW`,
+                    `Phases: ${inverter.phases}-Phase`,
+                    `Quantity: ${qty} Nos`
+                  ]}
+                  gstPct={inverter.gst_pct || 0.12}
+                  sellingPrice={inverter.rate}
+                  itemDescForInventory={`${inverter.brand} ${inverter.model} ${Number(inverter.capacity_kw)}kW Inverter`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1073,6 +1208,11 @@ function BatteryTable({
       return true;
     });
   }, [brands, range.min, range.max]);
+
+  const activeBatteries = useMemo(() => {
+    const mixEntries = Object.entries(selectedMix).filter(([, qty]) => qty > 0);
+    return mixEntries.map(([id]) => brands.find(b => b.id === id)).filter(Boolean);
+  }, [selectedMix, brands]);
 
   const selectedQty = useMemo(
     () => Object.values(selectedMix).reduce((sum, qty) => sum + (Number.isFinite(qty) ? qty : 0), 0),
@@ -1250,12 +1390,17 @@ function BatteryTable({
                         value={customBat.model} onChange={(e) => setCustomBat({ ...customBat, model: e.target.value })} />
                       <input type="number" placeholder="kWh" className="w-16 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
                         value={customBat.capacity} onChange={(e) => setCustomBat({ ...customBat, capacity: e.target.value })} />
-                      <select className="w-24 px-2 py-1 rounded bg-background border border-border text-xs focus:border-accent focus:outline-none"
-                        value={customBat.chemistry} onChange={(e) => setCustomBat({ ...customBat, chemistry: e.target.value as BatteryBrand['chemistry'] })}>
-                        <option value="LFP">LFP</option>
-                        <option value="NMC">NMC</option>
-                        <option value="Lead-Acid">Lead-Acid</option>
-                      </select>
+                      <Select
+                        size="sm"
+                        value={customBat.chemistry}
+                        onChange={(v) => setCustomBat({ ...customBat, chemistry: v as BatteryBrand['chemistry'] })}
+                        className="w-24"
+                        options={[
+                          { value: 'LFP', label: 'LFP' },
+                          { value: 'NMC', label: 'NMC' },
+                          { value: 'Lead-Acid', label: 'Lead-Acid' },
+                        ]}
+                      />
                       <input type="number" placeholder="Rate (₹)" className="w-20 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
                         value={customBat.rate} onChange={(e) => setCustomBat({ ...customBat, rate: e.target.value })} />
                       <input type="number" placeholder="Qty (opt)" className="w-20 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
@@ -1280,6 +1425,34 @@ function BatteryTable({
           </tbody>
         </table>
       </div>
+
+      {activeBatteries.length > 0 && (
+        <div className="mt-6 space-y-4 border-t border-border pt-4">
+          <h4 className="text-xs uppercase font-bold text-text-secondary tracking-wider">Active Battery Detail Overview</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {activeBatteries.map((battery: any) => {
+              const qty = selectedMix[battery.id] || 0;
+              return (
+                <EquipmentDetailCard
+                  key={battery.id}
+                  title="Battery"
+                  brand={battery.brand}
+                  model={battery.model}
+                  category={`${battery.chemistry} Storage`}
+                  specs={[
+                    `Capacity: ${battery.capacityKWh} kWh`,
+                    `Chemistry: ${battery.chemistry}`,
+                    `Quantity: ${qty} Nos`
+                  ]}
+                  gstPct={battery.gst_pct || 0.12}
+                  sellingPrice={battery.rate}
+                  itemDescForInventory={`${battery.brand} ${battery.model} ${Number(battery.capacityKWh)}kWh Battery`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1329,7 +1502,8 @@ function PanelRateCell({ brand }: { brand: PanelBrand }) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
 
-  const defaultBrand = PANEL_BRANDS.find((p) => p.id === brand.id);
+  const dbPanels = useCalculatorStore((s) => s.dbPanels);
+  const defaultBrand = dbPanels.find((p) => p.id === brand.id);
   const defaultRatePerWatt = defaultBrand?.ratePerWatt ?? brand.ratePerWatt;
   const currentRatePerWatt = brand.ratePerWatt;
   const isOverridden = settings.currentEquipmentRates.panels[brand.id] !== undefined;
@@ -1414,7 +1588,8 @@ function InverterRateCell({ brand }: { brand: InverterBrand }) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
 
-  const defaultBrand = INVERTER_BRANDS.find((i) => i.id === brand.id);
+  const dbInverters = useCalculatorStore((s) => s.dbInverters);
+  const defaultBrand = dbInverters.find((i) => i.id === brand.id);
   const defaultRate = defaultBrand?.rate ?? brand.rate;
   const currentRate = brand.rate;
   const isOverridden = settings.currentEquipmentRates.inverters[brand.id] !== undefined;
@@ -1496,7 +1671,8 @@ function BatteryRateCell({ brand }: { brand: BatteryBrand }) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
 
-  const defaultBrand = BATTERY_BRANDS.find((b) => b.id === brand.id);
+  const dbBatteries = useCalculatorStore((s) => s.dbBatteries);
+  const defaultBrand = dbBatteries.find((b) => b.id === brand.id);
   const defaultRate = defaultBrand?.rate ?? brand.rate;
   const currentRate = brand.rate;
   const isOverridden = settings.currentEquipmentRates.batteries[brand.id] !== undefined;
@@ -1568,6 +1744,479 @@ function BatteryRateCell({ brand }: { brand: BatteryBrand }) {
         >
           <RotateCcw size={10} />
         </button>
+      )}
+    </div>
+  );
+}
+
+function StructureConfigTable() {
+  const dbStructures = useCalculatorStore((s) => s.dbStructures);
+  const dbWeightLookups = useCalculatorStore((s) => s.dbWeightLookups);
+
+  const selectedStructureId = useCalculatorStore((s) => s.selectedStructureId);
+  const structurePricingMode = useCalculatorStore((s) => s.structurePricingMode);
+  const structureRateOverride = useCalculatorStore((s) => s.structureRateOverride);
+  const structureWastageOverride = useCalculatorStore((s) => s.structureWastageOverride);
+  const structureFastenerOverride = useCalculatorStore((s) => s.structureFastenerOverride);
+  const structureBaseWeightOverride = useCalculatorStore((s) => s.structureBaseWeightOverride);
+  const structureWeightLookupKg = useCalculatorStore((s) => s.structureWeightLookupKg);
+  const structureCustomRawRate = useCalculatorStore((s) => s.structureCustomRawRate);
+  const structureCustomFabricationRate = useCalculatorStore((s) => s.structureCustomFabricationRate);
+  const structureCustomGalvanizingRate = useCalculatorStore((s) => s.structureCustomGalvanizingRate);
+
+  const setStructureSelection = useCalculatorStore((s) => s.setStructureSelection);
+  const setStructureCustomField = useCalculatorStore((s) => s.setStructureCustomField);
+
+  const currentSystemId = useCalculatorStore((s) => s.selectedSystemId);
+  const dbSystems = useCalculatorStore((s) => s.dbSystems);
+  
+  // Resolve current system details (like capacity)
+  const currentSystem = dbSystems.find(sys => sys.id === currentSystemId);
+  const capacityKW = currentSystem?.capacityKW ?? 0;
+
+  // Find selected standard structure
+  const selectedStructure = useMemo(() => {
+    return dbStructures.find((s: any) => s.id === selectedStructureId);
+  }, [dbStructures, selectedStructureId]);
+
+  // Find active weight lookup for standard structure
+  const activeLookup = useMemo(() => {
+    if (!selectedStructureId || selectedStructureId === 'custom' || !capacityKW) return null;
+    return dbWeightLookups.find((l: any) => 
+      l.structure_id === selectedStructureId &&
+      capacityKW >= Number(l.capacity_kw_min) &&
+      capacityKW <= Number(l.capacity_kw_max)
+    );
+  }, [dbWeightLookups, selectedStructureId, capacityKW]);
+
+  const lookupWeight = useMemo(() => {
+    if (selectedStructureId === 'custom') return structureWeightLookupKg ?? 0;
+    return structureWeightLookupKg !== null
+      ? structureWeightLookupKg
+      : (activeLookup ? Number(activeLookup.total_weight_kg) : 0);
+  }, [selectedStructureId, structureWeightLookupKg, activeLookup]);
+
+  const baseWeight = useMemo(() => {
+    if (selectedStructureId === 'custom') return structureBaseWeightOverride ?? 0;
+    return structureBaseWeightOverride !== null
+      ? structureBaseWeightOverride
+      : (selectedStructure ? Number(selectedStructure.base_weight_kg ?? 0) : 0);
+  }, [selectedStructureId, structureBaseWeightOverride, selectedStructure]);
+
+  const wastage = useMemo(() => {
+    if (selectedStructureId === 'custom') return structureWastageOverride ?? 0.05;
+    return structureWastageOverride !== null
+      ? structureWastageOverride
+      : (selectedStructure ? Number(selectedStructure.wastage_pct ?? 0.05) : 0.05);
+  }, [selectedStructureId, structureWastageOverride, selectedStructure]);
+
+  const fasteners = useMemo(() => {
+    if (selectedStructureId === 'custom') return structureFastenerOverride ?? 0.02;
+    return structureFastenerOverride !== null
+      ? structureFastenerOverride
+      : (selectedStructure ? Number(selectedStructure.fastener_weight_pct ?? 0.02) : 0.02);
+  }, [selectedStructureId, structureFastenerOverride, selectedStructure]);
+
+  const ratePerKg = useMemo(() => {
+    if (selectedStructureId === 'custom') {
+      return (structureCustomRawRate ?? 0) + (structureCustomFabricationRate ?? 0) + (structureCustomGalvanizingRate ?? 0);
+    }
+    return selectedStructure
+      ? Number(selectedStructure.rate_per_kg ?? (Number(selectedStructure.raw_material_rate ?? 0) + Number(selectedStructure.fabrication_rate ?? 0) + Number(selectedStructure.galvanizing_rate ?? 0)))
+      : 0;
+  }, [selectedStructureId, selectedStructure, structureCustomRawRate, structureCustomFabricationRate, structureCustomGalvanizingRate]);
+
+  const finalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
+  const totalCost = finalWeight * ratePerKg;
+
+  return (
+    <div className="space-y-6 p-1 text-xs">
+      {/* ── Structure Selection ── */}
+      <div className="space-y-3">
+        <h4 className="text-xs uppercase font-bold text-text-secondary tracking-wider">Mounting Structure</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[10px] text-text-muted uppercase mb-1 font-semibold">Select Model</label>
+            <Select
+              value={selectedStructureId || ''}
+              onChange={(v) => setStructureSelection(v === '' ? null : v)}
+              placeholder="None (Unselected)"
+              options={[
+                { value: '', label: 'None (Unselected)' },
+                ...dbStructures.map((struct: any) => ({
+                  value: struct.id,
+                  label: `${struct.name} (${struct.material.replace('_', ' ')})`,
+                })),
+                { value: 'custom', label: 'Custom Structure' },
+              ]}
+            />
+          </div>
+
+          {selectedStructureId && (
+            <div>
+              <label className="block text-[10px] text-text-muted uppercase mb-1 font-semibold">Pricing Mode</label>
+              <Select
+                value={structurePricingMode}
+                onChange={(v) => setStructureSelection(selectedStructureId, v as any)}
+                options={[
+                  { value: 'weight', label: 'Weight-based' },
+                  { value: 'per_watt', label: 'Per-watt price' },
+                  { value: 'flat', label: 'Flat price' },
+                ]}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Custom Structure & Weight Details ── */}
+      {selectedStructureId === 'custom' && structurePricingMode === 'weight' && (
+        <div className="rounded-xl border border-accent/20 bg-accent-glow/5 p-4 space-y-4">
+          <h5 className="text-[10px] uppercase font-bold text-accent tracking-widest">Custom Structure (Weight-based Parameters)</h5>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[9px] text-text-muted mb-1 uppercase font-semibold">Raw Material Rate (₹/kg)</label>
+              <input
+                type="number"
+                min="0"
+                value={structureCustomRawRate ?? ''}
+                placeholder="0"
+                onChange={(e) => setStructureCustomField('structureCustomRawRate', parseFloat(e.target.value) || 0)}
+                className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] text-text-muted mb-1 uppercase font-semibold">Fabrication Rate (₹/kg)</label>
+              <input
+                type="number"
+                min="0"
+                value={structureCustomFabricationRate ?? ''}
+                placeholder="0"
+                onChange={(e) => setStructureCustomField('structureCustomFabricationRate', parseFloat(e.target.value) || 0)}
+                className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] text-text-muted mb-1 uppercase font-semibold">Galvanizing Rate (₹/kg)</label>
+              <input
+                type="number"
+                min="0"
+                value={structureCustomGalvanizingRate ?? ''}
+                placeholder="0"
+                onChange={(e) => setStructureCustomField('structureCustomGalvanizingRate', parseFloat(e.target.value) || 0)}
+                className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded bg-background/50 border border-border flex justify-between items-center text-[10px] font-mono">
+            <span className="text-text-muted">Total Calculated Rate per kg:</span>
+            <span className="text-accent font-bold">₹{((structureCustomRawRate ?? 0) + (structureCustomFabricationRate ?? 0) + (structureCustomGalvanizingRate ?? 0)).toFixed(2)} / kg</span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-[9px] text-text-muted mb-1 uppercase font-semibold">Lookup Weight (kg)</label>
+              <input
+                type="number"
+                min="0"
+                value={structureWeightLookupKg ?? ''}
+                placeholder="0"
+                onChange={(e) => setStructureCustomField('structureWeightLookupKg', parseFloat(e.target.value) || 0)}
+                className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] text-text-muted mb-1 uppercase font-semibold">Base Weight (kg)</label>
+              <input
+                type="number"
+                min="0"
+                value={structureBaseWeightOverride ?? ''}
+                placeholder="0"
+                onChange={(e) => setStructureCustomField('structureBaseWeightOverride', parseFloat(e.target.value) || 0)}
+                className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] text-text-muted mb-1 uppercase font-semibold">Wastage %</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={structureWastageOverride !== null ? Math.round(structureWastageOverride * 100) : ''}
+                placeholder="5"
+                onChange={(e) => setStructureCustomField('structureWastageOverride', (parseFloat(e.target.value) || 0) / 100)}
+                className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] text-text-muted mb-1 uppercase font-semibold">Fasteners %</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={structureFastenerOverride !== null ? Math.round(structureFastenerOverride * 100) : ''}
+                placeholder="2"
+                onChange={(e) => setStructureCustomField('structureFastenerOverride', (parseFloat(e.target.value) || 0) / 100)}
+                className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedStructureId && selectedStructureId !== 'custom' && structurePricingMode === 'weight' && (
+        <div className="rounded-xl border border-border bg-surface-hover/30 p-4 space-y-4">
+          <h5 className="text-[10px] uppercase font-bold text-text-secondary tracking-widest">{selectedStructure?.name} Specs</h5>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[10px] text-text-muted">
+            <div>
+              <span className="block font-semibold uppercase text-[8px] text-text-muted">Rates</span>
+              <p className="font-mono text-text-primary mt-1">₹{Number(selectedStructure?.rate_per_kg).toFixed(2)}/kg</p>
+            </div>
+            <div>
+              <span className="block font-semibold uppercase text-[8px] text-text-muted">Wastage Factor</span>
+              <p className="font-mono text-text-primary mt-1">{(Number(selectedStructure?.wastage_pct) * 100).toFixed(0)}%</p>
+            </div>
+            <div>
+              <span className="block font-semibold uppercase text-[8px] text-text-muted">Fasteners Factor</span>
+              <p className="font-mono text-text-primary mt-1">{(Number(selectedStructure?.fastener_weight_pct) * 100).toFixed(0)}%</p>
+            </div>
+            <div>
+              <span className="block font-semibold uppercase text-[8px] text-text-muted">Base Weight</span>
+              <p className="font-mono text-text-primary mt-1">{selectedStructure?.base_weight_kg} kg</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[9px] text-text-muted mb-1 uppercase font-semibold">Resolved Capacity Weight Lookup (kg)</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  disabled
+                  value={activeLookup ? Number(activeLookup.total_weight_kg) : 0}
+                  className="w-1/2 px-2.5 py-1.5 rounded-md bg-background/50 border border-border text-xs text-text-muted outline-none font-mono cursor-not-allowed"
+                />
+                <span className="text-[9.5px] text-text-muted">
+                  {activeLookup ? `Found lookup for ${activeLookup.panel_qty} panels` : 'No lookup match for this capacity'}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[9px] text-text-muted mb-1 uppercase font-semibold">Override Weight Lookup (kg)</label>
+              <input
+                type="number"
+                min="0"
+                value={structureWeightLookupKg ?? ''}
+                placeholder="Use default lookup"
+                onChange={(e) => setStructureCustomField('structureWeightLookupKg', e.target.value === '' ? null : parseFloat(e.target.value))}
+                className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedStructureId && structurePricingMode === 'weight' && (
+        <div className="rounded-xl border border-accent/25 bg-accent-glow/5 p-4 space-y-3">
+          <h5 className="text-[10px] uppercase font-bold text-accent tracking-widest">Weight Calculation Preview</h5>
+          <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+            <div className="space-y-1.5 text-text-muted">
+              <div>Lookup Weight:</div>
+              <div>Base Weight:</div>
+              <div>Wastage Factor:</div>
+              <div>Fasteners Factor:</div>
+              <div className="border-t border-border/60 pt-1.5 font-bold text-text-primary">Final Calculated Weight:</div>
+              <div>Rate per kg:</div>
+              <div className="border-t border-border/60 pt-1.5 font-bold text-text-primary">Total Structure Cost:</div>
+            </div>
+            <div className="space-y-1.5 text-right text-text-primary">
+              <div>{lookupWeight.toFixed(1)} kg</div>
+              <div>+ {baseWeight.toFixed(1)} kg</div>
+              <div>+ {(wastage * 100).toFixed(0)}%</div>
+              <div>+ {(fasteners * 100).toFixed(0)}%</div>
+              <div className="border-t border-border/60 pt-1.5 font-bold text-accent">{finalWeight.toFixed(1)} kg</div>
+              <div>₹{ratePerKg.toFixed(2)} / kg</div>
+              <div className="border-t border-border/60 pt-1.5 font-bold text-accent">₹{Math.round(totalCost).toLocaleString('en-IN')}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedStructureId && structurePricingMode === 'per_watt' && (
+        <div className="rounded-xl border border-border bg-surface-hover/30 p-4 space-y-3">
+          <label className="block text-[10px] text-text-muted uppercase font-semibold">Rate per Watt Override (₹ / W)</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              value={structureRateOverride ?? ''}
+              placeholder={selectedStructureId === 'custom' ? 'Enter rate per watt' : String(selectedStructure?.per_watt_rate ?? 0)}
+              onChange={(e) => setStructureCustomField('structureRateOverride', e.target.value === '' ? null : parseFloat(e.target.value))}
+              className="w-1/2 px-2.5 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+            />
+            <span className="text-[10px] text-text-muted font-mono">
+              Calculated Total Structure Cost: ₹{(capacityKW * 1000 * (structureRateOverride ?? (selectedStructure ? Number(selectedStructure.per_watt_rate) : 0))).toLocaleString('en-IN')}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {selectedStructureId && structurePricingMode === 'flat' && (
+        <div className="rounded-xl border border-border bg-surface-hover/30 p-4 space-y-3">
+          <label className="block text-[10px] text-text-muted uppercase font-semibold">Flat Price Override (₹)</label>
+          <input
+            type="number"
+            step="100"
+            min="0"
+            value={structureRateOverride ?? ''}
+            placeholder={selectedStructureId === 'custom' ? 'Enter flat price' : String(selectedStructure?.flat_rate ?? 0)}
+            onChange={(e) => setStructureCustomField('structureRateOverride', e.target.value === '' ? null : parseFloat(e.target.value))}
+            className="w-1/2 px-2.5 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+          />
+        </div>
+      )}
+
+      {selectedStructure && (
+        <div className="mt-6 border-t border-border pt-4">
+          <EquipmentDetailCard
+            title="Mounting Structure"
+            brand="Standard Structure"
+            model={selectedStructure.name}
+            category="Mounting Gear"
+            specs={[
+              `Material: ${selectedStructure.material.replace('_', ' ')}`,
+              `Roof mount: ${selectedStructure.roof_mount_type.replace('_', ' ')}`,
+              `Elevation: ${selectedStructure.elevation_height_mm} mm`,
+              `Weight rate: ₹${Number(selectedStructure.rate_per_kg).toFixed(2)}/kg`
+            ]}
+            gstPct={selectedStructure.gst_pct || 0.18}
+            sellingPrice={totalCost}
+            itemDescForInventory={`${selectedStructure.name} Structure (${selectedStructure.material || ''})`}
+          />
+        </div>
+      )}
+
+      {selectedStructureId === 'custom' && (
+        <div className="mt-6 border-t border-border pt-4">
+          <EquipmentDetailCard
+            title="Custom Structure"
+            brand="Custom"
+            model="GI/GP Custom Build"
+            category="Mounting Gear"
+            specs={[
+              `Pricing Mode: ${structurePricingMode}`,
+              `Total Calculated Weight: ${finalWeight.toFixed(1)} kg`,
+              `Custom Rate per kg: ₹${ratePerKg.toFixed(2)}/kg`
+            ]}
+            gstPct={0.18}
+            sellingPrice={totalCost}
+            itemDescForInventory="Custom Structure"
+          />
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+interface DetailCardProps {
+  title: string;
+  brand: string;
+  model: string;
+  category: string;
+  specs: string[];
+  gstPct: number;
+  sellingPrice: number;
+  description?: string;
+  itemDescForInventory: string;
+}
+
+function EquipmentDetailCard({
+  title,
+  brand,
+  model,
+  category,
+  specs,
+  gstPct,
+  sellingPrice,
+  description,
+  itemDescForInventory
+}: DetailCardProps) {
+  const showInventoryInfo = useCalculatorStore((s) => s.showInventoryInfo);
+  const inventorySummary = useCalculatorStore((s) => s.inventorySummary) || [];
+  
+  const inv = inventorySummary.find((x: any) => x.item_description === itemDescForInventory);
+  const currentStock = inv ? Number(inv.current_qty) : 0;
+  const wac = inv ? Number(inv.weighted_avg_cost) : 0;
+  
+  const isAvailable = currentStock > 0;
+  
+  return (
+    <div className="p-4 rounded-xl border border-border bg-surface-hover/30 shadow-md relative overflow-hidden transition-all duration-200 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/2 flex flex-col gap-3">
+      {/* Decorative accent glow */}
+      <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-xl pointer-events-none" />
+      
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <span className="text-[10px] uppercase font-bold text-accent tracking-widest">{category}</span>
+          <h4 className="text-sm font-bold text-text-primary mt-0.5">{brand} {model}</h4>
+        </div>
+        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+          isAvailable ? 'bg-success/15 text-success border border-success/30' : 'bg-error/15 text-error border border-error/30'
+        }`}>
+          {isAvailable ? 'In Stock' : 'Out of Stock'}
+        </span>
+      </div>
+
+      {description && (
+        <p className="text-xs text-text-muted leading-relaxed italic">
+          {description}
+        </p>
+      )}
+
+      {/* Specs Grid */}
+      <div className="grid grid-cols-2 gap-2 text-xs py-1 border-t border-b border-border/40">
+        <div>
+          <span className="block text-[9px] text-text-muted uppercase font-semibold">Specifications</span>
+          <ul className="list-disc list-inside text-text-secondary mt-1 space-y-0.5">
+            {specs.map((s, idx) => <li key={idx}>{s}</li>)}
+          </ul>
+        </div>
+        <div>
+          <span className="block text-[9px] text-text-muted uppercase font-semibold">Financials</span>
+          <div className="mt-1 space-y-0.5 text-text-secondary">
+            <div>Selling Price: <span className="font-semibold text-text-primary">₹{formatRate(sellingPrice)}</span></div>
+            <div>GST Rate: <span className="font-semibold text-text-primary">{(gstPct * 100).toFixed(0)}%</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Optional Inventory & Costing Block */}
+      {showInventoryInfo && (
+        <div className="rounded-lg bg-background/50 border border-border p-3 space-y-2 text-xs font-mono">
+          <div className="flex justify-between items-center text-[9px] uppercase font-bold text-text-muted tracking-wider border-b border-border/30 pb-1.5">
+            <span>ERP Inventory Details</span>
+            <span className="text-accent">Live Status</span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-text-secondary">
+            <div>Current Stock:</div>
+            <div className="text-right text-text-primary font-bold">{currentStock.toLocaleString()} Nos</div>
+            
+            <div>Available Stock:</div>
+            <div className="text-right text-text-primary font-bold">{currentStock.toLocaleString()} Nos</div>
+            
+            <div>Weighted Avg Cost (WAC):</div>
+            <div className="text-right text-accent font-bold">₹{formatRate(wac)}</div>
+            
+            <div>Last Purchase Cost:</div>
+            <div className="text-right text-accent font-bold">₹{formatRate(wac)}</div>
+          </div>
+        </div>
       )}
     </div>
   );

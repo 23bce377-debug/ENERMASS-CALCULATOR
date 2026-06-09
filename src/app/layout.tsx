@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { AppShell } from '@/components/layout/AppShell';
 import { ThemeProvider } from '@/lib/hooks/useTheme';
+import Providers from '@/components/layout/Providers';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -33,9 +34,11 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrains.variable} h-full`}
     >
       <body className="min-h-full antialiased">
-        <ThemeProvider>
-          <AppShell>{children}</AppShell>
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider>
+            <AppShell>{children}</AppShell>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

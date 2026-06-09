@@ -1,9 +1,9 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import { Check, AlertTriangle, X, Info } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
-// ─── Types ──────────────────────────────────────────────────────────────────────
+// --- Types ------------------------------------------------------------------
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -23,16 +23,36 @@ export function useToast() {
   return useContext(ToastContext);
 }
 
-// ─── Icons & Colors ─────────────────────────────────────────────────────────────
+// --- Config -----------------------------------------------------------------
 
-const TOAST_CONFIG: Record<ToastType, { icon: ReactNode; bg: string; border: string; text: string }> = {
-  success: { icon: <Check size={16} />, bg: 'bg-success/10', border: 'border-success/30', text: 'text-success' },
-  error: { icon: <AlertTriangle size={16} />, bg: 'bg-error/10', border: 'border-error/30', text: 'text-error' },
-  warning: { icon: <AlertTriangle size={16} />, bg: 'bg-warning/10', border: 'border-warning/30', text: 'text-warning' },
-  info: { icon: <Info size={16} />, bg: 'bg-info/10', border: 'border-info/30', text: 'text-info' },
+const TOAST_CONFIG: Record<ToastType, {
+  icon: ReactNode;
+  accent: string;
+  iconColor: string;
+}> = {
+  success: {
+    icon: <CheckCircle2 size={15} strokeWidth={2} />,
+    accent: 'border-l-[3px] border-l-[#22C55E]',
+    iconColor: 'text-[#22C55E]',
+  },
+  error: {
+    icon: <XCircle size={15} strokeWidth={2} />,
+    accent: 'border-l-[3px] border-l-[#EF4444]',
+    iconColor: 'text-[#EF4444]',
+  },
+  warning: {
+    icon: <AlertTriangle size={15} strokeWidth={2} />,
+    accent: 'border-l-[3px] border-l-[#F59E0B]',
+    iconColor: 'text-[#F59E0B]',
+  },
+  info: {
+    icon: <Info size={15} strokeWidth={2} />,
+    accent: 'border-l-[3px] border-l-[#3B82F6]',
+    iconColor: 'text-[#3B82F6]',
+  },
 };
 
-// ─── Provider ───────────────────────────────────────────────────────────────────
+// --- Provider ---------------------------------------------------------------
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -42,7 +62,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    }, 4500);
   }, []);
 
   const removeToast = useCallback((id: string) => {
@@ -52,23 +72,44 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast: addToast }}>
       {children}
-      {/* Toast Container */}
-      <div className="fixed bottom-20 md:bottom-6 right-4 z-[200] flex flex-col gap-2 pointer-events-none">
+
+      {/* Toast Stack */}
+      <div className="fixed bottom-20 md:bottom-6 right-4 z-[300] flex flex-col gap-2.5 pointer-events-none">
         {toasts.map((t) => {
           const cfg = TOAST_CONFIG[t.type];
           return (
             <div
               key={t.id}
-              className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl shadow-black/30
-                backdrop-blur-xl animate-fade-in max-w-sm ${cfg.bg} ${cfg.border}`}
+              className={[
+                'pointer-events-auto',
+                'flex items-center gap-3',
+                'pl-3.5 pr-3 py-3',
+                'rounded-xl',
+                'border border-border',
+                'bg-surface',
+                'shadow-xl shadow-black/12',
+                'max-w-[340px] min-w-[240px]',
+                'animate-toast-in',
+                cfg.accent,
+              ].join(' ')}
             >
-              <span className={cfg.text}>{cfg.icon}</span>
-              <span className="text-sm text-text-primary flex-1">{t.message}</span>
+              {/* Icon */}
+              <span className={`shrink-0 ${cfg.iconColor}`}>
+                {cfg.icon}
+              </span>
+
+              {/* Message */}
+              <span className="text-sm text-text-primary flex-1 leading-snug font-medium">
+                {t.message}
+              </span>
+
+              {/* Dismiss */}
               <button
                 onClick={() => removeToast(t.id)}
-                className="text-text-muted hover:text-text-secondary transition-colors shrink-0"
+                className="shrink-0 text-text-muted hover:text-text-secondary transition-colors p-0.5 rounded ml-1"
+                aria-label="Dismiss"
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             </div>
           );

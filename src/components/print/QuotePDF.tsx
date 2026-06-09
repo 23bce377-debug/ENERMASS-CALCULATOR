@@ -1,15 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import type { Quote } from '@/lib/types/quote';
 import { SYSTEMS } from '@/lib/data/bom';
 import { formatINR } from '@/lib/engine/calculator';
-import {
-  getActivePanelBrands,
-  getActiveInverterBrands,
-  getActiveBatteryBrands,
-} from '@/lib/data/masters';
+import { useCalculatorStore } from '@/lib/store/calculatorStore';
 
 /**
  * QuotePDF — Professional customer-facing quote layout.
@@ -40,10 +36,17 @@ export function QuotePDF({
 }: QuotePDFProps) {
   // Client-side mounting for portal
   const [mounted, setMounted] = useState(false);
+  const dbSystems = useCalculatorStore((s) => s.dbSystems);
+  const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
+  const dbPanels = useCalculatorStore((s) => s.dbPanels);
+  const dbInverters = useCalculatorStore((s) => s.dbInverters);
+  const dbBatteries = useCalculatorStore((s) => s.dbBatteries);
+
   useEffect(() => setMounted(true), []);
 
   // Look up system from both built-in and custom systems
-  let system = SYSTEMS.find((s) => s.id === quote.systemId);
+  const systemsList = dbLoaded && dbSystems.length > 0 ? dbSystems : SYSTEMS;
+  let system = systemsList.find((s) => s.id === quote.systemId);
   if (!system && typeof window !== 'undefined') {
     try {
       const raw = window.localStorage.getItem('enermass-settings');
@@ -68,7 +71,7 @@ export function QuotePDF({
   const projectTitle = quote.sales.projectTitle || quote.systemName;
 
   // Resolve equipment names for display
-  let equipmentSettings: Parameters<typeof getActivePanelBrands>[0] | undefined;
+  let equipmentSettings: any;
   if (typeof window !== 'undefined') {
     try {
       const raw = window.localStorage.getItem('enermass-settings');
@@ -76,9 +79,32 @@ export function QuotePDF({
     } catch {}
   }
 
-  const allPanels = getActivePanelBrands(equipmentSettings);
-  const allInverters = getActiveInverterBrands(equipmentSettings);
-  const allBatteries = getActiveBatteryBrands(equipmentSettings);
+  const allPanels = useMemo(() => {
+    const base = dbLoaded && dbPanels.length > 0 ? dbPanels : [];
+    const rateOverrides = equipmentSettings?.currentEquipmentRates?.panels ?? {};
+    return [...base, ...(equipmentSettings?.customPanels ?? [])].map((panel) => ({
+      ...panel,
+      ratePerWatt: rateOverrides[panel.id] ?? panel.ratePerWatt,
+    }));
+  }, [dbLoaded, dbPanels, equipmentSettings]);
+
+  const allInverters = useMemo(() => {
+    const base = dbLoaded && dbInverters.length > 0 ? dbInverters : [];
+    const rateOverrides = equipmentSettings?.currentEquipmentRates?.inverters ?? {};
+    return [...base, ...(equipmentSettings?.customInverters ?? [])].map((inverter) => ({
+      ...inverter,
+      rate: rateOverrides[inverter.id] ?? inverter.rate,
+    }));
+  }, [dbLoaded, dbInverters, equipmentSettings]);
+
+  const allBatteries = useMemo(() => {
+    const base = dbLoaded && dbBatteries.length > 0 ? dbBatteries : [];
+    const rateOverrides = equipmentSettings?.currentEquipmentRates?.batteries ?? {};
+    return [...base, ...(equipmentSettings?.customBatteries ?? [])].map((battery) => ({
+      ...battery,
+      rate: rateOverrides[battery.id] ?? battery.rate,
+    }));
+  }, [dbLoaded, dbBatteries, equipmentSettings]);
 
   // Build equipment description
   const panelEntries = (quote.equipment.panelMix ?? []).map((entry) => {

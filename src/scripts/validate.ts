@@ -8,11 +8,24 @@ import { calculateSystem, formatINR } from '../lib/engine/calculator';
 console.log('═══ ENERMASS Engine Validation ═══\n');
 
 // Test: 3.1kW On-Grid (id:'3kwp'), Gujarat, residential
+const mockStateData = {
+  'Gujarat': {
+    name: 'Gujarat',
+    sunHoursPerDay: 5.5,
+    performanceRatio: 0.78,
+    labourMultiplier: 1.0,
+    gstOnOutput: 0.089,
+    gridTariffInr: 8.0,
+    subsidyRules: []
+  }
+};
+
 const result = calculateSystem({
   systemId: '3kwp',
   state: 'Gujarat',
   projectType: 'residential',
   targetMarginPct: 0.25,
+  stateData: mockStateData
 });
 
 console.log('System: 3.1 KWp On-Grid (3kwp)');

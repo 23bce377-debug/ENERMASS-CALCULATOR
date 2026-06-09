@@ -103,6 +103,9 @@ export interface Quote {
   targetMarginPct?: number;
   customItems?: import('../data/bom').BomItem[];
   disabledItemIndices?: Record<number, boolean>;
+  gstOnOutputOverride?: number | null;
+  targetMRPInclGST?: number | null;
+  targetMRPPerWatt?: number | null;
 
   // Frozen calculation snapshot at quote creation
   calculations: CalcResult;
@@ -112,6 +115,7 @@ export interface Quote {
   statusHistory?: QuoteStatusEntry[];
   createdAt: string;
   updatedAt: string;
+  version?: number;
 }
 
 // ─── Quote ID Generator ─────────────────────────────────────────────────────────

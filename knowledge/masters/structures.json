@@ -1,0 +1,950 @@
+[
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 2500,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 675,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "2kwp",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kwp",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3 to 3 upgradation",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 4000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 720,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet1",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet1",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 5000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 900,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "1kw admn",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1kw admn",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet6",
+        "sourceRow": 8
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 8000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 1440,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3Kwp",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3Kwp",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kwp",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 15000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 2700,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3KW MICRO INVERTER",
+      "sourceRow": 9
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3KW MICRO INVERTER",
+        "sourceRow": 9
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5kw micro",
+        "sourceRow": 9
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "10KWp",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 9000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 1620,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "2-3upgrade",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3kw hibrid",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5Kwp",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5kw 3 PH",
+        "sourceRow": 8
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 8500,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 0,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "mat 3 kw",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "mat 3 kw",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 13200,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 1188,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "UPGRADE 5 KW hybrid",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 5kw",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 8
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 12000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 0,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "4KWp",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "4KWp",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 12000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 2160,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hoymiles5kw",
+      "sourceRow": 8
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 8
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 24000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 4320,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "8kwp",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "8kwp",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 36000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 6480,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "15kwHibrid",
+      "sourceRow": 9
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "15kwHibrid",
+        "sourceRow": 9
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 13000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 2340,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "10kw hybrid",
+      "sourceRow": 8
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "10kw hybrid",
+        "sourceRow": 8
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE LEG BIG",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": null,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 0,
+    "description": "STRUCTURE LEG BIG",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "1.5kw",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1.5kw",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kw",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet3",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kw",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 3 kw",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5ke 3P TN",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet4",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet5",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE LEG SMALL",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": null,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 0,
+    "description": "STRUCTURE LEG SMALL",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "1.5kw",
+      "sourceRow": 8
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1.5kw",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kw",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet3",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kw",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 3 kw",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5ke 3P TN",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet4",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet5",
+        "sourceRow": 8
+      }
+    ]
+  },
+  {
+    "name": "NUT BOLTS(STRUCTURE)",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": null,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 0,
+    "description": "NUT BOLTS(STRUCTURE)",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "1.5kw",
+      "sourceRow": 11
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1.5kw",
+        "sourceRow": 11
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kw",
+        "sourceRow": 11
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet3",
+        "sourceRow": 11
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kw",
+        "sourceRow": 11
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 3 kw",
+        "sourceRow": 11
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5ke 3P TN",
+        "sourceRow": 11
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet4",
+        "sourceRow": 11
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet5",
+        "sourceRow": 11
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 19750,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 3555,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet9",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet9",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 67950,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 12231,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "25kw",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "25kw",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet7",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 50000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 9000,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet11",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet11",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20KW HIBRID",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw30kwhr",
+        "sourceRow": 8
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 40000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 7200,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "15kwp",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "15kwp",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet2",
+        "sourceRow": 8
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 60000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 10800,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "20kwp",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kwp",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 70000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 12600,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet8",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet8",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 90000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 0,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "30KW Hybrid",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "30KW Hybrid",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 1120,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 32256,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Inkel250bos",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 750,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 13500,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "100kw STM",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 820000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 147600,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "inkel aluva",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 160,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 36777.6,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "newen",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "STRUCTURE",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 9220,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 1659.6,
+    "description": "STRUCTURE",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "mis working",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "mis working",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 50000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 9000,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "20kw hibrid solinteg",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 160,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 36777.6,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet10",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet10",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 270000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 48600,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "80kw",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kw",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "name": "Mounting Structure",
+    "material": "unknown",
+    "roof_mount_type": "rcc_flat",
+    "raw_material_rate": 270000,
+    "fabrication_rate": null,
+    "galvanizing_rate": null,
+    "gst_pct": 48600,
+    "description": "Mounting Structure",
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "80kwenphase",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 7
+      }
+    ]
+  }
+]

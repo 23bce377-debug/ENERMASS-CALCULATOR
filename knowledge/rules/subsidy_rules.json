@@ -1,0 +1,514 @@
+[
+  {
+    "systemType": "ongrid",
+    "capacityKW": 1.5,
+    "panelCount": 3,
+    "inverterKW": 2,
+    "priceType": "premium",
+    "beneficiaryContribution": 82000,
+    "subsidy": 48600,
+    "systemPrice": 130600,
+    "formula": "system_price = beneficiary_contribution + subsidy",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 2,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_1.5_premium"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 1.5,
+    "panelCount": 3,
+    "inverterKW": 2,
+    "priceType": "standard",
+    "beneficiaryContribution": 75000,
+    "subsidy": 0,
+    "systemPrice": 123600,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 3,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_1.5_standard"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 2,
+    "panelCount": 4,
+    "inverterKW": 2.2,
+    "priceType": "premium",
+    "beneficiaryContribution": 92500,
+    "subsidy": 62880,
+    "systemPrice": 155380,
+    "formula": "system_price = beneficiary_contribution + subsidy",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 4,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_2_premium"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 2,
+    "panelCount": 4,
+    "inverterKW": 2.2,
+    "priceType": "standard",
+    "beneficiaryContribution": 87500,
+    "subsidy": 0,
+    "systemPrice": 150380,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 5,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_2_standard"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 3,
+    "panelCount": 6,
+    "inverterKW": 3.4,
+    "priceType": "premium",
+    "beneficiaryContribution": 125000,
+    "subsidy": 78000,
+    "systemPrice": 203000,
+    "formula": "system_price = beneficiary_contribution + subsidy",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 6,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_3_premium"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 3,
+    "panelCount": 6,
+    "inverterKW": 3.4,
+    "priceType": "standard",
+    "beneficiaryContribution": 115000,
+    "subsidy": 0,
+    "systemPrice": 193000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 7,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_3_standard"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 4,
+    "panelCount": 8,
+    "inverterKW": 4.4,
+    "priceType": "premium",
+    "beneficiaryContribution": 185000,
+    "subsidy": 0,
+    "systemPrice": 263000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 8,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_4_premium"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 4,
+    "panelCount": 8,
+    "inverterKW": 4.4,
+    "priceType": "standard",
+    "beneficiaryContribution": 175000,
+    "subsidy": 0,
+    "systemPrice": 253000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 9,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_4_standard"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 5,
+    "panelCount": 9,
+    "inverterKW": 5,
+    "priceType": "premium",
+    "beneficiaryContribution": 220000,
+    "subsidy": 0,
+    "systemPrice": 298000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 10,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_5_premium"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 5,
+    "panelCount": 9,
+    "inverterKW": 5,
+    "priceType": "standard",
+    "beneficiaryContribution": 200000,
+    "subsidy": 0,
+    "systemPrice": 278000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 11,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_5_standard"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 5,
+    "panelCount": 10,
+    "inverterKW": 5,
+    "priceType": "premium",
+    "beneficiaryContribution": 235000,
+    "subsidy": 0,
+    "systemPrice": 313000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 12,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_5_premium"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 5,
+    "panelCount": 10,
+    "inverterKW": 5,
+    "priceType": "standard",
+    "beneficiaryContribution": 220000,
+    "subsidy": 0,
+    "systemPrice": 298000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 13,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_5_standard"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 6,
+    "panelCount": 11,
+    "inverterKW": 6,
+    "priceType": "premium",
+    "beneficiaryContribution": 290000,
+    "subsidy": 0,
+    "systemPrice": 368000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 14,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_6_premium"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 6,
+    "panelCount": 11,
+    "inverterKW": 6,
+    "priceType": "standard",
+    "beneficiaryContribution": 270000,
+    "subsidy": 0,
+    "systemPrice": 348000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 15,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_6_standard"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 8,
+    "panelCount": 15,
+    "inverterKW": 8,
+    "priceType": "premium",
+    "beneficiaryContribution": 358000,
+    "subsidy": 0,
+    "systemPrice": 358000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 16,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_8_premium"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 8,
+    "panelCount": 15,
+    "inverterKW": 8,
+    "priceType": "standard",
+    "beneficiaryContribution": 325000,
+    "subsidy": 0,
+    "systemPrice": 325000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 17,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_8_standard"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 10,
+    "panelCount": 19,
+    "inverterKW": 10,
+    "priceType": "premium",
+    "beneficiaryContribution": 430000,
+    "subsidy": 0,
+    "systemPrice": 430000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 18,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_10_premium"
+  },
+  {
+    "systemType": "ongrid",
+    "capacityKW": 10,
+    "panelCount": 19,
+    "inverterKW": 10,
+    "priceType": "standard",
+    "beneficiaryContribution": 415000,
+    "subsidy": 0,
+    "systemPrice": 415000,
+    "formula": "system_price = beneficiary_contribution",
+    "inputs": [
+      "beneficiary_contribution",
+      "subsidy"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 19,
+    "classification": "Subsidy Rule",
+    "ruleName": "pricing_10_standard"
+  },
+  {
+    "ruleName": "subsidy_1.5_premium",
+    "formula": "subsidy = system_price - beneficiary_contribution",
+    "inputs": [
+      "system_price",
+      "beneficiary_contribution"
+    ],
+    "output": "subsidy",
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 2,
+    "capacityKw": 1.5,
+    "panelCount": 3,
+    "inverterKw": 2,
+    "type": "premium",
+    "beneficiaryContribution": 82000,
+    "subsidy": 48600,
+    "systemPrice": 130600
+  },
+  {
+    "ruleName": "subsidy_2_premium",
+    "formula": "subsidy = system_price - beneficiary_contribution",
+    "inputs": [
+      "system_price",
+      "beneficiary_contribution"
+    ],
+    "output": "subsidy",
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 4,
+    "capacityKw": 2,
+    "panelCount": 4,
+    "inverterKw": 2.2,
+    "type": "premium",
+    "beneficiaryContribution": 92500,
+    "subsidy": 62880,
+    "systemPrice": 155380
+  },
+  {
+    "ruleName": "subsidy_3_premium",
+    "formula": "subsidy = system_price - beneficiary_contribution",
+    "inputs": [
+      "system_price",
+      "beneficiary_contribution"
+    ],
+    "output": "subsidy",
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 6,
+    "capacityKw": 3,
+    "panelCount": 6,
+    "inverterKw": 3.4,
+    "type": "premium",
+    "beneficiaryContribution": 125000,
+    "subsidy": 78000,
+    "systemPrice": 203000
+  },
+  {
+    "ruleName": "subsidy_4_premium",
+    "formula": "subsidy = system_price - beneficiary_contribution",
+    "inputs": [
+      "system_price",
+      "beneficiary_contribution"
+    ],
+    "output": "subsidy",
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 8,
+    "capacityKw": 4,
+    "panelCount": 8,
+    "inverterKw": 4.4,
+    "type": "premium",
+    "beneficiaryContribution": 185000,
+    "subsidy": 0,
+    "systemPrice": 263000
+  },
+  {
+    "ruleName": "subsidy_5_premium",
+    "formula": "subsidy = system_price - beneficiary_contribution",
+    "inputs": [
+      "system_price",
+      "beneficiary_contribution"
+    ],
+    "output": "subsidy",
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 10,
+    "capacityKw": 5,
+    "panelCount": 9,
+    "inverterKw": 5,
+    "type": "premium",
+    "beneficiaryContribution": 220000,
+    "subsidy": 0,
+    "systemPrice": 298000
+  },
+  {
+    "ruleName": "subsidy_6_premium",
+    "formula": "subsidy = system_price - beneficiary_contribution",
+    "inputs": [
+      "system_price",
+      "beneficiary_contribution"
+    ],
+    "output": "subsidy",
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 14,
+    "capacityKw": 6,
+    "panelCount": 11,
+    "inverterKw": 6,
+    "type": "premium",
+    "beneficiaryContribution": 290000,
+    "subsidy": 0,
+    "systemPrice": 368000
+  },
+  {
+    "ruleName": "subsidy_8_premium",
+    "formula": "subsidy = system_price - beneficiary_contribution",
+    "inputs": [
+      "system_price",
+      "beneficiary_contribution"
+    ],
+    "output": "subsidy",
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 16,
+    "capacityKw": 8,
+    "panelCount": 15,
+    "inverterKw": 8,
+    "type": "premium",
+    "beneficiaryContribution": 358000,
+    "subsidy": 0,
+    "systemPrice": 358000
+  },
+  {
+    "ruleName": "subsidy_10_premium",
+    "formula": "subsidy = system_price - beneficiary_contribution",
+    "inputs": [
+      "system_price",
+      "beneficiary_contribution"
+    ],
+    "output": "subsidy",
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 18,
+    "capacityKw": 10,
+    "panelCount": 19,
+    "inverterKw": 10,
+    "type": "premium",
+    "beneficiaryContribution": 430000,
+    "subsidy": 0,
+    "systemPrice": 430000
+  }
+]

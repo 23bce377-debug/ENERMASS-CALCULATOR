@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode, useEffect } from 'react';
 import { AlertTriangle, Info, ShieldAlert, X } from 'lucide-react';
 
-// ─── Types ──────────────────────────────────────────────────────────────────────
+// --- Types ------------------------------------------------------------------
 
 export interface ConfirmOptions {
   title?: string;
@@ -35,7 +35,21 @@ const DEFAULT_OPTIONS: ConfirmOptions = {
   type: 'info',
 };
 
-// ─── Provider ───────────────────────────────────────────────────────────────────
+// --- Icon config ------------------------------------------------------------
+
+const ICON_CONFIG = {
+  danger:  { icon: ShieldAlert,     bg: 'bg-[#EF4444]/10', color: 'text-[#EF4444]' },
+  warning: { icon: AlertTriangle,   bg: 'bg-[#F59E0B]/10', color: 'text-[#F59E0B]' },
+  info:    { icon: Info,            bg: 'bg-accent/10',    color: 'text-accent'     },
+};
+
+const BTN_CONFIG = {
+  danger:  'bg-[#EF4444] hover:bg-[#DC2626] text-white shadow-sm shadow-[#EF4444]/20',
+  warning: 'bg-[#F59E0B] hover:bg-[#D97706] text-white shadow-sm shadow-[#F59E0B]/20',
+  info:    'bg-accent hover:bg-accent-hover text-background font-bold shadow-sm shadow-accent/20',
+};
+
+// --- Provider ---------------------------------------------------------------
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ConfirmState | null>(null);
@@ -64,19 +78,20 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
-  // Handle Escape key
   useEffect(() => {
     if (!state?.isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleCancel();
-      }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleCancel();
+      if (e.key === 'Enter') handleConfirm();
     };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [state?.isOpen, handleCancel, handleConfirm]);
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state?.isOpen, handleCancel]);
+  const type = state?.options.type ?? 'info';
+  const iconCfg = ICON_CONFIG[type];
+  const btnCls  = BTN_CONFIG[type];
+  const IconComponent = iconCfg.icon;
 
   return (
     <ConfirmContext.Provider value={confirm}>
@@ -87,65 +102,63 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           {/* Backdrop */}
           <div
             onClick={handleCancel}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+            className="absolute inset-0 bg-black/50 backdrop-blur-[2px] animate-fade-in"
           />
 
-          {/* Modal Container */}
-          <div className="relative w-full max-w-md bg-surface border border-border rounded-2xl shadow-2xl shadow-black/50 p-6 overflow-hidden animate-scale-in">
-            {/* Header / Icon */}
-            <div className="flex items-start gap-4">
-              <div
-                className={`p-3 rounded-xl shrink-0 ${
-                  state.options.type === 'danger'
-                    ? 'bg-error/10 text-error'
-                    : state.options.type === 'warning'
-                    ? 'bg-warning/10 text-warning'
-                    : 'bg-accent/10 text-accent'
-                }`}
-              >
-                {state.options.type === 'danger' && <ShieldAlert size={24} />}
-                {state.options.type === 'warning' && <AlertTriangle size={24} />}
-                {state.options.type === 'info' && <Info size={24} />}
+          {/* Dialog */}
+          <div className="relative w-full max-w-[400px] animate-scale-in">
+            <div
+              className="bg-surface-2 border border-border rounded-2xl shadow-2xl shadow-black/30 overflow-hidden"
+              style={{ boxShadow: '0 24px 64px -12px rgba(0,0,0,0.3), 0 0 0 1px var(--bdr)' }}
+            >
+              {/* Top accent line per type */}
+              <div className={`h-[2px] w-full ${
+                type === 'danger'  ? 'bg-[#EF4444]' :
+                type === 'warning' ? 'bg-[#F59E0B]' :
+                'bg-accent'
+              }`} />
+
+              <div className="p-6 space-y-5">
+                {/* Header */}
+                <div className="flex items-start gap-3.5">
+                  <div className={`p-2.5 rounded-xl shrink-0 ${iconCfg.bg} ${iconCfg.color}`}>
+                    <IconComponent size={20} strokeWidth={2} />
+                  </div>
+
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <h3 className="text-[15px] font-bold text-text-primary leading-snug">
+                      {state.options.title}
+                    </h3>
+                    <p className="mt-1.5 text-sm text-text-secondary leading-relaxed">
+                      {state.options.message}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleCancel}
+                    className="shrink-0 p-1.5 rounded-lg text-text-muted hover:text-text-secondary hover:bg-surface-hover transition-colors"
+                    aria-label="Close"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-2.5 pt-1 border-t border-border">
+                  <button
+                    onClick={handleCancel}
+                    className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all"
+                  >
+                    {state.options.cancelLabel}
+                  </button>
+                  <button
+                    onClick={handleConfirm}
+                    className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all active:scale-95 ${btnCls}`}
+                  >
+                    {state.options.confirmLabel}
+                  </button>
+                </div>
               </div>
-
-              <div className="flex-1 space-y-1.5 min-w-0">
-                <h3 className="text-base font-bold text-text-primary truncate">
-                  {state.options.title || (state.options.type === 'danger' ? 'Delete Permanently?' : 'Are you sure?')}
-                </h3>
-                <p className="text-sm text-text-secondary leading-relaxed break-words">
-                  {state.options.message}
-                </p>
-              </div>
-
-              <button
-                onClick={handleCancel}
-                className="text-text-muted hover:text-text-secondary transition-colors p-1 rounded-lg hover:bg-surface-hover shrink-0"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-border/50">
-              <button
-                onClick={handleCancel}
-                className="px-4 py-2.5 rounded-xl border border-border text-sm font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all duration-200 cursor-pointer"
-              >
-                {state.options.cancelLabel || 'Cancel'}
-              </button>
-
-              <button
-                onClick={handleConfirm}
-                className={`px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
-                  state.options.type === 'danger'
-                    ? 'bg-error hover:bg-error/90 shadow-error/15 text-white'
-                    : state.options.type === 'warning'
-                    ? 'bg-warning hover:bg-warning/90 shadow-warning/15 text-white'
-                    : 'bg-accent hover:bg-accent-hover shadow-accent/15 text-background font-bold'
-                }`}
-              >
-                {state.options.confirmLabel || 'Confirm'}
-              </button>
             </div>
           </div>
         </div>

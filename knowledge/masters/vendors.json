@@ -1,0 +1,1322 @@
+[
+  {
+    "vendorId": "hoymiles",
+    "vendorName": "Hoymiles",
+    "evidence": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 4,
+        "evidence": "PANEL"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 5,
+        "evidence": "INVERTER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 6,
+        "evidence": "SOLAR METER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 7,
+        "evidence": "BI DIRECTIONAL METER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 8,
+        "evidence": "STRUCTURE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 9,
+        "evidence": "ACCESSORIES"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 10,
+        "evidence": "WIRING PIPE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 11,
+        "evidence": "WIRING ACCESSORIES"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 12,
+        "evidence": "L/A"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 13,
+        "evidence": "EARTH ROD"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 14,
+        "evidence": "GI STRIP"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 15,
+        "evidence": "EARTH COMPOUND"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 16,
+        "evidence": "CHAMBER BOX"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 17,
+        "evidence": "EARTH BENCH"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 18,
+        "evidence": "ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 19,
+        "evidence": "DCDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 20,
+        "evidence": "METER BOX"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 21,
+        "evidence": "DC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 22,
+        "evidence": "AC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 23,
+        "evidence": "ALUM CABLE 50 SQMM"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 24,
+        "evidence": "ALUM CABLE 16 SQMM"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 25,
+        "evidence": "COPPER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 26,
+        "evidence": "MC4(ADDITIONAL)"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 27,
+        "evidence": "ISOLATOR"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 28,
+        "evidence": "TRANSPORTATION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 29,
+        "evidence": "COMMISSION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 30,
+        "evidence": "SITE VISIT"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 31,
+        "evidence": "INSTALLATION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 32,
+        "evidence": "COST UPTO INSTALLATION"
+      }
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hoymiles5kw",
+    "sourceRow": 4
+  },
+  {
+    "vendorId": "inkel",
+    "vendorName": "Inkel",
+    "evidence": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 4,
+        "evidence": "PANEL"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 5,
+        "evidence": "INVERTER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 6,
+        "evidence": "SOLAR METER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 7,
+        "evidence": "Mounting Structure"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 8,
+        "evidence": "walk way"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 9,
+        "evidence": "vertical ladder"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 10,
+        "evidence": "WIRING TRAY"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 11,
+        "evidence": "L/A"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 12,
+        "evidence": "EARTH ROD"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 13,
+        "evidence": "GI STRIP"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 14,
+        "evidence": "EARTH COMPOUND"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 15,
+        "evidence": "CHAMBER BOX"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 16,
+        "evidence": "EARTH BENCH"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 17,
+        "evidence": "ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 18,
+        "evidence": "DCDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 19,
+        "evidence": "MAIN ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 20,
+        "evidence": "DC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 21,
+        "evidence": "AC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 22,
+        "evidence": "ALUM CABLE 50 SQMM"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 23,
+        "evidence": "AC WIRE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 24,
+        "evidence": "COPPER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 25,
+        "evidence": "MC4(ADDITIONAL)"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 26,
+        "evidence": "CTPT"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 27,
+        "evidence": "pipe accessories"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 28,
+        "evidence": "HT Bidirectional meter"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 29,
+        "evidence": "kseb feasibility"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 30,
+        "evidence": "kseb inspectortate"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 31,
+        "evidence": "RPR"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 32,
+        "evidence": "TRANSPORTATION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 33,
+        "evidence": "COMMISSION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 34,
+        "evidence": "SITE VISIT"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 35,
+        "evidence": "INSTALLATION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 4,
+        "evidence": "PANEL"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 5,
+        "evidence": "INVERTER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 6,
+        "evidence": "SOLAR METER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 7,
+        "evidence": "Mounting Structure"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 8,
+        "evidence": "walk way"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 9,
+        "evidence": "vertical ladder"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 10,
+        "evidence": "WIRING TRAY"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 11,
+        "evidence": "L/A"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 12,
+        "evidence": "EARTH ROD"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 13,
+        "evidence": "GI STRIP"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 14,
+        "evidence": "EARTH COMPOUND"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 15,
+        "evidence": "CHAMBER BOX"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 16,
+        "evidence": "EARTH BENCH"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 17,
+        "evidence": "ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 18,
+        "evidence": "DCDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 19,
+        "evidence": "MAIN ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 20,
+        "evidence": "DC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 21,
+        "evidence": "AC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 22,
+        "evidence": "ALUM CABLE 50 SQMM"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 23,
+        "evidence": "AC WIRE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 24,
+        "evidence": "COPPER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 25,
+        "evidence": "MC4(ADDITIONAL)"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 26,
+        "evidence": "CTPT"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 27,
+        "evidence": "pipe accessories"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 28,
+        "evidence": "HT Bidirectional meter"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 29,
+        "evidence": "kseb feasibility"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 30,
+        "evidence": "kseb inspectortate"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 31,
+        "evidence": "RPR"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 32,
+        "evidence": "TRANSPORTATION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 33,
+        "evidence": "COMMISSION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 34,
+        "evidence": "SITE VISIT"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 35,
+        "evidence": "INSTALLATION"
+      }
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Inkel250bos",
+    "sourceRow": 4
+  },
+  {
+    "vendorId": "stm",
+    "vendorName": "STM",
+    "evidence": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 4,
+        "evidence": "PANEL"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 5,
+        "evidence": "INVERTER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 6,
+        "evidence": "SOLAR METER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 7,
+        "evidence": "Mounting Structure"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 8,
+        "evidence": "walk way"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 9,
+        "evidence": "vertical ladder"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 10,
+        "evidence": "WIRING TRAY"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 11,
+        "evidence": "L/A"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 12,
+        "evidence": "EARTH ROD"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 13,
+        "evidence": "GI STRIP"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 14,
+        "evidence": "EARTH COMPOUND"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 15,
+        "evidence": "CHAMBER BOX"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 16,
+        "evidence": "EARTH BENCH"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 17,
+        "evidence": "ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 18,
+        "evidence": "DCDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 19,
+        "evidence": "MAIN ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 20,
+        "evidence": "DC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 21,
+        "evidence": "AC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 22,
+        "evidence": "ALUM CABLE 50 SQMM"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 23,
+        "evidence": "AC WIRE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 24,
+        "evidence": "COPPER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 25,
+        "evidence": "MC4(ADDITIONAL)"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 26,
+        "evidence": "CTPT"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 27,
+        "evidence": "pipe accessories"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 28,
+        "evidence": "HT Bidirectional meter"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 29,
+        "evidence": "kseb feasibility"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 30,
+        "evidence": "kseb inspectortate"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 31,
+        "evidence": "RPR"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 32,
+        "evidence": "TRANSPORTATION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 33,
+        "evidence": "COMMISSION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 34,
+        "evidence": "SITE VISIT"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 35,
+        "evidence": "INSTALLATION"
+      }
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "100kw STM",
+    "sourceRow": 4
+  },
+  {
+    "vendorId": "newen",
+    "vendorName": "Newen",
+    "evidence": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 4,
+        "evidence": "PANEL"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 5,
+        "evidence": "INVERTER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 6,
+        "evidence": "SOLAR METER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 7,
+        "evidence": "Mounting Structure"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 8,
+        "evidence": "walk way"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 9,
+        "evidence": "vertical ladder/hand rail"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 10,
+        "evidence": "WIRING TRAY"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 11,
+        "evidence": "L/A"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 12,
+        "evidence": "EARTH ROD"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 13,
+        "evidence": "GI STRIP"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 14,
+        "evidence": "EARTH COMPOUND"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 15,
+        "evidence": "CHAMBER BOX"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 16,
+        "evidence": "EARTH BENCH"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 17,
+        "evidence": "ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 18,
+        "evidence": "DCDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 19,
+        "evidence": "MAIN ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 20,
+        "evidence": "DC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 21,
+        "evidence": "AC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 22,
+        "evidence": "ALUM CABLE 50 SQMM"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 23,
+        "evidence": "AC WIRE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 24,
+        "evidence": "COPPER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 25,
+        "evidence": "MC4(ADDITIONAL)"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 26,
+        "evidence": "CTPT"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 27,
+        "evidence": "pipe accessories"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 28,
+        "evidence": "HT Bidirectional meter"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 29,
+        "evidence": "kseb feasibility"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 30,
+        "evidence": "kseb inspectortate"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 31,
+        "evidence": "RPR"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 32,
+        "evidence": "TRANSPORTATION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 33,
+        "evidence": "COMMISSION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 34,
+        "evidence": "SITE VISIT"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 35,
+        "evidence": "INSTALLATION"
+      }
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "newen",
+    "sourceRow": 4
+  },
+  {
+    "vendorId": "solinteg",
+    "vendorName": "Solinteg",
+    "evidence": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 4,
+        "evidence": "PANEL"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 5,
+        "evidence": "INVERTER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 6,
+        "evidence": "SOLAR METER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 7,
+        "evidence": "Mounting Structure"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 8,
+        "evidence": "ACCESSORIES"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 9,
+        "evidence": "WIRING PIPE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 10,
+        "evidence": "WIRING TRAY"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 11,
+        "evidence": "L/A"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 12,
+        "evidence": "EARTH ROD"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 13,
+        "evidence": "GI STRIP"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 14,
+        "evidence": "EARTH COMPOUND"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 15,
+        "evidence": "CHAMBER BOX"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 16,
+        "evidence": "EARTH BENCH"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 17,
+        "evidence": "ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 18,
+        "evidence": "DCDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 19,
+        "evidence": "MAIN ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 20,
+        "evidence": "DC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 21,
+        "evidence": "AC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 22,
+        "evidence": "ALUM CABLE 50 SQMM"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 23,
+        "evidence": "ALUM CABLE 10 SQMM"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 24,
+        "evidence": "COPPER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 25,
+        "evidence": "MC4(ADDITIONAL)"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 26,
+        "evidence": "ISOLATOR"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 27,
+        "evidence": "TRANSPORTATION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 28,
+        "evidence": "COMMISSION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 29,
+        "evidence": "SITE VISIT"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 30,
+        "evidence": "INSTALLATION"
+      }
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kw hibrid solinteg",
+    "sourceRow": 4
+  },
+  {
+    "vendorId": "enphase",
+    "vendorName": "Enphase",
+    "evidence": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 4,
+        "evidence": "PANEL"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 5,
+        "evidence": "INVERTER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 6,
+        "evidence": "SOLAR METER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 7,
+        "evidence": "Mounting Structure"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 8,
+        "evidence": "ACCESSORIES"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 9,
+        "evidence": "WIRING PIPE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 10,
+        "evidence": "WIRING TRAY"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 11,
+        "evidence": "L/A"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 12,
+        "evidence": "EARTH ROD"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 13,
+        "evidence": "GI STRIP"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 14,
+        "evidence": "EARTH COMPOUND"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 15,
+        "evidence": "CHAMBER BOX"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 16,
+        "evidence": "EARTH BENCH"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 17,
+        "evidence": "ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 18,
+        "evidence": "DCDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 19,
+        "evidence": "MAIN ACDB"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 20,
+        "evidence": "DC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 21,
+        "evidence": "AC CABLE"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 22,
+        "evidence": "ALUM CABLE 50 SQMM"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 23,
+        "evidence": "ALUM CABLE 10 SQMM"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 24,
+        "evidence": "COPPER"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 25,
+        "evidence": "MC4(ADDITIONAL)"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 26,
+        "evidence": "ISOLATOR"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 27,
+        "evidence": "TRANSPORTATION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 28,
+        "evidence": "COMMISSION"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 29,
+        "evidence": "SITE VISIT"
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 30,
+        "evidence": "INSTALLATION"
+      }
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 4
+  }
+]

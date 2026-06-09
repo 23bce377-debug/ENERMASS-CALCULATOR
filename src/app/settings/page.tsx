@@ -6,10 +6,14 @@ import { useSettings, type CategoryMargins } from '@/lib/hooks/useSettings';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
+import { Select } from '@/components/ui/Select';
 import { STATE_DATA } from '@/lib/data/masters';
+import { useCalculatorStore } from '@/lib/store/calculatorStore';
+import { revalidateMasterCache } from '@/app/actions/revalidateMasters';
 import {
   Settings as SettingsIcon, MapPin, Percent, Zap, Building2,
-  Download, Upload, RotateCcw, Check, ChevronDown, Sun, Moon
+  Download, Upload, RotateCcw, Check, ChevronDown, Sun, Moon,
+  CloudUpload, CloudDownload, Loader2, Cloud, RefreshCcw
 } from 'lucide-react';
 
 // ─── Section Wrapper ────────────────────────────────────────────────────────────
@@ -51,13 +55,19 @@ const CATEGORY_LABELS: Record<keyof CategoryMargins, string> = {
 export default function SettingsPage() {
   const {
     settings, loaded, setSettings, resetSettings, exportData, importData,
+    commitToDb, loadFromDb, isSyncing, lastSynced,
   } = useSettings();
   const { theme, setTheme } = useTheme();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saveFlash, setSaveFlash] = useState(false);
+  const [isRefreshingCache, setIsRefreshingCache] = useState(false);
   const { toast } = useToast();
   const confirm = useConfirm();
+
+  // ⚠️ Must be called unconditionally — before any early returns
+  const dbStateData = useCalculatorStore((s) => s.dbStateData);
+  const states = Object.keys(dbStateData).length > 0 ? Object.keys(dbStateData) : Object.keys(STATE_DATA);
 
   if (!loaded) {
     return (
@@ -66,8 +76,6 @@ export default function SettingsPage() {
       </div>
     );
   }
-
-  const states = Object.keys(STATE_DATA);
 
   const flash = () => {
     setSaveFlash(true);
@@ -147,18 +155,12 @@ export default function SettingsPage() {
       {/* Default State */}
       <Section title="Default Location" icon={<MapPin size={18} />}>
         <FieldLabel label="Default State">
-          <div className="relative">
-            <select
-              value={settings.defaultState}
-              onChange={(e) => { setSettings({ defaultState: e.target.value }); flash(); }}
-              className="appearance-none w-full max-w-xs px-4 py-2.5 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent/50 transition-all cursor-pointer"
-            >
-              {states.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
-          </div>
+          <Select
+            value={settings.defaultState}
+            onChange={(v) => { setSettings({ defaultState: v }); flash(); }}
+            options={states.map((s) => ({ value: s, label: s }))}
+            className="max-w-xs"
+          />
         </FieldLabel>
       </Section>
 
@@ -310,6 +312,95 @@ export default function SettingsPage() {
           >
             <RotateCcw size={16} /> Reset Defaults
           </button>
+        </div>
+
+        {/* DB Sync */}
+        <div className="mt-5 p-4 rounded-xl border border-accent/20 bg-gradient-to-r from-accent/5 to-transparent">
+          <div className="flex items-center gap-2 mb-3">
+            <Cloud size={15} className="text-accent" />
+            <span className="text-xs font-bold text-accent uppercase tracking-wider">Database Sync</span>
+            {lastSynced && (
+              <span className="ml-auto text-xs text-text-muted">
+                Last synced: {lastSynced.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-text-muted mb-4">
+            Commit pushes your local changes (company info, grid tariff) to the centralised database.
+            Load pulls the latest database values and merges them into your local settings.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              id="btn-commit-to-db"
+              disabled={isSyncing}
+              onClick={async () => {
+                const err = await commitToDb();
+                if (err) {
+                  toast(`Commit failed: ${err}`, 'error');
+                } else {
+                  toast('Settings committed to database ✓', 'success');
+                  flash();
+                }
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent text-background text-sm font-semibold hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isSyncing ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <CloudUpload size={16} />
+              )}
+              Commit to DB
+            </button>
+
+            <button
+              id="btn-load-from-db"
+              disabled={isSyncing}
+              onClick={async () => {
+                const err = await loadFromDb();
+                if (err) {
+                  toast(`Load failed: ${err}`, 'error');
+                } else {
+                  toast('Settings loaded from database ✓', 'success');
+                  flash();
+                }
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-surface border border-accent/30 text-accent text-sm font-semibold hover:bg-accent/10 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isSyncing ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <CloudDownload size={16} />
+              )}
+              Load from DB
+            </button>
+
+            <button
+              id="btn-refresh-master-cache"
+              disabled={isRefreshingCache}
+              onClick={async () => {
+                setIsRefreshingCache(true);
+                try {
+                  await revalidateMasterCache();
+                  // Re-fetch master data into the store immediately
+                  const { useCalculatorStore } = await import('@/lib/store/calculatorStore');
+                  await useCalculatorStore.getState().fetchMasterData();
+                  toast('Master data cache refreshed ✓', 'success');
+                } catch (err) {
+                  toast('Cache refresh failed', 'error');
+                } finally {
+                  setIsRefreshingCache(false);
+                }
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-surface border border-border text-sm font-medium text-text-secondary hover:text-text-primary hover:border-border-light transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isRefreshingCache ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <RefreshCcw size={16} />
+              )}
+              Refresh Master Data
+            </button>
+          </div>
         </div>
       </Section>
     </div>

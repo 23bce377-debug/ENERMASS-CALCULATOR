@@ -110,21 +110,30 @@ function SystemCard({ system, selected, compareMode, onToggleCompare, onQuickCal
 // ─── Comparison Panel ───────────────────────────────────────────────────────────
 
 function ComparisonPanel({ systemIds, onClose }: { systemIds: string[]; onClose: () => void }) {
+  const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
+  const dbSystems = useCalculatorStore((s) => s.dbSystems);
+  const dbStateData = useCalculatorStore((s) => s.dbStateData);
+  const dbSlabs = useCalculatorStore((s) => s.dbSlabs);
+
   const results = useMemo(() => {
     return systemIds.map((id) => {
-      const system = SYSTEMS.find((s) => s.id === id)!;
+      const systems = dbLoaded && dbSystems.length > 0 ? dbSystems : SYSTEMS;
+      const system = systems.find((s) => s.id === id)!;
       try {
         const calc = calculateSystem({
           systemId: id,
+          systems,
           state: 'Gujarat',
           projectType: 'residential',
+          stateData: dbLoaded ? dbStateData : undefined,
+          slabs: dbLoaded ? dbSlabs : undefined,
         });
         return { system, calc, error: null };
       } catch (err) {
         return { system, calc: null, error: (err as Error).message };
       }
     });
-  }, [systemIds]);
+  }, [systemIds, dbLoaded, dbSystems, dbStateData, dbSlabs]);
 
   return (
     <div className="bg-surface border border-border rounded-2xl p-6 animate-fade-in">
@@ -183,19 +192,25 @@ function ComparisonPanel({ systemIds, onClose }: { systemIds: string[]; onClose:
 export default function SystemsPage() {
   const router = useRouter();
   const selectSystem = useCalculatorStore((s) => s.selectSystem);
+  const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
+  const dbSystems = useCalculatorStore((s) => s.dbSystems);
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [compareMode, setCompareMode] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
 
+  const systems = useMemo(() => {
+    return dbLoaded && dbSystems.length > 0 ? dbSystems : SYSTEMS;
+  }, [dbLoaded, dbSystems]);
+
   const categories = useMemo(() => {
-    const cats = new Set(SYSTEMS.map((s) => s.category));
+    const cats = new Set(systems.map((s) => s.category));
     return ['all', ...Array.from(cats)];
-  }, []);
+  }, [systems]);
 
   const filtered = useMemo(() => {
-    let result = SYSTEMS;
+    let result = systems;
     if (categoryFilter !== 'all') {
       result = result.filter((s) => s.category === categoryFilter);
     }
@@ -207,7 +222,7 @@ export default function SystemsPage() {
       );
     }
     return result;
-  }, [search, categoryFilter]);
+  }, [systems, search, categoryFilter]);
 
   const handleQuickCalc = (systemId: string) => {
     selectSystem(systemId);
@@ -231,7 +246,7 @@ export default function SystemsPage() {
             <Cpu size={24} className="text-accent" />
             System Browser
           </h1>
-          <p className="text-sm text-text-muted mt-1">{SYSTEMS.length} solar systems available</p>
+          <p className="text-sm text-text-muted mt-1">{systems.length} solar systems available</p>
         </div>
         <button
           onClick={() => { setCompareMode(!compareMode); setCompareIds([]); }}

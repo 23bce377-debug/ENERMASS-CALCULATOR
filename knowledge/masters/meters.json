@@ -1,0 +1,1140 @@
+[
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 1250,
+    "gst_pct": 225,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "2kwp",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kwp",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet1",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3KW MICRO INVERTER",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5kw micro",
+        "sourceRow": 8
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3kw hibrid",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "4KWp",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1.5kw",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kw",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet3",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 3 kw",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5ke 3P TN",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3 to 3 upgradation",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 530,
+    "gst_pct": 0,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "2kwp",
+      "sourceRow": 19
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kwp",
+        "sourceRow": 19
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet1",
+        "sourceRow": 19
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1kw admn",
+        "sourceRow": 18
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3KW MICRO INVERTER",
+        "sourceRow": 21
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5kw micro",
+        "sourceRow": 21
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 19
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3kw hibrid",
+        "sourceRow": 20
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "mat 3 kw",
+        "sourceRow": 19
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 18
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "4KWp",
+        "sourceRow": 19
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 19
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 5kw",
+        "sourceRow": 20
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 20
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3 to 3 upgradation",
+        "sourceRow": 19
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 3350,
+    "gst_pct": 603,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "1kw admn",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1kw admn",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 1150,
+    "gst_pct": 207,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3Kwp",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3Kwp",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 510,
+    "gst_pct": 91.8,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3Kwp",
+      "sourceRow": 19
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3Kwp",
+        "sourceRow": 19
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5Kwp",
+        "sourceRow": 19
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 1350,
+    "gst_pct": 243,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "mat 3 kw",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "mat 3 kw",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5Kwp",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 5kw",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 3500,
+    "gst_pct": 630,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "5kw 3 PH",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5kw 3 PH",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet6",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "BI DIRECTIONAL METER",
+    "phases": 1,
+    "rate": 6800,
+    "gst_pct": 1224,
+    "description": "BI DIRECTIONAL METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "5kw 3 PH",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5kw 3 PH",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet6",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 1100,
+    "gst_pct": 198,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "5kw 3 PH",
+      "sourceRow": 20
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5kw 3 PH",
+        "sourceRow": 20
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet6",
+        "sourceRow": 20
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Hoymiles",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 3500,
+    "gst_pct": 630,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hoymiles5kw",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Hoymiles",
+    "model": "BI DIRECTIONAL METER",
+    "phases": 1,
+    "rate": 6800,
+    "gst_pct": 1224,
+    "description": "BI DIRECTIONAL METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hoymiles5kw",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Hoymiles",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 1100,
+    "gst_pct": 198,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hoymiles5kw",
+      "sourceRow": 20
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 20
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 3550,
+    "gst_pct": 639,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "6kwp",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kwp",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "8kwp",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "15kwHibrid",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "10kw hybrid",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kw",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet9",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 1080,
+    "gst_pct": 194.4,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "6kwp",
+      "sourceRow": 19
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kwp",
+        "sourceRow": 19
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "8kwp",
+        "sourceRow": 19
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "15kwHibrid",
+        "sourceRow": 21
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kw",
+        "sourceRow": 25
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet9",
+        "sourceRow": 19
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 3000,
+    "gst_pct": 540,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "10KWp",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "10KWp",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 910,
+    "gst_pct": 163.8,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "10KWp",
+      "sourceRow": 19
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "10KWp",
+        "sourceRow": 19
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "Bidirectioanl hybrid meter",
+    "phases": 1,
+    "rate": 8500,
+    "gst_pct": 1530,
+    "description": "Bidirectioanl hybrid meter",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "15kwHibrid",
+      "sourceRow": 8
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "15kwHibrid",
+        "sourceRow": 8
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 6500,
+    "gst_pct": 0,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "10kw hybrid",
+      "sourceRow": 20
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "10kw hybrid",
+        "sourceRow": 20
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 550,
+    "gst_pct": 66,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "1.5kw",
+      "sourceRow": 25
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1.5kw",
+        "sourceRow": 25
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet3",
+        "sourceRow": 25
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 470,
+    "gst_pct": 56.4,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "2kw",
+      "sourceRow": 25
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kw",
+        "sourceRow": 25
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 3 kw",
+        "sourceRow": 25
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5ke 3P TN",
+        "sourceRow": 25
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 0,
+    "gst_pct": 0,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet4",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet4",
+        "sourceRow": 4
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet5",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "meter_type": "net_meter",
+    "brand": "Unknown",
+    "model": "net meter",
+    "phases": 1,
+    "rate": null,
+    "gst_pct": 0,
+    "description": "net meter",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet4",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet4",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "net_meter",
+    "brand": "Unknown",
+    "model": "net meter",
+    "phases": 1,
+    "rate": 24000,
+    "gst_pct": 4320,
+    "description": "net meter",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet4",
+      "sourceRow": 15
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet4",
+        "sourceRow": 15
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 7000,
+    "gst_pct": 1260,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet4",
+      "sourceRow": 25
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet4",
+        "sourceRow": 25
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 0,
+    "gst_pct": 0,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet5",
+      "sourceRow": 25
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet5",
+        "sourceRow": 25
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 3870,
+    "gst_pct": 696.6,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "25kw",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "25kw",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet11",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "15kwp",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet7",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20KW HIBRID",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw30kwhr",
+        "sourceRow": 7
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet2",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 3800,
+    "gst_pct": 696.6,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "20kwp",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kwp",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet8",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 18000,
+    "gst_pct": 6480,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "30KW Hybrid",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "30KW Hybrid",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Inkel",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 24000,
+    "gst_pct": 4320,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Inkel250bos",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Inkel",
+    "model": "HT Bidirectional meter",
+    "phases": 1,
+    "rate": 38000,
+    "gst_pct": 6840,
+    "description": "HT Bidirectional meter",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Inkel250bos",
+      "sourceRow": 28
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 28
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 28
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "STM",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 24000,
+    "gst_pct": 4320,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "100kw STM",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "STM",
+    "model": "HT Bidirectional meter",
+    "phases": 1,
+    "rate": 38000,
+    "gst_pct": 0,
+    "description": "HT Bidirectional meter",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "100kw STM",
+      "sourceRow": 28
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 28
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Newen",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 24000,
+    "gst_pct": 0,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "newen",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Newen",
+    "model": "HT Bidirectional meter",
+    "phases": 1,
+    "rate": 38000,
+    "gst_pct": 0,
+    "description": "HT Bidirectional meter",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "newen",
+      "sourceRow": 28
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 28
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 3250,
+    "gst_pct": 585,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "mis working",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "mis working",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "meter",
+    "brand": "Unknown",
+    "model": "METER BOX",
+    "phases": 1,
+    "rate": 1050,
+    "gst_pct": 189,
+    "description": "METER BOX",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "mis working",
+      "sourceRow": 19
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "mis working",
+        "sourceRow": 19
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Solinteg",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 3870,
+    "gst_pct": 696.6,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "20kw hibrid solinteg",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Unknown",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 26000,
+    "gst_pct": 4680,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "80kw",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kw",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "meter_type": "solar_meter",
+    "brand": "Enphase",
+    "model": "SOLAR METER",
+    "phases": 1,
+    "rate": 26000,
+    "gst_pct": 4680,
+    "description": "SOLAR METER",
+    "is_active": true,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "80kwenphase",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 6
+      }
+    ]
+  }
+]

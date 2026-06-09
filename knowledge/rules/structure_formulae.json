@@ -1,0 +1,2652 @@
+[
+  {
+    "ruleName": "gp_rafter_3x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 3,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Rafter-3x1.1/2 rectangle tube-",
+      "requiredQty": 3,
+      "totalWeightKg": 46.5,
+      "rateA": 81.5,
+      "totalA": 3789.75,
+      "rateB": 85,
+      "totalB": 3952.5,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 3
+    }
+  },
+  {
+    "ruleName": "gp_purling_1_1_2x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 4,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Purling-1.1/2x1.1/2 rectangle tube",
+      "requiredQty": 4,
+      "totalWeightKg": 40,
+      "rateA": 81.5,
+      "totalA": 3260,
+      "rateB": 85,
+      "totalB": 3400,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 4
+    }
+  },
+  {
+    "ruleName": "gp_ms_hole_plate_4x4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 5,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Ms hole plate 4x4",
+      "requiredQty": 7,
+      "totalWeightKg": 2.45,
+      "rateA": 120,
+      "totalA": 294,
+      "rateB": 120,
+      "totalB": 294,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 5
+    }
+  },
+  {
+    "ruleName": "gp_angor_bolt_8_mm",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 6,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Angor bolt 8 mm",
+      "requiredQty": 12,
+      "totalWeightKg": 12,
+      "rateA": 10,
+      "totalA": 120,
+      "rateB": 10,
+      "totalB": 120,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 6
+    }
+  },
+  {
+    "ruleName": "gp_pvc_end_cap_3x1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 7,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Pvc End cap 3x1.1/2 -",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 4,
+      "totalA": 24,
+      "rateB": 4,
+      "totalB": 24,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 7
+    }
+  },
+  {
+    "ruleName": "gp_pvc_end_cap_1_1_2_x_1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 8,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Pvc End cap 1.1/2 x 1.1/2",
+      "requiredQty": 10,
+      "totalWeightKg": 10,
+      "rateA": 4,
+      "totalA": 40,
+      "rateB": 4,
+      "totalB": 40,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 8
+    }
+  },
+  {
+    "ruleName": "gp_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 11,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": 100,
+      "totalB": 100,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 11
+    }
+  },
+  {
+    "ruleName": "gp_solid_block",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 12,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Solid block",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 120,
+      "totalA": 720,
+      "rateB": 120,
+      "totalB": 720,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 12
+    }
+  },
+  {
+    "ruleName": "gp_chemickal_nano_grout",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 13,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Chemickal- Nano grout",
+      "requiredQty": 2,
+      "totalWeightKg": 2,
+      "rateA": 350,
+      "totalA": 700,
+      "rateB": 350,
+      "totalB": 700,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 13
+    }
+  },
+  {
+    "ruleName": "gp_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 15,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 15,
+      "totalA": 90,
+      "rateB": 15,
+      "totalB": 90,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 15
+    }
+  },
+  {
+    "ruleName": "gp_rafter_3x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 19,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Rafter-3x1.1/2 rectangle tube-",
+      "requiredQty": 2,
+      "totalWeightKg": 31,
+      "rateA": 81.5,
+      "totalA": 2526.5,
+      "rateB": 85,
+      "totalB": 2635,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 19
+    }
+  },
+  {
+    "ruleName": "gp_purling_1_1_2x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 20,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Purling-1.1/2x1.1/2 rectangle tube",
+      "requiredQty": 2.5,
+      "totalWeightKg": 25,
+      "rateA": 81.5,
+      "totalA": 2037.5,
+      "rateB": 85,
+      "totalB": 2125,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 20
+    }
+  },
+  {
+    "ruleName": "gp_ms_hole_plate_4x4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 21,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Ms hole plate 4x4",
+      "requiredQty": 5,
+      "totalWeightKg": 1.75,
+      "rateA": 120,
+      "totalA": 210,
+      "rateB": 120,
+      "totalB": 210,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 21
+    }
+  },
+  {
+    "ruleName": "gp_angor_bolt_8_mm",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 22,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Angor bolt 8 mm",
+      "requiredQty": 8,
+      "totalWeightKg": 8,
+      "rateA": 10,
+      "totalA": 80,
+      "rateB": 10,
+      "totalB": 80,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 22
+    }
+  },
+  {
+    "ruleName": "gp_pvc_end_cap_3x1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 23,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Pvc End cap 3x1.1/2 -",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 4,
+      "totalA": 16,
+      "rateB": 4,
+      "totalB": 16,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 23
+    }
+  },
+  {
+    "ruleName": "gp_pvc_end_cap_1_1_2_x_1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 24,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Pvc End cap 1.1/2 x 1.1/2",
+      "requiredQty": 10,
+      "totalWeightKg": 10,
+      "rateA": 4,
+      "totalA": 40,
+      "rateB": 4,
+      "totalB": 40,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 24
+    }
+  },
+  {
+    "ruleName": "gp_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 27,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": 100,
+      "totalB": 100,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 27
+    }
+  },
+  {
+    "ruleName": "gp_solid_block",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 28,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Solid block",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 120,
+      "totalA": 480,
+      "rateB": 120,
+      "totalB": 480,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 28
+    }
+  },
+  {
+    "ruleName": "gp_chemickal_nano_grout",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 29,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Chemickal- Nano grout",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 350,
+      "totalA": 350,
+      "rateB": 350,
+      "totalB": 350,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 29
+    }
+  },
+  {
+    "ruleName": "gp_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 31,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 15,
+      "totalA": 60,
+      "rateB": 15,
+      "totalB": 60,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 31
+    }
+  },
+  {
+    "ruleName": "gi_rafter_3x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 3,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Rafter-3x1.1/2 rectangle tube-",
+      "requiredQty": 3,
+      "totalWeightKg": 58,
+      "rateA": 110,
+      "totalA": 6380,
+      "rateB": 125,
+      "totalB": 7250,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 3
+    }
+  },
+  {
+    "ruleName": "gi_purling_1_1_2x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 4,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Purling-1.1/2x1.1/2 rectangle tube",
+      "requiredQty": 4,
+      "totalWeightKg": 51.35,
+      "rateA": 110,
+      "totalA": 5648.5,
+      "rateB": 125,
+      "totalB": 6418.75,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 4
+    }
+  },
+  {
+    "ruleName": "gi_ms_hole_plate_4x4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 5,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Ms hole plate 4x4",
+      "requiredQty": 7,
+      "totalWeightKg": 2.45,
+      "rateA": 120,
+      "totalA": 294,
+      "rateB": 120,
+      "totalB": 294,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 5
+    }
+  },
+  {
+    "ruleName": "gi_angor_bolt_8_mm",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 6,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Angor bolt 8 mm",
+      "requiredQty": 12,
+      "totalWeightKg": 12,
+      "rateA": 10,
+      "totalA": 120,
+      "rateB": 10,
+      "totalB": 120,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 6
+    }
+  },
+  {
+    "ruleName": "gi_pvc_end_cap_3x1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 7,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Pvc End cap 3x1.1/2 -",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 4,
+      "totalA": 24,
+      "rateB": 4,
+      "totalB": 24,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 7
+    }
+  },
+  {
+    "ruleName": "gi_pvc_end_cap_1_1_2_x_1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 8,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Pvc End cap 1.1/2 x 1.1/2",
+      "requiredQty": 10,
+      "totalWeightKg": 10,
+      "rateA": 4,
+      "totalA": 40,
+      "rateB": 4,
+      "totalB": 40,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 8
+    }
+  },
+  {
+    "ruleName": "gi_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 11,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": 100,
+      "totalB": 100,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 11
+    }
+  },
+  {
+    "ruleName": "gi_solid_block",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 12,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Solid block",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 120,
+      "totalA": 720,
+      "rateB": 120,
+      "totalB": 720,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 12
+    }
+  },
+  {
+    "ruleName": "gi_chemickal_nano_grout",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 13,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Chemickal- Nano grout",
+      "requiredQty": 2,
+      "totalWeightKg": 2,
+      "rateA": 350,
+      "totalA": 700,
+      "rateB": 350,
+      "totalB": 700,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 13
+    }
+  },
+  {
+    "ruleName": "gi_welding_rad",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 14,
+    "record": {
+      "structureCategory": "gi",
+      "item": "welding rad",
+      "requiredQty": 60,
+      "totalWeightKg": 60,
+      "rateA": 3,
+      "totalA": 180,
+      "rateB": 3,
+      "totalB": 180,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 14
+    }
+  },
+  {
+    "ruleName": "gi_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 15,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 15,
+      "totalA": 90,
+      "rateB": 15,
+      "totalB": 90,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 15
+    }
+  },
+  {
+    "ruleName": "gi_rafter_3x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 19,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Rafter-3x1.1/2 rectangle tube-",
+      "requiredQty": 2,
+      "totalWeightKg": 38.67,
+      "rateA": 110,
+      "totalA": 4253.7,
+      "rateB": 125,
+      "totalB": 4833.75,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 19
+    }
+  },
+  {
+    "ruleName": "gi_purling_1_1_2x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 20,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Purling-1.1/2x1.1/2 rectangle tube",
+      "requiredQty": 2.5,
+      "totalWeightKg": 32,
+      "rateA": 110,
+      "totalA": 3520,
+      "rateB": 125,
+      "totalB": 4000,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 20
+    }
+  },
+  {
+    "ruleName": "gi_ms_hole_plate_4x4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 21,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Ms hole plate 4x4",
+      "requiredQty": 5,
+      "totalWeightKg": 1.75,
+      "rateA": 120,
+      "totalA": 210,
+      "rateB": 120,
+      "totalB": 210,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 21
+    }
+  },
+  {
+    "ruleName": "gi_angor_bolt_8_mm",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 22,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Angor bolt 8 mm",
+      "requiredQty": 8,
+      "totalWeightKg": 8,
+      "rateA": 10,
+      "totalA": 80,
+      "rateB": 10,
+      "totalB": 80,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 22
+    }
+  },
+  {
+    "ruleName": "gi_pvc_end_cap_3x1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 23,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Pvc End cap 3x1.1/2 -",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 4,
+      "totalA": 16,
+      "rateB": 4,
+      "totalB": 16,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 23
+    }
+  },
+  {
+    "ruleName": "gi_pvc_end_cap_1_1_2_x_1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 24,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Pvc End cap 1.1/2 x 1.1/2",
+      "requiredQty": 10,
+      "totalWeightKg": 10,
+      "rateA": 4,
+      "totalA": 40,
+      "rateB": 4,
+      "totalB": 40,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 24
+    }
+  },
+  {
+    "ruleName": "gi_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 27,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": 100,
+      "totalB": 100,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 27
+    }
+  },
+  {
+    "ruleName": "gi_solid_block",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 28,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Solid block",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 120,
+      "totalA": 480,
+      "rateB": 120,
+      "totalB": 480,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 28
+    }
+  },
+  {
+    "ruleName": "gi_chemickal_nano_grout",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 29,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Chemickal- Nano grout",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 350,
+      "totalA": 350,
+      "rateB": 350,
+      "totalB": 350,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 29
+    }
+  },
+  {
+    "ruleName": "gi_welding_rad",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 30,
+    "record": {
+      "structureCategory": "gi",
+      "item": "welding rad",
+      "requiredQty": 40,
+      "totalWeightKg": 40,
+      "rateA": 3,
+      "totalA": 120,
+      "rateB": 3,
+      "totalB": 120,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 30
+    }
+  },
+  {
+    "ruleName": "gi_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 31,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 15,
+      "totalA": 60,
+      "rateB": 15,
+      "totalB": 60,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 31
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_walkway_3x1rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 3,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Walkway -3x1rectangle tube-",
+      "requiredQty": 3,
+      "totalWeightKg": 38,
+      "rateA": 85,
+      "totalA": 3230,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 3
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_walkway_1_x1_squre_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 4,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Walkway -1.x1. Squre tube-",
+      "requiredQty": 2,
+      "totalWeightKg": 13,
+      "rateA": 85,
+      "totalA": 1105,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 4
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_pvc_end_cap_3x1",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 5,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Pvc End cap 3x1.",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 4,
+      "totalA": 24,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 5
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_pvc_end_cap_1_1",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 6,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Pvc End cap 1*1",
+      "requiredQty": 20,
+      "totalWeightKg": 20,
+      "rateA": 4,
+      "totalA": 80,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 6
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 9,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 9
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 11,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 5,
+      "totalWeightKg": 5,
+      "rateA": 15,
+      "totalA": 75,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 11
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_ladder_1_1_2_1_1_2_squre_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 16,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Ladder 1.1/2*1.1/2 squre tube",
+      "requiredQty": 3,
+      "totalWeightKg": 30,
+      "rateA": 85,
+      "totalA": 2550,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 16
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_pvc_end_cap_1_1_2_x_1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 17,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Pvc End cap 1.1/2 x 1.1/2",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 4,
+      "totalA": 24,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 17
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 20,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 20
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 22,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 5,
+      "totalWeightKg": 10,
+      "rateA": 15,
+      "totalA": 150,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 22
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_1_meter_ladder_3234_3_6",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate_formulae.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 24,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "1 METER LADDER =3234/3.6",
+      "requiredQty": 898.33,
+      "totalWeightKg": null,
+      "rateA": null,
+      "totalA": null,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate_formulae.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 24
+    }
+  },
+  {
+    "ruleName": "gp_rafter_3x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 3,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Rafter-3x1.1/2 rectangle tube-",
+      "requiredQty": 3,
+      "totalWeightKg": 46.5,
+      "rateA": 81.5,
+      "totalA": 3789.75,
+      "rateB": 85,
+      "totalB": 3952.5,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 3
+    }
+  },
+  {
+    "ruleName": "gp_purling_1_1_2x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 4,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Purling-1.1/2x1.1/2 rectangle tube",
+      "requiredQty": 4,
+      "totalWeightKg": 40,
+      "rateA": 81.5,
+      "totalA": 3260,
+      "rateB": 85,
+      "totalB": 3400,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 4
+    }
+  },
+  {
+    "ruleName": "gp_ms_hole_plate_4x4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 5,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Ms hole plate 4x4",
+      "requiredQty": 7,
+      "totalWeightKg": 2.45,
+      "rateA": 120,
+      "totalA": 294,
+      "rateB": 120,
+      "totalB": 294,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 5
+    }
+  },
+  {
+    "ruleName": "gp_angor_bolt_8_mm",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 6,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Angor bolt 8 mm",
+      "requiredQty": 12,
+      "totalWeightKg": 12,
+      "rateA": 10,
+      "totalA": 120,
+      "rateB": 10,
+      "totalB": 120,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 6
+    }
+  },
+  {
+    "ruleName": "gp_pvc_end_cap_3x1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 7,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Pvc End cap 3x1.1/2 -",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 4,
+      "totalA": 24,
+      "rateB": 4,
+      "totalB": 24,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 7
+    }
+  },
+  {
+    "ruleName": "gp_pvc_end_cap_1_1_2_x_1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 8,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Pvc End cap 1.1/2 x 1.1/2",
+      "requiredQty": 10,
+      "totalWeightKg": 10,
+      "rateA": 4,
+      "totalA": 40,
+      "rateB": 4,
+      "totalB": 40,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 8
+    }
+  },
+  {
+    "ruleName": "gp_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 11,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": 100,
+      "totalB": 100,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 11
+    }
+  },
+  {
+    "ruleName": "gp_solid_block",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 12,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Solid block",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 120,
+      "totalA": 720,
+      "rateB": 120,
+      "totalB": 720,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 12
+    }
+  },
+  {
+    "ruleName": "gp_chemickal_nano_grout",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 13,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Chemickal- Nano grout",
+      "requiredQty": 2,
+      "totalWeightKg": 2,
+      "rateA": 350,
+      "totalA": 700,
+      "rateB": 350,
+      "totalB": 700,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 13
+    }
+  },
+  {
+    "ruleName": "gp_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 15,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 15,
+      "totalA": 90,
+      "rateB": 15,
+      "totalB": 90,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 15
+    }
+  },
+  {
+    "ruleName": "gp_rafter_3x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 19,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Rafter-3x1.1/2 rectangle tube-",
+      "requiredQty": 2,
+      "totalWeightKg": 31,
+      "rateA": 81.5,
+      "totalA": 2526.5,
+      "rateB": 85,
+      "totalB": 2635,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 19
+    }
+  },
+  {
+    "ruleName": "gp_purling_1_1_2x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 20,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Purling-1.1/2x1.1/2 rectangle tube",
+      "requiredQty": 2.5,
+      "totalWeightKg": 25,
+      "rateA": 81.5,
+      "totalA": 2037.5,
+      "rateB": 85,
+      "totalB": 2125,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 20
+    }
+  },
+  {
+    "ruleName": "gp_ms_hole_plate_4x4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 21,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Ms hole plate 4x4",
+      "requiredQty": 5,
+      "totalWeightKg": 1.75,
+      "rateA": 120,
+      "totalA": 210,
+      "rateB": 120,
+      "totalB": 210,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 21
+    }
+  },
+  {
+    "ruleName": "gp_angor_bolt_8_mm",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 22,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Angor bolt 8 mm",
+      "requiredQty": 8,
+      "totalWeightKg": 8,
+      "rateA": 10,
+      "totalA": 80,
+      "rateB": 10,
+      "totalB": 80,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 22
+    }
+  },
+  {
+    "ruleName": "gp_pvc_end_cap_3x1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 23,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Pvc End cap 3x1.1/2 -",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 4,
+      "totalA": 16,
+      "rateB": 4,
+      "totalB": 16,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 23
+    }
+  },
+  {
+    "ruleName": "gp_pvc_end_cap_1_1_2_x_1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 24,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Pvc End cap 1.1/2 x 1.1/2",
+      "requiredQty": 10,
+      "totalWeightKg": 10,
+      "rateA": 4,
+      "totalA": 40,
+      "rateB": 4,
+      "totalB": 40,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 24
+    }
+  },
+  {
+    "ruleName": "gp_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 27,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": 100,
+      "totalB": 100,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 27
+    }
+  },
+  {
+    "ruleName": "gp_solid_block",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 28,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Solid block",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 120,
+      "totalA": 480,
+      "rateB": 120,
+      "totalB": 480,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 28
+    }
+  },
+  {
+    "ruleName": "gp_chemickal_nano_grout",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 29,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Chemickal- Nano grout",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 350,
+      "totalA": 350,
+      "rateB": 350,
+      "totalB": 350,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 29
+    }
+  },
+  {
+    "ruleName": "gp_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gp",
+    "sourceRow": 31,
+    "record": {
+      "structureCategory": "gp",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 15,
+      "totalA": 60,
+      "rateB": 15,
+      "totalB": 60,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gp",
+      "sourceRow": 31
+    }
+  },
+  {
+    "ruleName": "gi_rafter_3x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 3,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Rafter-3x1.1/2 rectangle tube-",
+      "requiredQty": 3,
+      "totalWeightKg": 58,
+      "rateA": 110,
+      "totalA": 6380,
+      "rateB": 125,
+      "totalB": 7250,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 3
+    }
+  },
+  {
+    "ruleName": "gi_purling_1_1_2x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 4,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Purling-1.1/2x1.1/2 rectangle tube",
+      "requiredQty": 4,
+      "totalWeightKg": 51.35,
+      "rateA": 110,
+      "totalA": 5648.5,
+      "rateB": 125,
+      "totalB": 6418.75,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 4
+    }
+  },
+  {
+    "ruleName": "gi_ms_hole_plate_4x4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 5,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Ms hole plate 4x4",
+      "requiredQty": 7,
+      "totalWeightKg": 2.45,
+      "rateA": 120,
+      "totalA": 294,
+      "rateB": 120,
+      "totalB": 294,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 5
+    }
+  },
+  {
+    "ruleName": "gi_angor_bolt_8_mm",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 6,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Angor bolt 8 mm",
+      "requiredQty": 12,
+      "totalWeightKg": 12,
+      "rateA": 10,
+      "totalA": 120,
+      "rateB": 10,
+      "totalB": 120,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 6
+    }
+  },
+  {
+    "ruleName": "gi_pvc_end_cap_3x1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 7,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Pvc End cap 3x1.1/2 -",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 4,
+      "totalA": 24,
+      "rateB": 4,
+      "totalB": 24,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 7
+    }
+  },
+  {
+    "ruleName": "gi_pvc_end_cap_1_1_2_x_1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 8,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Pvc End cap 1.1/2 x 1.1/2",
+      "requiredQty": 10,
+      "totalWeightKg": 10,
+      "rateA": 4,
+      "totalA": 40,
+      "rateB": 4,
+      "totalB": 40,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 8
+    }
+  },
+  {
+    "ruleName": "gi_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 11,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": 100,
+      "totalB": 100,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 11
+    }
+  },
+  {
+    "ruleName": "gi_solid_block",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 12,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Solid block",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 120,
+      "totalA": 720,
+      "rateB": 120,
+      "totalB": 720,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 12
+    }
+  },
+  {
+    "ruleName": "gi_chemickal_nano_grout",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 13,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Chemickal- Nano grout",
+      "requiredQty": 2,
+      "totalWeightKg": 2,
+      "rateA": 350,
+      "totalA": 700,
+      "rateB": 350,
+      "totalB": 700,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 13
+    }
+  },
+  {
+    "ruleName": "gi_welding_rad",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 14,
+    "record": {
+      "structureCategory": "gi",
+      "item": "welding rad",
+      "requiredQty": 60,
+      "totalWeightKg": 60,
+      "rateA": 3,
+      "totalA": 180,
+      "rateB": 3,
+      "totalB": 180,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 14
+    }
+  },
+  {
+    "ruleName": "gi_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 15,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 15,
+      "totalA": 90,
+      "rateB": 15,
+      "totalB": 90,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 15
+    }
+  },
+  {
+    "ruleName": "gi_rafter_3x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 19,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Rafter-3x1.1/2 rectangle tube-",
+      "requiredQty": 2,
+      "totalWeightKg": 38.67,
+      "rateA": 110,
+      "totalA": 4253.7,
+      "rateB": 125,
+      "totalB": 4833.75,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 19
+    }
+  },
+  {
+    "ruleName": "gi_purling_1_1_2x1_1_2_rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 20,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Purling-1.1/2x1.1/2 rectangle tube",
+      "requiredQty": 2.5,
+      "totalWeightKg": 32,
+      "rateA": 110,
+      "totalA": 3520,
+      "rateB": 125,
+      "totalB": 4000,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 20
+    }
+  },
+  {
+    "ruleName": "gi_ms_hole_plate_4x4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 21,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Ms hole plate 4x4",
+      "requiredQty": 5,
+      "totalWeightKg": 1.75,
+      "rateA": 120,
+      "totalA": 210,
+      "rateB": 120,
+      "totalB": 210,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 21
+    }
+  },
+  {
+    "ruleName": "gi_angor_bolt_8_mm",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 22,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Angor bolt 8 mm",
+      "requiredQty": 8,
+      "totalWeightKg": 8,
+      "rateA": 10,
+      "totalA": 80,
+      "rateB": 10,
+      "totalB": 80,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 22
+    }
+  },
+  {
+    "ruleName": "gi_pvc_end_cap_3x1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 23,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Pvc End cap 3x1.1/2 -",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 4,
+      "totalA": 16,
+      "rateB": 4,
+      "totalB": 16,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 23
+    }
+  },
+  {
+    "ruleName": "gi_pvc_end_cap_1_1_2_x_1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 24,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Pvc End cap 1.1/2 x 1.1/2",
+      "requiredQty": 10,
+      "totalWeightKg": 10,
+      "rateA": 4,
+      "totalA": 40,
+      "rateB": 4,
+      "totalB": 40,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 24
+    }
+  },
+  {
+    "ruleName": "gi_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 27,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": 100,
+      "totalB": 100,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 27
+    }
+  },
+  {
+    "ruleName": "gi_solid_block",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 28,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Solid block",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 120,
+      "totalA": 480,
+      "rateB": 120,
+      "totalB": 480,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 28
+    }
+  },
+  {
+    "ruleName": "gi_chemickal_nano_grout",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 29,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Chemickal- Nano grout",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 350,
+      "totalA": 350,
+      "rateB": 350,
+      "totalB": 350,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 29
+    }
+  },
+  {
+    "ruleName": "gi_welding_rad",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 30,
+    "record": {
+      "structureCategory": "gi",
+      "item": "welding rad",
+      "requiredQty": 40,
+      "totalWeightKg": 40,
+      "rateA": 3,
+      "totalA": 120,
+      "rateB": 3,
+      "totalB": 120,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 30
+    }
+  },
+  {
+    "ruleName": "gi_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "gi",
+    "sourceRow": 31,
+    "record": {
+      "structureCategory": "gi",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 4,
+      "totalWeightKg": 4,
+      "rateA": 15,
+      "totalA": 60,
+      "rateB": 15,
+      "totalB": 60,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "gi",
+      "sourceRow": 31
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_walkway_3x1rectangle_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 3,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Walkway -3x1rectangle tube-",
+      "requiredQty": 3,
+      "totalWeightKg": 38,
+      "rateA": 85,
+      "totalA": 3230,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 3
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_walkway_1_x1_squre_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 4,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Walkway -1.x1. Squre tube-",
+      "requiredQty": 2,
+      "totalWeightKg": 13,
+      "rateA": 85,
+      "totalA": 1105,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 4
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_pvc_end_cap_3x1",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 5,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Pvc End cap 3x1.",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 4,
+      "totalA": 24,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 5
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_pvc_end_cap_1_1",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 6,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Pvc End cap 1*1",
+      "requiredQty": 20,
+      "totalWeightKg": 20,
+      "rateA": 4,
+      "totalA": 80,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 6
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 9,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 9
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 11,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 5,
+      "totalWeightKg": 5,
+      "rateA": 15,
+      "totalA": 75,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 11
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_ladder_1_1_2_1_1_2_squre_tube",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 16,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Ladder 1.1/2*1.1/2 squre tube",
+      "requiredQty": 3,
+      "totalWeightKg": 30,
+      "rateA": 85,
+      "totalA": 2550,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 16
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_pvc_end_cap_1_1_2_x_1_1_2",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 17,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Pvc End cap 1.1/2 x 1.1/2",
+      "requiredQty": 6,
+      "totalWeightKg": 6,
+      "rateA": 4,
+      "totalA": 24,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 17
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_roller_brush",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 20,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Roller brush",
+      "requiredQty": 1,
+      "totalWeightKg": 1,
+      "rateA": 100,
+      "totalA": 100,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 20
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_cutting_wheel_4",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 22,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "Cutting Wheel 4\"",
+      "requiredQty": 5,
+      "totalWeightKg": 10,
+      "rateA": 15,
+      "totalA": 150,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 22
+    }
+  },
+  {
+    "ruleName": "walkway_and_ladder_1_meter_ladder_3234_3_6",
+    "formula": "total_weight = required_qty * weight_per_piece",
+    "inputs": [
+      "required_qty",
+      "weight_per_piece"
+    ],
+    "output": "total_weight",
+    "sourceWorkbook": "structure rate.xlsx",
+    "sourceSheet": "walkway and ladder",
+    "sourceRow": 24,
+    "record": {
+      "structureCategory": "walkway and ladder",
+      "item": "1 METER LADDER =3234/3.6",
+      "requiredQty": 898.33,
+      "totalWeightKg": null,
+      "rateA": null,
+      "totalA": null,
+      "rateB": null,
+      "totalB": null,
+      "sourceWorkbook": "structure rate.xlsx",
+      "sourceSheet": "walkway and ladder",
+      "sourceRow": 24
+    }
+  }
+]

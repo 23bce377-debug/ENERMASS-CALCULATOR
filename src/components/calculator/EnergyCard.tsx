@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Select } from '@/components/ui/Select';
 import { AlertTriangle } from 'lucide-react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { STATE_DATA, getActiveBatteryBrands } from '@/lib/data/masters';
@@ -66,14 +67,11 @@ export function EnergyCard() {
   const activeLoadW = displayLoadW;
   const backupHours = activeLoadW > 0 ? usableCapacityKWh / (activeLoadW / 1000) : 0;
 
-  if (!calcResult) return null;
+  const dbStateData = useCalculatorStore((s) => s.dbStateData);
+  const stateData = dbStateData[selectedState];
 
-  const stateData = STATE_DATA[selectedState];
-  let lifetimeSavings = 0;
-  for (let year = 0; year < LIFETIME_YEARS; year++) {
-    const inflatedSavings = calcResult.annualSavingsINR * Math.pow(1 + electricityInflationRate, year);
-    lifetimeSavings += inflatedSavings * Math.pow(1 - DEGRADATION_RATE, year);
-  }
+  if (!calcResult || !stateData) return null;
+  const lifetimeSavings = calcResult.lifetimeSavingsINR;
 
   // Monthly breakdown for chart
   const baseMonthlyGen = calcResult.annualGenerationKWh / 12;
@@ -102,28 +100,28 @@ export function EnergyCard() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider">Roof Orientation</label>
-            <select
+            <Select
               value={orientation}
-              onChange={(e) => setOrientation(e.target.value as any)}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium text-text-primary outline-none focus:border-accent/40 transition-colors"
-            >
-              <option value="South">South (100% Yield)</option>
-              <option value="East/West">East/West (~85% Yield)</option>
-              <option value="Flat">Flat (~90% Yield)</option>
-            </select>
+              onChange={(v) => setOrientation(v as any)}
+              options={[
+                { value: 'South', label: 'South', hint: '100% Yield' },
+                { value: 'East/West', label: 'East / West', hint: '~85% Yield' },
+                { value: 'Flat', label: 'Flat', hint: '~90% Yield' },
+              ]}
+            />
           </div>
           <div className="space-y-2">
             <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider">Utility Inflation / Yr</label>
-            <select
-              value={electricityInflationRate}
-              onChange={(e) => setElectricityInflationRate(parseFloat(e.target.value))}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium text-text-primary outline-none focus:border-accent/40 transition-colors"
-            >
-              <option value={0}>0%</option>
-              <option value={0.02}>2%</option>
-              <option value={0.04}>4%</option>
-              <option value={0.06}>6%</option>
-            </select>
+            <Select
+              value={String(electricityInflationRate)}
+              onChange={(v) => setElectricityInflationRate(parseFloat(v))}
+              options={[
+                { value: '0', label: '0%' },
+                { value: '0.02', label: '2%' },
+                { value: '0.04', label: '4%' },
+                { value: '0.06', label: '6%' },
+              ]}
+            />
           </div>
         </div>
 

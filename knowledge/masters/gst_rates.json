@@ -1,0 +1,7764 @@
+[
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2kwp",
+    "sourceRow": 4,
+    "gstAmount": 6016.8,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 50140
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2kwp",
+    "sourceRow": 5,
+    "gstAmount": 1536,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 12800
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20KW HIBRID",
+    "sourceRow": 13,
+    "gstAmount": 225,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E13*18%",
+    "gstFormulaInputs": [
+      "E13"
+    ],
+    "sourceGstCell": "F13",
+    "pricingFormula": "gst_amount = E13*18%",
+    "totalPriceFormula": "C13*D13",
+    "totalPriceFormulaInputs": [
+      "C13",
+      "D13"
+    ],
+    "sourceTotalCell": "E13",
+    "totalPrice": 1250
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2kwp",
+    "sourceRow": 7,
+    "gstAmount": 675,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E7*18%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*18%",
+    "totalPriceFormula": "D7*C7",
+    "totalPriceFormulaInputs": [
+      "D7",
+      "C7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 3750
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 28,
+    "gstAmount": 0,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E28*18%",
+    "gstFormulaInputs": [
+      "E28"
+    ],
+    "sourceGstCell": "F28",
+    "pricingFormula": "gst_amount = E28*18%",
+    "totalPriceFormula": "D28*C28",
+    "totalPriceFormulaInputs": [
+      "D28",
+      "C28"
+    ],
+    "sourceTotalCell": "E28",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2kwp",
+    "sourceRow": 9,
+    "gstAmount": 21.599999999999998,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E9*18%",
+    "gstFormulaInputs": [
+      "E9"
+    ],
+    "sourceGstCell": "F9",
+    "pricingFormula": "gst_amount = E9*18%",
+    "totalPriceFormula": "D9*C9",
+    "totalPriceFormulaInputs": [
+      "D9",
+      "C9"
+    ],
+    "sourceTotalCell": "E9",
+    "totalPrice": 120
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 18,
+    "gstAmount": 90,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D18*12%",
+    "totalPriceFormulaInputs": [
+      "D18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 90
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 12,
+    "gstAmount": 45,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D12*18%",
+    "gstFormulaInputs": [
+      "D12"
+    ],
+    "sourceGstCell": "F12",
+    "pricingFormula": "gst_amount = D12*18%",
+    "totalPriceFormula": "D12*C12",
+    "totalPriceFormulaInputs": [
+      "D12",
+      "C12"
+    ],
+    "sourceTotalCell": "E12",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5kw micro",
+    "sourceRow": 17,
+    "gstAmount": 67.5,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E17*18%",
+    "gstFormulaInputs": [
+      "E17"
+    ],
+    "sourceGstCell": "F17",
+    "pricingFormula": "gst_amount = E17*18%",
+    "totalPriceFormula": "D17*C17",
+    "totalPriceFormulaInputs": [
+      "D17",
+      "C17"
+    ],
+    "sourceTotalCell": "E17",
+    "totalPrice": 375
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "6kwp",
+    "sourceRow": 14,
+    "gstAmount": 15.299999999999999,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D14*18%",
+    "gstFormulaInputs": [
+      "D14"
+    ],
+    "sourceGstCell": "F14",
+    "pricingFormula": "gst_amount = D14*18%",
+    "totalPriceFormula": "D14*C14",
+    "totalPriceFormulaInputs": [
+      "D14",
+      "C14"
+    ],
+    "sourceTotalCell": "E14",
+    "totalPrice": 85
+  },
+  {
+    "gstPct": 3.0882352941,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet3",
+    "sourceRow": 30,
+    "gstAmount": 126,
+    "gstRate": 3.0882352941,
+    "effectiveGstRateOnTotal": 3.0882352941,
+    "totalPriceFormula": "D30*12%",
+    "totalPriceFormulaInputs": [
+      "D30"
+    ],
+    "sourceTotalCell": "E30",
+    "totalPrice": 40.8
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2kwp",
+    "sourceRow": 20,
+    "gstAmount": 259.2,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 1440
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20KW HIBRID",
+    "sourceRow": 12,
+    "gstAmount": 108,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E12*18%",
+    "gstFormulaInputs": [
+      "E12"
+    ],
+    "sourceGstCell": "F12",
+    "pricingFormula": "gst_amount = E12*18%",
+    "totalPriceFormula": "C12*D12",
+    "totalPriceFormulaInputs": [
+      "C12",
+      "D12"
+    ],
+    "sourceTotalCell": "E12",
+    "totalPrice": 600
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2kwp",
+    "sourceRow": 22,
+    "gstAmount": 57.599999999999994,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E22*18%",
+    "gstFormulaInputs": [
+      "E22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = E22*18%",
+    "totalPriceFormula": "D22*C22",
+    "totalPriceFormulaInputs": [
+      "D22",
+      "C22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 320
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2kwp",
+    "sourceRow": 23,
+    "gstAmount": 44.55,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E23*18%",
+    "gstFormulaInputs": [
+      "E23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = E23*18%",
+    "totalPriceFormula": "D23*C23",
+    "totalPriceFormulaInputs": [
+      "D23",
+      "C23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 247.5
+  },
+  {
+    "gstPct": 0.06,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 25,
+    "gstAmount": 3.96,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.06,
+    "gstFormula": "D25*18%",
+    "gstFormulaInputs": [
+      "D25"
+    ],
+    "sourceGstCell": "F25",
+    "pricingFormula": "gst_amount = D25*18%",
+    "totalPriceFormula": "D25*C25",
+    "totalPriceFormulaInputs": [
+      "D25",
+      "C25"
+    ],
+    "sourceTotalCell": "E25",
+    "totalPrice": 66
+  },
+  {
+    "gstPct": 0.06,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 27,
+    "gstAmount": 135,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.06,
+    "gstFormula": "D27*18%",
+    "gstFormulaInputs": [
+      "D27"
+    ],
+    "sourceGstCell": "F27",
+    "pricingFormula": "gst_amount = D27*18%",
+    "totalPriceFormula": "D27*C27",
+    "totalPriceFormulaInputs": [
+      "D27",
+      "C27"
+    ],
+    "sourceTotalCell": "E27",
+    "totalPrice": 2250
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 10,
+    "gstAmount": 1080,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E10*18%",
+    "gstFormulaInputs": [
+      "E10"
+    ],
+    "sourceGstCell": "F10",
+    "pricingFormula": "gst_amount = E10*18%",
+    "totalPriceFormula": "D10",
+    "totalPriceFormulaInputs": [
+      "D10"
+    ],
+    "sourceTotalCell": "E10",
+    "totalPrice": 6000
+  },
+  {
+    "gstPct": 0.06,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 28,
+    "gstAmount": 540,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.06,
+    "gstFormula": "D28*18%",
+    "gstFormulaInputs": [
+      "D28"
+    ],
+    "sourceGstCell": "F28",
+    "pricingFormula": "gst_amount = D28*18%",
+    "totalPriceFormula": "D28*C28",
+    "totalPriceFormulaInputs": [
+      "D28",
+      "C28"
+    ],
+    "sourceTotalCell": "E28",
+    "totalPrice": 9000
+  },
+  {
+    "gstPct": 0.1345283235,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2kwp",
+    "sourceRow": 31,
+    "gstAmount": 11172.509999999998,
+    "gstRate": 0.1345283235,
+    "effectiveGstRateOnTotal": 0.1345283235,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 83049.5
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet1",
+    "sourceRow": 4,
+    "gstAmount": 7886.4,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 65720
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet1",
+    "sourceRow": 5,
+    "gstAmount": 1731,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 14425
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 13,
+    "gstAmount": 720,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E13*18%",
+    "gstFormulaInputs": [
+      "E13"
+    ],
+    "sourceGstCell": "F13",
+    "pricingFormula": "gst_amount = E13*18%",
+    "totalPriceFormula": "D13*C13",
+    "totalPriceFormulaInputs": [
+      "D13",
+      "C13"
+    ],
+    "sourceTotalCell": "E13",
+    "totalPrice": 4000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "4KWp",
+    "sourceRow": 9,
+    "gstAmount": 152.1,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E9*18%",
+    "gstFormulaInputs": [
+      "E9"
+    ],
+    "sourceGstCell": "F9",
+    "pricingFormula": "gst_amount = E9*18%",
+    "totalPriceFormula": "D9*C9",
+    "totalPriceFormulaInputs": [
+      "D9",
+      "C9"
+    ],
+    "sourceTotalCell": "E9",
+    "totalPrice": 845
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 10,
+    "gstAmount": 213.12,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D10*18%",
+    "gstFormulaInputs": [
+      "D10"
+    ],
+    "sourceGstCell": "F10",
+    "pricingFormula": "gst_amount = D10*18%",
+    "totalPriceFormula": "D10*C10",
+    "totalPriceFormulaInputs": [
+      "D10",
+      "C10"
+    ],
+    "sourceTotalCell": "E10",
+    "totalPrice": 1184
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 11,
+    "gstAmount": 99,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D11*18%",
+    "gstFormulaInputs": [
+      "D11"
+    ],
+    "sourceGstCell": "F11",
+    "pricingFormula": "gst_amount = D11*18%",
+    "totalPriceFormula": "D11*C11",
+    "totalPriceFormulaInputs": [
+      "D11",
+      "C11"
+    ],
+    "sourceTotalCell": "E11",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 14,
+    "gstAmount": 54,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E14*18%",
+    "gstFormulaInputs": [
+      "E14"
+    ],
+    "sourceGstCell": "F14",
+    "pricingFormula": "gst_amount = E14*18%",
+    "totalPriceFormula": "C14*D14",
+    "totalPriceFormulaInputs": [
+      "C14",
+      "D14"
+    ],
+    "sourceTotalCell": "E14",
+    "totalPrice": 300
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 14,
+    "gstAmount": 29.7,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D14*18%",
+    "gstFormulaInputs": [
+      "D14"
+    ],
+    "sourceGstCell": "F14",
+    "pricingFormula": "gst_amount = D14*18%",
+    "totalPriceFormula": "D14*C14",
+    "totalPriceFormulaInputs": [
+      "D14",
+      "C14"
+    ],
+    "sourceTotalCell": "E14",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwp",
+    "sourceRow": 16,
+    "gstAmount": 81,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E16*18%",
+    "gstFormulaInputs": [
+      "E16"
+    ],
+    "sourceGstCell": "F16",
+    "pricingFormula": "gst_amount = E16*18%",
+    "totalPriceFormula": "C16*D16",
+    "totalPriceFormulaInputs": [
+      "C16",
+      "D16"
+    ],
+    "sourceTotalCell": "E16",
+    "totalPrice": 450
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 16,
+    "gstAmount": 31.5,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D16*18%",
+    "gstFormulaInputs": [
+      "D16"
+    ],
+    "sourceGstCell": "F16",
+    "pricingFormula": "gst_amount = D16*18%",
+    "totalPriceFormula": "D16*C16",
+    "totalPriceFormulaInputs": [
+      "D16",
+      "C16"
+    ],
+    "sourceTotalCell": "E16",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 23,
+    "gstAmount": 72,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E23*18%",
+    "gstFormulaInputs": [
+      "E23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = E23*18%",
+    "totalPriceFormula": "D23*C23",
+    "totalPriceFormulaInputs": [
+      "D23",
+      "C23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 400
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid upgrade 5kw",
+    "sourceRow": 20,
+    "gstAmount": 95.39999999999999,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D20*18%",
+    "gstFormulaInputs": [
+      "D20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = D20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet1",
+    "sourceRow": 20,
+    "gstAmount": 122.39999999999999,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 680
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet1",
+    "sourceRow": 21,
+    "gstAmount": 387,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 2150
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 22,
+    "gstAmount": 261,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E22*18%",
+    "gstFormulaInputs": [
+      "E22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = E22*18%",
+    "totalPriceFormula": "D22*C22",
+    "totalPriceFormulaInputs": [
+      "D22",
+      "C22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 1450
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 24,
+    "gstAmount": 74.25,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E24*18%",
+    "gstFormulaInputs": [
+      "E24"
+    ],
+    "sourceGstCell": "F24",
+    "pricingFormula": "gst_amount = E24*18%",
+    "totalPriceFormula": "C24*D24",
+    "totalPriceFormulaInputs": [
+      "C24",
+      "D24"
+    ],
+    "sourceTotalCell": "E24",
+    "totalPrice": 412.5
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet1",
+    "sourceRow": 24,
+    "gstAmount": 176.4,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E24*18%",
+    "gstFormulaInputs": [
+      "E24"
+    ],
+    "sourceGstCell": "F24",
+    "pricingFormula": "gst_amount = E24*18%",
+    "totalPriceFormula": "D24*C24",
+    "totalPriceFormulaInputs": [
+      "D24",
+      "C24"
+    ],
+    "sourceTotalCell": "E24",
+    "totalPrice": 980
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 8,
+    "gstAmount": 270,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E8*18%",
+    "gstFormulaInputs": [
+      "E8"
+    ],
+    "sourceGstCell": "F8",
+    "pricingFormula": "gst_amount = E8*18%",
+    "totalPriceFormula": "D8",
+    "totalPriceFormulaInputs": [
+      "D8"
+    ],
+    "sourceTotalCell": "E8",
+    "totalPrice": 1500
+  },
+  {
+    "gstPct": 0.1368488449,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet1",
+    "sourceRow": 31,
+    "gstAmount": 15250.23,
+    "gstRate": 0.1368488449,
+    "effectiveGstRateOnTotal": 0.1368488449,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 111438.5
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "1kw admn",
+    "sourceRow": 3,
+    "gstAmount": 3300,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E3*12%",
+    "gstFormulaInputs": [
+      "E3"
+    ],
+    "sourceGstCell": "F3",
+    "pricingFormula": "gst_amount = E3*12%",
+    "totalPriceFormula": "D3*C3",
+    "totalPriceFormulaInputs": [
+      "D3",
+      "C3"
+    ],
+    "sourceTotalCell": "E3",
+    "totalPrice": 27500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kwp",
+    "sourceRow": 27,
+    "gstAmount": 1440,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E27*18%",
+    "gstFormulaInputs": [
+      "E27"
+    ],
+    "sourceGstCell": "F27",
+    "pricingFormula": "gst_amount = E27*18%",
+    "totalPriceFormula": "D27*C27",
+    "totalPriceFormulaInputs": [
+      "D27",
+      "C27"
+    ],
+    "sourceTotalCell": "E27",
+    "totalPrice": 8000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "8kwp",
+    "sourceRow": 17,
+    "gstAmount": 603,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D17*18%",
+    "gstFormulaInputs": [
+      "D17"
+    ],
+    "sourceGstCell": "F17",
+    "pricingFormula": "gst_amount = D17*18%",
+    "totalPriceFormula": "D17*C17",
+    "totalPriceFormulaInputs": [
+      "D17",
+      "C17"
+    ],
+    "sourceTotalCell": "E17",
+    "totalPrice": 3350
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwp",
+    "sourceRow": 27,
+    "gstAmount": 900,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E27*18%",
+    "gstFormulaInputs": [
+      "E27"
+    ],
+    "sourceGstCell": "F27",
+    "pricingFormula": "gst_amount = E27*18%",
+    "totalPriceFormula": "C27*D27",
+    "totalPriceFormulaInputs": [
+      "C27",
+      "D27"
+    ],
+    "sourceTotalCell": "E27",
+    "totalPrice": 5000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet5",
+    "sourceRow": 21,
+    "gstAmount": 121.5,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 675
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 22,
+    "gstAmount": 252,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E22*18%",
+    "gstFormulaInputs": [
+      "E22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = E22*18%",
+    "totalPriceFormula": "D22*C22",
+    "totalPriceFormulaInputs": [
+      "D22",
+      "C22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 1400
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 18,
+    "gstAmount": 315,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D18*18%",
+    "gstFormulaInputs": [
+      "D18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = D18*18%",
+    "totalPriceFormula": "D18*C18",
+    "totalPriceFormulaInputs": [
+      "D18",
+      "C18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mat 3 kw",
+    "sourceRow": 20,
+    "gstAmount": 306,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 1700
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "4KWp",
+    "sourceRow": 21,
+    "gstAmount": 154.79999999999998,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 860
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 24,
+    "gstAmount": 207,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D24*18%",
+    "gstFormulaInputs": [
+      "D24"
+    ],
+    "sourceGstCell": "F24",
+    "pricingFormula": "gst_amount = D24*18%",
+    "totalPriceFormula": "D24*C24",
+    "totalPriceFormulaInputs": [
+      "D24",
+      "C24"
+    ],
+    "sourceTotalCell": "E24",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 15,
+    "gstAmount": 405,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E15*18%",
+    "gstFormulaInputs": [
+      "E15"
+    ],
+    "sourceGstCell": "F15",
+    "pricingFormula": "gst_amount = E15*18%",
+    "totalPriceFormula": "D15*C15",
+    "totalPriceFormulaInputs": [
+      "D15",
+      "C15"
+    ],
+    "sourceTotalCell": "E15",
+    "totalPrice": 2250
+  },
+  {
+    "gstPct": 0.1495249362,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "1kw admn",
+    "sourceRow": 30,
+    "gstAmount": 11628.329999999998,
+    "gstRate": 0.1495249362,
+    "effectiveGstRateOnTotal": 0.1495249362,
+    "gstFormula": "SUM(F3:F29)",
+    "gstFormulaInputs": [
+      "F3",
+      "F29"
+    ],
+    "sourceGstCell": "F30",
+    "pricingFormula": "gst_amount = SUM(F3:F29)",
+    "totalPriceFormula": "SUM(E3:E29)",
+    "totalPriceFormulaInputs": [
+      "E3",
+      "E29"
+    ],
+    "sourceTotalCell": "E30",
+    "totalPrice": 77768.5
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3Kwp",
+    "sourceRow": 4,
+    "gstAmount": 9486,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 79050
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3Kwp",
+    "sourceRow": 5,
+    "gstAmount": 1656,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 13800
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 27,
+    "gstAmount": 117,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E27*18%",
+    "gstFormulaInputs": [
+      "E27"
+    ],
+    "sourceGstCell": "F27",
+    "pricingFormula": "gst_amount = E27*18%",
+    "totalPriceFormula": "C27*D27",
+    "totalPriceFormulaInputs": [
+      "C27",
+      "D27"
+    ],
+    "sourceTotalCell": "E27",
+    "totalPrice": 650
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 11,
+    "gstAmount": 139.5,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E11*18%",
+    "gstFormulaInputs": [
+      "E11"
+    ],
+    "sourceGstCell": "F11",
+    "pricingFormula": "gst_amount = E11*18%",
+    "totalPriceFormula": "D11*C11",
+    "totalPriceFormulaInputs": [
+      "D11",
+      "C11"
+    ],
+    "sourceTotalCell": "E11",
+    "totalPrice": 775
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3Kwp",
+    "sourceRow": 15,
+    "gstAmount": 75.6,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E15*18%",
+    "gstFormulaInputs": [
+      "E15"
+    ],
+    "sourceGstCell": "F15",
+    "pricingFormula": "gst_amount = E15*18%",
+    "totalPriceFormula": "D15*C15",
+    "totalPriceFormulaInputs": [
+      "D15",
+      "C15"
+    ],
+    "sourceTotalCell": "E15",
+    "totalPrice": 420
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 16,
+    "gstAmount": 20.7,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E16*18%",
+    "gstFormulaInputs": [
+      "E16"
+    ],
+    "sourceGstCell": "F16",
+    "pricingFormula": "gst_amount = E16*18%",
+    "totalPriceFormula": "D16*C16",
+    "totalPriceFormulaInputs": [
+      "D16",
+      "C16"
+    ],
+    "sourceTotalCell": "E16",
+    "totalPrice": 115
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 24,
+    "gstAmount": 486,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E24*18%",
+    "gstFormulaInputs": [
+      "E24"
+    ],
+    "sourceGstCell": "F24",
+    "pricingFormula": "gst_amount = E24*18%",
+    "totalPriceFormula": "D24*C24",
+    "totalPriceFormulaInputs": [
+      "D24",
+      "C24"
+    ],
+    "sourceTotalCell": "E24",
+    "totalPrice": 2700
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5Kwp",
+    "sourceRow": 19,
+    "gstAmount": 91.8,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E19*18%",
+    "gstFormulaInputs": [
+      "E19"
+    ],
+    "sourceGstCell": "F19",
+    "pricingFormula": "gst_amount = E19*18%",
+    "totalPriceFormula": "D19*C19",
+    "totalPriceFormulaInputs": [
+      "D19",
+      "C19"
+    ],
+    "sourceTotalCell": "E19",
+    "totalPrice": 510
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet11",
+    "sourceRow": 12,
+    "gstAmount": 432,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E12*18%",
+    "gstFormulaInputs": [
+      "E12"
+    ],
+    "sourceGstCell": "F12",
+    "pricingFormula": "gst_amount = E12*18%",
+    "totalPriceFormula": "C12*D12",
+    "totalPriceFormulaInputs": [
+      "C12",
+      "D12"
+    ],
+    "sourceTotalCell": "E12",
+    "totalPrice": 2400
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3Kwp",
+    "sourceRow": 21,
+    "gstAmount": 165.6,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 920
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 23,
+    "gstAmount": 85.5,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E23*18%",
+    "gstFormulaInputs": [
+      "E23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = E23*18%",
+    "totalPriceFormula": "D23*C23",
+    "totalPriceFormulaInputs": [
+      "D23",
+      "C23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 475
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 19,
+    "gstAmount": 36,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D19*12%",
+    "totalPriceFormulaInputs": [
+      "D19"
+    ],
+    "sourceTotalCell": "E19",
+    "totalPrice": 36
+  },
+  {
+    "gstPct": 0.03,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "6kwp",
+    "sourceRow": 30,
+    "gstAmount": 360,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.03,
+    "gstFormula": "D30*18%",
+    "gstFormulaInputs": [
+      "D30"
+    ],
+    "sourceGstCell": "F30",
+    "pricingFormula": "gst_amount = D30*18%",
+    "totalPriceFormula": "D30*C30",
+    "totalPriceFormulaInputs": [
+      "D30",
+      "C30"
+    ],
+    "sourceTotalCell": "E30",
+    "totalPrice": 12000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet5",
+    "sourceRow": 27,
+    "gstAmount": 2700,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E27*18%",
+    "gstFormulaInputs": [
+      "E27"
+    ],
+    "sourceGstCell": "F27",
+    "pricingFormula": "gst_amount = E27*18%",
+    "totalPriceFormula": "D27",
+    "totalPriceFormulaInputs": [
+      "D27"
+    ],
+    "sourceTotalCell": "E27",
+    "totalPrice": 15000
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet7",
+    "sourceRow": 20,
+    "gstAmount": 1620,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": 0.1412241773,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3Kwp",
+    "sourceRow": 31,
+    "gstAmount": 20289.96,
+    "gstRate": 0.1412241773,
+    "effectiveGstRateOnTotal": 0.1412241773,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 143672
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5kw micro",
+    "sourceRow": 4,
+    "gstAmount": 14880,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 124000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kwp",
+    "sourceRow": 5,
+    "gstAmount": 8160,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 68000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5kw micro",
+    "sourceRow": 7,
+    "gstAmount": 672,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E7*12%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*12%",
+    "totalPriceFormula": "D7*C7",
+    "totalPriceFormulaInputs": [
+      "D7",
+      "C7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 5600
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5kw micro",
+    "sourceRow": 23,
+    "gstAmount": 309.59999999999997,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E23*18%",
+    "gstFormulaInputs": [
+      "E23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = E23*18%",
+    "totalPriceFormula": "D23*C23",
+    "totalPriceFormulaInputs": [
+      "D23",
+      "C23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 1720
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mat 3 kw",
+    "sourceRow": 24,
+    "gstAmount": 171,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E24*18%",
+    "gstFormulaInputs": [
+      "E24"
+    ],
+    "sourceGstCell": "F24",
+    "pricingFormula": "gst_amount = E24*18%",
+    "totalPriceFormula": "D24*C24",
+    "totalPriceFormulaInputs": [
+      "D24",
+      "C24"
+    ],
+    "sourceTotalCell": "E24",
+    "totalPrice": 950
+  },
+  {
+    "gstPct": 0.1332974226,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3KW MICRO INVERTER",
+    "sourceRow": 33,
+    "gstAmount": 35894.13,
+    "gstRate": 0.1332974226,
+    "effectiveGstRateOnTotal": 0.1332974226,
+    "gstFormula": "SUM(F4:F32)",
+    "gstFormulaInputs": [
+      "F4",
+      "F32"
+    ],
+    "sourceGstCell": "F33",
+    "pricingFormula": "gst_amount = SUM(F4:F32)",
+    "totalPriceFormula": "SUM(E4:E32)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E32"
+    ],
+    "sourceTotalCell": "E33",
+    "totalPrice": 269278.5
+  },
+  {
+    "gstPct": 0.1234731895,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5kw micro",
+    "sourceRow": 33,
+    "gstAmount": 27470.129999999997,
+    "gstRate": 0.1234731895,
+    "effectiveGstRateOnTotal": 0.1234731895,
+    "gstFormula": "SUM(F4:F32)",
+    "gstFormulaInputs": [
+      "F4",
+      "F32"
+    ],
+    "sourceGstCell": "F33",
+    "pricingFormula": "gst_amount = SUM(F4:F32)",
+    "totalPriceFormula": "SUM(E4:E32)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E32"
+    ],
+    "sourceTotalCell": "E33",
+    "totalPrice": 222478.5
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2-3upgrade",
+    "sourceRow": 4,
+    "gstAmount": 5580,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 46500
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2-3upgrade",
+    "sourceRow": 5,
+    "gstAmount": 1776,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 14800
+  },
+  {
+    "gstPct": 0.036,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hoymiles5kw",
+    "sourceRow": 29,
+    "gstAmount": 630,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.036,
+    "gstFormula": "D29*18%",
+    "gstFormulaInputs": [
+      "D29"
+    ],
+    "sourceGstCell": "F29",
+    "pricingFormula": "gst_amount = D29*18%",
+    "totalPriceFormula": "D29*C29",
+    "totalPriceFormulaInputs": [
+      "D29",
+      "C29"
+    ],
+    "sourceTotalCell": "E29",
+    "totalPrice": 17500
+  },
+  {
+    "gstPct": 0.138207395,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2-3upgrade",
+    "sourceRow": 31,
+    "gstAmount": 12163.08,
+    "gstRate": 0.138207395,
+    "effectiveGstRateOnTotal": 0.138207395,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 88006
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3kw hibrid",
+    "sourceRow": 4,
+    "gstAmount": 9672,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 80600
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kw hibrid solinteg",
+    "sourceRow": 7,
+    "gstAmount": 9000,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E7*18%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*18%",
+    "totalPriceFormula": "C7*D7",
+    "totalPriceFormulaInputs": [
+      "C7",
+      "D7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 50000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 5kw",
+    "sourceRow": 5,
+    "gstAmount": 8880,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 74000
+  },
+  {
+    "gstPct": 0.06,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 30,
+    "gstAmount": 450,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.06,
+    "gstFormula": "D30*18%",
+    "gstFormulaInputs": [
+      "D30"
+    ],
+    "sourceGstCell": "F30",
+    "pricingFormula": "gst_amount = D30*18%",
+    "totalPriceFormula": "D30*C30",
+    "totalPriceFormulaInputs": [
+      "D30",
+      "C30"
+    ],
+    "sourceTotalCell": "E30",
+    "totalPrice": 7500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3kw hibrid",
+    "sourceRow": 20,
+    "gstAmount": 190.79999999999998,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 1060
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 17,
+    "gstAmount": 162,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E17*18%",
+    "gstFormulaInputs": [
+      "E17"
+    ],
+    "sourceGstCell": "F17",
+    "pricingFormula": "gst_amount = E17*18%",
+    "totalPriceFormula": "C17*D17",
+    "totalPriceFormulaInputs": [
+      "C17",
+      "D17"
+    ],
+    "sourceTotalCell": "E17",
+    "totalPrice": 900
+  },
+  {
+    "gstPct": 0.1305169748,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3kw hibrid",
+    "sourceRow": 32,
+    "gstAmount": 36335.729999999996,
+    "gstRate": 0.1305169748,
+    "effectiveGstRateOnTotal": 0.1305169748,
+    "gstFormula": "SUM(F4:F31)",
+    "gstFormulaInputs": [
+      "F4",
+      "F31"
+    ],
+    "sourceGstCell": "F32",
+    "pricingFormula": "gst_amount = SUM(F4:F31)",
+    "totalPriceFormula": "SUM(E4:E31)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E31"
+    ],
+    "sourceTotalCell": "E32",
+    "totalPrice": 278398.5
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mat 3 kw",
+    "sourceRow": 4,
+    "gstAmount": 10857.6,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 90480
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mat 3 kw",
+    "sourceRow": 5,
+    "gstAmount": 1824,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 15200
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "100kw STM",
+    "sourceRow": 16,
+    "gstAmount": 243,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E16*18%",
+    "gstFormulaInputs": [
+      "E16"
+    ],
+    "sourceGstCell": "F16",
+    "pricingFormula": "gst_amount = E16*18%",
+    "totalPriceFormula": "D16*C16",
+    "totalPriceFormulaInputs": [
+      "D16",
+      "C16"
+    ],
+    "sourceTotalCell": "E16",
+    "totalPrice": 1350
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet7",
+    "sourceRow": 14,
+    "gstAmount": 89.1,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 15,
+    "gstAmount": 40.5,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D15*18%",
+    "gstFormulaInputs": [
+      "D15"
+    ],
+    "sourceGstCell": "F15",
+    "pricingFormula": "gst_amount = D15*18%",
+    "totalPriceFormula": "D15*C15",
+    "totalPriceFormulaInputs": [
+      "D15",
+      "C15"
+    ],
+    "sourceTotalCell": "E15",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.1285422829,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mat 3 kw",
+    "sourceRow": 31,
+    "gstAmount": 15839.43,
+    "gstRate": 0.1285422829,
+    "effectiveGstRateOnTotal": 0.1285422829,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 123223.5
+  },
+  {
+    "gstPct": 0.05,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "UPGRADE 5 KW hybrid",
+    "sourceRow": 4,
+    "gstAmount": 6003,
+    "gstRate": 0.05,
+    "effectiveGstRateOnTotal": 0.05,
+    "gstFormula": "E4*5%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*5%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 120060
+  },
+  {
+    "gstPct": 0.05,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "UPGRADE 5 KW hybrid",
+    "sourceRow": 5,
+    "gstAmount": 3700,
+    "gstRate": 0.05,
+    "effectiveGstRateOnTotal": 0.05,
+    "gstFormula": "E5*5%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*5%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 74000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "UPGRADE 5 KW hybrid",
+    "sourceRow": 7,
+    "gstAmount": 1188,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E7*18%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*18%",
+    "totalPriceFormula": "D7*C7",
+    "totalPriceFormulaInputs": [
+      "D7",
+      "C7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 6600
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 8,
+    "gstAmount": 15840,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D8*18%",
+    "gstFormulaInputs": [
+      "D8"
+    ],
+    "sourceGstCell": "F8",
+    "pricingFormula": "gst_amount = D8*18%",
+    "totalPriceFormula": "D8*C8",
+    "totalPriceFormulaInputs": [
+      "D8",
+      "C8"
+    ],
+    "sourceTotalCell": "E8",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "UPGRADE 5 KW hybrid",
+    "sourceRow": 17,
+    "gstAmount": 2484,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E17*18%",
+    "gstFormulaInputs": [
+      "E17"
+    ],
+    "sourceGstCell": "F17",
+    "pricingFormula": "gst_amount = E17*18%",
+    "totalPriceFormula": "D17*B17",
+    "totalPriceFormulaInputs": [
+      "D17",
+      "B17"
+    ],
+    "sourceTotalCell": "E17",
+    "totalPrice": 13800
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 26,
+    "gstAmount": 37.8,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D26*18%",
+    "gstFormulaInputs": [
+      "D26"
+    ],
+    "sourceGstCell": "F26",
+    "pricingFormula": "gst_amount = D26*18%",
+    "totalPriceFormula": "D26*C26",
+    "totalPriceFormulaInputs": [
+      "D26",
+      "C26"
+    ],
+    "sourceTotalCell": "E26",
+    "totalPrice": 210
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "UPGRADE 5 KW hybrid",
+    "sourceRow": 30,
+    "gstAmount": 2700,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E30*18%",
+    "gstFormulaInputs": [
+      "E30"
+    ],
+    "sourceGstCell": "F30",
+    "pricingFormula": "gst_amount = E30*18%",
+    "totalPriceFormula": "D30*C30",
+    "totalPriceFormulaInputs": [
+      "D30",
+      "C30"
+    ],
+    "sourceTotalCell": "E30",
+    "totalPrice": 15000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "4KWp",
+    "sourceRow": 4,
+    "gstAmount": 8332.8,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 69440
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "4KWp",
+    "sourceRow": 5,
+    "gstAmount": 2400,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 20000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20KW HIBRID",
+    "sourceRow": 21,
+    "gstAmount": 1404,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "C21*D21",
+    "totalPriceFormulaInputs": [
+      "C21",
+      "D21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 7800
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet4",
+    "sourceRow": 25,
+    "gstAmount": 1260,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E25*18%",
+    "gstFormulaInputs": [
+      "E25"
+    ],
+    "sourceGstCell": "F25",
+    "pricingFormula": "gst_amount = E25*18%",
+    "totalPriceFormula": "D25",
+    "totalPriceFormulaInputs": [
+      "D25"
+    ],
+    "sourceTotalCell": "E25",
+    "totalPrice": 7000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 20,
+    "gstAmount": 1800,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "C20*D20",
+    "totalPriceFormulaInputs": [
+      "C20",
+      "D20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 10000
+  },
+  {
+    "gstPct": 0.1391779915,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "4KWp",
+    "sourceRow": 31,
+    "gstAmount": 18296.129999999997,
+    "gstRate": 0.1391779915,
+    "effectiveGstRateOnTotal": 0.1391779915,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 131458.5
+  },
+  {
+    "gstPct": 0.05,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5Kwp",
+    "sourceRow": 4,
+    "gstAmount": 4216,
+    "gstRate": 0.05,
+    "effectiveGstRateOnTotal": 0.05,
+    "gstFormula": "E4*5%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*5%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 84320
+  },
+  {
+    "gstPct": 0.05,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5Kwp",
+    "sourceRow": 5,
+    "gstAmount": 1125,
+    "gstRate": 0.05,
+    "effectiveGstRateOnTotal": 0.05,
+    "gstFormula": "E5*5%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*5%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 22500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 16,
+    "gstAmount": 62.099999999999994,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E16*18%",
+    "gstFormulaInputs": [
+      "E16"
+    ],
+    "sourceGstCell": "F16",
+    "pricingFormula": "gst_amount = E16*18%",
+    "totalPriceFormula": "D16*C16",
+    "totalPriceFormulaInputs": [
+      "D16",
+      "C16"
+    ],
+    "sourceTotalCell": "E16",
+    "totalPrice": 345
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5Kwp",
+    "sourceRow": 17,
+    "gstAmount": 226.79999999999998,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E17*18%",
+    "gstFormulaInputs": [
+      "E17"
+    ],
+    "sourceGstCell": "F17",
+    "pricingFormula": "gst_amount = E17*18%",
+    "totalPriceFormula": "D17*C17",
+    "totalPriceFormulaInputs": [
+      "D17",
+      "C17"
+    ],
+    "sourceTotalCell": "E17",
+    "totalPrice": 1260
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5Kwp",
+    "sourceRow": 18,
+    "gstAmount": 280.8,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E18*18%",
+    "gstFormulaInputs": [
+      "E18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = E18*18%",
+    "totalPriceFormula": "D18*C18",
+    "totalPriceFormulaInputs": [
+      "D18",
+      "C18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 1560
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 14,
+    "gstAmount": 518.4,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E14*18%",
+    "gstFormulaInputs": [
+      "E14"
+    ],
+    "sourceGstCell": "F14",
+    "pricingFormula": "gst_amount = E14*18%",
+    "totalPriceFormula": "D14*C14",
+    "totalPriceFormulaInputs": [
+      "D14",
+      "C14"
+    ],
+    "sourceTotalCell": "E14",
+    "totalPrice": 2880
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 12,
+    "gstAmount": 198,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E12*18%",
+    "gstFormulaInputs": [
+      "E12"
+    ],
+    "sourceGstCell": "F12",
+    "pricingFormula": "gst_amount = E12*18%",
+    "totalPriceFormula": "C12*D12",
+    "totalPriceFormulaInputs": [
+      "C12",
+      "D12"
+    ],
+    "sourceTotalCell": "E12",
+    "totalPrice": 1100
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5Kwp",
+    "sourceRow": 25,
+    "gstAmount": 10.08,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E25*18%",
+    "gstFormulaInputs": [
+      "E25"
+    ],
+    "sourceGstCell": "F25",
+    "pricingFormula": "gst_amount = E25*18%",
+    "totalPriceFormula": "D25*C25",
+    "totalPriceFormulaInputs": [
+      "D25",
+      "C25"
+    ],
+    "sourceTotalCell": "E25",
+    "totalPrice": 56
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5Kwp",
+    "sourceRow": 28,
+    "gstAmount": 3150,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E28*18%",
+    "gstFormulaInputs": [
+      "E28"
+    ],
+    "sourceGstCell": "F28",
+    "pricingFormula": "gst_amount = E28*18%",
+    "totalPriceFormula": "D28*C28",
+    "totalPriceFormulaInputs": [
+      "D28",
+      "C28"
+    ],
+    "sourceTotalCell": "E28",
+    "totalPrice": 17500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 31,
+    "gstAmount": 2250,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E31*18%",
+    "gstFormulaInputs": [
+      "E31"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = E31*18%",
+    "totalPriceFormula": "D31*C31",
+    "totalPriceFormulaInputs": [
+      "D31",
+      "C31"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 12500
+  },
+  {
+    "gstPct": 0.0967345226,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5Kwp",
+    "sourceRow": 31,
+    "gstAmount": 16132.899999999998,
+    "gstRate": 0.0967345226,
+    "effectiveGstRateOnTotal": 0.0967345226,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 166775
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5kw 3 PH",
+    "sourceRow": 4,
+    "gstAmount": 10118.4,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 84320
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "6kwp",
+    "sourceRow": 5,
+    "gstAmount": 4560,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 38000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hoymiles5kw",
+    "sourceRow": 7,
+    "gstAmount": 1224,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D7*18%",
+    "gstFormulaInputs": [
+      "D7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = D7*18%",
+    "totalPriceFormula": "D7*C7",
+    "totalPriceFormulaInputs": [
+      "D7",
+      "C7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.009,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5kw 3 PH",
+    "sourceRow": 10,
+    "gstAmount": 5.3999999999999995,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.009,
+    "gstFormula": "D10*18%",
+    "gstFormulaInputs": [
+      "D10"
+    ],
+    "sourceGstCell": "F10",
+    "pricingFormula": "gst_amount = D10*18%",
+    "totalPriceFormula": "D10*C10",
+    "totalPriceFormulaInputs": [
+      "D10",
+      "C10"
+    ],
+    "sourceTotalCell": "E10",
+    "totalPrice": 600
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kw hibrid solinteg",
+    "sourceRow": 12,
+    "gstAmount": 180,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E12*18%",
+    "gstFormulaInputs": [
+      "E12"
+    ],
+    "sourceGstCell": "F12",
+    "pricingFormula": "gst_amount = E12*18%",
+    "totalPriceFormula": "C12*D12",
+    "totalPriceFormulaInputs": [
+      "C12",
+      "D12"
+    ],
+    "sourceTotalCell": "E12",
+    "totalPrice": 1000
+  },
+  {
+    "gstPct": 0.06,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5kw 3 PH",
+    "sourceRow": 13,
+    "gstAmount": 32.4,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.06,
+    "gstFormula": "D13*18%",
+    "gstFormulaInputs": [
+      "D13"
+    ],
+    "sourceGstCell": "F13",
+    "pricingFormula": "gst_amount = D13*18%",
+    "totalPriceFormula": "D13*C13",
+    "totalPriceFormulaInputs": [
+      "D13",
+      "C13"
+    ],
+    "sourceTotalCell": "E13",
+    "totalPrice": 540
+  },
+  {
+    "gstPct": 0.06,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5kw 3 PH",
+    "sourceRow": 16,
+    "gstAmount": 18.9,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.06,
+    "gstFormula": "D16*18%",
+    "gstFormulaInputs": [
+      "D16"
+    ],
+    "sourceGstCell": "F16",
+    "pricingFormula": "gst_amount = D16*18%",
+    "totalPriceFormula": "D16*C16",
+    "totalPriceFormulaInputs": [
+      "D16",
+      "C16"
+    ],
+    "sourceTotalCell": "E16",
+    "totalPrice": 315
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hoymiles5kw",
+    "sourceRow": 18,
+    "gstAmount": 504,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D18*18%",
+    "gstFormulaInputs": [
+      "D18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = D18*18%",
+    "totalPriceFormula": "D18*C18",
+    "totalPriceFormulaInputs": [
+      "D18",
+      "C18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.0138461538,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "8kwp",
+    "sourceRow": 9,
+    "gstAmount": 9,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.0138461538,
+    "gstFormula": "D9*18%",
+    "gstFormulaInputs": [
+      "D9"
+    ],
+    "sourceGstCell": "F9",
+    "pricingFormula": "gst_amount = D9*18%",
+    "totalPriceFormula": "D9*C9",
+    "totalPriceFormulaInputs": [
+      "D9",
+      "C9"
+    ],
+    "sourceTotalCell": "E9",
+    "totalPrice": 650
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 21,
+    "gstAmount": 8.64,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D21*18%",
+    "gstFormulaInputs": [
+      "D21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = D21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 22,
+    "gstAmount": 9.54,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D22*18%",
+    "gstFormulaInputs": [
+      "D22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = D22*18%",
+    "totalPriceFormula": "D22*C22",
+    "totalPriceFormulaInputs": [
+      "D22",
+      "C22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 23,
+    "gstAmount": 3.2399999999999998,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D23*18%",
+    "gstFormulaInputs": [
+      "D23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = D23*18%",
+    "totalPriceFormula": "D23*C23",
+    "totalPriceFormulaInputs": [
+      "D23",
+      "C23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 13,
+    "gstAmount": 144,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E13*18%",
+    "gstFormulaInputs": [
+      "E13"
+    ],
+    "sourceGstCell": "F13",
+    "pricingFormula": "gst_amount = E13*18%",
+    "totalPriceFormula": "D13*C13",
+    "totalPriceFormulaInputs": [
+      "D13",
+      "C13"
+    ],
+    "sourceTotalCell": "E13",
+    "totalPrice": 800
+  },
+  {
+    "gstPct": 0.1119473412,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "5kw 3 PH",
+    "sourceRow": 32,
+    "gstAmount": 21437.580000000005,
+    "gstRate": 0.1119473412,
+    "effectiveGstRateOnTotal": 0.1119473412,
+    "gstFormula": "SUM(F4:F31)",
+    "gstFormulaInputs": [
+      "F4",
+      "F31"
+    ],
+    "sourceGstCell": "F32",
+    "pricingFormula": "gst_amount = SUM(F4:F31)",
+    "totalPriceFormula": "SUM(E4:E31)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E31"
+    ],
+    "sourceTotalCell": "E32",
+    "totalPrice": 191497
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet6",
+    "sourceRow": 4,
+    "gstAmount": 4224,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 35200
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet6",
+    "sourceRow": 5,
+    "gstAmount": 5760,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 48000
+  },
+  {
+    "gstPct": 0.045,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 9,
+    "gstAmount": 11.7,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.045,
+    "gstFormula": "D9*18%",
+    "gstFormulaInputs": [
+      "D9"
+    ],
+    "sourceGstCell": "F9",
+    "pricingFormula": "gst_amount = D9*18%",
+    "totalPriceFormula": "D9*C9",
+    "totalPriceFormulaInputs": [
+      "D9",
+      "C9"
+    ],
+    "sourceTotalCell": "E9",
+    "totalPrice": 260
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 12,
+    "gstAmount": 39.6,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D12*18%",
+    "gstFormulaInputs": [
+      "D12"
+    ],
+    "sourceGstCell": "F12",
+    "pricingFormula": "gst_amount = D12*18%",
+    "totalPriceFormula": "D12*C12",
+    "totalPriceFormulaInputs": [
+      "D12",
+      "C12"
+    ],
+    "sourceTotalCell": "E12",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 15,
+    "gstAmount": 30.419999999999998,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D15*18%",
+    "gstFormulaInputs": [
+      "D15"
+    ],
+    "sourceGstCell": "F15",
+    "pricingFormula": "gst_amount = D15*18%",
+    "totalPriceFormula": "D15*C15",
+    "totalPriceFormulaInputs": [
+      "D15",
+      "C15"
+    ],
+    "sourceTotalCell": "E15",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.0036,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "6kwp",
+    "sourceRow": 20,
+    "gstAmount": 7.02,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.0036,
+    "gstFormula": "D20*18%",
+    "gstFormulaInputs": [
+      "D20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = D20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 1950
+  },
+  {
+    "gstPct": 0.1422366588,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet6",
+    "sourceRow": 32,
+    "gstAmount": 16333.320000000002,
+    "gstRate": 0.1422366588,
+    "effectiveGstRateOnTotal": 0.1422366588,
+    "gstFormula": "SUM(F4:F31)",
+    "gstFormulaInputs": [
+      "F4",
+      "F31"
+    ],
+    "sourceGstCell": "F32",
+    "pricingFormula": "gst_amount = SUM(F4:F31)",
+    "totalPriceFormula": "SUM(E4:E31)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E31"
+    ],
+    "sourceTotalCell": "E32",
+    "totalPrice": 114832
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hoymiles5kw",
+    "sourceRow": 4,
+    "gstAmount": 16368,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 136400
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "100kw STM",
+    "sourceRow": 21,
+    "gstAmount": 5040,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 28000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 22,
+    "gstAmount": 2160,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E22*18%",
+    "gstFormulaInputs": [
+      "E22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = E22*18%",
+    "totalPriceFormula": "C22*D22",
+    "totalPriceFormulaInputs": [
+      "C22",
+      "D22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 12000
+  },
+  {
+    "gstPct": 0.002,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hoymiles5kw",
+    "sourceRow": 22,
+    "gstAmount": 11.16,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.002,
+    "gstFormula": "D22*18%",
+    "gstFormulaInputs": [
+      "D22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = D22*18%",
+    "totalPriceFormula": "D22*C22",
+    "totalPriceFormulaInputs": [
+      "D22",
+      "C22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 5580
+  },
+  {
+    "gstPct": 0.1172831543,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hoymiles5kw",
+    "sourceRow": 32,
+    "gstAmount": 29019.84,
+    "gstRate": 0.1172831543,
+    "effectiveGstRateOnTotal": 0.1172831543,
+    "gstFormula": "SUM(F4:F31)",
+    "gstFormulaInputs": [
+      "F4",
+      "F31"
+    ],
+    "sourceGstCell": "F32",
+    "pricingFormula": "gst_amount = SUM(F4:F31)",
+    "totalPriceFormula": "SUM(E4:E31)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E31"
+    ],
+    "sourceTotalCell": "E32",
+    "totalPrice": 247434
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 4,
+    "gstAmount": 10378.8,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 86490
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 5,
+    "gstAmount": 2880,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 24000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid upgrade 5kw",
+    "sourceRow": 8,
+    "gstAmount": 2376,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D8*18%",
+    "gstFormulaInputs": [
+      "D8"
+    ],
+    "sourceGstCell": "F8",
+    "pricingFormula": "gst_amount = D8*18%",
+    "totalPriceFormula": "D8*C8",
+    "totalPriceFormulaInputs": [
+      "D8",
+      "C8"
+    ],
+    "sourceTotalCell": "E8",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 20,
+    "gstAmount": 6.66,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D20*18%",
+    "gstFormulaInputs": [
+      "D20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = D20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.2664829493,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "sourceRow": 31,
+    "gstAmount": 34696.08,
+    "gstRate": 0.2664829493,
+    "effectiveGstRateOnTotal": 0.2664829493,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 130200
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "6kwp",
+    "sourceRow": 4,
+    "gstAmount": 19344,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 161200
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet9",
+    "sourceRow": 6,
+    "gstAmount": 639,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D6*18%",
+    "gstFormulaInputs": [
+      "D6"
+    ],
+    "sourceGstCell": "F6",
+    "pricingFormula": "gst_amount = D6*18%",
+    "totalPriceFormula": "D6*C6",
+    "totalPriceFormulaInputs": [
+      "D6",
+      "C6"
+    ],
+    "sourceTotalCell": "E6",
+    "totalPrice": 3550
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 20,
+    "gstAmount": 19.8,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D20*12%",
+    "totalPriceFormulaInputs": [
+      "D20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 19.8
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 6,
+    "gstAmount": 585,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D6*18%",
+    "gstFormulaInputs": [
+      "D6"
+    ],
+    "sourceGstCell": "F6",
+    "pricingFormula": "gst_amount = D6*18%",
+    "totalPriceFormula": "D6*C6",
+    "totalPriceFormulaInputs": [
+      "D6",
+      "C6"
+    ],
+    "sourceTotalCell": "E6",
+    "totalPrice": 3250
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet9",
+    "sourceRow": 19,
+    "gstAmount": 194.4,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D19*18%",
+    "gstFormulaInputs": [
+      "D19"
+    ],
+    "sourceGstCell": "F19",
+    "pricingFormula": "gst_amount = D19*18%",
+    "totalPriceFormula": "D19*C19",
+    "totalPriceFormulaInputs": [
+      "D19",
+      "C19"
+    ],
+    "sourceTotalCell": "E19",
+    "totalPrice": 1080
+  },
+  {
+    "gstPct": 0.003,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet9",
+    "sourceRow": 21,
+    "gstAmount": 6.84,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.003,
+    "gstFormula": "D21*18%",
+    "gstFormulaInputs": [
+      "D21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = D21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 2280
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 22,
+    "gstAmount": 10.44,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D22*18%",
+    "gstFormulaInputs": [
+      "D22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = D22*18%",
+    "totalPriceFormula": "D22*C22",
+    "totalPriceFormulaInputs": [
+      "D22",
+      "C22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 23,
+    "gstAmount": 2.9699999999999998,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D23*18%",
+    "gstFormulaInputs": [
+      "D23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = D23*18%",
+    "totalPriceFormula": "D23*C23",
+    "totalPriceFormulaInputs": [
+      "D23",
+      "C23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.1138055409,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "6kwp",
+    "sourceRow": 31,
+    "gstAmount": 29533.05,
+    "gstRate": 0.1138055409,
+    "effectiveGstRateOnTotal": 0.1138055409,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 259504.5
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "8kwp",
+    "sourceRow": 4,
+    "gstAmount": 11048.4,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 92070
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "8kwp",
+    "sourceRow": 5,
+    "gstAmount": 5520,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 46000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 27,
+    "gstAmount": 4320,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E27*18%",
+    "gstFormulaInputs": [
+      "E27"
+    ],
+    "sourceGstCell": "F27",
+    "pricingFormula": "gst_amount = E27*18%",
+    "totalPriceFormula": "D27*C27",
+    "totalPriceFormulaInputs": [
+      "D27",
+      "C27"
+    ],
+    "sourceTotalCell": "E27",
+    "totalPrice": 24000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "8kwp",
+    "sourceRow": 8,
+    "gstAmount": 685.98,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D8*18%",
+    "gstFormulaInputs": [
+      "D8"
+    ],
+    "sourceGstCell": "F8",
+    "pricingFormula": "gst_amount = D8*18%",
+    "totalPriceFormula": "D8*C8",
+    "totalPriceFormulaInputs": [
+      "D8",
+      "C8"
+    ],
+    "sourceTotalCell": "E8",
+    "totalPrice": 3811
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "8kwp",
+    "sourceRow": 18,
+    "gstAmount": 945,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D18*18%",
+    "gstFormulaInputs": [
+      "D18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = D18*18%",
+    "totalPriceFormula": "D18*C18",
+    "totalPriceFormulaInputs": [
+      "D18",
+      "C18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 5250
+  },
+  {
+    "gstPct": 0.0018,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "8kwp",
+    "sourceRow": 20,
+    "gstAmount": 9.36,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.0018,
+    "gstFormula": "D20*18%",
+    "gstFormulaInputs": [
+      "D20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = D20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 5200
+  },
+  {
+    "gstPct": 0.006,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "8kwp",
+    "sourceRow": 21,
+    "gstAmount": 10.799999999999999,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.006,
+    "gstFormula": "D21*18%",
+    "gstFormulaInputs": [
+      "D21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = D21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 1800
+  },
+  {
+    "gstPct": 0.0072,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "8kwp",
+    "sourceRow": 23,
+    "gstAmount": 3.51,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.0072,
+    "gstFormula": "D23*18%",
+    "gstFormulaInputs": [
+      "D23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = D23*18%",
+    "totalPriceFormula": "D23*C23",
+    "totalPriceFormulaInputs": [
+      "D23",
+      "C23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 487.5
+  },
+  {
+    "gstPct": 0.045,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "8kwp",
+    "sourceRow": 25,
+    "gstAmount": 4.859999999999999,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.045,
+    "gstFormula": "D25*18%",
+    "gstFormulaInputs": [
+      "D25"
+    ],
+    "sourceGstCell": "F25",
+    "pricingFormula": "gst_amount = D25*18%",
+    "totalPriceFormula": "D25*C25",
+    "totalPriceFormulaInputs": [
+      "D25",
+      "C25"
+    ],
+    "sourceTotalCell": "E25",
+    "totalPrice": 108
+  },
+  {
+    "gstPct": 0.1329747915,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "8kwp",
+    "sourceRow": 31,
+    "gstAmount": 26145.57,
+    "gstRate": 0.1329747915,
+    "effectiveGstRateOnTotal": 0.1329747915,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 196620.5
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 4,
+    "gstAmount": 19046.399999999998,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 158720
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 5,
+    "gstAmount": 5280,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 44000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 9,
+    "gstAmount": 20.16,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E9*18%",
+    "gstFormulaInputs": [
+      "E9"
+    ],
+    "sourceGstCell": "F9",
+    "pricingFormula": "gst_amount = E9*18%",
+    "totalPriceFormula": "D9*C9",
+    "totalPriceFormulaInputs": [
+      "D9",
+      "C9"
+    ],
+    "sourceTotalCell": "E9",
+    "totalPrice": 112
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 14,
+    "gstAmount": 30.599999999999998,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E14*18%",
+    "gstFormulaInputs": [
+      "E14"
+    ],
+    "sourceGstCell": "F14",
+    "pricingFormula": "gst_amount = E14*18%",
+    "totalPriceFormula": "D14*C14",
+    "totalPriceFormulaInputs": [
+      "D14",
+      "C14"
+    ],
+    "sourceTotalCell": "E14",
+    "totalPrice": 170
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 15,
+    "gstAmount": 82.8,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E15*18%",
+    "gstFormulaInputs": [
+      "E15"
+    ],
+    "sourceGstCell": "F15",
+    "pricingFormula": "gst_amount = E15*18%",
+    "totalPriceFormula": "D15*C15",
+    "totalPriceFormulaInputs": [
+      "D15",
+      "C15"
+    ],
+    "sourceTotalCell": "E15",
+    "totalPrice": 460
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 18,
+    "gstAmount": 971.0999999999999,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E18*18%",
+    "gstFormulaInputs": [
+      "E18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = E18*18%",
+    "totalPriceFormula": "D18*C18",
+    "totalPriceFormulaInputs": [
+      "D18",
+      "C18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 5395
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 19,
+    "gstAmount": 163.79999999999998,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E19*18%",
+    "gstFormulaInputs": [
+      "E19"
+    ],
+    "sourceGstCell": "F19",
+    "pricingFormula": "gst_amount = E19*18%",
+    "totalPriceFormula": "D19*C19",
+    "totalPriceFormulaInputs": [
+      "D19",
+      "C19"
+    ],
+    "sourceTotalCell": "E19",
+    "totalPrice": 910
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 20,
+    "gstAmount": 882,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 4900
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 21,
+    "gstAmount": 331.2,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 1840
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 24,
+    "gstAmount": 356.4,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E24*18%",
+    "gstFormulaInputs": [
+      "E24"
+    ],
+    "sourceGstCell": "F24",
+    "pricingFormula": "gst_amount = E24*18%",
+    "totalPriceFormula": "D24*C24",
+    "totalPriceFormulaInputs": [
+      "D24",
+      "C24"
+    ],
+    "sourceTotalCell": "E24",
+    "totalPrice": 1980
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 22,
+    "gstAmount": 18,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D22*12%",
+    "totalPriceFormulaInputs": [
+      "D22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 18
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 26,
+    "gstAmount": 109.25999999999999,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E26*18%",
+    "gstFormulaInputs": [
+      "E26"
+    ],
+    "sourceGstCell": "F26",
+    "pricingFormula": "gst_amount = E26*18%",
+    "totalPriceFormula": "D26*C26",
+    "totalPriceFormulaInputs": [
+      "D26",
+      "C26"
+    ],
+    "sourceTotalCell": "E26",
+    "totalPrice": 607
+  },
+  {
+    "gstPct": 0.1091807971,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10KWp",
+    "sourceRow": 31,
+    "gstAmount": 29296.919999999995,
+    "gstRate": 0.1091807971,
+    "effectiveGstRateOnTotal": 0.1091807971,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 268334
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwHibrid",
+    "sourceRow": 4,
+    "gstAmount": 29760,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 248000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwHibrid",
+    "sourceRow": 5,
+    "gstAmount": 22800,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 190000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20KW HIBRID",
+    "sourceRow": 29,
+    "gstAmount": 18000,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E29*18%",
+    "gstFormulaInputs": [
+      "E29"
+    ],
+    "sourceGstCell": "F29",
+    "pricingFormula": "gst_amount = E29*18%",
+    "totalPriceFormula": "C29*D29",
+    "totalPriceFormulaInputs": [
+      "C29",
+      "D29"
+    ],
+    "sourceTotalCell": "E29",
+    "totalPrice": 100000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwHibrid",
+    "sourceRow": 7,
+    "gstAmount": 1278,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E7*18%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*18%",
+    "totalPriceFormula": "D7*C7",
+    "totalPriceFormulaInputs": [
+      "D7",
+      "C7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 7100
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwHibrid",
+    "sourceRow": 8,
+    "gstAmount": 1530,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E8*18%",
+    "gstFormulaInputs": [
+      "E8"
+    ],
+    "sourceGstCell": "F8",
+    "pricingFormula": "gst_amount = E8*18%",
+    "totalPriceFormula": "D8*C8",
+    "totalPriceFormulaInputs": [
+      "D8",
+      "C8"
+    ],
+    "sourceTotalCell": "E8",
+    "totalPrice": 8500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "30KW Hybrid",
+    "sourceRow": 6,
+    "gstAmount": 6480,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E6*18%",
+    "gstFormulaInputs": [
+      "E6"
+    ],
+    "sourceGstCell": "F6",
+    "pricingFormula": "gst_amount = E6*18%",
+    "totalPriceFormula": "C6*D6",
+    "totalPriceFormulaInputs": [
+      "C6",
+      "D6"
+    ],
+    "sourceTotalCell": "E6",
+    "totalPrice": 36000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwHibrid",
+    "sourceRow": 11,
+    "gstAmount": 304.2,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E11*18%",
+    "gstFormulaInputs": [
+      "E11"
+    ],
+    "sourceGstCell": "F11",
+    "pricingFormula": "gst_amount = E11*18%",
+    "totalPriceFormula": "D11*C11",
+    "totalPriceFormulaInputs": [
+      "D11",
+      "C11"
+    ],
+    "sourceTotalCell": "E11",
+    "totalPrice": 1690
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kwp",
+    "sourceRow": 14,
+    "gstAmount": 59.4,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E14*18%",
+    "gstFormulaInputs": [
+      "E14"
+    ],
+    "sourceGstCell": "F14",
+    "pricingFormula": "gst_amount = E14*18%",
+    "totalPriceFormula": "D14*C14",
+    "totalPriceFormulaInputs": [
+      "D14",
+      "C14"
+    ],
+    "sourceTotalCell": "E14",
+    "totalPrice": 330
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 21,
+    "gstAmount": 5400,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 30000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwHibrid",
+    "sourceRow": 22,
+    "gstAmount": 1053,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E22*18%",
+    "gstFormulaInputs": [
+      "E22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = E22*18%",
+    "totalPriceFormula": "D22*C22",
+    "totalPriceFormulaInputs": [
+      "D22",
+      "C22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 5850
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 21,
+    "gstAmount": 756,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 4200
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 26,
+    "gstAmount": 414,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E26*18%",
+    "gstFormulaInputs": [
+      "E26"
+    ],
+    "sourceGstCell": "F26",
+    "pricingFormula": "gst_amount = E26*18%",
+    "totalPriceFormula": "D26*C26",
+    "totalPriceFormulaInputs": [
+      "D26",
+      "C26"
+    ],
+    "sourceTotalCell": "E26",
+    "totalPrice": 2300
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 26,
+    "gstAmount": 15.84,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E26*18%",
+    "gstFormulaInputs": [
+      "E26"
+    ],
+    "sourceGstCell": "F26",
+    "pricingFormula": "gst_amount = E26*18%",
+    "totalPriceFormula": "C26*D26",
+    "totalPriceFormulaInputs": [
+      "C26",
+      "D26"
+    ],
+    "sourceTotalCell": "E26",
+    "totalPrice": 88
+  },
+  {
+    "gstPct": 0.1273407952,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwHibrid",
+    "sourceRow": 33,
+    "gstAmount": 89884.70999999998,
+    "gstRate": 0.1273407952,
+    "effectiveGstRateOnTotal": 0.1273407952,
+    "gstFormula": "SUM(F4:F32)",
+    "gstFormulaInputs": [
+      "F4",
+      "F32"
+    ],
+    "sourceGstCell": "F33",
+    "pricingFormula": "gst_amount = SUM(F4:F32)",
+    "totalPriceFormula": "SUM(E4:E32)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E32"
+    ],
+    "sourceTotalCell": "E33",
+    "totalPrice": 705859.5
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 4,
+    "gstAmount": 15772.8,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 131440
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 5,
+    "gstAmount": 18600,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 155000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 6,
+    "gstAmount": 17760,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E6*12%",
+    "gstFormulaInputs": [
+      "E6"
+    ],
+    "sourceGstCell": "F6",
+    "pricingFormula": "gst_amount = E6*12%",
+    "totalPriceFormula": "D6*C6",
+    "totalPriceFormulaInputs": [
+      "D6",
+      "C6"
+    ],
+    "sourceTotalCell": "E6",
+    "totalPrice": 148000
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet7",
+    "sourceRow": 21,
+    "gstAmount": 2340,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 12,
+    "gstAmount": 1170,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E12*18%",
+    "gstFormulaInputs": [
+      "E12"
+    ],
+    "sourceGstCell": "F12",
+    "pricingFormula": "gst_amount = E12*18%",
+    "totalPriceFormula": "D12*C12",
+    "totalPriceFormulaInputs": [
+      "D12",
+      "C12"
+    ],
+    "sourceTotalCell": "E12",
+    "totalPrice": 6500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 10,
+    "gstAmount": 43.199999999999996,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E10*18%",
+    "gstFormulaInputs": [
+      "E10"
+    ],
+    "sourceGstCell": "F10",
+    "pricingFormula": "gst_amount = E10*18%",
+    "totalPriceFormula": "D10*C10",
+    "totalPriceFormulaInputs": [
+      "D10",
+      "C10"
+    ],
+    "sourceTotalCell": "E10",
+    "totalPrice": 240
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 18,
+    "gstAmount": 990,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E18*18%",
+    "gstFormulaInputs": [
+      "E18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = E18*18%",
+    "totalPriceFormula": "D18*C18",
+    "totalPriceFormulaInputs": [
+      "D18",
+      "C18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 5500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 22,
+    "gstAmount": 133.92,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E22*18%",
+    "gstFormulaInputs": [
+      "E22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = E22*18%",
+    "totalPriceFormula": "D22*C22",
+    "totalPriceFormulaInputs": [
+      "D22",
+      "C22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 744
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 28,
+    "gstAmount": 218.51999999999998,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E28*18%",
+    "gstFormulaInputs": [
+      "E28"
+    ],
+    "sourceGstCell": "F28",
+    "pricingFormula": "gst_amount = E28*18%",
+    "totalPriceFormula": "D28*C28",
+    "totalPriceFormulaInputs": [
+      "D28",
+      "C28"
+    ],
+    "sourceTotalCell": "E28",
+    "totalPrice": 1214
+  },
+  {
+    "gstPct": 0.1154963625,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "10kw hybrid",
+    "sourceRow": 33,
+    "gstAmount": 60128.84999999999,
+    "gstRate": 0.1154963625,
+    "effectiveGstRateOnTotal": 0.1154963625,
+    "gstFormula": "SUM(F4:F32)",
+    "gstFormulaInputs": [
+      "F4",
+      "F32"
+    ],
+    "sourceGstCell": "F33",
+    "pricingFormula": "gst_amount = SUM(F4:F32)",
+    "totalPriceFormula": "SUM(E4:E32)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E32"
+    ],
+    "sourceTotalCell": "E33",
+    "totalPrice": 520612.5
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "1.5kw",
+    "sourceRow": 2,
+    "gstAmount": 4179.6,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2kw",
+    "sourceRow": 3,
+    "gstAmount": 1680,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 4,
+    "gstAmount": 150,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D4*12%",
+    "totalPriceFormulaInputs": [
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 150
+  },
+  {
+    "gstPct": 4,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "1.5kw",
+    "sourceRow": 5,
+    "gstAmount": 600,
+    "gstRate": 4,
+    "effectiveGstRateOnTotal": 4,
+    "totalPriceFormula": "D5*12%",
+    "totalPriceFormulaInputs": [
+      "D5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 150
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 14,
+    "gstAmount": 297.6,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D14*12%",
+    "totalPriceFormulaInputs": [
+      "D14"
+    ],
+    "sourceTotalCell": "E14",
+    "totalPrice": 297.59999999999997
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 17,
+    "gstAmount": 66,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D17*12%",
+    "totalPriceFormulaInputs": [
+      "D17"
+    ],
+    "sourceTotalCell": "E17",
+    "totalPrice": 66
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet4",
+    "sourceRow": 29,
+    "gstAmount": 378,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E29*18%",
+    "gstFormulaInputs": [
+      "E29"
+    ],
+    "sourceGstCell": "F29",
+    "pricingFormula": "gst_amount = E29*18%",
+    "totalPriceFormula": "D29*C29",
+    "totalPriceFormulaInputs": [
+      "D29",
+      "C29"
+    ],
+    "sourceTotalCell": "E29",
+    "totalPrice": 2100
+  },
+  {
+    "gstPct": 3.0909090909,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet3",
+    "sourceRow": 26,
+    "gstAmount": 204,
+    "gstRate": 3.0909090909,
+    "effectiveGstRateOnTotal": 3.0909090909,
+    "totalPriceFormula": "D26*12%",
+    "totalPriceFormulaInputs": [
+      "D26"
+    ],
+    "sourceTotalCell": "E26",
+    "totalPrice": 66
+  },
+  {
+    "gstPct": 0.4117647059,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet3",
+    "sourceRow": 27,
+    "gstAmount": 84,
+    "gstRate": 0.4117647059,
+    "effectiveGstRateOnTotal": 0.4117647059,
+    "totalPriceFormula": "D27*12%",
+    "totalPriceFormulaInputs": [
+      "D27"
+    ],
+    "sourceTotalCell": "E27",
+    "totalPrice": 204
+  },
+  {
+    "gstPct": 2.2142857143,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet3",
+    "sourceRow": 28,
+    "gstAmount": 186,
+    "gstRate": 2.2142857143,
+    "effectiveGstRateOnTotal": 2.2142857143,
+    "totalPriceFormula": "D28*12%",
+    "totalPriceFormulaInputs": [
+      "D28"
+    ],
+    "sourceTotalCell": "E28",
+    "totalPrice": 84
+  },
+  {
+    "gstPct": 0.2193548387,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet3",
+    "sourceRow": 29,
+    "gstAmount": 40.8,
+    "gstRate": 0.2193548387,
+    "effectiveGstRateOnTotal": 0.2193548387,
+    "totalPriceFormula": "D29*12%",
+    "totalPriceFormulaInputs": [
+      "D29"
+    ],
+    "sourceTotalCell": "E29",
+    "totalPrice": 186
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 31,
+    "gstAmount": 3.12,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D31*12%",
+    "totalPriceFormulaInputs": [
+      "D31"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 3.12
+  },
+  {
+    "gstPct": 7.3076923077,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet3",
+    "sourceRow": 32,
+    "gstAmount": 22.8,
+    "gstRate": 7.3076923077,
+    "effectiveGstRateOnTotal": 7.3076923077,
+    "totalPriceFormula": "D32*12%",
+    "totalPriceFormulaInputs": [
+      "D32"
+    ],
+    "sourceTotalCell": "E32",
+    "totalPrice": 3.12
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2kw",
+    "sourceRow": 2,
+    "gstAmount": 5443.2,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 14,
+    "gstAmount": 297,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E14*18%",
+    "gstFormulaInputs": [
+      "E14"
+    ],
+    "sourceGstCell": "F14",
+    "pricingFormula": "gst_amount = E14*18%",
+    "totalPriceFormula": "D14*C14",
+    "totalPriceFormulaInputs": [
+      "D14",
+      "C14"
+    ],
+    "sourceTotalCell": "E14",
+    "totalPrice": 1650
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 25,
+    "gstAmount": 56.4,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D25*12%",
+    "totalPriceFormulaInputs": [
+      "D25"
+    ],
+    "sourceTotalCell": "E25",
+    "totalPrice": 56.4
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 26,
+    "gstAmount": 196.5,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D26*12%",
+    "totalPriceFormulaInputs": [
+      "D26"
+    ],
+    "sourceTotalCell": "E26",
+    "totalPrice": 196.5
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 27,
+    "gstAmount": 168,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D27*12%",
+    "totalPriceFormulaInputs": [
+      "D27"
+    ],
+    "sourceTotalCell": "E27",
+    "totalPrice": 168
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 13,
+    "gstAmount": 129.6,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E13*18%",
+    "gstFormulaInputs": [
+      "E13"
+    ],
+    "sourceGstCell": "F13",
+    "pricingFormula": "gst_amount = E13*18%",
+    "totalPriceFormula": "D13*C13",
+    "totalPriceFormulaInputs": [
+      "D13",
+      "C13"
+    ],
+    "sourceTotalCell": "E13",
+    "totalPrice": 720
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 29,
+    "gstAmount": 42,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D29*12%",
+    "totalPriceFormulaInputs": [
+      "D29"
+    ],
+    "sourceTotalCell": "E29",
+    "totalPrice": 42
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 30,
+    "gstAmount": 115.2,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D30*12%",
+    "totalPriceFormulaInputs": [
+      "D30"
+    ],
+    "sourceTotalCell": "E30",
+    "totalPrice": 115.19999999999999
+  },
+  {
+    "gstPct": 1,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 32,
+    "gstAmount": 30,
+    "gstRate": 1,
+    "effectiveGstRateOnTotal": 1,
+    "totalPriceFormula": "D32*12%",
+    "totalPriceFormulaInputs": [
+      "D32"
+    ],
+    "sourceTotalCell": "E32",
+    "totalPrice": 30
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet3",
+    "sourceRow": 2,
+    "gstAmount": 6350.4,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet9",
+    "sourceRow": 4,
+    "gstAmount": 26044.2,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 217035
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet9",
+    "sourceRow": 5,
+    "gstAmount": 5298.24,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 44152
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet9",
+    "sourceRow": 7,
+    "gstAmount": 3555,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D7*18%",
+    "gstFormulaInputs": [
+      "D7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = D7*18%",
+    "totalPriceFormula": "D7*C7",
+    "totalPriceFormulaInputs": [
+      "D7",
+      "C7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 19750
+  },
+  {
+    "gstPct": 0.0036,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 20,
+    "gstAmount": 6.12,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.0036,
+    "gstFormula": "D20*18%",
+    "gstFormulaInputs": [
+      "D20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = D20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 1700
+  },
+  {
+    "gstPct": 0.1094194965,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet9",
+    "sourceRow": 31,
+    "gstAmount": 39908.19,
+    "gstRate": 0.1094194965,
+    "effectiveGstRateOnTotal": 0.1094194965,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 364726.5
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 7,
+    "gstAmount": 48600,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E7*18%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*18%",
+    "totalPriceFormula": "D7",
+    "totalPriceFormulaInputs": [
+      "D7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 270000
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 4,
+    "gstAmount": 62880,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "pricing",
+    "sourceRow": 6,
+    "gstAmount": 78000,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 5kw",
+    "sourceRow": 4,
+    "gstAmount": 17744.399999999998,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 147870
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 5kw",
+    "sourceRow": 6,
+    "gstAmount": 24480,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E6*18%",
+    "gstFormulaInputs": [
+      "E6"
+    ],
+    "sourceGstCell": "F6",
+    "pricingFormula": "gst_amount = E6*18%",
+    "totalPriceFormula": "D6*C6",
+    "totalPriceFormulaInputs": [
+      "D6",
+      "C6"
+    ],
+    "sourceTotalCell": "E6",
+    "totalPrice": 136000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid upgrade 5kw",
+    "sourceRow": 18,
+    "gstAmount": 2394,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D18*18%",
+    "gstFormulaInputs": [
+      "D18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = D18*18%",
+    "totalPriceFormula": "D18*C18",
+    "totalPriceFormulaInputs": [
+      "D18",
+      "C18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 13300
+  },
+  {
+    "gstPct": 0.0045,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 21,
+    "gstAmount": 7.739999999999999,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.0045,
+    "gstFormula": "D21*18%",
+    "gstFormulaInputs": [
+      "D21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = D21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 1720
+  },
+  {
+    "gstPct": 0.1364837437,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 5kw",
+    "sourceRow": 32,
+    "gstAmount": 58604.549999999996,
+    "gstRate": 0.1364837437,
+    "effectiveGstRateOnTotal": 0.1364837437,
+    "gstFormula": "SUM(F4:F31)",
+    "gstFormulaInputs": [
+      "F4",
+      "F31"
+    ],
+    "sourceGstCell": "F32",
+    "pricingFormula": "gst_amount = SUM(F4:F31)",
+    "totalPriceFormula": "SUM(E4:E31)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E31"
+    ],
+    "sourceTotalCell": "E32",
+    "totalPrice": 429388.5
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 22,
+    "gstAmount": 9720,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E22*18%",
+    "gstFormulaInputs": [
+      "E22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = E22*18%",
+    "totalPriceFormula": "D22*C22",
+    "totalPriceFormulaInputs": [
+      "D22",
+      "C22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 54000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid upgrade 5kw",
+    "sourceRow": 5,
+    "gstAmount": 9079.32,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 75661
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kw30kwhr",
+    "sourceRow": 29,
+    "gstAmount": 13500,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E29*18%",
+    "gstFormulaInputs": [
+      "E29"
+    ],
+    "sourceGstCell": "F29",
+    "pricingFormula": "gst_amount = E29*18%",
+    "totalPriceFormula": "C29*D29",
+    "totalPriceFormulaInputs": [
+      "C29",
+      "D29"
+    ],
+    "sourceTotalCell": "E29",
+    "totalPrice": 75000
+  },
+  {
+    "gstPct": 0.1467728154,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid upgrade 5kw",
+    "sourceRow": 32,
+    "gstAmount": 39439.47,
+    "gstRate": 0.1467728154,
+    "effectiveGstRateOnTotal": 0.1467728154,
+    "gstFormula": "SUM(F4:F31)",
+    "gstFormulaInputs": [
+      "F4",
+      "F31"
+    ],
+    "sourceGstCell": "F32",
+    "pricingFormula": "gst_amount = SUM(F4:F31)",
+    "totalPriceFormula": "SUM(E4:E31)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E31"
+    ],
+    "sourceTotalCell": "E32",
+    "totalPrice": 268711
+  },
+  {
+    "gstPct": 0.2678571429,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid 3 kw",
+    "sourceRow": 3,
+    "gstAmount": 540,
+    "gstRate": 0.2678571429,
+    "effectiveGstRateOnTotal": 0.2678571429,
+    "totalPriceFormula": "D3*12%",
+    "totalPriceFormulaInputs": [
+      "D3"
+    ],
+    "sourceTotalCell": "E3",
+    "totalPrice": 2016
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet4",
+    "sourceRow": 2,
+    "gstAmount": 14113.439999999999,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E2*12%",
+    "gstFormulaInputs": [
+      "E2"
+    ],
+    "sourceGstCell": "F2",
+    "pricingFormula": "gst_amount = E2*12%",
+    "totalPriceFormula": "C2*D2",
+    "totalPriceFormulaInputs": [
+      "C2",
+      "D2"
+    ],
+    "sourceTotalCell": "E2",
+    "totalPrice": 117612
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet4",
+    "sourceRow": 3,
+    "gstAmount": 6000,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E3*12%",
+    "gstFormulaInputs": [
+      "E3"
+    ],
+    "sourceGstCell": "F3",
+    "pricingFormula": "gst_amount = E3*12%",
+    "totalPriceFormula": "D3",
+    "totalPriceFormulaInputs": [
+      "D3"
+    ],
+    "sourceTotalCell": "E3",
+    "totalPrice": 50000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet4",
+    "sourceRow": 17,
+    "gstAmount": 1710,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E17*18%",
+    "gstFormulaInputs": [
+      "E17"
+    ],
+    "sourceGstCell": "F17",
+    "pricingFormula": "gst_amount = E17*18%",
+    "totalPriceFormula": "D17*C17",
+    "totalPriceFormulaInputs": [
+      "D17",
+      "C17"
+    ],
+    "sourceTotalCell": "E17",
+    "totalPrice": 9500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 25,
+    "gstAmount": 118.8,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E25*18%",
+    "gstFormulaInputs": [
+      "E25"
+    ],
+    "sourceGstCell": "F25",
+    "pricingFormula": "gst_amount = E25*18%",
+    "totalPriceFormula": "D25*C25",
+    "totalPriceFormulaInputs": [
+      "D25",
+      "C25"
+    ],
+    "sourceTotalCell": "E25",
+    "totalPrice": 660
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet4",
+    "sourceRow": 23,
+    "gstAmount": 1634.3999999999999,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E23*18%",
+    "gstFormulaInputs": [
+      "E23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = E23*18%",
+    "totalPriceFormula": "D23",
+    "totalPriceFormulaInputs": [
+      "D23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 9080
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet4",
+    "sourceRow": 24,
+    "gstAmount": 1008,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E24*18%",
+    "gstFormulaInputs": [
+      "E24"
+    ],
+    "sourceGstCell": "F24",
+    "pricingFormula": "gst_amount = E24*18%",
+    "totalPriceFormula": "D24",
+    "totalPriceFormulaInputs": [
+      "D24"
+    ],
+    "sourceTotalCell": "E24",
+    "totalPrice": 5600
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet4",
+    "sourceRow": 26,
+    "gstAmount": 1140.48,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E26*18%",
+    "gstFormulaInputs": [
+      "E26"
+    ],
+    "sourceGstCell": "F26",
+    "pricingFormula": "gst_amount = E26*18%",
+    "totalPriceFormula": "D26*C26",
+    "totalPriceFormulaInputs": [
+      "D26",
+      "C26"
+    ],
+    "sourceTotalCell": "E26",
+    "totalPrice": 6336
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet4",
+    "sourceRow": 27,
+    "gstAmount": 33.3,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E27*18%",
+    "gstFormulaInputs": [
+      "E27"
+    ],
+    "sourceGstCell": "F27",
+    "pricingFormula": "gst_amount = E27*18%",
+    "totalPriceFormula": "D27",
+    "totalPriceFormulaInputs": [
+      "D27"
+    ],
+    "sourceTotalCell": "E27",
+    "totalPrice": 185
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet4",
+    "sourceRow": 30,
+    "gstAmount": 1728,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E30*18%",
+    "gstFormulaInputs": [
+      "E30"
+    ],
+    "sourceGstCell": "F30",
+    "pricingFormula": "gst_amount = E30*18%",
+    "totalPriceFormula": "D30*C30",
+    "totalPriceFormulaInputs": [
+      "D30",
+      "C30"
+    ],
+    "sourceTotalCell": "E30",
+    "totalPrice": 9600
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 23,
+    "gstAmount": 324,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E23*18%",
+    "gstFormulaInputs": [
+      "E23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = E23*18%",
+    "totalPriceFormula": "D23*C23",
+    "totalPriceFormulaInputs": [
+      "D23",
+      "C23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 1800
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet4",
+    "sourceRow": 35,
+    "gstAmount": 45052.26000000001,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null,
+    "gstFormula": "SUM(F2:F34)",
+    "gstFormulaInputs": [
+      "F2",
+      "F34"
+    ],
+    "sourceGstCell": "F35",
+    "pricingFormula": "gst_amount = SUM(F2:F34)",
+    "totalPrice": 0
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet5",
+    "sourceRow": 2,
+    "gstAmount": 29164.8,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E2*12%",
+    "gstFormulaInputs": [
+      "E2"
+    ],
+    "sourceGstCell": "F2",
+    "pricingFormula": "gst_amount = E2*12%",
+    "totalPriceFormula": "C2*D2",
+    "totalPriceFormulaInputs": [
+      "C2",
+      "D2"
+    ],
+    "sourceTotalCell": "E2",
+    "totalPrice": 243040
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet5",
+    "sourceRow": 3,
+    "gstAmount": 7560,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E3*12%",
+    "gstFormulaInputs": [
+      "E3"
+    ],
+    "sourceGstCell": "F3",
+    "pricingFormula": "gst_amount = E3*12%",
+    "totalPriceFormula": "D3",
+    "totalPriceFormulaInputs": [
+      "D3"
+    ],
+    "sourceTotalCell": "E3",
+    "totalPrice": 63000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kw hibrid solinteg",
+    "sourceRow": 6,
+    "gstAmount": 696.6,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E6*18%",
+    "gstFormulaInputs": [
+      "E6"
+    ],
+    "sourceGstCell": "F6",
+    "pricingFormula": "gst_amount = E6*18%",
+    "totalPriceFormula": "C6*D6",
+    "totalPriceFormulaInputs": [
+      "C6",
+      "D6"
+    ],
+    "sourceTotalCell": "E6",
+    "totalPrice": 3870
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 18,
+    "gstAmount": 7200,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E18*18%",
+    "gstFormulaInputs": [
+      "E18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = E18*18%",
+    "totalPriceFormula": "C18*D18",
+    "totalPriceFormulaInputs": [
+      "C18",
+      "D18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 40000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet5",
+    "sourceRow": 26,
+    "gstAmount": 918,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E26*18%",
+    "gstFormulaInputs": [
+      "E26"
+    ],
+    "sourceGstCell": "F26",
+    "pricingFormula": "gst_amount = E26*18%",
+    "totalPriceFormula": "D26*C26",
+    "totalPriceFormulaInputs": [
+      "D26",
+      "C26"
+    ],
+    "sourceTotalCell": "E26",
+    "totalPrice": 5100
+  },
+  {
+    "gstPct": 1.343721,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet5",
+    "sourceRow": 34,
+    "gstAmount": 53748.84,
+    "gstRate": 1.343721,
+    "effectiveGstRateOnTotal": 1.343721,
+    "gstFormula": "SUM(F2:F33)",
+    "gstFormulaInputs": [
+      "F2",
+      "F33"
+    ],
+    "sourceGstCell": "F34",
+    "pricingFormula": "gst_amount = SUM(F2:F33)",
+    "totalPrice": 40000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet11",
+    "sourceRow": 4,
+    "gstAmount": 57139.2,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "C4*D4",
+    "totalPriceFormulaInputs": [
+      "C4",
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 476160
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "25kw",
+    "sourceRow": 5,
+    "gstAmount": 8696.16,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "C5*D5",
+    "totalPriceFormulaInputs": [
+      "C5",
+      "D5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 72468
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet7",
+    "sourceRow": 7,
+    "gstAmount": 12231,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 18,
+    "gstAmount": 936,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E18*18%",
+    "gstFormulaInputs": [
+      "E18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = E18*18%",
+    "totalPriceFormula": "C18*D18",
+    "totalPriceFormulaInputs": [
+      "C18",
+      "D18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 5200
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 19,
+    "gstAmount": 2430,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E19*18%",
+    "gstFormulaInputs": [
+      "E19"
+    ],
+    "sourceGstCell": "F19",
+    "pricingFormula": "gst_amount = E19*18%",
+    "totalPriceFormula": "C19*D19",
+    "totalPriceFormulaInputs": [
+      "C19",
+      "D19"
+    ],
+    "sourceTotalCell": "E19",
+    "totalPrice": 13500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kw",
+    "sourceRow": 20,
+    "gstAmount": 3240,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 18000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet11",
+    "sourceRow": 20,
+    "gstAmount": 3060,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "C20*D20",
+    "totalPriceFormulaInputs": [
+      "C20",
+      "D20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 17000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 6,
+    "gstAmount": 4680,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E6*18%",
+    "gstFormulaInputs": [
+      "E6"
+    ],
+    "sourceGstCell": "F6",
+    "pricingFormula": "gst_amount = E6*18%",
+    "totalPriceFormula": "C6*D6",
+    "totalPriceFormulaInputs": [
+      "C6",
+      "D6"
+    ],
+    "sourceTotalCell": "E6",
+    "totalPrice": 26000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 23,
+    "gstAmount": 1044,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E23*18%",
+    "gstFormulaInputs": [
+      "E23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = E23*18%",
+    "totalPriceFormula": "C23*D23",
+    "totalPriceFormulaInputs": [
+      "C23",
+      "D23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 5800
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 25,
+    "gstAmount": 621,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E25*18%",
+    "gstFormulaInputs": [
+      "E25"
+    ],
+    "sourceGstCell": "F25",
+    "pricingFormula": "gst_amount = E25*18%",
+    "totalPriceFormula": "C25*D25",
+    "totalPriceFormulaInputs": [
+      "C25",
+      "D25"
+    ],
+    "sourceTotalCell": "E25",
+    "totalPrice": 3450
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3 to 3 upgradation",
+    "sourceRow": 30,
+    "gstAmount": 1350,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E30*18%",
+    "gstFormulaInputs": [
+      "E30"
+    ],
+    "sourceGstCell": "F30",
+    "pricingFormula": "gst_amount = E30*18%",
+    "totalPriceFormula": "D30*C30",
+    "totalPriceFormulaInputs": [
+      "D30",
+      "C30"
+    ],
+    "sourceTotalCell": "E30",
+    "totalPrice": 7500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "25kw",
+    "sourceRow": 28,
+    "gstAmount": 11250,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E28*18%",
+    "gstFormulaInputs": [
+      "E28"
+    ],
+    "sourceGstCell": "F28",
+    "pricingFormula": "gst_amount = E28*18%",
+    "totalPriceFormula": "C28*D28",
+    "totalPriceFormulaInputs": [
+      "C28",
+      "D28"
+    ],
+    "sourceTotalCell": "E28",
+    "totalPrice": 62500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 19,
+    "gstAmount": 10440,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E19*18%",
+    "gstFormulaInputs": [
+      "E19"
+    ],
+    "sourceGstCell": "F19",
+    "pricingFormula": "gst_amount = E19*18%",
+    "totalPriceFormula": "D19",
+    "totalPriceFormulaInputs": [
+      "D19"
+    ],
+    "sourceTotalCell": "E19",
+    "totalPrice": 58000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet11",
+    "sourceRow": 9,
+    "gstAmount": 707.85,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E9*18%",
+    "gstFormulaInputs": [
+      "E9"
+    ],
+    "sourceGstCell": "F9",
+    "pricingFormula": "gst_amount = E9*18%",
+    "totalPriceFormula": "C9*D9",
+    "totalPriceFormulaInputs": [
+      "C9",
+      "D9"
+    ],
+    "sourceTotalCell": "E9",
+    "totalPrice": 3932.5
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 20,
+    "gstAmount": 396,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 2200
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwp",
+    "sourceRow": 4,
+    "gstAmount": 30690,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "C4*D4",
+    "totalPriceFormulaInputs": [
+      "C4",
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 255750
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwp",
+    "sourceRow": 5,
+    "gstAmount": 7342.44,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "C5*D5",
+    "totalPriceFormulaInputs": [
+      "C5",
+      "D5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 61187
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwp",
+    "sourceRow": 9,
+    "gstAmount": 247.5,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E9*18%",
+    "gstFormulaInputs": [
+      "E9"
+    ],
+    "sourceGstCell": "F9",
+    "pricingFormula": "gst_amount = E9*18%",
+    "totalPriceFormula": "C9*D9",
+    "totalPriceFormulaInputs": [
+      "C9",
+      "D9"
+    ],
+    "sourceTotalCell": "E9",
+    "totalPrice": 1375
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwp",
+    "sourceRow": 14,
+    "gstAmount": 61.199999999999996,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E14*18%",
+    "gstFormulaInputs": [
+      "E14"
+    ],
+    "sourceGstCell": "F14",
+    "pricingFormula": "gst_amount = E14*18%",
+    "totalPriceFormula": "C14*D14",
+    "totalPriceFormulaInputs": [
+      "C14",
+      "D14"
+    ],
+    "sourceTotalCell": "E14",
+    "totalPrice": 340
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 22,
+    "gstAmount": 1944,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E22*18%",
+    "gstFormulaInputs": [
+      "E22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = E22*18%",
+    "totalPriceFormula": "D22*C22",
+    "totalPriceFormulaInputs": [
+      "D22",
+      "C22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 10800
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 15,
+    "gstAmount": 864,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E15*18%",
+    "gstFormulaInputs": [
+      "E15"
+    ],
+    "sourceGstCell": "F15",
+    "pricingFormula": "gst_amount = E15*18%",
+    "totalPriceFormula": "D15*C15",
+    "totalPriceFormulaInputs": [
+      "D15",
+      "C15"
+    ],
+    "sourceTotalCell": "E15",
+    "totalPrice": 4800
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwp",
+    "sourceRow": 21,
+    "gstAmount": 907.1999999999999,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "C21*D21",
+    "totalPriceFormulaInputs": [
+      "C21",
+      "D21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 5040
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "15kwp",
+    "sourceRow": 22,
+    "gstAmount": 522,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E22*18%",
+    "gstFormulaInputs": [
+      "E22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = E22*18%",
+    "totalPriceFormula": "C22*D22",
+    "totalPriceFormulaInputs": [
+      "C22",
+      "D22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 2900
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kwp",
+    "sourceRow": 4,
+    "gstAmount": 41738.4,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "C4*D4",
+    "totalPriceFormulaInputs": [
+      "C4",
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 347820
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kwp",
+    "sourceRow": 7,
+    "gstAmount": 10800,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E7*18%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*18%",
+    "totalPriceFormula": "D7",
+    "totalPriceFormulaInputs": [
+      "D7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 60000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "30KW Hybrid",
+    "sourceRow": 26,
+    "gstAmount": 234,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E26*18%",
+    "gstFormulaInputs": [
+      "E26"
+    ],
+    "sourceGstCell": "F26",
+    "pricingFormula": "gst_amount = E26*18%",
+    "totalPriceFormula": "D26*C26",
+    "totalPriceFormulaInputs": [
+      "D26",
+      "C26"
+    ],
+    "sourceTotalCell": "E26",
+    "totalPrice": 1300
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 10,
+    "gstAmount": 810,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E10*18%",
+    "gstFormulaInputs": [
+      "E10"
+    ],
+    "sourceGstCell": "F10",
+    "pricingFormula": "gst_amount = E10*18%",
+    "totalPriceFormula": "D10",
+    "totalPriceFormulaInputs": [
+      "D10"
+    ],
+    "sourceTotalCell": "E10",
+    "totalPrice": 4500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 16,
+    "gstAmount": 64.8,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E16*18%",
+    "gstFormulaInputs": [
+      "E16"
+    ],
+    "sourceGstCell": "F16",
+    "pricingFormula": "gst_amount = E16*18%",
+    "totalPriceFormula": "D16*C16",
+    "totalPriceFormulaInputs": [
+      "D16",
+      "C16"
+    ],
+    "sourceTotalCell": "E16",
+    "totalPrice": 360
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 20,
+    "gstAmount": 1872,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 10400
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 21,
+    "gstAmount": 1584,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 8800
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 4,
+    "gstAmount": 38055.6,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "C4*D4",
+    "totalPriceFormulaInputs": [
+      "C4",
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 317130
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 5,
+    "gstAmount": 7800,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 65000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet8",
+    "sourceRow": 7,
+    "gstAmount": 12600,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E7*18%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*18%",
+    "totalPriceFormula": "D7",
+    "totalPriceFormulaInputs": [
+      "D7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 70000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 27,
+    "gstAmount": 3600,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E27*18%",
+    "gstFormulaInputs": [
+      "E27"
+    ],
+    "sourceGstCell": "F27",
+    "pricingFormula": "gst_amount = E27*18%",
+    "totalPriceFormula": "D27*C27",
+    "totalPriceFormulaInputs": [
+      "D27",
+      "C27"
+    ],
+    "sourceTotalCell": "E27",
+    "totalPrice": 20000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "30KW Hybrid",
+    "sourceRow": 4,
+    "gstAmount": 56506.799999999996,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "C4*D4",
+    "totalPriceFormulaInputs": [
+      "C4",
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 470890
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "30KW Hybrid",
+    "sourceRow": 5,
+    "gstAmount": 120000,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "C5*D5",
+    "totalPriceFormulaInputs": [
+      "C5",
+      "D5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 1000000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "30KW Hybrid",
+    "sourceRow": 15,
+    "gstAmount": 202.5,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E15*18%",
+    "gstFormulaInputs": [
+      "E15"
+    ],
+    "sourceGstCell": "F15",
+    "pricingFormula": "gst_amount = E15*18%",
+    "totalPriceFormula": "D15*C15",
+    "totalPriceFormulaInputs": [
+      "D15",
+      "C15"
+    ],
+    "sourceTotalCell": "E15",
+    "totalPrice": 1125
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "30KW Hybrid",
+    "sourceRow": 20,
+    "gstAmount": 3110.4,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 17280
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "30KW Hybrid",
+    "sourceRow": 21,
+    "gstAmount": 2673,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 14850
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 18,
+    "gstAmount": 1152,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E18*18%",
+    "gstFormulaInputs": [
+      "E18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = E18*18%",
+    "totalPriceFormula": "D18*C18",
+    "totalPriceFormulaInputs": [
+      "D18",
+      "C18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 6400
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "30KW Hybrid",
+    "sourceRow": 24,
+    "gstAmount": 1234.8,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E24*18%",
+    "gstFormulaInputs": [
+      "E24"
+    ],
+    "sourceGstCell": "F24",
+    "pricingFormula": "gst_amount = E24*18%",
+    "totalPriceFormula": "D24*C24",
+    "totalPriceFormulaInputs": [
+      "D24",
+      "C24"
+    ],
+    "sourceTotalCell": "E24",
+    "totalPrice": 6860
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "30KW Hybrid",
+    "sourceRow": 28,
+    "gstAmount": 16200,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E28*18%",
+    "gstFormulaInputs": [
+      "E28"
+    ],
+    "sourceGstCell": "F28",
+    "pricingFormula": "gst_amount = E28*18%",
+    "totalPriceFormula": "D28*C28",
+    "totalPriceFormulaInputs": [
+      "D28",
+      "C28"
+    ],
+    "sourceTotalCell": "E28",
+    "totalPrice": 90000
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet7",
+    "sourceRow": 4,
+    "gstAmount": 49197,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": null,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet7",
+    "sourceRow": 5,
+    "gstAmount": 9702,
+    "gstRate": null,
+    "effectiveGstRateOnTotal": null
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 10,
+    "gstAmount": 292.5,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E10*18%",
+    "gstFormulaInputs": [
+      "E10"
+    ],
+    "sourceGstCell": "F10",
+    "pricingFormula": "gst_amount = E10*18%",
+    "totalPriceFormula": "C10*D10",
+    "totalPriceFormulaInputs": [
+      "C10",
+      "D10"
+    ],
+    "sourceTotalCell": "E10",
+    "totalPrice": 1625
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3 to 3 upgradation",
+    "sourceRow": 4,
+    "gstAmount": 5734.8,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 47790
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3 to 3 upgradation",
+    "sourceRow": 5,
+    "gstAmount": 1860,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 15500
+  },
+  {
+    "gstPct": 0.1310265669,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "3 to 3 upgradation",
+    "sourceRow": 31,
+    "gstAmount": 10159.8,
+    "gstRate": 0.1310265669,
+    "effectiveGstRateOnTotal": 0.1310265669,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 77540
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Inkel250bos",
+    "sourceRow": 7,
+    "gstAmount": 32256,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E7*18%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*18%",
+    "totalPriceFormula": "D7*C7",
+    "totalPriceFormulaInputs": [
+      "D7",
+      "C7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 179200
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Inkel250bos",
+    "sourceRow": 8,
+    "gstAmount": 33660,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E8*18%",
+    "gstFormulaInputs": [
+      "E8"
+    ],
+    "sourceGstCell": "F8",
+    "pricingFormula": "gst_amount = E8*18%",
+    "totalPriceFormula": "D8*C8",
+    "totalPriceFormulaInputs": [
+      "D8",
+      "C8"
+    ],
+    "sourceTotalCell": "E8",
+    "totalPrice": 187000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 17,
+    "gstAmount": 9180,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E17*18%",
+    "gstFormulaInputs": [
+      "E17"
+    ],
+    "sourceGstCell": "F17",
+    "pricingFormula": "gst_amount = E17*18%",
+    "totalPriceFormula": "C17*D17",
+    "totalPriceFormulaInputs": [
+      "C17",
+      "D17"
+    ],
+    "sourceTotalCell": "E17",
+    "totalPrice": 51000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 18,
+    "gstAmount": 15192,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E18*18%",
+    "gstFormulaInputs": [
+      "E18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = E18*18%",
+    "totalPriceFormula": "C18*D18",
+    "totalPriceFormulaInputs": [
+      "C18",
+      "D18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 84400
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Inkel250bos",
+    "sourceRow": 19,
+    "gstAmount": 20538,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E19*18%",
+    "gstFormulaInputs": [
+      "E19"
+    ],
+    "sourceGstCell": "F19",
+    "pricingFormula": "gst_amount = E19*18%",
+    "totalPriceFormula": "D19",
+    "totalPriceFormulaInputs": [
+      "D19"
+    ],
+    "sourceTotalCell": "E19",
+    "totalPrice": 114100
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Inkel250bos",
+    "sourceRow": 20,
+    "gstAmount": 11995.199999999999,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 66640
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 21,
+    "gstAmount": 6566.4,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 36480
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 22,
+    "gstAmount": 2304,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E22*18%",
+    "gstFormulaInputs": [
+      "E22"
+    ],
+    "sourceGstCell": "F22",
+    "pricingFormula": "gst_amount = E22*18%",
+    "totalPriceFormula": "D22*C22",
+    "totalPriceFormulaInputs": [
+      "D22",
+      "C22"
+    ],
+    "sourceTotalCell": "E22",
+    "totalPrice": 12800
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 23,
+    "gstAmount": 17722.8,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E23*18%",
+    "gstFormulaInputs": [
+      "E23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = E23*18%",
+    "totalPriceFormula": "D23*C23",
+    "totalPriceFormulaInputs": [
+      "D23",
+      "C23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 98460
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 19,
+    "gstAmount": 2070,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E19*18%",
+    "gstFormulaInputs": [
+      "E19"
+    ],
+    "sourceGstCell": "F19",
+    "pricingFormula": "gst_amount = E19*18%",
+    "totalPriceFormula": "D19*C19",
+    "totalPriceFormulaInputs": [
+      "D19",
+      "C19"
+    ],
+    "sourceTotalCell": "E19",
+    "totalPrice": 11500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 26,
+    "gstAmount": 17640,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E26*18%",
+    "gstFormulaInputs": [
+      "E26"
+    ],
+    "sourceGstCell": "F26",
+    "pricingFormula": "gst_amount = E26*18%",
+    "totalPriceFormula": "D26*C26",
+    "totalPriceFormulaInputs": [
+      "D26",
+      "C26"
+    ],
+    "sourceTotalCell": "E26",
+    "totalPrice": 98000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 28,
+    "gstAmount": 6840,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E28*18%",
+    "gstFormulaInputs": [
+      "E28"
+    ],
+    "sourceGstCell": "F28",
+    "pricingFormula": "gst_amount = E28*18%",
+    "totalPriceFormula": "D28*C28",
+    "totalPriceFormulaInputs": [
+      "D28",
+      "C28"
+    ],
+    "sourceTotalCell": "E28",
+    "totalPrice": 38000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Inkel250bos",
+    "sourceRow": 32,
+    "gstAmount": 22500,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E32*18%",
+    "gstFormulaInputs": [
+      "E32"
+    ],
+    "sourceGstCell": "F32",
+    "pricingFormula": "gst_amount = E32*18%",
+    "totalPriceFormula": "D32*C32",
+    "totalPriceFormulaInputs": [
+      "D32",
+      "C32"
+    ],
+    "sourceTotalCell": "E32",
+    "totalPrice": 125000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "100kw STM",
+    "sourceRow": 4,
+    "gstAmount": 190464,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "C4*D4",
+    "totalPriceFormulaInputs": [
+      "C4",
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 1587200
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "100kw STM",
+    "sourceRow": 5,
+    "gstAmount": 29282.879999999997,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 244024
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "100kw STM",
+    "sourceRow": 8,
+    "gstAmount": 14175,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E8*18%",
+    "gstFormulaInputs": [
+      "E8"
+    ],
+    "sourceGstCell": "F8",
+    "pricingFormula": "gst_amount = E8*18%",
+    "totalPriceFormula": "D8*C8",
+    "totalPriceFormulaInputs": [
+      "D8",
+      "C8"
+    ],
+    "sourceTotalCell": "E8",
+    "totalPrice": 78750
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 11,
+    "gstAmount": 648,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E11*18%",
+    "gstFormulaInputs": [
+      "E11"
+    ],
+    "sourceGstCell": "F11",
+    "pricingFormula": "gst_amount = E11*18%",
+    "totalPriceFormula": "D11*C11",
+    "totalPriceFormulaInputs": [
+      "D11",
+      "C11"
+    ],
+    "sourceTotalCell": "E11",
+    "totalPrice": 3600
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 14,
+    "gstAmount": 178.2,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E14*18%",
+    "gstFormulaInputs": [
+      "E14"
+    ],
+    "sourceGstCell": "F14",
+    "pricingFormula": "gst_amount = E14*18%",
+    "totalPriceFormula": "D14*C14",
+    "totalPriceFormulaInputs": [
+      "D14",
+      "C14"
+    ],
+    "sourceTotalCell": "E14",
+    "totalPrice": 990
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "100kw STM",
+    "sourceRow": 17,
+    "gstAmount": 4410,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E17*18%",
+    "gstFormulaInputs": [
+      "E17"
+    ],
+    "sourceGstCell": "F17",
+    "pricingFormula": "gst_amount = E17*18%",
+    "totalPriceFormula": "C17*D17",
+    "totalPriceFormulaInputs": [
+      "C17",
+      "D17"
+    ],
+    "sourceTotalCell": "E17",
+    "totalPrice": 24500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "100kw STM",
+    "sourceRow": 18,
+    "gstAmount": 12780,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E18*18%",
+    "gstFormulaInputs": [
+      "E18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = E18*18%",
+    "totalPriceFormula": "C18*D18",
+    "totalPriceFormulaInputs": [
+      "C18",
+      "D18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 71000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "100kw STM",
+    "sourceRow": 19,
+    "gstAmount": 9900,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E19*18%",
+    "gstFormulaInputs": [
+      "E19"
+    ],
+    "sourceGstCell": "F19",
+    "pricingFormula": "gst_amount = E19*18%",
+    "totalPriceFormula": "D19",
+    "totalPriceFormulaInputs": [
+      "D19"
+    ],
+    "sourceTotalCell": "E19",
+    "totalPrice": 55000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "100kw STM",
+    "sourceRow": 20,
+    "gstAmount": 7920,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 44000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "100kw STM",
+    "sourceRow": 24,
+    "gstAmount": 1035,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E24*18%",
+    "gstFormulaInputs": [
+      "E24"
+    ],
+    "sourceGstCell": "F24",
+    "pricingFormula": "gst_amount = E24*18%",
+    "totalPriceFormula": "D24*C24",
+    "totalPriceFormulaInputs": [
+      "D24",
+      "C24"
+    ],
+    "sourceTotalCell": "E24",
+    "totalPrice": 5750
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 30,
+    "gstAmount": 14400,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E30*18%",
+    "gstFormulaInputs": [
+      "E30"
+    ],
+    "sourceGstCell": "F30",
+    "pricingFormula": "gst_amount = E30*18%",
+    "totalPriceFormula": "D30*C30",
+    "totalPriceFormulaInputs": [
+      "D30",
+      "C30"
+    ],
+    "sourceTotalCell": "E30",
+    "totalPrice": 80000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 7,
+    "gstAmount": 147600,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E7*18%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*18%",
+    "totalPriceFormula": "D7*C7",
+    "totalPriceFormulaInputs": [
+      "D7",
+      "C7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 820000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 19,
+    "gstAmount": 72000,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E19*18%",
+    "gstFormulaInputs": [
+      "E19"
+    ],
+    "sourceGstCell": "F19",
+    "pricingFormula": "gst_amount = E19*18%",
+    "totalPriceFormula": "D19",
+    "totalPriceFormulaInputs": [
+      "D19"
+    ],
+    "sourceTotalCell": "E19",
+    "totalPrice": 400000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "inkel aluva",
+    "sourceRow": 20,
+    "gstAmount": 13406.4,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E20*18%",
+    "gstFormulaInputs": [
+      "E20"
+    ],
+    "sourceGstCell": "F20",
+    "pricingFormula": "gst_amount = E20*18%",
+    "totalPriceFormula": "D20*C20",
+    "totalPriceFormulaInputs": [
+      "D20",
+      "C20"
+    ],
+    "sourceTotalCell": "E20",
+    "totalPrice": 74480
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 4,
+    "gstAmount": 365601.6,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "C4*D4",
+    "totalPriceFormulaInputs": [
+      "C4",
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 3046680
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 6,
+    "gstAmount": 36777.6,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E6*18%",
+    "gstFormulaInputs": [
+      "E6"
+    ],
+    "sourceGstCell": "F6",
+    "pricingFormula": "gst_amount = E6*18%",
+    "totalPriceFormula": "D6*C6",
+    "totalPriceFormulaInputs": [
+      "D6",
+      "C6"
+    ],
+    "sourceTotalCell": "E6",
+    "totalPrice": 204320
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 7,
+    "gstAmount": 24750,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E7*18%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*18%",
+    "totalPriceFormula": "D7*C7",
+    "totalPriceFormulaInputs": [
+      "D7",
+      "C7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 137500
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 12,
+    "gstAmount": 216,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E12*18%",
+    "gstFormulaInputs": [
+      "E12"
+    ],
+    "sourceGstCell": "F12",
+    "pricingFormula": "gst_amount = E12*18%",
+    "totalPriceFormula": "D12*C12",
+    "totalPriceFormulaInputs": [
+      "D12",
+      "C12"
+    ],
+    "sourceTotalCell": "E12",
+    "totalPrice": 1200
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 16,
+    "gstAmount": 26640,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E16*18%",
+    "gstFormulaInputs": [
+      "E16"
+    ],
+    "sourceGstCell": "F16",
+    "pricingFormula": "gst_amount = E16*18%",
+    "totalPriceFormula": "C16*D16",
+    "totalPriceFormulaInputs": [
+      "C16",
+      "D16"
+    ],
+    "sourceTotalCell": "E16",
+    "totalPrice": 148000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 17,
+    "gstAmount": 17496,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E17*18%",
+    "gstFormulaInputs": [
+      "E17"
+    ],
+    "sourceGstCell": "F17",
+    "pricingFormula": "gst_amount = E17*18%",
+    "totalPriceFormula": "D17*C17",
+    "totalPriceFormulaInputs": [
+      "D17",
+      "C17"
+    ],
+    "sourceTotalCell": "E17",
+    "totalPrice": 97200
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 4,
+    "gstAmount": 7221.599999999999,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "D4*C4",
+    "totalPriceFormulaInputs": [
+      "D4",
+      "C4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 60180
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 7,
+    "gstAmount": 1659.6,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D7*18%",
+    "gstFormulaInputs": [
+      "D7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = D7*18%",
+    "totalPriceFormula": "D7*C7",
+    "totalPriceFormulaInputs": [
+      "D7",
+      "C7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 9220
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 19,
+    "gstAmount": 189,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "D19*18%",
+    "gstFormulaInputs": [
+      "D19"
+    ],
+    "sourceGstCell": "F19",
+    "pricingFormula": "gst_amount = D19*18%",
+    "totalPriceFormula": "D19*C19",
+    "totalPriceFormulaInputs": [
+      "D19",
+      "C19"
+    ],
+    "sourceTotalCell": "E19",
+    "totalPrice": 1050
+  },
+  {
+    "gstPct": 0.1235433303,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "mis working",
+    "sourceRow": 31,
+    "gstAmount": 18874.95,
+    "gstRate": 0.1235433303,
+    "effectiveGstRateOnTotal": 0.1235433303,
+    "gstFormula": "SUM(F4:F30)",
+    "gstFormulaInputs": [
+      "F4",
+      "F30"
+    ],
+    "sourceGstCell": "F31",
+    "pricingFormula": "gst_amount = SUM(F4:F30)",
+    "totalPriceFormula": "SUM(E4:E30)",
+    "totalPriceFormulaInputs": [
+      "E4",
+      "E30"
+    ],
+    "sourceTotalCell": "E31",
+    "totalPrice": 152780
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20KW HIBRID",
+    "sourceRow": 4,
+    "gstAmount": 32497.199999999997,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "C4*D4",
+    "totalPriceFormulaInputs": [
+      "C4",
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 270810
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20KW HIBRID",
+    "sourceRow": 5,
+    "gstAmount": 31254.36,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "C5*D5",
+    "totalPriceFormulaInputs": [
+      "C5",
+      "D5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 260453
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20KW HIBRID",
+    "sourceRow": 6,
+    "gstAmount": 1393.2,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E6*18%",
+    "gstFormulaInputs": [
+      "E6"
+    ],
+    "sourceGstCell": "F6",
+    "pricingFormula": "gst_amount = E6*18%",
+    "totalPriceFormula": "C6*D6",
+    "totalPriceFormulaInputs": [
+      "C6",
+      "D6"
+    ],
+    "sourceTotalCell": "E6",
+    "totalPrice": 7740
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20KW HIBRID",
+    "sourceRow": 7,
+    "gstAmount": 36000,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E7*18%",
+    "gstFormulaInputs": [
+      "E7"
+    ],
+    "sourceGstCell": "F7",
+    "pricingFormula": "gst_amount = E7*18%",
+    "totalPriceFormula": "C7*D7",
+    "totalPriceFormulaInputs": [
+      "C7",
+      "D7"
+    ],
+    "sourceTotalCell": "E7",
+    "totalPrice": 200000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20KW HIBRID",
+    "sourceRow": 18,
+    "gstAmount": 4230,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E18*18%",
+    "gstFormulaInputs": [
+      "E18"
+    ],
+    "sourceGstCell": "F18",
+    "pricingFormula": "gst_amount = E18*18%",
+    "totalPriceFormula": "C18*D18",
+    "totalPriceFormulaInputs": [
+      "C18",
+      "D18"
+    ],
+    "sourceTotalCell": "E18",
+    "totalPrice": 23500
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kw30kwhr",
+    "sourceRow": 4,
+    "gstAmount": 51856.799999999996,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "C4*D4",
+    "totalPriceFormulaInputs": [
+      "C4",
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 432140
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kw30kwhr",
+    "sourceRow": 5,
+    "gstAmount": 42000,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "C5*D5",
+    "totalPriceFormulaInputs": [
+      "C5",
+      "D5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 350000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kw30kwhr",
+    "sourceRow": 6,
+    "gstAmount": 45000,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E6*12%",
+    "gstFormulaInputs": [
+      "E6"
+    ],
+    "sourceGstCell": "F6",
+    "pricingFormula": "gst_amount = E6*12%",
+    "totalPriceFormula": "C6*D6",
+    "totalPriceFormulaInputs": [
+      "C6",
+      "D6"
+    ],
+    "sourceTotalCell": "E6",
+    "totalPrice": 375000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kw30kwhr",
+    "sourceRow": 21,
+    "gstAmount": 1267.2,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "C21*D21",
+    "totalPriceFormulaInputs": [
+      "C21",
+      "D21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 7040
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 4,
+    "gstAmount": 41412,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "C4*D4",
+    "totalPriceFormulaInputs": [
+      "C4",
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 345100
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "20kw hibrid solinteg",
+    "sourceRow": 5,
+    "gstAmount": 88552.08,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "C5*D5",
+    "totalPriceFormulaInputs": [
+      "C5",
+      "D5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 737934
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 21,
+    "gstAmount": 1123.2,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "C21*D21",
+    "totalPriceFormulaInputs": [
+      "C21",
+      "D21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 6240
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet10",
+    "sourceRow": 23,
+    "gstAmount": 64800,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E23*18%",
+    "gstFormulaInputs": [
+      "E23"
+    ],
+    "sourceGstCell": "F23",
+    "pricingFormula": "gst_amount = E23*18%",
+    "totalPriceFormula": "D23*C23",
+    "totalPriceFormulaInputs": [
+      "D23",
+      "C23"
+    ],
+    "sourceTotalCell": "E23",
+    "totalPrice": 360000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 5,
+    "gstAmount": 32040,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "C5*D5",
+    "totalPriceFormulaInputs": [
+      "C5",
+      "D5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 267000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "Sheet2",
+    "sourceRow": 6,
+    "gstAmount": 20400,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E6*12%",
+    "gstFormulaInputs": [
+      "E6"
+    ],
+    "sourceGstCell": "F6",
+    "pricingFormula": "gst_amount = E6*12%",
+    "totalPriceFormula": "C6*D6",
+    "totalPriceFormulaInputs": [
+      "C6",
+      "D6"
+    ],
+    "sourceTotalCell": "E6",
+    "totalPrice": 170000
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 4,
+    "gstAmount": 147014.4,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E4*12%",
+    "gstFormulaInputs": [
+      "E4"
+    ],
+    "sourceGstCell": "F4",
+    "pricingFormula": "gst_amount = E4*12%",
+    "totalPriceFormula": "C4*D4",
+    "totalPriceFormulaInputs": [
+      "C4",
+      "D4"
+    ],
+    "sourceTotalCell": "E4",
+    "totalPrice": 1225120
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kw",
+    "sourceRow": 5,
+    "gstAmount": 29520,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 246000
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 9,
+    "gstAmount": 702,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E9*18%",
+    "gstFormulaInputs": [
+      "E9"
+    ],
+    "sourceGstCell": "F9",
+    "pricingFormula": "gst_amount = E9*18%",
+    "totalPriceFormula": "D9*C9",
+    "totalPriceFormulaInputs": [
+      "D9",
+      "C9"
+    ],
+    "sourceTotalCell": "E9",
+    "totalPrice": 3900
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 11,
+    "gstAmount": 792,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E11*18%",
+    "gstFormulaInputs": [
+      "E11"
+    ],
+    "sourceGstCell": "F11",
+    "pricingFormula": "gst_amount = E11*18%",
+    "totalPriceFormula": "D11*C11",
+    "totalPriceFormulaInputs": [
+      "D11",
+      "C11"
+    ],
+    "sourceTotalCell": "E11",
+    "totalPrice": 4400
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 17,
+    "gstAmount": 4968,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E17*18%",
+    "gstFormulaInputs": [
+      "E17"
+    ],
+    "sourceGstCell": "F17",
+    "pricingFormula": "gst_amount = E17*18%",
+    "totalPriceFormula": "C17*D17",
+    "totalPriceFormulaInputs": [
+      "C17",
+      "D17"
+    ],
+    "sourceTotalCell": "E17",
+    "totalPrice": 27600
+  },
+  {
+    "gstPct": 0.18,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 21,
+    "gstAmount": 5544,
+    "gstRate": 0.18,
+    "effectiveGstRateOnTotal": 0.18,
+    "gstFormula": "E21*18%",
+    "gstFormulaInputs": [
+      "E21"
+    ],
+    "sourceGstCell": "F21",
+    "pricingFormula": "gst_amount = E21*18%",
+    "totalPriceFormula": "D21*C21",
+    "totalPriceFormulaInputs": [
+      "D21",
+      "C21"
+    ],
+    "sourceTotalCell": "E21",
+    "totalPrice": 30800
+  },
+  {
+    "gstPct": 0.12,
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "80kwenphase",
+    "sourceRow": 5,
+    "gstAmount": 160800,
+    "gstRate": 0.12,
+    "effectiveGstRateOnTotal": 0.12,
+    "gstFormula": "E5*12%",
+    "gstFormulaInputs": [
+      "E5"
+    ],
+    "sourceGstCell": "F5",
+    "pricingFormula": "gst_amount = E5*12%",
+    "totalPriceFormula": "D5*C5",
+    "totalPriceFormulaInputs": [
+      "D5",
+      "C5"
+    ],
+    "sourceTotalCell": "E5",
+    "totalPrice": 1340000
+  }
+]

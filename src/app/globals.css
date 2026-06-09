@@ -1,77 +1,88 @@
 @import "tailwindcss";
 
-/* ─── ENERMASS Design System ─────────────────────────────────────────────── */
-/* Tailwind v4 token registration — values are overridden by :root / .dark    */
+/* === ENERMASS Design System ================================================ */
+/* Tailwind v4 token registration - values are overridden by :root / .dark     */
 
 @theme inline {
-  --color-background: var(--bg);
-  --color-surface: var(--srf);
-  --color-surface-hover: var(--srf-hover);
+  --color-background:     var(--bg);
+  --color-surface:        var(--srf);
+  --color-surface-2:      var(--srf-2);
+  --color-surface-hover:  var(--srf-hover);
   --color-surface-active: var(--srf-active);
-  --color-border: var(--bdr);
-  --color-border-light: var(--bdr-light);
-  --color-accent: #B8860B;
-  --color-accent-hover: #CC9A1D;
-  --color-accent-dim: var(--accent-dim);
-  --color-accent-glow: var(--accent-glow);
-  --color-text-primary: var(--txt);
+  --color-border:         var(--bdr);
+  --color-border-light:   var(--bdr-light);
+  --color-accent:         #C6973F;
+  --color-accent-hover:   #D4A84B;
+  --color-accent-dim:     var(--accent-dim);
+  --color-accent-glow:    var(--accent-glow);
+  --color-text-primary:   var(--txt);
   --color-text-secondary: var(--txt-sec);
-  --color-text-muted: var(--txt-muted);
+  --color-text-muted:     var(--txt-muted);
 
   /* Category colors */
-  --color-cat-on-grid: #16A34A;
-  --color-cat-3-phase: #2563EB;
-  --color-cat-micro: #9333EA;
-  --color-cat-hybrid: #D97706;
-  --color-cat-upgrade: #475569;
+  --color-cat-on-grid:    #16A34A;
+  --color-cat-3-phase:    #2563EB;
+  --color-cat-micro:      #9333EA;
+  --color-cat-hybrid:     #D97706;
+  --color-cat-upgrade:    #475569;
   --color-cat-commercial: #DC2626;
 
   /* Status colors */
-  --color-success: #16A34A;
-  --color-warning: #D97706;
-  --color-error: #DC2626;
-  --color-info: #2563EB;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error:   #EF4444;
+  --color-info:    #3B82F6;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-/* ─── Light Mode (Default) ───────────────────────────────────────────────── */
+/* === Light Mode: Warm Stone ================================================= */
 
 :root,
 html.light {
-  --bg: #F8F9FA;
-  --srf: #FFFFFF;
-  --srf-hover: #F1F3F5;
-  --srf-active: #E9ECEF;
-  --bdr: #DEE2E6;
-  --bdr-light: #CED4DA;
-  --accent-dim: rgba(184, 134, 11, 0.10);
-  --accent-glow: rgba(184, 134, 11, 0.06);
-  --txt: #1A1A1A;
-  --txt-sec: #495057;
-  --txt-muted: #868E96;
+  --bg:          #F5F4F0;
+  --srf:         #FFFFFF;
+  --srf-2:       #FAFAF8;
+  --srf-hover:   #F3F2EE;
+  --srf-active:  #E9E8E3;
+  --bdr:         #E3E1DA;
+  --bdr-light:   #D0CEC6;
+  --accent-dim:  rgba(198, 151, 63, 0.09);
+  --accent-glow: rgba(198, 151, 63, 0.06);
+  --txt:         #1C1B18;
+  --txt-sec:     #4B4946;
+  --txt-muted:   #8C8A85;
+  --success-bg:  rgba(34, 197, 94, 0.09);
+  --warning-bg:  rgba(245, 158, 11, 0.09);
+  --error-bg:    rgba(239, 68, 68, 0.09);
+  --info-bg:     rgba(59, 130, 246, 0.09);
   color-scheme: light;
 }
 
-/* ─── Dark Mode ──────────────────────────────────────────────────────────── */
+/* === Dark Mode: Warm Dark Navy ============================================== */
 
 html.dark {
-  --bg: #0a0a0a;
-  --srf: #141414;
-  --srf-hover: #1a1a1a;
-  --srf-active: #1e1e1e;
-  --bdr: #2a2a2a;
-  --bdr-light: #333333;
-  --accent-dim: rgba(184, 134, 11, 0.15);
-  --accent-glow: rgba(184, 134, 11, 0.08);
-  --txt: #F5F5F5;
-  --txt-sec: #A0A0A0;
-  --txt-muted: #666666;
+  --bg:          #111318;
+  --srf:         #191D24;
+  --srf-2:       #1F2430;
+  --srf-hover:   #222737;
+  --srf-active:  #272C3D;
+  --bdr:         #2C3242;
+  --bdr-light:   #3A4056;
+  --accent-dim:  rgba(198, 151, 63, 0.13);
+  --accent-glow: rgba(198, 151, 63, 0.07);
+  --txt:         #E8E6E1;
+  --txt-sec:     #9B9895;
+  --txt-muted:   #5E5C58;
+  --success-bg:  rgba(34, 197, 94, 0.11);
+  --warning-bg:  rgba(245, 158, 11, 0.11);
+  --error-bg:    rgba(239, 68, 68, 0.10);
+  --info-bg:     rgba(59, 130, 246, 0.10);
   color-scheme: dark;
 }
 
-/* ─── Base Styles ────────────────────────────────────────────────────────── */
+/* === Base Styles ============================================================ */
 
 html {
   scroll-behavior: smooth;
@@ -81,137 +92,354 @@ body {
   background: var(--color-background);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+/* === Scrollbar ============================================================== */
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--color-border);
-  border-radius: 3px;
+  border-radius: 99px;
 }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-light); }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-light);
-}
-
-/* ─── Selection ──────────────────────────────────────────────────────────── */
+/* === Selection ============================================================== */
 
 ::selection {
   background: var(--color-accent-dim);
   color: var(--color-accent);
 }
 
-/* ─── Focus Rings ────────────────────────────────────────────────────────── */
+/* === Focus Rings ============================================================ */
 
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+  border-radius: 6px;
 }
 
-/* ─── Animations ─────────────────────────────────────────────────────────── */
+/* === Animations ============================================================= */
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slide-in-left {
-  from { opacity: 0; transform: translateX(-16px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 67, 0); }
-  50% { box-shadow: 0 0 12px 2px rgba(212, 168, 67, 0.15); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.4s ease-out both;
-}
-
-.animate-slide-in {
-  animation: slide-in-left 0.3s ease-out both;
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-.animate-scale-in {
-  animation: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(198, 151, 63, 0); }
+  50%       { box-shadow: 0 0 14px 3px rgba(198, 151, 63, 0.12); }
 }
 
-/* ─── Utility Classes ────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(0)    scale(1); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-fade-in    { animation: fade-in    0.35s ease-out both; }
+.animate-slide-up   { animation: slide-up   0.3s  ease-out both; }
+.animate-slide-in   { animation: slide-in-left 0.3s ease-out both; }
+.animate-scale-in   { animation: scale-in   0.2s  cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-toast-in   { animation: toast-in   0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-spin-slow  { animation: spin-slow  3s    linear infinite; }
+
+/* === Glass Utility ========================================================== */
 
 .glass {
   background: var(--color-surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid var(--color-border);
 }
 
 html.dark .glass {
-  background: rgba(20, 20, 20, 0.8);
+  background: rgba(25, 29, 36, 0.72);
+  border: 1px solid rgba(44, 50, 66, 0.7);
 }
 
+/* === Card Utilities ========================================================= */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-hover {
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.07);
+  border-color: var(--color-border-light);
+}
+
+html.dark .card-hover:hover {
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.35);
+  border-color: var(--color-border-light);
+}
+
+/* === Input Utilities ======================================================== */
+
+.input-field {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.input-field::placeholder {
+  color: var(--color-text-muted);
+}
+
+.input-field:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+  background: var(--color-surface);
+}
+
+html.dark .input-field {
+  background: rgba(17, 19, 24, 0.6);
+}
+
+html.dark .input-field:focus {
+  background: var(--bg);
+}
+
+/* === Typography Utilities =================================================== */
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.label-xs {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+}
+
+.section-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* === Gradient Accents ======================================================= */
+
 .gold-gradient {
-  background: linear-gradient(135deg, #B8860B 0%, #CC9A1D 50%, #B8860B 100%);
+  background: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #B8860B 100%);
 }
 
 .gold-text {
-  background: linear-gradient(135deg, #B8860B 0%, #CC9A1D 100%);
+  background: linear-gradient(135deg, #C6973F 0%, #E0BE72 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* ─── Category Badge Colors ──────────────────────────────────────────────── */
+.inner-glow {
+  box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
 
-.badge-on-grid { background: rgba(22, 163, 74, 0.10); color: #16A34A; border: 1px solid rgba(22, 163, 74, 0.25); }
-.badge-3-phase { background: rgba(37, 99, 235, 0.10); color: #2563EB; border: 1px solid rgba(37, 99, 235, 0.25); }
-.badge-micro-inverter { background: rgba(147, 51, 234, 0.10); color: #9333EA; border: 1px solid rgba(147, 51, 234, 0.25); }
-.badge-hybrid { background: rgba(217, 119, 6, 0.10); color: #D97706; border: 1px solid rgba(217, 119, 6, 0.25); }
-.badge-upgrade { background: rgba(71, 85, 105, 0.10); color: #475569; border: 1px solid rgba(71, 85, 105, 0.25); }
-.badge-commercial { background: rgba(220, 38, 38, 0.10); color: #DC2626; border: 1px solid rgba(220, 38, 38, 0.25); }
+html.dark .inner-glow {
+  box-shadow: inset 0 1px 4px 0 rgba(0, 0, 0, 0.25);
+}
 
-/* ─── Mobile Bottom Tab Bar ──────────────────────────────────────────────── */
+/* === Badge Colors =========================================================== */
+
+.badge-base {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  letter-spacing: 0.02em;
+}
+
+.badge-custom       { background: rgba(198, 151, 63, 0.10); color: #C6973F;  border-color: rgba(198, 151, 63, 0.22); }
+.badge-on-grid      { background: rgba(34, 197, 94, 0.10);  color: #16A34A;  border-color: rgba(34, 197, 94, 0.22);  }
+.badge-3-phase      { background: rgba(59, 130, 246, 0.10); color: #2563EB;  border-color: rgba(59, 130, 246, 0.22); }
+.badge-micro-inverter { background: rgba(147, 51, 234, 0.10); color: #9333EA; border-color: rgba(147, 51, 234, 0.22); }
+.badge-hybrid       { background: rgba(245, 158, 11, 0.10); color: #D97706;  border-color: rgba(245, 158, 11, 0.22); }
+.badge-upgrade      { background: rgba(100, 116, 139, 0.10); color: #64748B; border-color: rgba(100, 116, 139, 0.22); }
+.badge-commercial   { background: rgba(239, 68, 68, 0.10);  color: #DC2626;  border-color: rgba(239, 68, 68, 0.22);  }
+
+/* === Status Pill Utilities ================================================== */
+
+.status-success {
+  background: var(--success-bg);
+  color: var(--color-success);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.status-warning {
+  background: var(--warning-bg);
+  color: var(--color-warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-error {
+  background: var(--error-bg);
+  color: var(--color-error);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.status-info {
+  background: var(--info-bg);
+  color: var(--color-info);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* === Table Utilities ======================================================== */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table thead tr {
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.data-table thead th {
+  padding: 10px 14px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  text-align: left;
+}
+
+.data-table tbody tr {
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.12s ease;
+}
+
+.data-table tbody tr:last-child { border-bottom: none; }
+
+.data-table tbody tr:hover {
+  background: var(--color-surface-hover);
+}
+
+.data-table tbody td {
+  padding: 11px 14px;
+  color: var(--color-text-primary);
+}
+
+/* === Sidebar ================================================================ */
+
+/* Seamless sidebar — same as background, separated by subtle right border only */
+.sidebar-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: background 0.15s ease, color 0.15s ease;
+  text-decoration: none;
+  width: 100%;
+}
+
+.sidebar-nav-item:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.sidebar-nav-item.active {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.sidebar-active-bar {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  border-radius: 0 3px 3px 0;
+  background: var(--color-accent);
+}
+
+/* === Section Divider ======================================================== */
+
+.section-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 6px 0;
+  opacity: 0.7;
+}
+
+/* === Mobile Bottom Tab Bar ================================================== */
 
 @media (max-width: 767px) {
-  .sidebar-desktop {
-    display: none !important;
-  }
+  .sidebar-desktop { display: none !important; }
 }
 
 @media (min-width: 768px) {
-  .mobile-tab-bar {
-    display: none !important;
-  }
+  .mobile-tab-bar { display: none !important; }
 }
 
-/* ─── Print-Only Component ───────────────────────────────────────────────── */
+/* === Print-Only ============================================================= */
 
-.print-only {
-  display: none !important;
-}
+.print-only { display: none !important; }
 
-/* ─── Print Styles ───────────────────────────────────────────────────────── */
+/* === Print Styles =========================================================== */
 
 @media print {
   body {
@@ -222,28 +450,16 @@ html.dark .glass {
     font-size: 11px !important;
   }
 
-  /* Hide all screen UI completely from taking up space */
-  body > *:not(.print-only) {
-    display: none !important;
-  }
-
-  .print-only {
-    display: block !important;
-  }
+  body > *:not(.print-only) { display: none !important; }
+  .print-only { display: block !important; }
 
   @page {
     size: A4;
     margin: 12mm 15mm;
   }
 
-  .pdf-page-break {
-    page-break-before: always;
-  }
-
-  .pdf-page {
-    width: 100%;
-    max-width: 100%;
-  }
+  .pdf-page-break { page-break-before: always; }
+  .pdf-page { width: 100%; max-width: 100%; }
 
   .pdf-header {
     display: flex;
@@ -252,11 +468,7 @@ html.dark .glass {
     margin-bottom: 12px;
   }
 
-  .pdf-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+  .pdf-logo { display: flex; align-items: center; gap: 10px; }
 
   .pdf-logo-icon {
     width: 36px;
@@ -270,32 +482,11 @@ html.dark .glass {
     color: #111;
   }
 
-  .pdf-brand {
-    font-size: 16px;
-    font-weight: 800;
-    color: #111;
-    letter-spacing: 0.5px;
-  }
-
-  .pdf-tagline {
-    font-size: 10px;
-    color: #666;
-    letter-spacing: 0.3px;
-  }
-
-  .pdf-meta {
-    text-align: right;
-    font-size: 10px;
-    color: #444;
-  }
-
-  .pdf-meta-row {
-    margin-bottom: 2px;
-  }
-
-  .pdf-meta-row span {
-    margin-right: 4px;
-  }
+  .pdf-brand    { font-size: 16px; font-weight: 800; color: #111; letter-spacing: 0.5px; }
+  .pdf-tagline  { font-size: 10px; color: #666; letter-spacing: 0.3px; }
+  .pdf-meta     { text-align: right; font-size: 10px; color: #444; }
+  .pdf-meta-row { margin-bottom: 2px; }
+  .pdf-meta-row span { margin-right: 4px; }
 
   .pdf-divider {
     height: 2px;
@@ -303,7 +494,6 @@ html.dark .glass {
     margin: 10px 0;
   }
 
-  /* Project Banner */
   .pdf-project-banner {
     text-align: center;
     padding: 12px 16px;
@@ -313,18 +503,8 @@ html.dark .glass {
     border-radius: 8px;
   }
 
-  .pdf-project-title {
-    font-size: 16px;
-    font-weight: 800;
-    color: #111;
-    letter-spacing: 0.3px;
-  }
-
-  .pdf-project-subtitle {
-    font-size: 11px;
-    color: #666;
-    margin-top: 2px;
-  }
+  .pdf-project-title    { font-size: 16px; font-weight: 800; color: #111; letter-spacing: 0.3px; }
+  .pdf-project-subtitle { font-size: 11px; color: #666; margin-top: 2px; }
 
   .pdf-two-col {
     display: grid;
@@ -333,11 +513,7 @@ html.dark .glass {
     margin-bottom: 12px;
   }
 
-  .pdf-info-block {
-    padding: 10px;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-  }
+  .pdf-info-block { padding: 10px; border: 1px solid #e0e0e0; border-radius: 6px; }
 
   .pdf-section-label {
     font-size: 10px;
@@ -350,32 +526,12 @@ html.dark .glass {
     margin-bottom: 8px;
   }
 
-  .pdf-info-row {
-    font-size: 10px;
-    color: #333;
-    padding: 2px 0;
-  }
+  .pdf-info-row { font-size: 10px; color: #333; padding: 2px 0; }
+  .pdf-info-row span { color: #888; margin-right: 4px; }
 
-  .pdf-info-row span {
-    color: #888;
-    margin-right: 4px;
-  }
-
-  .pdf-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 10px;
-    margin-bottom: 8px;
-  }
-
+  .pdf-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 8px; }
   .pdf-table th,
-  .pdf-table td {
-    padding: 5px 8px;
-    border: 1px solid #e0e0e0;
-    text-align: left;
-    color: #333;
-  }
-
+  .pdf-table td { padding: 5px 8px; border: 1px solid #e0e0e0; text-align: left; color: #333; }
   .pdf-table th {
     background: #f5f5f5;
     font-weight: 700;
@@ -385,14 +541,8 @@ html.dark .glass {
     letter-spacing: 0.5px;
   }
 
-  .pdf-table.pdf-bom {
-    font-size: 9px;
-  }
-
-  .pdf-table.pdf-pricing td {
-    padding: 6px 10px;
-    font-size: 11px;
-  }
+  .pdf-table.pdf-bom { font-size: 9px; }
+  .pdf-table.pdf-pricing td { padding: 6px 10px; font-size: 11px; }
 
   .pdf-highlight-row td {
     background: #fef9ee !important;
@@ -401,7 +551,6 @@ html.dark .glass {
     font-size: 12px !important;
   }
 
-  /* Included Items Grid */
   .pdf-included-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -409,19 +558,9 @@ html.dark .glass {
     margin-bottom: 8px;
   }
 
-  .pdf-included-item {
-    font-size: 9px;
-    color: #555;
-    padding: 2px 0;
-  }
+  .pdf-included-item { font-size: 9px; color: #555; padding: 2px 0; }
+  .pdf-check { color: #16a34a; font-weight: 700; margin-right: 3px; }
 
-  .pdf-check {
-    color: #16a34a;
-    font-weight: 700;
-    margin-right: 3px;
-  }
-
-  /* Subsidy Note */
   .pdf-subsidy-note {
     font-size: 8px;
     color: #888;
@@ -432,7 +571,6 @@ html.dark .glass {
     border-radius: 4px;
   }
 
-  /* Page 2 Mini Header */
   .pdf-page2-header {
     display: flex;
     justify-content: space-between;
@@ -440,18 +578,9 @@ html.dark .glass {
     margin-bottom: 8px;
   }
 
-  .pdf-brand-small {
-    font-size: 12px;
-    font-weight: 700;
-    color: #D4A843;
-  }
+  .pdf-brand-small   { font-size: 12px; font-weight: 700; color: #D4A843; }
+  .pdf-quote-id-small { font-size: 9px; color: #888; }
 
-  .pdf-quote-id-small {
-    font-size: 9px;
-    color: #888;
-  }
-
-  /* Stats Grid */
   .pdf-stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -467,36 +596,11 @@ html.dark .glass {
     background: #fafafa;
   }
 
-  .pdf-stat-card.pdf-stat-gold {
-    border-color: #D4A843;
-    background: #fef9ee;
-  }
+  .pdf-stat-card.pdf-stat-gold { border-color: #D4A843; background: #fef9ee; }
+  .pdf-stat-value  { font-size: 16px; font-weight: 800; color: #111; line-height: 1.2; }
+  .pdf-stat-unit   { font-size: 8px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+  .pdf-stat-label  { font-size: 8px; color: #666; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 4px; font-weight: 600; }
 
-  .pdf-stat-value {
-    font-size: 16px;
-    font-weight: 800;
-    color: #111;
-    line-height: 1.2;
-  }
-
-  .pdf-stat-unit {
-    font-size: 8px;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-top: 1px;
-  }
-
-  .pdf-stat-label {
-    font-size: 8px;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    margin-top: 4px;
-    font-weight: 600;
-  }
-
-  /* Savings Banner */
   .pdf-savings-banner {
     text-align: center;
     padding: 12px;
@@ -506,27 +610,10 @@ html.dark .glass {
     color: #111;
   }
 
-  .pdf-savings-label {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #333;
-  }
+  .pdf-savings-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #333; }
+  .pdf-savings-value { font-size: 22px; font-weight: 900; color: #111; margin: 4px 0 2px; }
+  .pdf-savings-note  { font-size: 7px; color: #555; }
 
-  .pdf-savings-value {
-    font-size: 22px;
-    font-weight: 900;
-    color: #111;
-    margin: 4px 0 2px;
-  }
-
-  .pdf-savings-note {
-    font-size: 7px;
-    color: #555;
-  }
-
-  /* Highlights Grid */
   .pdf-highlights-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -543,23 +630,10 @@ html.dark .glass {
     background: #fafafa;
   }
 
-  .pdf-highlight-item strong {
-    display: block;
-    font-size: 10px;
-    margin-bottom: 2px;
-  }
+  .pdf-highlight-item strong { display: block; font-size: 10px; margin-bottom: 2px; }
 
-  .pdf-terms {
-    font-size: 9px;
-    color: #555;
-    padding-left: 16px;
-    margin: 8px 0;
-    line-height: 1.6;
-  }
-
-  .pdf-terms li {
-    margin-bottom: 2px;
-  }
+  .pdf-terms { font-size: 9px; color: #555; padding-left: 16px; margin: 8px 0; line-height: 1.6; }
+  .pdf-terms li { margin-bottom: 2px; }
 
   .pdf-signature {
     display: flex;
@@ -568,24 +642,9 @@ html.dark .glass {
     padding-top: 16px;
   }
 
-  .pdf-sig-block {
-    text-align: center;
-    font-size: 10px;
-    color: #666;
-    width: 200px;
-  }
-
-  .pdf-sig-line {
-    border-bottom: 1px solid #333;
-    margin-bottom: 6px;
-    height: 40px;
-  }
-
-  .pdf-sig-name {
-    font-weight: 600;
-    color: #333;
-    margin-top: 2px;
-  }
+  .pdf-sig-block { text-align: center; font-size: 10px; color: #666; width: 200px; }
+  .pdf-sig-line  { border-bottom: 1px solid #333; margin-bottom: 6px; height: 40px; }
+  .pdf-sig-name  { font-weight: 600; color: #333; margin-top: 2px; }
 
   .pdf-footer {
     text-align: center;
@@ -597,4 +656,3 @@ html.dark .glass {
     line-height: 1.5;
   }
 }
-

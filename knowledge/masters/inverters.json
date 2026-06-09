@@ -1,0 +1,1162 @@
+[
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 2.18,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 12800,
+    "gst_pct": 1536,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "2kwp",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kwp",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 2.48,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 14425,
+    "gst_pct": 1731,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet1",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet1",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 1.1,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 12000,
+    "gst_pct": 1440,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "1kw admn",
+      "sourceRow": 4
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1kw admn",
+        "sourceRow": 4
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 3.1,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 13800,
+    "gst_pct": 1656,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3Kwp",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3Kwp",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 4.96,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 8500,
+    "gst_pct": 8160,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3KW MICRO INVERTER",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3KW MICRO INVERTER",
+        "sourceRow": 5
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5kw micro",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 3.1,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 14800,
+    "gst_pct": 1776,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "2-3upgrade",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 3.1,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 75000,
+    "gst_pct": 9000,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3kw hibrid",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3kw hibrid",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 3.48,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 15200,
+    "gst_pct": 1824,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "mat 3 kw",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "mat 3 kw",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 5.22,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 74000,
+    "gst_pct": 3700,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "UPGRADE 5 KW hybrid",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 4.96,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 20000,
+    "gst_pct": 2400,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "4KWp",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "4KWp",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 4.96,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 22500,
+    "gst_pct": 1125,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "5Kwp",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5Kwp",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 4.96,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 38000,
+    "gst_pct": 4560,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "5kw 3 PH",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5kw 3 PH",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 2.2,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 48000,
+    "gst_pct": 5760,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet6",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet6",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Hoymiles",
+    "model": "INVERTER",
+    "capacity_kw": 4.96,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 42000,
+    "gst_pct": 5040,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hoymiles5kw",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hoymiles5kw",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 5.58,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 24000,
+    "gst_pct": 2880,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "upgrade 5kw ",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 6.2,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 38000,
+    "gst_pct": 4560,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "6kwp",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kwp",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 5.58,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 46000,
+    "gst_pct": 5520,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "8kwp",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "8kwp",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 9.92,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 44000,
+    "gst_pct": 5280,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "10KWp",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "10KWp",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 15.5,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 190000,
+    "gst_pct": 22800,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "15kwHibrid",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "15kwHibrid",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 4.96,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 155000,
+    "gst_pct": 18600,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "10kw hybrid",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "10kw hybrid",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 21.5,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 14000,
+    "gst_pct": 1680,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "1.5kw",
+      "sourceRow": 3
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "1.5kw",
+        "sourceRow": 3
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 21,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 14000,
+    "gst_pct": 1680,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "2kw",
+      "sourceRow": 3
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2kw",
+        "sourceRow": 3
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 24.5,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 15000,
+    "gst_pct": 1800,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet3",
+      "sourceRow": 3
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet3",
+        "sourceRow": 3
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 6,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 43000,
+    "gst_pct": null,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "6kw",
+      "sourceRow": 3
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "6kw",
+        "sourceRow": 3
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 8.19,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 44152,
+    "gst_pct": 5298.24,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet9",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet9",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 5.58,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 74000,
+    "gst_pct": 8880,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hibrid 5kw",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 5kw",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 5.4,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 75661,
+    "gst_pct": 9079.32,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hibrid upgrade 5kw",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 25,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 16800,
+    "gst_pct": 2016,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hibrid 3 kw",
+      "sourceRow": 3
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 3 kw",
+        "sourceRow": 3
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": null,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 45000,
+    "gst_pct": null,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "5ke 3P TN",
+      "sourceRow": 3
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "5ke 3P TN",
+        "sourceRow": 3
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 4,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 50000,
+    "gst_pct": 6000,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet4",
+      "sourceRow": 3
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet4",
+        "sourceRow": 3
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 5,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 63000,
+    "gst_pct": 7560,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet5",
+      "sourceRow": 3
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet5",
+        "sourceRow": 3
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 29.76,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 72468,
+    "gst_pct": 8696.16,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "25kw",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "25kw",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 29.76,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 87000,
+    "gst_pct": 10440,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet11",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet11",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 15.5,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 61187,
+    "gst_pct": 7342.44,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "15kwp",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "15kwp",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 20.46,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 68000,
+    "gst_pct": 8160,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "20kwp",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kwp",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 20.46,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 65000,
+    "gst_pct": 7800,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet8",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet8",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 30.38,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 1000000,
+    "gst_pct": 120000,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "30KW Hybrid",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "30KW Hybrid",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": null,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 80850,
+    "gst_pct": 9702,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet7",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet7",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 3.54,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 15500,
+    "gst_pct": 1860,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3 to 3 upgradation",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3 to 3 upgradation",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Inkel",
+    "model": "INVERTER",
+    "capacity_kw": 0,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 223000,
+    "gst_pct": 0,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Inkel250bos",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Inkel250bos",
+        "sourceRow": 5
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "inkel aluva",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "STM",
+    "model": "INVERTER",
+    "capacity_kw": 99.2,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 122012,
+    "gst_pct": 29282.88,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "100kw STM",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "100kw STM",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Newen",
+    "model": "INVERTER",
+    "capacity_kw": 196.56,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 192000,
+    "gst_pct": 0,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "newen",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "newen",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 3.54,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 44000,
+    "gst_pct": 5280,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "mis working",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "mis working",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 20.06,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 260453,
+    "gst_pct": 31254.36,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "20KW HIBRID",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20KW HIBRID",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 25.42,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 350000,
+    "gst_pct": 42000,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "20kw30kwhr",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw30kwhr",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Solinteg",
+    "model": "INVERTER",
+    "capacity_kw": 20.3,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 737934,
+    "gst_pct": 88552.08,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "20kw hibrid solinteg",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw hibrid solinteg",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 196.56,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 192000,
+    "gst_pct": 0,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet10",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet10",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 20.3,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 267000,
+    "gst_pct": 32040,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet2",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet2",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "INVERTER",
+    "capacity_kw": 80.6,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 123000,
+    "gst_pct": 29520,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "80kw",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kw",
+        "sourceRow": 5
+      }
+    ]
+  },
+  {
+    "brand": "Enphase",
+    "model": "INVERTER",
+    "capacity_kw": 80.6,
+    "inverter_type": "on_grid",
+    "phases": 1,
+    "rate": 1340000,
+    "gst_pct": 160800,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "80kwenphase",
+      "sourceRow": 5
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "80kwenphase",
+        "sourceRow": 5
+      }
+    ]
+  }
+]

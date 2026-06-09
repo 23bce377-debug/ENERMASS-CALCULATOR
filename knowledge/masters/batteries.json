@@ -1,0 +1,168 @@
+[
+  {
+    "brand": "Unknown",
+    "model": "Battery",
+    "capacity_kwh": null,
+    "chemistry": "Unknown",
+    "dod_pct": null,
+    "rate": 74000,
+    "gst_pct": 8880,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "3kw hibrid",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "3kw hibrid",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "battery",
+    "capacity_kwh": null,
+    "chemistry": "Unknown",
+    "dod_pct": null,
+    "rate": 150000,
+    "gst_pct": 18000,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "15kwHibrid",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "15kwHibrid",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "battery",
+    "capacity_kwh": null,
+    "chemistry": "Unknown",
+    "dod_pct": null,
+    "rate": 148000,
+    "gst_pct": 17760,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "10kw hybrid",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "10kw hybrid",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "battery",
+    "capacity_kwh": null,
+    "chemistry": "Unknown",
+    "dod_pct": null,
+    "rate": 68000,
+    "gst_pct": 24480,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hibrid 5kw",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid 5kw",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "battery",
+    "capacity_kwh": null,
+    "chemistry": "Unknown",
+    "dod_pct": null,
+    "rate": 75000,
+    "gst_pct": 13500,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "hibrid upgrade 5kw",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 6
+      },
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20kw30kwhr",
+        "sourceRow": 6
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "BATTERY",
+    "capacity_kwh": null,
+    "chemistry": "Unknown",
+    "dod_pct": null,
+    "rate": 50000,
+    "gst_pct": 36000,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "20KW HIBRID",
+      "sourceRow": 7
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "20KW HIBRID",
+        "sourceRow": 7
+      }
+    ]
+  },
+  {
+    "brand": "Unknown",
+    "model": "battery",
+    "capacity_kwh": null,
+    "chemistry": "Unknown",
+    "dod_pct": null,
+    "rate": 85000,
+    "gst_pct": 20400,
+    "is_active": true,
+    "is_custom": false,
+    "source": {
+      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceSheet": "Sheet2",
+      "sourceRow": 6
+    },
+    "sources": [
+      {
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "Sheet2",
+        "sourceRow": 6
+      }
+    ]
+  }
+]

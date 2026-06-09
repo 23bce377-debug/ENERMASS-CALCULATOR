@@ -6,7 +6,13 @@
  */
 
 import { SYSTEMS, type SolarSystem, type BomItem } from '../data/bom';
-import { STATE_DATA, GRID_TARIFF_PER_KWH, type StateData } from '../data/masters';
+import { type StateData } from '../data/masters';
+import { calculateEnergyProjections } from './energy';
+import { calculateSubsidyAmount } from './subsidy';
+import { calculatePricingAndMargins, calculateDiscountAmount } from './margin';
+import { calculateFinancialProjections } from './financials';
+
+const GRID_TARIFF_PER_KWH = 8.0;
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -35,7 +41,10 @@ export interface CalcInput {
   state: string;
   projectType: ProjectType;
   targetMarginPct?: number;
+  targetMRPInclGST?: number;
+  targetMRPPerWatt?: number;
   gstOnOutput?: number;
+  gstOnOutputOverride?: number;
   overrides?: Record<number, RowOverride>;
   rateMaster?: RateMaster;
   disabledItemIndices?: Record<number, boolean>;
@@ -59,6 +68,46 @@ export interface CalcInput {
   panelCapacityKW?: number;
   inverterCapacityKW?: number;
   panelDegradationRate?: number;
+  stateData?: Record<string, StateData>;
+  slabs?: Array<{
+    start_kw: number;
+    end_kw: number | null;
+    rate_per_kw: number;
+    is_fixed_amount: boolean;
+    fixed_amount: number | null;
+  }>;
+  rpcSubsidyAmount?: number;
+
+  // Structure selections
+  structureId?: string;
+  structurePricingMode?: 'weight' | 'per_watt' | 'flat';
+  structureRateOverride?: number;
+  structureWastageOverride?: number;
+  structureFastenerOverride?: number;
+  structureBaseWeightOverride?: number;
+  structureWeightLookupKg?: number;
+  
+  structureCustomRawRate?: number;
+  structureCustomFabricationRate?: number;
+  structureCustomGalvanizingRate?: number;
+
+  // Meters selections
+  solarMeterId?: string;
+  solarMeterQty?: number;
+  netMeterId?: string;
+  netMeterQty?: number;
+
+  // Lightning Arrester selections
+  lightningArresterId?: string;
+  lightningArresterQty?: number;
+
+  // Master lists for database data
+  dbStructures?: any[];
+  dbWeightLookups?: any[];
+  dbMeters?: any[];
+  dbLAs?: any[];
+  dbStructureParts?: any[];
+  dbOrientationMultipliers?: Record<string, number>;
 }
 
 export interface LineResult {
@@ -117,13 +166,12 @@ export interface CalcResult {
   annualSavingsINR: number;
   paybackYears: number;
   lcoe: number;
+  lifetimeSavingsINR: number;
 }
 
-// ─── Equipment override keys (matched against BomItem.description) ──────────
-
-const PANEL_KEY = 'PANEL';
-const INVERTER_KEY = 'INVERTER';
-const BATTERY_KEY = 'BATTERY';
+// Equipment descriptions that are resolved from the DB model selection,
+// NOT via Rate Master or equipment overrides.
+// Now loaded from database - no hardcoded values.
 
 // ─── Rate Resolution ────────────────────────────────────────────────────────────
 
@@ -140,51 +188,43 @@ export function getMasterEntry(description: string, rateMaster?: RateMaster) {
   return matchKey ? rateMaster[matchKey] : undefined;
 }
 
+const EQUIPMENT_DESCRIPTIONS = new Set(['PANEL', 'INVERTER', 'BATTERY']);
+
 /**
  * Resolve the effective rate for a BOM item.
  *
  * Priority chain (first non-undefined wins):
  *   1. Row-level override  (overrides[index].ratePerUnit)
- *   2. Rate master          (rateMaster[description].rate, if active)
- *   3. Equipment override   (panelRateOverride / inverterRateOverride / batteryRateOverride)
- *   4. Item default         (item.ratePerUnit)
+ *   2. Rate master          (rateMaster[description].rate, if active) — NOT applied to PANEL/INVERTER/BATTERY
+ *   3. Item default         (item.ratePerUnit — already set from per-model DB rate)
  */
 export function resolveRate(
   item: BomItem,
   index: number,
   overrides?: Record<number, RowOverride>,
   rateMaster?: RateMaster,
-  equipmentOverrides?: {
+  _equipmentOverrides?: {
     panelRateOverride?: number;
     inverterRateOverride?: number;
     batteryRateOverride?: number;
   },
 ): number {
-  // 1. Row-level override
+  // 1. Row-level override (manual cell edit)
   const rowOverride = overrides?.[index];
   if (rowOverride?.ratePerUnit !== undefined) {
     return rowOverride.ratePerUnit;
   }
 
-  // 2. Rate master
-  const masterEntry = getMasterEntry(item.description, rateMaster);
-  if (masterEntry && masterEntry.active && masterEntry.rate > 0) {
-    return masterEntry.rate;
-  }
-
-  // 3. Equipment override
+  // 2. Rate master — only for non-equipment BOM items
   const descUpper = item.description.toUpperCase();
-  if (descUpper === PANEL_KEY && equipmentOverrides?.panelRateOverride !== undefined) {
-    return equipmentOverrides.panelRateOverride;
-  }
-  if (descUpper === INVERTER_KEY && equipmentOverrides?.inverterRateOverride !== undefined) {
-    return equipmentOverrides.inverterRateOverride;
-  }
-  if (descUpper === BATTERY_KEY && equipmentOverrides?.batteryRateOverride !== undefined) {
-    return equipmentOverrides.batteryRateOverride;
+  if (!EQUIPMENT_DESCRIPTIONS.has(descUpper)) {
+    const masterEntry = getMasterEntry(item.description, rateMaster);
+    if (masterEntry && masterEntry.active && masterEntry.rate > 0) {
+      return masterEntry.rate;
+    }
   }
 
-  // 4. Item default
+  // 3. Item default (already carries the per-model DB rate)
   return item.ratePerUnit;
 }
 
@@ -204,29 +244,55 @@ export function getSubsidyAmount(
   inverterCapacityKW: number | undefined,
   state: string,
   projectType: ProjectType,
+  stateDataInput?: Record<string, StateData>,
+  slabs?: Array<{
+    start_kw: number;
+    end_kw: number | null;
+    rate_per_kw: number;
+    is_fixed_amount: boolean;
+    fixed_amount: number | null;
+  }>,
 ): number {
   // Commercial projects never receive residential subsidy
   if (projectType === 'commercial') {
     return 0;
   }
 
-  const stateData = STATE_DATA[state];
-  if (!stateData || !stateData.subsidyRules || stateData.subsidyRules.length === 0) {
-    return 0;
-  }
-
-  // Subsidy eligible capacity is the MINIMUM of panel capacity or inverter capacity (if known)
   const eligibleCapacityKW = inverterCapacityKW !== undefined ? Math.min(panelCapacityKW, inverterCapacityKW) : panelCapacityKW;
 
-  // Tiered lookup — first rule where capacity falls within maxKW
-  for (const rule of stateData.subsidyRules) {
-    if (eligibleCapacityKW <= rule.maxKW) {
-      return rule.amount;
+  // Use dynamic database-driven slabs if available
+  if (slabs && slabs.length > 0) {
+    // Clamp to max 10.0 kW for PM Surya Ghar subsidy calculations
+    const capacityForSubsidy = Math.min(eligibleCapacityKW, 10.0);
+    let total = 0;
+    for (const slab of slabs) {
+      const start = Number(slab.start_kw);
+      if (capacityForSubsidy <= start) {
+        break;
+      }
+      if (slab.is_fixed_amount) {
+        total += Number(slab.fixed_amount ?? 0);
+      } else {
+        const end = slab.end_kw === null ? capacityForSubsidy : Math.min(capacityForSubsidy, Number(slab.end_kw));
+        const applicable = end - start;
+        total += applicable * Number(slab.rate_per_kw);
+      }
     }
+    return total;
   }
 
-  // No matching tier → no subsidy
-  return 0;
+  // Fallback to exact PM Surya Ghar piecewise linear formula:
+  // - First 2 kW: ₹30,000 per kW (₹300 per watt)
+  // - Next 1 kW (2 kW to 3 kW): ₹18,000 per kW (₹180 per watt)
+  // - Capped at ₹78,000 total (reached at 3 kW or above)
+  const capacityForSubsidy = Math.min(eligibleCapacityKW, 10.0);
+  const tier1Capacity = Math.min(capacityForSubsidy, 2.0);
+  const tier1Amount = tier1Capacity * 30000;
+
+  const tier2Capacity = Math.max(0.0, Math.min(capacityForSubsidy - 2.0, 1.0));
+  const tier2Amount = tier2Capacity * 18000;
+
+  return tier1Amount + tier2Amount;
 }
 
 // ─── Main Calculation Engine ────────────────────────────────────────────────────
@@ -244,7 +310,8 @@ export function calculateSystem(input: CalcInput): CalcResult {
   }
 
   // ── Step 2: Lookup state ──
-  const stateData = STATE_DATA[input.state];
+  const stateDataResolved = input.stateData ?? {};
+  const stateData = stateDataResolved[input.state];
   if (!stateData) {
     throw new Error(`State not found: "${input.state}"`);
   }
@@ -259,8 +326,210 @@ export function calculateSystem(input: CalcInput): CalcResult {
     batteryQtyOverride: input.batteryQtyOverride,
   };
 
+  const capacityKW = system.capacityKW || 0.001;
+  const capacityWatts = capacityKW * 1000;
+
+  // Clone system items to resolve them
+  let resolvedItems = system.items.map(item => ({ ...item }));
+
+  // Helper to find or update/create an item in BOM
+  const upsertItem = (description: string, itemData: Partial<import('../data/bom').BomItem>, forceAdd = false) => {
+    const idx = resolvedItems.findIndex(item => item.description.toUpperCase() === description.toUpperCase());
+    if (idx >= 0) {
+      resolvedItems[idx] = { ...resolvedItems[idx], ...itemData } as import('../data/bom').BomItem;
+    } else if (forceAdd || (itemData.qty !== undefined && itemData.qty > 0)) {
+      resolvedItems.push({
+        description,
+        qty: itemData.qty ?? 0,
+        ratePerUnit: itemData.ratePerUnit ?? 0,
+        gstPct: (itemData.gstPct ?? 0.18) as any,
+        unit: itemData.unit ?? 'Nos',
+        remarks: itemData.remarks ?? '',
+      });
+    }
+  };
+
+  // 1. Resolve STRUCTURE
+  let structureGst = 0.18;
+  let structureQty = 0;
+  let structureRate = 0;
+  let structureUnit = 'Set';
+  let structureRemarks = '';
+  if (input.structureId) {
+    if (input.structureId === 'custom') {
+      const mode = input.structurePricingMode ?? 'weight';
+      if (mode === 'weight') {
+        const lookupWeight = input.structureWeightLookupKg ?? 0;
+        const baseWeight = input.structureBaseWeightOverride ?? 0;
+        const wastage = input.structureWastageOverride ?? 0.05;
+        const fasteners = input.structureFastenerOverride ?? 0.02;
+        const rawRate = input.structureCustomRawRate ?? 0;
+        const fabRate = input.structureCustomFabricationRate ?? 0;
+        const galvRate = input.structureCustomGalvanizingRate ?? 0;
+        
+        const ratePerKg = rawRate + fabRate + galvRate;
+        
+        // Decompose into individual parts from database
+        const totalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
+        const weightMultiplier = lookupWeight > 0 ? totalWeight / lookupWeight : 1;
+
+        // Parts list from database (eq_bom_items with section = 'mounting_structure')
+        const structureParts = (input.dbStructureParts ?? []).filter((p: any) => 
+          p.section === 'mounting_structure' && p.is_active
+        );
+        
+        structureParts.forEach((part: any) => {
+          const qtyMultiplier = Number(part.weight_multiplier ?? 1);
+          upsertItem(part.description, {
+            qty: qtyMultiplier * weightMultiplier,
+            ratePerUnit: Number(part.rate ?? 0),
+            unit: part.unit ?? 'Nos',
+            remarks: part.remarks ?? '',
+            gstPct: Number(part.gst_pct ?? 0.18) as any,
+          });
+        });
+      } else if (mode === 'per_watt') {
+        upsertItem('STRUCTURE', {
+          qty: 1,
+          ratePerUnit: capacityWatts * (input.structureRateOverride ?? 0),
+          unit: 'Set',
+          remarks: 'Custom Structure (Per watt)',
+          gstPct: 0.18 as any,
+        });
+      } else {
+        upsertItem('STRUCTURE', {
+          qty: 1,
+          ratePerUnit: input.structureRateOverride ?? 0,
+          unit: 'Set',
+          remarks: 'Custom Structure (Flat rate)',
+          gstPct: 0.18 as any,
+        });
+      }
+    } else {
+      const struct = (input.dbStructures ?? []).find(s => s.id === input.structureId);
+      if (struct) {
+        structureGst = Number(struct.gst_pct);
+        const mode = input.structurePricingMode ?? (struct.flat_rate !== null ? 'flat' : 'weight');
+        if (mode === 'weight') {
+          // Weight lookup
+          let lookup = (input.dbWeightLookups ?? []).find(l => 
+            l.structure_id === struct.id && 
+            capacityKW >= Number(l.capacity_kw_min) && 
+            capacityKW <= Number(l.capacity_kw_max)
+          );
+          if (!lookup && (input.dbWeightLookups ?? []).length > 0) {
+            // Find closest by capacity
+            const sameStructLookups = (input.dbWeightLookups ?? []).filter(l => l.structure_id === struct.id);
+            if (sameStructLookups.length > 0) {
+              lookup = sameStructLookups.reduce((prev, curr) => 
+                Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
+              );
+            }
+          }
+          
+          const lookupWeight = lookup ? Number(lookup.total_weight_kg) : 0;
+          const baseWeight = Number(struct.base_weight_kg ?? 0);
+          const wastage = Number(struct.wastage_pct ?? 0.05);
+          const fasteners = Number(struct.fastener_weight_pct ?? 0.02);
+          const ratePerKg = Number(struct.rate_per_kg ?? (Number(struct.raw_material_rate ?? 0) + Number(struct.fabrication_rate ?? 0) + Number(struct.galvanizing_rate ?? 0)));
+          
+          const finalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
+          
+          structureQty = finalWeight;
+          structureRate = ratePerKg;
+          structureUnit = 'kg';
+          structureRemarks = `${struct.name} (${lookupWeight}kg lookup)`;
+        } else if (mode === 'per_watt') {
+          structureQty = 1;
+          structureRate = capacityWatts * Number(struct.per_watt_rate ?? 0);
+          structureUnit = 'Set';
+          structureRemarks = `${struct.name} (Per watt)`;
+        } else {
+          structureQty = 1;
+          structureRate = Number(struct.flat_rate ?? 0);
+          structureUnit = 'Set';
+          structureRemarks = `${struct.name} (Flat rate)`;
+        }
+        
+        upsertItem('STRUCTURE', {
+          qty: structureQty,
+          ratePerUnit: structureRate,
+          unit: structureUnit,
+          remarks: structureRemarks,
+          gstPct: structureGst as any,
+        });
+      }
+    }
+  }
+
+  // 2. Resolve SOLAR METER
+  if (input.solarMeterId === 'custom') {
+    upsertItem('SOLAR METER', {
+      qty: input.solarMeterQty ?? 1,
+      ratePerUnit: 0,
+      gstPct: 0.18 as any,
+      unit: 'Nos',
+      remarks: 'Custom Solar Meter',
+    }, true);
+  } else {
+    const solarMeterMeter = (input.dbMeters ?? []).find(m => m.id === input.solarMeterId);
+    upsertItem('SOLAR METER', {
+      qty: solarMeterMeter ? (input.solarMeterQty ?? 1) : 0,
+      ratePerUnit: solarMeterMeter ? Number(solarMeterMeter.rate) : 0,
+      gstPct: solarMeterMeter ? (Number(solarMeterMeter.gst_pct) as any) : 0.18,
+      unit: 'Nos',
+      remarks: solarMeterMeter ? (solarMeterMeter.description ?? `${solarMeterMeter.brand} ${solarMeterMeter.model}`) : 'Solar Meter (unselected)',
+    }, true);
+  }
+
+  // 3. Resolve NET METER
+  if (input.netMeterId === 'custom') {
+    upsertItem('NET METER', {
+      qty: input.netMeterQty ?? 1,
+      ratePerUnit: 0,
+      gstPct: 0.18 as any,
+      unit: 'Nos',
+      remarks: 'Custom Net Meter',
+    }, true);
+  } else {
+    const netMeterMeter = (input.dbMeters ?? []).find(m => m.id === input.netMeterId);
+    upsertItem('NET METER', {
+      qty: netMeterMeter ? (input.netMeterQty ?? 1) : 0,
+      ratePerUnit: netMeterMeter ? Number(netMeterMeter.rate) : 0,
+      gstPct: netMeterMeter ? (Number(netMeterMeter.gst_pct) as any) : 0.18,
+      unit: 'Nos',
+      remarks: netMeterMeter ? (netMeterMeter.description ?? `${netMeterMeter.brand} ${netMeterMeter.model}`) : 'Net Meter (unselected)',
+    }, true);
+  }
+
+  // 4. Resolve LIGHTNING ARRESTER
+  if (input.lightningArresterId) {
+    if (input.lightningArresterId === 'custom') {
+      const laKey = resolvedItems.some(item => item.description.toUpperCase() === 'L/A') ? 'L/A' : 'LIGHTNING ARRESTER';
+      upsertItem(laKey, {
+        qty: input.lightningArresterQty ?? 1,
+        ratePerUnit: 0,
+        gstPct: 0.18 as any,
+        unit: 'Nos',
+        remarks: 'Custom Lightning Arrester',
+      });
+    } else {
+      const la = (input.dbLAs ?? []).find(l => l.id === input.lightningArresterId);
+      if (la) {
+        const laKey = resolvedItems.some(item => item.description.toUpperCase() === 'L/A') ? 'L/A' : 'LIGHTNING ARRESTER';
+        upsertItem(laKey, {
+          qty: input.lightningArresterQty ?? 1,
+          ratePerUnit: Number(la.rate),
+          gstPct: Number(la.gst_pct) as any,
+          unit: 'Nos',
+          remarks: la.description ?? la.model,
+        });
+      }
+    }
+  }
+
   // ── Step 3-4: Process each BOM item ──
-  const allItems = [...system.items, ...(input.customItems || [])];
+  const allItems = [...resolvedItems, ...(input.customItems || [])];
   const lines: LineResult[] = allItems.map((item, index) => {
     const rowOverride = input.overrides?.[index];
     const isDisabled = input.disabledItemIndices?.[index] === true;
@@ -269,13 +538,13 @@ export function calculateSystem(input: CalcInput): CalcResult {
     const effectiveQty =
       rowOverride?.qty !== undefined
         ? rowOverride.qty
-        : item.description.toUpperCase() === PANEL_KEY &&
+        : item.description.toUpperCase() === 'PANEL' &&
           equipmentOverrides.panelQtyOverride !== undefined
         ? equipmentOverrides.panelQtyOverride
-        : item.description.toUpperCase() === INVERTER_KEY &&
+        : item.description.toUpperCase() === 'INVERTER' &&
           equipmentOverrides.inverterQtyOverride !== undefined
         ? equipmentOverrides.inverterQtyOverride
-        : item.description.toUpperCase() === BATTERY_KEY &&
+        : item.description.toUpperCase() === 'BATTERY' &&
           equipmentOverrides.batteryQtyOverride !== undefined
         ? equipmentOverrides.batteryQtyOverride
         : item.description.toUpperCase() === 'DC CABLE' && input.dcCableLengthM !== undefined
@@ -306,12 +575,12 @@ export function calculateSystem(input: CalcInput): CalcResult {
       rowOverride?.qty !== undefined ||
       rowOverride?.ratePerUnit !== undefined ||
       rowOverride?.gstPct !== undefined ||
-      (item.description.toUpperCase() === PANEL_KEY &&
+      (item.description.toUpperCase() === 'PANEL' &&
         (input.panelRateOverride !== undefined ||
           input.panelQtyOverride !== undefined)) ||
-      (item.description.toUpperCase() === INVERTER_KEY &&
+      (item.description.toUpperCase() === 'INVERTER' &&
         (input.inverterRateOverride !== undefined || input.inverterQtyOverride !== undefined)) ||
-      (item.description.toUpperCase() === BATTERY_KEY &&
+      (item.description.toUpperCase() === 'BATTERY' &&
         (input.batteryRateOverride !== undefined || input.batteryQtyOverride !== undefined)) ||
       (item.description.toUpperCase() === 'DC CABLE' && input.dcCableLengthM !== undefined) ||
       (item.description.toUpperCase() === 'AC CABLE' && input.acCableLengthM !== undefined) ||
@@ -344,29 +613,23 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const totalInputGST = lines.reduce((sum, l) => sum + l.lineGST, 0);
   const totalIncGST = costBeforeGST + totalInputGST;
 
-  // ── Step 6: Resolve margin ──
-  let effectiveMarginPct =
-    input.targetMarginPct !== undefined
-      ? input.targetMarginPct
-      : system.targetMarginPct;
-
-  // Margin is treated as markup on cost (0% to 100%+ allowed by UI/config).
-  // Clamp only to non-negative values to avoid pathological negative pricing.
-  effectiveMarginPct = Math.max(effectiveMarginPct, 0);
-
   // ── Step 7: Resolve output GST ──
   const gstOutputRate =
-    input.gstOnOutput !== undefined
-      ? input.gstOnOutput
-      : stateData.gstOnOutput;
+    input.gstOnOutputOverride !== undefined
+      ? input.gstOnOutputOverride
+      : (input.gstOnOutput !== undefined ? input.gstOnOutput : stateData.gstOnOutput);
 
-  // ── Step 8: MRP excl GST — EXACT, no rounding ──
-  // markup model: MRP = Cost × (1 + marginPct)
-  const marginAmount = costBeforeGST * effectiveMarginPct;
-  const mrpExclGST = costBeforeGST + marginAmount;
-
-  // ── Step 9: MRP incl GST ──
-  const mrpInclGST = mrpExclGST * (1 + gstOutputRate);
+  // ── Step 8 & 6: Resolve MRP & Margin ──
+  const marginResults = calculatePricingAndMargins({
+    costBeforeGST,
+    targetMarginPct: input.targetMarginPct,
+    targetMRPInclGST: input.targetMRPInclGST,
+    targetMRPPerWatt: input.targetMRPPerWatt,
+    gstOutputRate,
+    capacityWatts,
+    defaultMarginPct: system.targetMarginPct
+  });
+  const { mrpInclGST, mrpExclGST, marginAmount, effectiveMarginPct } = marginResults;
 
   // ── Per-kW analysis ──
   const capKW = system.capacityKW || 0.001; // Avoid div by zero
@@ -374,25 +637,11 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const perKWinclGST = mrpInclGST / capKW;
 
   // ── Step 10: Discount ──
-  let discountAmount = 0;
-  const discountType = input.discountType ?? 'none';
-  const discountVal = Math.max(0, input.discountVal ?? 0);
-
-  switch (discountType) {
-    case 'flat':
-      discountAmount = discountVal;
-      break;
-    case 'percent':
-      discountAmount = mrpInclGST * (discountVal / 100);
-      break;
-    case 'none':
-    default:
-      discountAmount = 0;
-      break;
-  }
-  
-  // Ensure discount is never negative and does not exceed the total price
-  discountAmount = Math.max(0, Math.min(discountAmount, mrpInclGST));
+  const discountAmount = calculateDiscountAmount({
+    mrpInclGST,
+    discountType: input.discountType ?? 'none',
+    discountVal: input.discountVal ?? 0
+  });
 
   // ── Step 11: Additional costs ──
   const additionalCostTotal = (input.additionalCosts ?? []).reduce(
@@ -404,48 +653,50 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const finalCustomerPrice = Math.max(0, mrpInclGST - discountAmount + additionalCostTotal);
 
   // ── Step 13: Subsidy ──
-  const subsidyAmount = getSubsidyAmount(
-    input.panelCapacityKW ?? system.capacityKW,
-    input.inverterCapacityKW,
-    input.state,
-    input.projectType,
-  );
+  const subsidyAmount = input.rpcSubsidyAmount !== undefined
+    ? input.rpcSubsidyAmount
+    : calculateSubsidyAmount({
+        panelCapacityKW: input.panelCapacityKW ?? system.capacityKW,
+        inverterCapacityKW: input.inverterCapacityKW,
+        projectType: input.projectType,
+        slabs: input.slabs,
+        maxCapacityKW: 10.0
+      });
 
   // ── Step 14: Beneficiary contribution ──
   const beneficiaryContribution = Math.max(0, finalCustomerPrice - subsidyAmount);
 
   // ── Step 15: Energy generation ──
-  let orientationMultiplier = 1.0;
-  if (input.orientation === 'East/West') orientationMultiplier = 0.85;
-  if (input.orientation === 'Flat') orientationMultiplier = 0.90;
-
-  const effectivePanelKW = input.panelCapacityKW ?? system.capacityKW;
-  const effectiveInverterKW = input.inverterCapacityKW ?? effectivePanelKW;
-  const maxHourlyGeneration = Math.min(effectivePanelKW, effectiveInverterKW); // Inverter clipping cap
-
-  const dailyGenerationKWh = maxHourlyGeneration * stateData.sunHoursPerDay * stateData.performanceRatio * orientationMultiplier;
-  const monthlyGenerationKWh = dailyGenerationKWh * 30;
-  const annualGenerationKWh = dailyGenerationKWh * 365;
+  const energyProjections = calculateEnergyProjections({
+    panelCapacityKW: input.panelCapacityKW ?? system.capacityKW,
+    inverterCapacityKW: input.inverterCapacityKW,
+    sunHoursPerDay: stateData.sunHoursPerDay,
+    performanceRatio: stateData.performanceRatio,
+    orientation: input.orientation,
+    orientationMultipliers: input.dbOrientationMultipliers
+  });
+  const { dailyGenerationKWh, monthlyGenerationKWh, annualGenerationKWh } = energyProjections;
 
   // ── Step 16: Savings ──
+  const stateGridTariff = (stateData as any).gridTariffInr ?? 8.0;
   const effectiveGridTariffPerKWh =
     input.gridTariffPerKWh !== undefined && input.gridTariffPerKWh >= 0
       ? input.gridTariffPerKWh
-      : GRID_TARIFF_PER_KWH;
+      : stateGridTariff;
 
   const monthlySavingsINR = monthlyGenerationKWh * effectiveGridTariffPerKWh;
   const annualSavingsINR = annualGenerationKWh * effectiveGridTariffPerKWh;
 
   // ── Step 17: Payback & LCOE ──
-  const paybackYears =
-    annualSavingsINR > 0 ? beneficiaryContribution / annualSavingsINR : Infinity;
-
-  const degradationRate = input.panelDegradationRate ?? 0.005;
-  let lifetimeGenerationKWh = 0;
-  for (let year = 0; year < 25; year++) {
-    lifetimeGenerationKWh += annualGenerationKWh * Math.pow(1 - degradationRate, year);
-  }
-  const lcoe = lifetimeGenerationKWh > 0 ? beneficiaryContribution / lifetimeGenerationKWh : 0;
+  const financialProjections = calculateFinancialProjections({
+    beneficiaryContribution,
+    annualGenerationKWh,
+    annualSavingsINR,
+    panelDegradationRate: input.panelDegradationRate,
+    electricityInflationRate: input.electricityInflationRate,
+    systemLifetimeYears: 25
+  });
+  const { paybackYears, lcoe, lifetimeSavingsINR } = financialProjections;
 
   // ── Return complete result ──
   return {
@@ -479,6 +730,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
     annualSavingsINR,
     paybackYears,
     lcoe,
+    lifetimeSavingsINR,
   };
 }
 

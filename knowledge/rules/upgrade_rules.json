@@ -1,0 +1,3410 @@
+[
+  {
+    "ruleName": "upgrade_2_3upgrade",
+    "systemId": "2_3upgrade_upgrade_3.1",
+    "formula": "upgrade_price = base_price + delta_components + labor",
+    "inputs": [
+      "base_price",
+      "delta_components",
+      "labor"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "2-3upgrade",
+    "items": [
+      {
+        "itemType": "panel",
+        "category": "panel",
+        "description": "PANEL",
+        "quantity": 5,
+        "ratePerUnit": 9300,
+        "totalPrice": 46500,
+        "gstPct": 0.12,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E4*12%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 4,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 5580,
+        "gstRate": 0.12,
+        "effectiveGstRateOnTotal": 0.12,
+        "gstFormula": "E4*12%",
+        "gstFormulaInputs": [
+          "E4"
+        ],
+        "sourceGstCell": "F4",
+        "totalPriceFormula": "D4*C4",
+        "totalPriceFormulaInputs": [
+          "D4",
+          "C4"
+        ],
+        "sourceTotalCell": "E4"
+      },
+      {
+        "itemType": "inverter",
+        "category": "inverter",
+        "description": "INVERTER",
+        "quantity": 1,
+        "ratePerUnit": 14800,
+        "totalPrice": 14800,
+        "gstPct": 0.12,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E5*12%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 5,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 1776,
+        "gstRate": 0.12,
+        "effectiveGstRateOnTotal": 0.12,
+        "gstFormula": "E5*12%",
+        "gstFormulaInputs": [
+          "E5"
+        ],
+        "sourceGstCell": "F5",
+        "totalPriceFormula": "D5*C5",
+        "totalPriceFormulaInputs": [
+          "D5",
+          "C5"
+        ],
+        "sourceTotalCell": "E5"
+      },
+      {
+        "itemType": "meter",
+        "category": "meter",
+        "description": "SOLAR METER",
+        "quantity": 0,
+        "ratePerUnit": 1250,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E6*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 6,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E6*18%",
+        "gstFormulaInputs": [
+          "E6"
+        ],
+        "sourceGstCell": "F6",
+        "totalPriceFormula": "D6*C6",
+        "totalPriceFormulaInputs": [
+          "D6",
+          "C6"
+        ],
+        "sourceTotalCell": "E6"
+      },
+      {
+        "itemType": "structure",
+        "category": "structure",
+        "description": "STRUCTURE",
+        "quantity": 1,
+        "ratePerUnit": 9000,
+        "totalPrice": 9000,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E7*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 7,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 1620,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E7*18%",
+        "gstFormulaInputs": [
+          "E7"
+        ],
+        "sourceGstCell": "F7",
+        "totalPriceFormula": "D7*C7",
+        "totalPriceFormulaInputs": [
+          "D7",
+          "C7"
+        ],
+        "sourceTotalCell": "E7"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ACCESSORIES",
+        "quantity": 1,
+        "ratePerUnit": null,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": null,
+        "pricingFormula": "gst_amount = E8*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 8,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E8*18%",
+        "gstFormulaInputs": [
+          "E8"
+        ],
+        "sourceGstCell": "F8",
+        "totalPriceFormula": "D8*C8",
+        "totalPriceFormulaInputs": [
+          "D8",
+          "C8"
+        ],
+        "sourceTotalCell": "E8"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "WIRING PIPE",
+        "quantity": 0,
+        "ratePerUnit": 65,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E9*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 9,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E9*18%",
+        "gstFormulaInputs": [
+          "E9"
+        ],
+        "sourceGstCell": "F9",
+        "totalPriceFormula": "D9*C9",
+        "totalPriceFormulaInputs": [
+          "D9",
+          "C9"
+        ],
+        "sourceTotalCell": "E9"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "WIRING ACCESSORIES",
+        "quantity": 1,
+        "ratePerUnit": 1184,
+        "totalPrice": 1184,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E10*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 10,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 213.12,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E10*18%",
+        "gstFormulaInputs": [
+          "E10"
+        ],
+        "sourceGstCell": "F10",
+        "totalPriceFormula": "D10*C10",
+        "totalPriceFormulaInputs": [
+          "D10",
+          "C10"
+        ],
+        "sourceTotalCell": "E10"
+      },
+      {
+        "itemType": "lightning_arrester",
+        "category": "lightning_arrester",
+        "description": "L/A",
+        "quantity": 0,
+        "ratePerUnit": 550,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E11*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 11,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E11*18%",
+        "gstFormulaInputs": [
+          "E11"
+        ],
+        "sourceGstCell": "F11",
+        "totalPriceFormula": "D11*C11",
+        "totalPriceFormulaInputs": [
+          "D11",
+          "C11"
+        ],
+        "sourceTotalCell": "E11"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH ROD",
+        "quantity": 0,
+        "ratePerUnit": 250,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E12*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 12,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E12*18%",
+        "gstFormulaInputs": [
+          "E12"
+        ],
+        "sourceGstCell": "F12",
+        "totalPriceFormula": "D12*C12",
+        "totalPriceFormulaInputs": [
+          "D12",
+          "C12"
+        ],
+        "sourceTotalCell": "E12"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "GI STRIP",
+        "quantity": 0,
+        "ratePerUnit": 300,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E13*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 13,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E13*18%",
+        "gstFormulaInputs": [
+          "E13"
+        ],
+        "sourceGstCell": "F13",
+        "totalPriceFormula": "D13*C13",
+        "totalPriceFormulaInputs": [
+          "D13",
+          "C13"
+        ],
+        "sourceTotalCell": "E13"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH COMPOUND",
+        "quantity": 0,
+        "ratePerUnit": 165,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E14*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 14,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E14*18%",
+        "gstFormulaInputs": [
+          "E14"
+        ],
+        "sourceGstCell": "F14",
+        "totalPriceFormula": "D14*C14",
+        "totalPriceFormulaInputs": [
+          "D14",
+          "C14"
+        ],
+        "sourceTotalCell": "E14"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "CHAMBER BOX",
+        "quantity": 0,
+        "ratePerUnit": 225,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E15*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 15,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E15*18%",
+        "gstFormulaInputs": [
+          "E15"
+        ],
+        "sourceGstCell": "F15",
+        "totalPriceFormula": "D15*C15",
+        "totalPriceFormulaInputs": [
+          "D15",
+          "C15"
+        ],
+        "sourceTotalCell": "E15"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH BENCH",
+        "quantity": 0,
+        "ratePerUnit": 175,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E16*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 16,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E16*18%",
+        "gstFormulaInputs": [
+          "E16"
+        ],
+        "sourceGstCell": "F16",
+        "totalPriceFormula": "D16*C16",
+        "totalPriceFormulaInputs": [
+          "D16",
+          "C16"
+        ],
+        "sourceTotalCell": "E16"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ACDB",
+        "quantity": 0,
+        "ratePerUnit": 1400,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E17*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 17,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E17*18%",
+        "gstFormulaInputs": [
+          "E17"
+        ],
+        "sourceGstCell": "F17",
+        "totalPriceFormula": "D17*C17",
+        "totalPriceFormulaInputs": [
+          "D17",
+          "C17"
+        ],
+        "sourceTotalCell": "E17"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "DCDB",
+        "quantity": 0,
+        "ratePerUnit": 1750,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E18*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 18,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E18*18%",
+        "gstFormulaInputs": [
+          "E18"
+        ],
+        "sourceGstCell": "F18",
+        "totalPriceFormula": "D18*C18",
+        "totalPriceFormulaInputs": [
+          "D18",
+          "C18"
+        ],
+        "sourceTotalCell": "E18"
+      },
+      {
+        "itemType": "meter",
+        "category": "meter",
+        "description": "METER BOX",
+        "quantity": 0,
+        "ratePerUnit": 530,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E19*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 19,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E19*18%",
+        "gstFormulaInputs": [
+          "E19"
+        ],
+        "sourceGstCell": "F19",
+        "totalPriceFormula": "D19*C19",
+        "totalPriceFormulaInputs": [
+          "D19",
+          "C19"
+        ],
+        "sourceTotalCell": "E19"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "DC CABLE",
+        "quantity": 0,
+        "ratePerUnit": 39,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E20*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 20,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E20*18%",
+        "gstFormulaInputs": [
+          "E20"
+        ],
+        "sourceGstCell": "F20",
+        "totalPriceFormula": "D20*C20",
+        "totalPriceFormulaInputs": [
+          "D20",
+          "C20"
+        ],
+        "sourceTotalCell": "E20"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "AC CABLE",
+        "quantity": 0,
+        "ratePerUnit": 43,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E21*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 21,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E21*18%",
+        "gstFormulaInputs": [
+          "E21"
+        ],
+        "sourceGstCell": "F21",
+        "totalPriceFormula": "D21*C21",
+        "totalPriceFormulaInputs": [
+          "D21",
+          "C21"
+        ],
+        "sourceTotalCell": "E21"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ALUM CABLE 50 SQMM",
+        "quantity": 0,
+        "ratePerUnit": 58,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E22*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 22,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E22*18%",
+        "gstFormulaInputs": [
+          "E22"
+        ],
+        "sourceGstCell": "F22",
+        "totalPriceFormula": "D22*C22",
+        "totalPriceFormulaInputs": [
+          "D22",
+          "C22"
+        ],
+        "sourceTotalCell": "E22"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ALUM CABLE 10 SQMM",
+        "quantity": 0,
+        "ratePerUnit": 16.5,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E23*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 23,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E23*18%",
+        "gstFormulaInputs": [
+          "E23"
+        ],
+        "sourceGstCell": "F23",
+        "totalPriceFormula": "D23*C23",
+        "totalPriceFormulaInputs": [
+          "D23",
+          "C23"
+        ],
+        "sourceTotalCell": "E23"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "COPPER",
+        "quantity": 0,
+        "ratePerUnit": 1150,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E24*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 24,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E24*18%",
+        "gstFormulaInputs": [
+          "E24"
+        ],
+        "sourceGstCell": "F24",
+        "totalPriceFormula": "D24*C24",
+        "totalPriceFormulaInputs": [
+          "D24",
+          "C24"
+        ],
+        "sourceTotalCell": "E24"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "MC4(ADDITIONAL)",
+        "quantity": 1,
+        "ratePerUnit": 22,
+        "totalPrice": 22,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E25*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 25,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 3.96,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E25*18%",
+        "gstFormulaInputs": [
+          "E25"
+        ],
+        "sourceGstCell": "F25",
+        "totalPriceFormula": "D25*C25",
+        "totalPriceFormulaInputs": [
+          "D25",
+          "C25"
+        ],
+        "sourceTotalCell": "E25"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ISOLATOR",
+        "quantity": 1,
+        "ratePerUnit": 250,
+        "totalPrice": 250,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E26*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 26,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 45,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E26*18%",
+        "gstFormulaInputs": [
+          "E26"
+        ],
+        "sourceGstCell": "F26",
+        "totalPriceFormula": "D26*C26",
+        "totalPriceFormulaInputs": [
+          "D26",
+          "C26"
+        ],
+        "sourceTotalCell": "E26"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "TRANSPORTATION",
+        "quantity": 3,
+        "ratePerUnit": 750,
+        "totalPrice": 2250,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E27*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 27,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 405,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E27*18%",
+        "gstFormulaInputs": [
+          "E27"
+        ],
+        "sourceGstCell": "F27",
+        "totalPriceFormula": "D27*C27",
+        "totalPriceFormulaInputs": [
+          "D27",
+          "C27"
+        ],
+        "sourceTotalCell": "E27"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "COMMISSION",
+        "quantity": 1,
+        "ratePerUnit": 3500,
+        "totalPrice": 3500,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E28*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 28,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 630,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E28*18%",
+        "gstFormulaInputs": [
+          "E28"
+        ],
+        "sourceGstCell": "F28",
+        "totalPriceFormula": "D28*C28",
+        "totalPriceFormulaInputs": [
+          "D28",
+          "C28"
+        ],
+        "sourceTotalCell": "E28"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "SITE VISIT",
+        "quantity": 1,
+        "ratePerUnit": 1500,
+        "totalPrice": 1500,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E29*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 29,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 270,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E29*18%",
+        "gstFormulaInputs": [
+          "E29"
+        ],
+        "sourceGstCell": "F29",
+        "totalPriceFormula": "D29*C29",
+        "totalPriceFormulaInputs": [
+          "D29",
+          "C29"
+        ],
+        "sourceTotalCell": "E29"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "INSTALLATION",
+        "quantity": 3,
+        "ratePerUnit": 3000,
+        "totalPrice": 9000,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E30*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 30,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 1620,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E30*18%",
+        "gstFormulaInputs": [
+          "E30"
+        ],
+        "sourceGstCell": "F30",
+        "totalPriceFormula": "D30*C30",
+        "totalPriceFormulaInputs": [
+          "D30",
+          "C30"
+        ],
+        "sourceTotalCell": "E30"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "COST UPTO INSTALLATION",
+        "quantity": null,
+        "ratePerUnit": null,
+        "totalPrice": 88006,
+        "gstPct": 0.138207395,
+        "formula": null,
+        "pricingFormula": "gst_amount = SUM(F4:F30)",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "2-3upgrade",
+        "sourceRow": 31,
+        "systemType": "upgrade",
+        "capacityKW": 3.1,
+        "gstAmount": 12163.08,
+        "gstRate": 0.138207395,
+        "effectiveGstRateOnTotal": 0.138207395,
+        "gstFormula": "SUM(F4:F30)",
+        "gstFormulaInputs": [
+          "F4",
+          "F30"
+        ],
+        "sourceGstCell": "F31",
+        "totalPriceFormula": "SUM(E4:E30)",
+        "totalPriceFormulaInputs": [
+          "E4",
+          "E30"
+        ],
+        "sourceTotalCell": "E31"
+      }
+    ]
+  },
+  {
+    "ruleName": "upgrade_upgrade_5_kw_hybrid",
+    "systemId": "upgrade_5_kw_hybrid_hybrid_5.22",
+    "formula": "upgrade_price = base_price + delta_components + labor",
+    "inputs": [
+      "base_price",
+      "delta_components",
+      "labor"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "UPGRADE 5 KW hybrid",
+    "items": [
+      {
+        "itemType": "panel",
+        "category": "panel",
+        "description": "PANEL",
+        "quantity": 9,
+        "ratePerUnit": 13340,
+        "totalPrice": 120060,
+        "gstPct": 0.05,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E4*5%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 4,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 6003,
+        "gstRate": 0.05,
+        "effectiveGstRateOnTotal": 0.05,
+        "gstFormula": "E4*5%",
+        "gstFormulaInputs": [
+          "E4"
+        ],
+        "sourceGstCell": "F4",
+        "totalPriceFormula": "D4*C4",
+        "totalPriceFormulaInputs": [
+          "D4",
+          "C4"
+        ],
+        "sourceTotalCell": "E4"
+      },
+      {
+        "itemType": "inverter",
+        "category": "inverter",
+        "description": "INVERTER",
+        "quantity": 1,
+        "ratePerUnit": 74000,
+        "totalPrice": 74000,
+        "gstPct": 0.05,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E5*5%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 5,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 3700,
+        "gstRate": 0.05,
+        "effectiveGstRateOnTotal": 0.05,
+        "gstFormula": "E5*5%",
+        "gstFormulaInputs": [
+          "E5"
+        ],
+        "sourceGstCell": "F5",
+        "totalPriceFormula": "D5*C5",
+        "totalPriceFormulaInputs": [
+          "D5",
+          "C5"
+        ],
+        "sourceTotalCell": "E5"
+      },
+      {
+        "itemType": "meter",
+        "category": "meter",
+        "description": "SOLAR METER",
+        "quantity": 1,
+        "ratePerUnit": 1350,
+        "totalPrice": 1350,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E6*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 6,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 243,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E6*18%",
+        "gstFormulaInputs": [
+          "E6"
+        ],
+        "sourceGstCell": "F6",
+        "totalPriceFormula": "D6*C6",
+        "totalPriceFormulaInputs": [
+          "D6",
+          "C6"
+        ],
+        "sourceTotalCell": "E6"
+      },
+      {
+        "itemType": "structure",
+        "category": "structure",
+        "description": "STRUCTURE",
+        "quantity": 0.5,
+        "ratePerUnit": 13200,
+        "totalPrice": 6600,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E7*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 7,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 1188,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E7*18%",
+        "gstFormulaInputs": [
+          "E7"
+        ],
+        "sourceGstCell": "F7",
+        "totalPriceFormula": "D7*C7",
+        "totalPriceFormulaInputs": [
+          "D7",
+          "C7"
+        ],
+        "sourceTotalCell": "E7"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ACCESSORIES",
+        "quantity": 1,
+        "ratePerUnit": 88000,
+        "totalPrice": 88000,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E8*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 8,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 15840,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E8*18%",
+        "gstFormulaInputs": [
+          "E8"
+        ],
+        "sourceGstCell": "F8",
+        "totalPriceFormula": "D8*C8",
+        "totalPriceFormulaInputs": [
+          "D8",
+          "C8"
+        ],
+        "sourceTotalCell": "E8"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "WIRING PIPE",
+        "quantity": 0,
+        "ratePerUnit": 65,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E9*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 9,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E9*18%",
+        "gstFormulaInputs": [
+          "E9"
+        ],
+        "sourceGstCell": "F9",
+        "totalPriceFormula": "D9*C9",
+        "totalPriceFormulaInputs": [
+          "D9",
+          "C9"
+        ],
+        "sourceTotalCell": "E9"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "WIRING ACCESSORIES",
+        "quantity": 0,
+        "ratePerUnit": 1184,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E10*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 10,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E10*18%",
+        "gstFormulaInputs": [
+          "E10"
+        ],
+        "sourceGstCell": "F10",
+        "totalPriceFormula": "D10*C10",
+        "totalPriceFormulaInputs": [
+          "D10",
+          "C10"
+        ],
+        "sourceTotalCell": "E10"
+      },
+      {
+        "itemType": "lightning_arrester",
+        "category": "lightning_arrester",
+        "description": "L/A",
+        "quantity": 0,
+        "ratePerUnit": 700,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E11*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 11,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E11*18%",
+        "gstFormulaInputs": [
+          "E11"
+        ],
+        "sourceGstCell": "F11",
+        "totalPriceFormula": "D11*C11",
+        "totalPriceFormulaInputs": [
+          "D11",
+          "C11"
+        ],
+        "sourceTotalCell": "E11"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH ROD",
+        "quantity": 0,
+        "ratePerUnit": 220,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E12*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 12,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E12*18%",
+        "gstFormulaInputs": [
+          "E12"
+        ],
+        "sourceGstCell": "F12",
+        "totalPriceFormula": "D12*C12",
+        "totalPriceFormulaInputs": [
+          "D12",
+          "C12"
+        ],
+        "sourceTotalCell": "E12"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "GI STRIP",
+        "quantity": 0,
+        "ratePerUnit": 300,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E13*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 13,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E13*18%",
+        "gstFormulaInputs": [
+          "E13"
+        ],
+        "sourceGstCell": "F13",
+        "totalPriceFormula": "D13*C13",
+        "totalPriceFormulaInputs": [
+          "D13",
+          "C13"
+        ],
+        "sourceTotalCell": "E13"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH COMPOUND",
+        "quantity": 0,
+        "ratePerUnit": 165,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E14*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 14,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E14*18%",
+        "gstFormulaInputs": [
+          "E14"
+        ],
+        "sourceGstCell": "F14",
+        "totalPriceFormula": "D14*C14",
+        "totalPriceFormulaInputs": [
+          "D14",
+          "C14"
+        ],
+        "sourceTotalCell": "E14"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "CHAMBER BOX",
+        "quantity": 0,
+        "ratePerUnit": 169,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E15*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 15,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E15*18%",
+        "gstFormulaInputs": [
+          "E15"
+        ],
+        "sourceGstCell": "F15",
+        "totalPriceFormula": "D15*C15",
+        "totalPriceFormulaInputs": [
+          "D15",
+          "C15"
+        ],
+        "sourceTotalCell": "E15"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH BENCH",
+        "quantity": 0,
+        "ratePerUnit": 175,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E16*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 16,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E16*18%",
+        "gstFormulaInputs": [
+          "E16"
+        ],
+        "sourceGstCell": "F16",
+        "totalPriceFormula": "D16*C16",
+        "totalPriceFormulaInputs": [
+          "D16",
+          "C16"
+        ],
+        "sourceTotalCell": "E16"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ACDB",
+        "quantity": null,
+        "ratePerUnit": 13800,
+        "totalPrice": 13800,
+        "gstPct": 0.18,
+        "formula": null,
+        "pricingFormula": "gst_amount = E17*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 17,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 2484,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E17*18%",
+        "gstFormulaInputs": [
+          "E17"
+        ],
+        "sourceGstCell": "F17",
+        "totalPriceFormula": "D17*B17",
+        "totalPriceFormulaInputs": [
+          "D17",
+          "B17"
+        ],
+        "sourceTotalCell": "E17"
+      },
+      {
+        "itemType": "meter",
+        "category": "meter",
+        "description": "METER BOX",
+        "quantity": 0,
+        "ratePerUnit": 530,
+        "totalPrice": 0,
+        "gstPct": 0,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = total_price * effective_gst_rate_on_total",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 18,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0,
+        "effectiveGstRateOnTotal": 0
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "DC CABLE",
+        "quantity": 0,
+        "ratePerUnit": 37,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E19*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 19,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E19*18%",
+        "gstFormulaInputs": [
+          "E19"
+        ],
+        "sourceGstCell": "F19",
+        "totalPriceFormula": "D19*C19",
+        "totalPriceFormulaInputs": [
+          "D19",
+          "C19"
+        ],
+        "sourceTotalCell": "E19"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "AC CABLE",
+        "quantity": 0,
+        "ratePerUnit": 48,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E20*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 20,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E20*18%",
+        "gstFormulaInputs": [
+          "E20"
+        ],
+        "sourceGstCell": "F20",
+        "totalPriceFormula": "D20*C20",
+        "totalPriceFormulaInputs": [
+          "D20",
+          "C20"
+        ],
+        "sourceTotalCell": "E20"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ALUM CABLE 50 SQMM",
+        "quantity": 0,
+        "ratePerUnit": 53,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E21*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 21,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E21*18%",
+        "gstFormulaInputs": [
+          "E21"
+        ],
+        "sourceGstCell": "F21",
+        "totalPriceFormula": "D21*C21",
+        "totalPriceFormulaInputs": [
+          "D21",
+          "C21"
+        ],
+        "sourceTotalCell": "E21"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ALUM CABLE 10 SQMM",
+        "quantity": 0,
+        "ratePerUnit": 18,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E22*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 22,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E22*18%",
+        "gstFormulaInputs": [
+          "E22"
+        ],
+        "sourceGstCell": "F22",
+        "totalPriceFormula": "D22*C22",
+        "totalPriceFormulaInputs": [
+          "D22",
+          "C22"
+        ],
+        "sourceTotalCell": "E22"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "COPPER",
+        "quantity": 0,
+        "ratePerUnit": 900,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E23*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 23,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E23*18%",
+        "gstFormulaInputs": [
+          "E23"
+        ],
+        "sourceGstCell": "F23",
+        "totalPriceFormula": "D23*C23",
+        "totalPriceFormulaInputs": [
+          "D23",
+          "C23"
+        ],
+        "sourceTotalCell": "E23"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "MC4(ADDITIONAL)",
+        "quantity": 0,
+        "ratePerUnit": 22,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E24*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 24,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E24*18%",
+        "gstFormulaInputs": [
+          "E24"
+        ],
+        "sourceGstCell": "F24",
+        "totalPriceFormula": "D24*C24",
+        "totalPriceFormulaInputs": [
+          "D24",
+          "C24"
+        ],
+        "sourceTotalCell": "E24"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ISOLATOR",
+        "quantity": 1,
+        "ratePerUnit": 210,
+        "totalPrice": 210,
+        "gstPct": 0,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E25*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 25,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0,
+        "gstFormula": "E25*18%",
+        "gstFormulaInputs": [
+          "E25"
+        ],
+        "sourceGstCell": "F25",
+        "totalPriceFormula": "D25*C25",
+        "totalPriceFormulaInputs": [
+          "D25",
+          "C25"
+        ],
+        "sourceTotalCell": "E25"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "TRANSPORTATION",
+        "quantity": 2,
+        "ratePerUnit": 1000,
+        "totalPrice": 2000,
+        "gstPct": 0.0189,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E26*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 26,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 37.8,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.0189,
+        "gstFormula": "E26*18%",
+        "gstFormulaInputs": [
+          "E26"
+        ],
+        "sourceGstCell": "F26",
+        "totalPriceFormula": "D26*C26",
+        "totalPriceFormulaInputs": [
+          "D26",
+          "C26"
+        ],
+        "sourceTotalCell": "E26"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "COMMISSION",
+        "quantity": 1,
+        "ratePerUnit": 3000,
+        "totalPrice": 3000,
+        "gstPct": 0.12,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E27*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 27,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 360,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.12,
+        "gstFormula": "E27*18%",
+        "gstFormulaInputs": [
+          "E27"
+        ],
+        "sourceGstCell": "F27",
+        "totalPriceFormula": "D27*C27",
+        "totalPriceFormulaInputs": [
+          "D27",
+          "C27"
+        ],
+        "sourceTotalCell": "E27"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "SITE VISIT",
+        "quantity": 1,
+        "ratePerUnit": 1500,
+        "totalPrice": 1500,
+        "gstPct": 0.36,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E28*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 28,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 540,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.36,
+        "gstFormula": "E28*18%",
+        "gstFormulaInputs": [
+          "E28"
+        ],
+        "sourceGstCell": "F28",
+        "totalPriceFormula": "D28*C28",
+        "totalPriceFormulaInputs": [
+          "D28",
+          "C28"
+        ],
+        "sourceTotalCell": "E28"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "INSTALLATION",
+        "quantity": 5,
+        "ratePerUnit": 3000,
+        "totalPrice": 15000,
+        "gstPct": 0.018,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E29*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 29,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 270,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.018,
+        "gstFormula": "E29*18%",
+        "gstFormulaInputs": [
+          "E29"
+        ],
+        "sourceGstCell": "F29",
+        "totalPriceFormula": "D29*C29",
+        "totalPriceFormulaInputs": [
+          "D29",
+          "C29"
+        ],
+        "sourceTotalCell": "E29"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "COST UPTO INSTALLATION",
+        "quantity": null,
+        "ratePerUnit": null,
+        "totalPrice": 325520,
+        "gstPct": 0.0082944212,
+        "formula": null,
+        "pricingFormula": "gst_amount = E30*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "UPGRADE 5 KW hybrid",
+        "sourceRow": 30,
+        "systemType": "hybrid",
+        "capacityKW": 5.22,
+        "gstAmount": 2700,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.0082944212,
+        "gstFormula": "E30*18%",
+        "gstFormulaInputs": [
+          "E30"
+        ],
+        "sourceGstCell": "F30",
+        "totalPriceFormula": "D30*C30",
+        "totalPriceFormulaInputs": [
+          "D30",
+          "C30"
+        ],
+        "sourceTotalCell": "E30"
+      }
+    ]
+  },
+  {
+    "ruleName": "upgrade_upgrade_5kw",
+    "systemId": "upgrade_5kw_upgrade_5.58",
+    "formula": "upgrade_price = base_price + delta_components + labor",
+    "inputs": [
+      "base_price",
+      "delta_components",
+      "labor"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "upgrade 5kw ",
+    "items": [
+      {
+        "itemType": "panel",
+        "category": "panel",
+        "description": "PANEL",
+        "quantity": 9,
+        "ratePerUnit": 9610,
+        "totalPrice": 86490,
+        "gstPct": 0.12,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E4*12%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 4,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 10378.8,
+        "gstRate": 0.12,
+        "effectiveGstRateOnTotal": 0.12,
+        "gstFormula": "E4*12%",
+        "gstFormulaInputs": [
+          "E4"
+        ],
+        "sourceGstCell": "F4",
+        "totalPriceFormula": "D4*C4",
+        "totalPriceFormulaInputs": [
+          "D4",
+          "C4"
+        ],
+        "sourceTotalCell": "E4"
+      },
+      {
+        "itemType": "inverter",
+        "category": "inverter",
+        "description": "INVERTER",
+        "quantity": 1,
+        "ratePerUnit": 24000,
+        "totalPrice": 24000,
+        "gstPct": 0.12,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E5*12%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 5,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 2880,
+        "gstRate": 0.12,
+        "effectiveGstRateOnTotal": 0.12,
+        "gstFormula": "E5*12%",
+        "gstFormulaInputs": [
+          "E5"
+        ],
+        "sourceGstCell": "F5",
+        "totalPriceFormula": "D5*C5",
+        "totalPriceFormulaInputs": [
+          "D5",
+          "C5"
+        ],
+        "sourceTotalCell": "E5"
+      },
+      {
+        "itemType": "meter",
+        "category": "meter",
+        "description": "SOLAR METER",
+        "quantity": 0,
+        "ratePerUnit": 1350,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D6*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 6,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 243,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D6*18%",
+        "gstFormulaInputs": [
+          "D6"
+        ],
+        "sourceGstCell": "F6",
+        "totalPriceFormula": "D6*C6",
+        "totalPriceFormulaInputs": [
+          "D6",
+          "C6"
+        ],
+        "sourceTotalCell": "E6"
+      },
+      {
+        "itemType": "structure",
+        "category": "structure",
+        "description": "STRUCTURE",
+        "quantity": 0,
+        "ratePerUnit": 13200,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D7*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 7,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 2376,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D7*18%",
+        "gstFormulaInputs": [
+          "D7"
+        ],
+        "sourceGstCell": "F7",
+        "totalPriceFormula": "D7*C7",
+        "totalPriceFormulaInputs": [
+          "D7",
+          "C7"
+        ],
+        "sourceTotalCell": "E7"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ACCESSORIES",
+        "quantity": 0,
+        "ratePerUnit": 88000,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D8*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 8,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 15840,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D8*18%",
+        "gstFormulaInputs": [
+          "D8"
+        ],
+        "sourceGstCell": "F8",
+        "totalPriceFormula": "D8*C8",
+        "totalPriceFormulaInputs": [
+          "D8",
+          "C8"
+        ],
+        "sourceTotalCell": "E8"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "WIRING PIPE",
+        "quantity": 0,
+        "ratePerUnit": 65,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D9*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 9,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 11.7,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D9*18%",
+        "gstFormulaInputs": [
+          "D9"
+        ],
+        "sourceGstCell": "F9",
+        "totalPriceFormula": "D9*C9",
+        "totalPriceFormulaInputs": [
+          "D9",
+          "C9"
+        ],
+        "sourceTotalCell": "E9"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "WIRING ACCESSORIES",
+        "quantity": 0,
+        "ratePerUnit": 1184,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D10*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 10,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 213.12,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D10*18%",
+        "gstFormulaInputs": [
+          "D10"
+        ],
+        "sourceGstCell": "F10",
+        "totalPriceFormula": "D10*C10",
+        "totalPriceFormulaInputs": [
+          "D10",
+          "C10"
+        ],
+        "sourceTotalCell": "E10"
+      },
+      {
+        "itemType": "lightning_arrester",
+        "category": "lightning_arrester",
+        "description": "L/A",
+        "quantity": 0,
+        "ratePerUnit": 700,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D11*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 11,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 126,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D11*18%",
+        "gstFormulaInputs": [
+          "D11"
+        ],
+        "sourceGstCell": "F11",
+        "totalPriceFormula": "D11*C11",
+        "totalPriceFormulaInputs": [
+          "D11",
+          "C11"
+        ],
+        "sourceTotalCell": "E11"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH ROD",
+        "quantity": 0,
+        "ratePerUnit": 220,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D12*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 12,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 39.6,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D12*18%",
+        "gstFormulaInputs": [
+          "D12"
+        ],
+        "sourceGstCell": "F12",
+        "totalPriceFormula": "D12*C12",
+        "totalPriceFormulaInputs": [
+          "D12",
+          "C12"
+        ],
+        "sourceTotalCell": "E12"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "GI STRIP",
+        "quantity": 0,
+        "ratePerUnit": 300,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D13*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 13,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 54,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D13*18%",
+        "gstFormulaInputs": [
+          "D13"
+        ],
+        "sourceGstCell": "F13",
+        "totalPriceFormula": "D13*C13",
+        "totalPriceFormulaInputs": [
+          "D13",
+          "C13"
+        ],
+        "sourceTotalCell": "E13"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH COMPOUND",
+        "quantity": 0,
+        "ratePerUnit": 165,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D14*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 14,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 29.7,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D14*18%",
+        "gstFormulaInputs": [
+          "D14"
+        ],
+        "sourceGstCell": "F14",
+        "totalPriceFormula": "D14*C14",
+        "totalPriceFormulaInputs": [
+          "D14",
+          "C14"
+        ],
+        "sourceTotalCell": "E14"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "CHAMBER BOX",
+        "quantity": 0,
+        "ratePerUnit": 169,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D15*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 15,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 30.419999999999998,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D15*18%",
+        "gstFormulaInputs": [
+          "D15"
+        ],
+        "sourceGstCell": "F15",
+        "totalPriceFormula": "D15*C15",
+        "totalPriceFormulaInputs": [
+          "D15",
+          "C15"
+        ],
+        "sourceTotalCell": "E15"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH BENCH",
+        "quantity": 0,
+        "ratePerUnit": 175,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D16*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 16,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 31.5,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D16*18%",
+        "gstFormulaInputs": [
+          "D16"
+        ],
+        "sourceGstCell": "F16",
+        "totalPriceFormula": "D16*C16",
+        "totalPriceFormulaInputs": [
+          "D16",
+          "C16"
+        ],
+        "sourceTotalCell": "E16"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ACDB",
+        "quantity": 0,
+        "ratePerUnit": 1500,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D17*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 17,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 270,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D17*18%",
+        "gstFormulaInputs": [
+          "D17"
+        ],
+        "sourceGstCell": "F17",
+        "totalPriceFormula": "D17*C17",
+        "totalPriceFormulaInputs": [
+          "D17",
+          "C17"
+        ],
+        "sourceTotalCell": "E17"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "DCDB",
+        "quantity": 0,
+        "ratePerUnit": 1750,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D18*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 18,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 315,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D18*18%",
+        "gstFormulaInputs": [
+          "D18"
+        ],
+        "sourceGstCell": "F18",
+        "totalPriceFormula": "D18*C18",
+        "totalPriceFormulaInputs": [
+          "D18",
+          "C18"
+        ],
+        "sourceTotalCell": "E18"
+      },
+      {
+        "itemType": "meter",
+        "category": "meter",
+        "description": "METER BOX",
+        "quantity": 0,
+        "ratePerUnit": 530,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D19*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 19,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 95.39999999999999,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D19*18%",
+        "gstFormulaInputs": [
+          "D19"
+        ],
+        "sourceGstCell": "F19",
+        "totalPriceFormula": "D19*C19",
+        "totalPriceFormulaInputs": [
+          "D19",
+          "C19"
+        ],
+        "sourceTotalCell": "E19"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "DC CABLE",
+        "quantity": 0,
+        "ratePerUnit": 37,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D20*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 20,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 6.66,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D20*18%",
+        "gstFormulaInputs": [
+          "D20"
+        ],
+        "sourceGstCell": "F20",
+        "totalPriceFormula": "D20*C20",
+        "totalPriceFormulaInputs": [
+          "D20",
+          "C20"
+        ],
+        "sourceTotalCell": "E20"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "AC CABLE",
+        "quantity": 0,
+        "ratePerUnit": 48,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D21*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 21,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 8.64,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D21*18%",
+        "gstFormulaInputs": [
+          "D21"
+        ],
+        "sourceGstCell": "F21",
+        "totalPriceFormula": "D21*C21",
+        "totalPriceFormulaInputs": [
+          "D21",
+          "C21"
+        ],
+        "sourceTotalCell": "E21"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ALUM CABLE 50 SQMM",
+        "quantity": 0,
+        "ratePerUnit": 53,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D22*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 22,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 9.54,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D22*18%",
+        "gstFormulaInputs": [
+          "D22"
+        ],
+        "sourceGstCell": "F22",
+        "totalPriceFormula": "D22*C22",
+        "totalPriceFormulaInputs": [
+          "D22",
+          "C22"
+        ],
+        "sourceTotalCell": "E22"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ALUM CABLE 10 SQMM",
+        "quantity": 0,
+        "ratePerUnit": 18,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D23*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 23,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 3.2399999999999998,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D23*18%",
+        "gstFormulaInputs": [
+          "D23"
+        ],
+        "sourceGstCell": "F23",
+        "totalPriceFormula": "D23*C23",
+        "totalPriceFormulaInputs": [
+          "D23",
+          "C23"
+        ],
+        "sourceTotalCell": "E23"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "COPPER",
+        "quantity": 0,
+        "ratePerUnit": 900,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D24*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 24,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 162,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D24*18%",
+        "gstFormulaInputs": [
+          "D24"
+        ],
+        "sourceGstCell": "F24",
+        "totalPriceFormula": "D24*C24",
+        "totalPriceFormulaInputs": [
+          "D24",
+          "C24"
+        ],
+        "sourceTotalCell": "E24"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "MC4(ADDITIONAL)",
+        "quantity": 0,
+        "ratePerUnit": 22,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D25*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 25,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 3.96,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D25*18%",
+        "gstFormulaInputs": [
+          "D25"
+        ],
+        "sourceGstCell": "F25",
+        "totalPriceFormula": "D25*C25",
+        "totalPriceFormulaInputs": [
+          "D25",
+          "C25"
+        ],
+        "sourceTotalCell": "E25"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ISOLATOR",
+        "quantity": 1,
+        "ratePerUnit": 210,
+        "totalPrice": 210,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D26*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 26,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 37.8,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D26*18%",
+        "gstFormulaInputs": [
+          "D26"
+        ],
+        "sourceGstCell": "F26",
+        "totalPriceFormula": "D26*C26",
+        "totalPriceFormulaInputs": [
+          "D26",
+          "C26"
+        ],
+        "sourceTotalCell": "E26"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "TRANSPORTATION",
+        "quantity": 3,
+        "ratePerUnit": 1000,
+        "totalPrice": 3000,
+        "gstPct": 0.06,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D27*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 27,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 180,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.06,
+        "gstFormula": "D27*18%",
+        "gstFormulaInputs": [
+          "D27"
+        ],
+        "sourceGstCell": "F27",
+        "totalPriceFormula": "D27*C27",
+        "totalPriceFormulaInputs": [
+          "D27",
+          "C27"
+        ],
+        "sourceTotalCell": "E27"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "COMMISSION",
+        "quantity": 0,
+        "ratePerUnit": 3000,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D28*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 28,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 540,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D28*18%",
+        "gstFormulaInputs": [
+          "D28"
+        ],
+        "sourceGstCell": "F28",
+        "totalPriceFormula": "D28*C28",
+        "totalPriceFormulaInputs": [
+          "D28",
+          "C28"
+        ],
+        "sourceTotalCell": "E28"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "SITE VISIT",
+        "quantity": 1,
+        "ratePerUnit": 1500,
+        "totalPrice": 1500,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D29*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 29,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 270,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D29*18%",
+        "gstFormulaInputs": [
+          "D29"
+        ],
+        "sourceGstCell": "F29",
+        "totalPriceFormula": "D29*C29",
+        "totalPriceFormulaInputs": [
+          "D29",
+          "C29"
+        ],
+        "sourceTotalCell": "E29"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "INSTALLATION",
+        "quantity": 5,
+        "ratePerUnit": 3000,
+        "totalPrice": 15000,
+        "gstPct": 0.036,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D30*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 30,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 540,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.036,
+        "gstFormula": "D30*18%",
+        "gstFormulaInputs": [
+          "D30"
+        ],
+        "sourceGstCell": "F30",
+        "totalPriceFormula": "D30*C30",
+        "totalPriceFormulaInputs": [
+          "D30",
+          "C30"
+        ],
+        "sourceTotalCell": "E30"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "COST UPTO INSTALLATION",
+        "quantity": null,
+        "ratePerUnit": null,
+        "totalPrice": 130200,
+        "gstPct": 0.2664829493,
+        "formula": null,
+        "pricingFormula": "gst_amount = SUM(F4:F30)",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "upgrade 5kw ",
+        "sourceRow": 31,
+        "systemType": "upgrade",
+        "capacityKW": 5.58,
+        "gstAmount": 34696.08,
+        "gstRate": 0.2664829493,
+        "effectiveGstRateOnTotal": 0.2664829493,
+        "gstFormula": "SUM(F4:F30)",
+        "gstFormulaInputs": [
+          "F4",
+          "F30"
+        ],
+        "sourceGstCell": "F31",
+        "totalPriceFormula": "SUM(E4:E30)",
+        "totalPriceFormulaInputs": [
+          "E4",
+          "E30"
+        ],
+        "sourceTotalCell": "E31"
+      }
+    ]
+  },
+  {
+    "ruleName": "upgrade_hibrid_upgrade_5kw",
+    "systemId": "hibrid_upgrade_5kw_upgrade_5.4",
+    "formula": "upgrade_price = base_price + delta_components + labor",
+    "inputs": [
+      "base_price",
+      "delta_components",
+      "labor"
+    ],
+    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceSheet": "hibrid upgrade 5kw",
+    "items": [
+      {
+        "itemType": "panel",
+        "category": "panel",
+        "description": "PANEL",
+        "quantity": 10,
+        "ratePerUnit": 8100,
+        "totalPrice": 81000,
+        "gstPct": 0.12,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E4*12%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 4,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 9720,
+        "gstRate": 0.12,
+        "effectiveGstRateOnTotal": 0.12,
+        "gstFormula": "E4*12%",
+        "gstFormulaInputs": [
+          "E4"
+        ],
+        "sourceGstCell": "F4",
+        "totalPriceFormula": "D4*C4",
+        "totalPriceFormulaInputs": [
+          "D4",
+          "C4"
+        ],
+        "sourceTotalCell": "E4"
+      },
+      {
+        "itemType": "inverter",
+        "category": "inverter",
+        "description": "INVERTER",
+        "quantity": 1,
+        "ratePerUnit": 75661,
+        "totalPrice": 75661,
+        "gstPct": 0.12,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E5*12%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 5,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 9079.32,
+        "gstRate": 0.12,
+        "effectiveGstRateOnTotal": 0.12,
+        "gstFormula": "E5*12%",
+        "gstFormulaInputs": [
+          "E5"
+        ],
+        "sourceGstCell": "F5",
+        "totalPriceFormula": "D5*C5",
+        "totalPriceFormulaInputs": [
+          "D5",
+          "C5"
+        ],
+        "sourceTotalCell": "E5"
+      },
+      {
+        "itemType": "battery",
+        "category": "battery",
+        "description": "battery",
+        "quantity": 1,
+        "ratePerUnit": 75000,
+        "totalPrice": 75000,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = E6*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 6,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 13500,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "E6*18%",
+        "gstFormulaInputs": [
+          "E6"
+        ],
+        "sourceGstCell": "F6",
+        "totalPriceFormula": "D6*C6",
+        "totalPriceFormulaInputs": [
+          "D6",
+          "C6"
+        ],
+        "sourceTotalCell": "E6"
+      },
+      {
+        "itemType": "meter",
+        "category": "meter",
+        "description": "SOLAR METER",
+        "quantity": 0,
+        "ratePerUnit": 1350,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D7*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 7,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 243,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D7*18%",
+        "gstFormulaInputs": [
+          "D7"
+        ],
+        "sourceGstCell": "F7",
+        "totalPriceFormula": "D7*C7",
+        "totalPriceFormulaInputs": [
+          "D7",
+          "C7"
+        ],
+        "sourceTotalCell": "E7"
+      },
+      {
+        "itemType": "structure",
+        "category": "structure",
+        "description": "STRUCTURE",
+        "quantity": 0,
+        "ratePerUnit": 13200,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D8*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 8,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 2376,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D8*18%",
+        "gstFormulaInputs": [
+          "D8"
+        ],
+        "sourceGstCell": "F8",
+        "totalPriceFormula": "D8*C8",
+        "totalPriceFormulaInputs": [
+          "D8",
+          "C8"
+        ],
+        "sourceTotalCell": "E8"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ACCESSORIES",
+        "quantity": 1,
+        "ratePerUnit": 0,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D9*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 9,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D9*18%",
+        "gstFormulaInputs": [
+          "D9"
+        ],
+        "sourceGstCell": "F9",
+        "totalPriceFormula": "D9*C9",
+        "totalPriceFormulaInputs": [
+          "D9",
+          "C9"
+        ],
+        "sourceTotalCell": "E9"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "WIRING PIPE",
+        "quantity": 0,
+        "ratePerUnit": 65,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D10*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 10,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 11.7,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D10*18%",
+        "gstFormulaInputs": [
+          "D10"
+        ],
+        "sourceGstCell": "F10",
+        "totalPriceFormula": "D10*C10",
+        "totalPriceFormulaInputs": [
+          "D10",
+          "C10"
+        ],
+        "sourceTotalCell": "E10"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "WIRING ACCESSORIES",
+        "quantity": 0,
+        "ratePerUnit": 1184,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D11*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 11,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 213.12,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D11*18%",
+        "gstFormulaInputs": [
+          "D11"
+        ],
+        "sourceGstCell": "F11",
+        "totalPriceFormula": "D11*C11",
+        "totalPriceFormulaInputs": [
+          "D11",
+          "C11"
+        ],
+        "sourceTotalCell": "E11"
+      },
+      {
+        "itemType": "lightning_arrester",
+        "category": "lightning_arrester",
+        "description": "L/A",
+        "quantity": 0,
+        "ratePerUnit": 1100,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D12*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 12,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 198,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D12*18%",
+        "gstFormulaInputs": [
+          "D12"
+        ],
+        "sourceGstCell": "F12",
+        "totalPriceFormula": "D12*C12",
+        "totalPriceFormulaInputs": [
+          "D12",
+          "C12"
+        ],
+        "sourceTotalCell": "E12"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH ROD",
+        "quantity": 0,
+        "ratePerUnit": 250,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D13*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 13,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 45,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D13*18%",
+        "gstFormulaInputs": [
+          "D13"
+        ],
+        "sourceGstCell": "F13",
+        "totalPriceFormula": "D13*C13",
+        "totalPriceFormulaInputs": [
+          "D13",
+          "C13"
+        ],
+        "sourceTotalCell": "E13"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "GI STRIP",
+        "quantity": 0,
+        "ratePerUnit": 300,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D14*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 14,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 54,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D14*18%",
+        "gstFormulaInputs": [
+          "D14"
+        ],
+        "sourceGstCell": "F14",
+        "totalPriceFormula": "D14*C14",
+        "totalPriceFormulaInputs": [
+          "D14",
+          "C14"
+        ],
+        "sourceTotalCell": "E14"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH COMPOUND",
+        "quantity": 0,
+        "ratePerUnit": 165,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D15*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 15,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 29.7,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D15*18%",
+        "gstFormulaInputs": [
+          "D15"
+        ],
+        "sourceGstCell": "F15",
+        "totalPriceFormula": "D15*C15",
+        "totalPriceFormulaInputs": [
+          "D15",
+          "C15"
+        ],
+        "sourceTotalCell": "E15"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "CHAMBER BOX",
+        "quantity": 0,
+        "ratePerUnit": 225,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D16*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 16,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 40.5,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D16*18%",
+        "gstFormulaInputs": [
+          "D16"
+        ],
+        "sourceGstCell": "F16",
+        "totalPriceFormula": "D16*C16",
+        "totalPriceFormulaInputs": [
+          "D16",
+          "C16"
+        ],
+        "sourceTotalCell": "E16"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "EARTH BENCH",
+        "quantity": 0,
+        "ratePerUnit": 175,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D17*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 17,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 31.5,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D17*18%",
+        "gstFormulaInputs": [
+          "D17"
+        ],
+        "sourceGstCell": "F17",
+        "totalPriceFormula": "D17*C17",
+        "totalPriceFormulaInputs": [
+          "D17",
+          "C17"
+        ],
+        "sourceTotalCell": "E17"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ACDB",
+        "quantity": 1,
+        "ratePerUnit": 13300,
+        "totalPrice": 13300,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D18*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 18,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 2394,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D18*18%",
+        "gstFormulaInputs": [
+          "D18"
+        ],
+        "sourceGstCell": "F18",
+        "totalPriceFormula": "D18*C18",
+        "totalPriceFormulaInputs": [
+          "D18",
+          "C18"
+        ],
+        "sourceTotalCell": "E18"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "DCDB",
+        "quantity": 1,
+        "ratePerUnit": 0,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D19*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 19,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 0,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D19*18%",
+        "gstFormulaInputs": [
+          "D19"
+        ],
+        "sourceGstCell": "F19",
+        "totalPriceFormula": "D19*C19",
+        "totalPriceFormulaInputs": [
+          "D19",
+          "C19"
+        ],
+        "sourceTotalCell": "E19"
+      },
+      {
+        "itemType": "meter",
+        "category": "meter",
+        "description": "METER BOX",
+        "quantity": 0,
+        "ratePerUnit": 530,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D20*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 20,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 95.39999999999999,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D20*18%",
+        "gstFormulaInputs": [
+          "D20"
+        ],
+        "sourceGstCell": "F20",
+        "totalPriceFormula": "D20*C20",
+        "totalPriceFormulaInputs": [
+          "D20",
+          "C20"
+        ],
+        "sourceTotalCell": "E20"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "DC CABLE",
+        "quantity": 0,
+        "ratePerUnit": 34,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D21*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 21,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 6.12,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D21*18%",
+        "gstFormulaInputs": [
+          "D21"
+        ],
+        "sourceGstCell": "F21",
+        "totalPriceFormula": "D21*C21",
+        "totalPriceFormulaInputs": [
+          "D21",
+          "C21"
+        ],
+        "sourceTotalCell": "E21"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "AC CABLE",
+        "quantity": 0,
+        "ratePerUnit": 43,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D22*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 22,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 7.739999999999999,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D22*18%",
+        "gstFormulaInputs": [
+          "D22"
+        ],
+        "sourceGstCell": "F22",
+        "totalPriceFormula": "D22*C22",
+        "totalPriceFormulaInputs": [
+          "D22",
+          "C22"
+        ],
+        "sourceTotalCell": "E22"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ALUM CABLE 50 SQMM",
+        "quantity": 0,
+        "ratePerUnit": 58,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D23*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 23,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 10.44,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D23*18%",
+        "gstFormulaInputs": [
+          "D23"
+        ],
+        "sourceGstCell": "F23",
+        "totalPriceFormula": "D23*C23",
+        "totalPriceFormulaInputs": [
+          "D23",
+          "C23"
+        ],
+        "sourceTotalCell": "E23"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ALUM CABLE 10 SQMM",
+        "quantity": 0,
+        "ratePerUnit": 16.5,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D24*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 24,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 2.9699999999999998,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D24*18%",
+        "gstFormulaInputs": [
+          "D24"
+        ],
+        "sourceGstCell": "F24",
+        "totalPriceFormula": "D24*C24",
+        "totalPriceFormulaInputs": [
+          "D24",
+          "C24"
+        ],
+        "sourceTotalCell": "E24"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "COPPER",
+        "quantity": 0,
+        "ratePerUnit": 1150,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D25*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 25,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 207,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D25*18%",
+        "gstFormulaInputs": [
+          "D25"
+        ],
+        "sourceGstCell": "F25",
+        "totalPriceFormula": "D25*C25",
+        "totalPriceFormulaInputs": [
+          "D25",
+          "C25"
+        ],
+        "sourceTotalCell": "E25"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "MC4(ADDITIONAL)",
+        "quantity": 0,
+        "ratePerUnit": 22,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D26*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 26,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 3.96,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D26*18%",
+        "gstFormulaInputs": [
+          "D26"
+        ],
+        "sourceGstCell": "F26",
+        "totalPriceFormula": "D26*C26",
+        "totalPriceFormulaInputs": [
+          "D26",
+          "C26"
+        ],
+        "sourceTotalCell": "E26"
+      },
+      {
+        "itemType": "accessory",
+        "category": "bom_item",
+        "description": "ISOLATOR",
+        "quantity": 0,
+        "ratePerUnit": 250,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D27*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 27,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 45,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D27*18%",
+        "gstFormulaInputs": [
+          "D27"
+        ],
+        "sourceGstCell": "F27",
+        "totalPriceFormula": "D27*C27",
+        "totalPriceFormulaInputs": [
+          "D27",
+          "C27"
+        ],
+        "sourceTotalCell": "E27"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "TRANSPORTATION",
+        "quantity": 5,
+        "ratePerUnit": 750,
+        "totalPrice": 3750,
+        "gstPct": 0.036,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D28*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 28,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 135,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.036,
+        "gstFormula": "D28*18%",
+        "gstFormulaInputs": [
+          "D28"
+        ],
+        "sourceGstCell": "F28",
+        "totalPriceFormula": "D28*C28",
+        "totalPriceFormulaInputs": [
+          "D28",
+          "C28"
+        ],
+        "sourceTotalCell": "E28"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "COMMISSION",
+        "quantity": 5,
+        "ratePerUnit": 1000,
+        "totalPrice": 5000,
+        "gstPct": 0.036,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D29*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 29,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 180,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.036,
+        "gstFormula": "D29*18%",
+        "gstFormulaInputs": [
+          "D29"
+        ],
+        "sourceGstCell": "F29",
+        "totalPriceFormula": "D29*C29",
+        "totalPriceFormulaInputs": [
+          "D29",
+          "C29"
+        ],
+        "sourceTotalCell": "E29"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "SITE VISIT",
+        "quantity": 0,
+        "ratePerUnit": 1500,
+        "totalPrice": 0,
+        "gstPct": 0.18,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D30*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 30,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 270,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.18,
+        "gstFormula": "D30*18%",
+        "gstFormulaInputs": [
+          "D30"
+        ],
+        "sourceGstCell": "F30",
+        "totalPriceFormula": "D30*C30",
+        "totalPriceFormulaInputs": [
+          "D30",
+          "C30"
+        ],
+        "sourceTotalCell": "E30"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "INSTALLATION",
+        "quantity": 5,
+        "ratePerUnit": 3000,
+        "totalPrice": 15000,
+        "gstPct": 0.036,
+        "formula": "total_price = qty * rate_per_unit",
+        "pricingFormula": "gst_amount = D31*18%",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 31,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 540,
+        "gstRate": 0.18,
+        "effectiveGstRateOnTotal": 0.036,
+        "gstFormula": "D31*18%",
+        "gstFormulaInputs": [
+          "D31"
+        ],
+        "sourceGstCell": "F31",
+        "totalPriceFormula": "D31*C31",
+        "totalPriceFormulaInputs": [
+          "D31",
+          "C31"
+        ],
+        "sourceTotalCell": "E31"
+      },
+      {
+        "itemType": "service",
+        "category": "service",
+        "description": "COST UPTO INSTALLATION",
+        "quantity": null,
+        "ratePerUnit": null,
+        "totalPrice": 268711,
+        "gstPct": 0.1467728154,
+        "formula": null,
+        "pricingFormula": "gst_amount = SUM(F4:F31)",
+        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceSheet": "hibrid upgrade 5kw",
+        "sourceRow": 32,
+        "systemType": "upgrade",
+        "capacityKW": 5.4,
+        "gstAmount": 39439.47,
+        "gstRate": 0.1467728154,
+        "effectiveGstRateOnTotal": 0.1467728154,
+        "gstFormula": "SUM(F4:F31)",
+        "gstFormulaInputs": [
+          "F4",
+          "F31"
+        ],
+        "sourceGstCell": "F32",
+        "totalPriceFormula": "SUM(E4:E31)",
+        "totalPriceFormulaInputs": [
+          "E4",
+          "E31"
+        ],
+        "sourceTotalCell": "E32"
+      }
+    ]
+  }
+]

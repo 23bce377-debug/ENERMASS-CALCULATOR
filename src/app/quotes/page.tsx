@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { formatINR } from '@/lib/engine/calculator';
-import { SYSTEMS, type SolarSystem } from '@/lib/data/bom';
+import { SYSTEMS } from '@/lib/data/bom';
 import { useSettings } from '@/lib/hooks/useSettings';
 import type { Quote } from '@/lib/types/quote';
 import {
@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { QuotePDF } from '@/components/print/QuotePDF';
 import { useConfirm } from '@/components/ui/Confirm';
+import { Select } from '@/components/ui/Select';
+import { useQuotesQuery, useDeleteQuoteMutation, useUpdateQuoteStatusMutation } from '@/lib/hooks/useQuotes';
 
 // ─── Status Config ──────────────────────────────────────────────────────────────
 
@@ -267,7 +269,9 @@ function StatBox({ label, value, highlight }: { label: string; value: string; hi
 
 export default function QuotesPage() {
   const router = useRouter();
-  const quotes = useCalculatorStore((s) => s.quotes);
+  const { data: quotes = [], isLoading } = useQuotesQuery();
+  const deleteMutation = useDeleteQuoteMutation();
+  const updateStatusMutation = useUpdateQuoteStatusMutation();
   const loadQuote = useCalculatorStore((s) => s.loadQuote);
   const duplicateQuote = useCalculatorStore((s) => s.duplicateQuote);
   const { settings } = useSettings();
@@ -291,25 +295,18 @@ export default function QuotesPage() {
   };
 
   // Cycle status
-  const cycleStatus = (quoteId: string) => {
-    const store = useCalculatorStore.getState();
-    const updated = store.quotes.map((q) => {
-      if (q.quoteId !== quoteId) return q;
-      const nextOptions = STATUS_CYCLE[q.status];
-      const next = nextOptions[0];
-      const changedAt = new Date().toISOString();
-      const existingHistory = q.statusHistory?.length
-        ? q.statusHistory
-        : [{ status: q.status, changedAt: q.createdAt }];
+  const cycleStatus = async (quoteId: string) => {
+    const quote = quotes.find((q) => q.quoteId === quoteId);
+    if (!quote) return;
+    const nextOptions = STATUS_CYCLE[quote.status];
+    const next = nextOptions[0];
 
-      return {
-        ...q,
-        status: next,
-        statusHistory: [...existingHistory, { status: next, changedAt }],
-        updatedAt: changedAt,
-      };
-    });
-    useCalculatorStore.setState({ quotes: updated });
+    try {
+      await updateStatusMutation.mutateAsync({ quoteId, newStatus: next });
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : 'Failed to update quote status in database.');
+    }
   };
 
   const deleteQuote = async (quoteId: string) => {
@@ -321,12 +318,23 @@ export default function QuotesPage() {
       type: 'danger',
     });
     if (!confirmed) return;
-    const store = useCalculatorStore.getState();
-    useCalculatorStore.setState({ quotes: store.quotes.filter((q) => q.quoteId !== quoteId) });
-    if (selectedQuote?.quoteId === quoteId) {
-      setSelectedQuote(null);
+
+    try {
+      await deleteMutation.mutateAsync(quoteId);
+      if (selectedQuote?.quoteId === quoteId) {
+        setSelectedQuote(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : 'Failed to delete quote from database.');
     }
   };
+
+  // Synchronize selectedQuote details with updated query data if active
+  const activeSelectedQuote = useMemo(() => {
+    if (!selectedQuote) return null;
+    return quotes.find((q) => q.quoteId === selectedQuote.quoteId) || selectedQuote;
+  }, [quotes, selectedQuote]);
 
   const filtered = useMemo(() => {
     let result = [...quotes];
@@ -379,21 +387,18 @@ export default function QuotesPage() {
               className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-surface border border-border text-sm text-text-primary placeholder:text-text-muted focus:border-accent/50 focus:ring-1 focus:ring-accent/20 outline-none transition-all"
             />
           </div>
-          <div className="relative">
-            <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as Quote['status'] | 'All')}
-              className="appearance-none pl-9 pr-8 py-2.5 rounded-lg bg-surface border border-border text-sm text-text-primary outline-none focus:border-accent/50 transition-all cursor-pointer"
-            >
-              <option value="All">All Status</option>
-              <option value="Draft">Draft</option>
-              <option value="Sent">Sent</option>
-              <option value="Won">Won</option>
-              <option value="Lost">Lost</option>
-            </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
-          </div>
+          <Select
+            value={statusFilter}
+            onChange={(v) => setStatusFilter(v as Quote['status'] | 'All')}
+            options={[
+              { value: 'All', label: 'All Status' },
+              { value: 'Draft', label: 'Draft' },
+              { value: 'Sent', label: 'Sent' },
+              { value: 'Won', label: 'Won' },
+              { value: 'Lost', label: 'Lost' },
+            ]}
+            className="min-w-[140px]"
+          />
           <button
             onClick={() => setSortAsc(!sortAsc)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-border text-sm text-text-secondary hover:text-text-primary hover:border-border-light transition-all"
@@ -403,7 +408,11 @@ export default function QuotesPage() {
         </div>
 
         {/* Table */}
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20 text-text-muted">
+            <span className="text-sm font-semibold animate-pulse font-mono uppercase tracking-wider">Loading quotes...</span>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <FileText size={48} className="text-text-muted/30 mb-4" />
             <p className="text-text-muted text-lg">No quotes found</p>
@@ -495,9 +504,9 @@ export default function QuotesPage() {
       </div>
 
       {/* Detail Modal */}
-      {selectedQuote && (
+      {activeSelectedQuote && (
         <QuoteDetailModal
-          quote={selectedQuote}
+          quote={activeSelectedQuote}
           companyName={companyName}
           onClose={() => setSelectedQuote(null)}
           onEdit={(quoteId) => {

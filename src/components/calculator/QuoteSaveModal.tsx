@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { STATE_DATA } from '@/lib/data/masters';
-import { X, CheckCircle2 } from 'lucide-react';
+import { X, CheckCircle2, RotateCcw } from 'lucide-react';
+import { Select } from '@/components/ui/Select';
 import type { CustomerInfo, AddressInfo, SiteInfo, SalesInfo, Quote } from '@/lib/types/quote';
 
 interface QuoteSaveModalProps {
@@ -17,10 +18,15 @@ const STEPS = ['Project', 'Address', 'Site', 'Sales'];
 
 export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps) {
   const saveQuote = useCalculatorStore((s) => s.saveQuote);
+  const loadQuote = useCalculatorStore((s) => s.loadQuote);
+  const activeQuoteId = useCalculatorStore((s) => s.activeQuoteId);
+  const dbStateData = useCalculatorStore((s) => s.dbStateData);
   
   const [step, setStep] = useState(0);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showConflict, setShowConflict] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Form states
   const [customer, setCustomer] = useState<CustomerInfo>({ name: '', phone: '', whatsapp: '', email: '' });
@@ -44,26 +50,36 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
 
   if (!isOpen || !mounted) return null;
 
-  const handleSave = () => {
+  const handleSave = async (forceOverwrite = false) => {
     const validationError = validateQuoteBasics(customer, sales);
     if (validationError) {
       setFormError(validationError);
       return;
     }
 
+    setSaving(true);
     try {
       setFormError(null);
-      const quote = saveQuote({ customer, address, site, sales });
+      const quote = await saveQuote({ customer, address, site, sales }, forceOverwrite);
       setSavedQuoteId(quote.quoteId);
+      setShowConflict(false);
       onSaved(quote);
     } catch (err) {
-      alert('Error saving quote. Please ensure a system is selected and calculations are complete.');
+      console.error(err);
+      if (err instanceof Error && err.message === 'CONCURRENCY_CONFLICT') {
+        setShowConflict(true);
+      } else {
+        setFormError(err instanceof Error ? err.message : 'Error saving quote. Please check connection and try again.');
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleClose = () => {
     setSavedQuoteId(null);
     setFormError(null);
+    setShowConflict(false);
     setStep(0);
     onClose();
   };
@@ -92,6 +108,24 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
                 <p className="text-text-muted mb-4">You can access this quote in the Quotes section.</p>
                 <div className="inline-block px-4 py-2 rounded-lg bg-background border border-border text-lg font-mono font-bold text-accent">
                   {savedQuoteId}
+                </div>
+              </div>
+            </div>
+          ) : showConflict ? (
+            <div className="py-6 flex flex-col items-center text-center space-y-4 animate-fade-in">
+              <div className="p-3 bg-warning/15 text-warning rounded-full">
+                <RotateCcw size={48} className="rotate-45" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-text-primary mb-2">Concurrency Conflict Detected</h3>
+                <p className="text-sm text-text-muted max-w-sm mb-4">
+                  This quote has been modified by another user since you loaded it. Saving now will overwrite their updates.
+                </p>
+                <div className="text-xs text-text-muted bg-background/50 border border-border rounded-lg p-3 text-left space-y-1">
+                  <p><strong>Quote ID:</strong> {activeQuoteId}</p>
+                  <p><strong>Option 1:</strong> Overwrite their changes and force save your version.</p>
+                  <p><strong>Option 2:</strong> Discard your changes and reload their latest version.</p>
+                  <p><strong>Option 3:</strong> Cancel and go back to edit the details.</p>
                 </div>
               </div>
             </div>
@@ -144,13 +178,11 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-text-secondary">State</label>
-                    <select 
-                      value={address.state} 
-                      onChange={(e) => setAddress({...address, state: e.target.value})}
-                      className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent"
-                    >
-                      {Object.keys(STATE_DATA).map(st => <option key={st} value={st}>{st}</option>)}
-                    </select>
+                    <Select
+                      value={address.state}
+                      onChange={(v) => setAddress({...address, state: v})}
+                      options={(Object.keys(dbStateData).length > 0 ? Object.keys(dbStateData) : Object.keys(STATE_DATA)).map(st => ({ value: st, label: st }))}
+                    />
                   </div>
                 </div>
               )}
@@ -165,16 +197,16 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-text-secondary">Roof Type</label>
-                      <select 
-                        value={site.roofType} 
-                        onChange={(e) => setSite({...site, roofType: e.target.value as SiteInfo['roofType']})}
-                        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent"
-                      >
-                        <option value="RCC">RCC</option>
-                        <option value="Metal Sheet">Metal Sheet</option>
-                        <option value="Tin">Tin</option>
-                        <option value="Other">Other</option>
-                      </select>
+                      <Select
+                        value={site.roofType}
+                        onChange={(v) => setSite({...site, roofType: v as SiteInfo['roofType']})}
+                        options={[
+                          { value: 'RCC', label: 'RCC' },
+                          { value: 'Metal Sheet', label: 'Metal Sheet' },
+                          { value: 'Tin', label: 'Tin' },
+                          { value: 'Other', label: 'Other' },
+                        ]}
+                      />
                     </div>
                     <Input label="Roof Area (sq ft)" type="number" value={String(site.roofArea || '')} onChange={(v) => setSite({...site, roofArea: Number(v)})} />
                   </div>
@@ -222,11 +254,39 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
             <button onClick={handleClose} className="w-full py-2.5 rounded-lg bg-accent hover:bg-accent-hover text-background font-bold transition-colors">
               Close
             </button>
+          ) : showConflict ? (
+            <div className="flex gap-2 w-full">
+              <button 
+                onClick={() => setShowConflict(false)}
+                className="flex-1 px-3 py-2 rounded-lg border border-border text-text-primary hover:bg-surface-hover transition-colors font-medium text-xs"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  if (activeQuoteId) {
+                    loadQuote(activeQuoteId);
+                  }
+                  handleClose();
+                }}
+                className="flex-1 px-3 py-2 rounded-lg border border-error/30 text-error hover:bg-error/10 transition-colors font-medium text-xs"
+              >
+                Discard & Reload
+              </button>
+              <button 
+                onClick={() => handleSave(true)}
+                disabled={saving}
+                className="flex-1 px-3 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background font-bold transition-colors text-xs disabled:opacity-50"
+              >
+                {saving ? 'Overwriting...' : 'Overwrite Changes'}
+              </button>
+            </div>
           ) : (
             <>
               <button 
                 onClick={step === 0 ? handleClose : () => setStep(step - 1)} 
-                className="px-4 py-2 rounded-lg border border-border text-text-primary hover:bg-surface-hover transition-colors font-medium text-sm"
+                disabled={saving}
+                className="px-4 py-2 rounded-lg border border-border text-text-primary hover:bg-surface-hover transition-colors font-medium text-sm disabled:opacity-50"
               >
                 {step === 0 ? 'Cancel' : 'Back'}
               </button>
@@ -248,9 +308,10 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
                   setFormError(null);
                   setStep(step + 1);
                 }} 
-                className="px-6 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background font-bold transition-colors text-sm"
+                disabled={saving}
+                className="px-6 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background font-bold transition-colors text-sm disabled:opacity-50"
               >
-                {step === 3 ? 'Create Quote PDF' : 'Next'}
+                {step === 3 ? (saving ? 'Saving...' : 'Create Quote PDF') : 'Next'}
               </button>
             </>
           )}
