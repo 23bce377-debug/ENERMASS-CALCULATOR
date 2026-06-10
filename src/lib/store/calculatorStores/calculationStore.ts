@@ -18,6 +18,9 @@ export const createCalculationSlice: StateCreator<
     | 'selectedSystemId'
     | 'selectedState'
     | 'projectType'
+    | 'applySubsidy'
+    | 'dbActiveScheme'
+    | 'setApplySubsidy'
     | 'targetMarginPct'
     | 'overrides'
     | 'customItems'
@@ -49,6 +52,13 @@ export const createCalculationSlice: StateCreator<
     | 'dbStructureComponents'
     | 'dbStructureBom'
     | 'dbStructureAddons'
+    | 'dbStructureVendors'
+    | 'dbStructureAccessoryRates'
+    | 'dbStructureMaterialRates'
+    | 'dbStructureTemplates'
+    | 'dbStructureTemplateItems'
+    | 'dbWalkwayTemplates'
+    | 'dbLadderTemplates'
     | 'inventorySummary'
     | 'dbOrientationMultipliers'
     | 'dbLoaded'
@@ -81,6 +91,8 @@ export const createCalculationSlice: StateCreator<
   selectedSystemId: null,
   selectedState: '',
   projectType: 'residential',
+  applySubsidy: true,
+  dbActiveScheme: null,
   targetMarginPct: null,
   overrides: {},
   customItems: [],
@@ -106,6 +118,13 @@ export const createCalculationSlice: StateCreator<
   dbBatteries: [],
   dbSlabs: [],
   dbStructures: [],
+  dbStructureVendors: [],
+  dbStructureAccessoryRates: [],
+  dbStructureMaterialRates: [],
+  dbStructureTemplates: [],
+  dbStructureTemplateItems: [],
+  dbWalkwayTemplates: [],
+  dbLadderTemplates: [],
   dbWeightLookups: [],
   dbMeters: [],
   dbLAs: [],
@@ -208,8 +227,10 @@ export const createCalculationSlice: StateCreator<
       }
     }
 
+    const isCommercial = system?.category === 'commercial';
     set({
       selectedSystemId: id,
+      projectType: isCommercial ? 'commercial' : 'residential',
       overrides: {},
       disabledItemIndices: {},
       panelMix: newPanelMix,
@@ -229,6 +250,12 @@ export const createCalculationSlice: StateCreator<
   setProjectType: (type: ProjectType) => {
     set({ projectType: type });
     get().fetchRpcSubsidy();
+  },
+
+  setApplySubsidy: (val: boolean) => {
+    set({ applySubsidy: val });
+    const { result, error } = runCalculation(get());
+    set({ calcResult: result, calcError: error });
   },
 
   setMarginOverride: (pct: number | null) => {
@@ -467,6 +494,18 @@ export const createCalculationSlice: StateCreator<
         };
       });
 
+      const mappedStructureComponentMasters = (bootstrap.structureComponentMasters || []).map((scm: any) => {
+        const description = scm.name;
+        const invMatch = bootstrap.inventorySummary.find((item: any) => item.item_description === description);
+        const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
+        return {
+          id: scm.id,
+          name: scm.name,
+          rate: wac !== null ? wac : Number(scm.selling_price),
+          gst_pct: Number(scm.gst_pct)
+        };
+      });
+
       const mappedStateData: Record<string, any> = {};
       for (const rule of bootstrap.stateRules) {
         mappedStateData[rule.state_name] = {
@@ -491,7 +530,11 @@ export const createCalculationSlice: StateCreator<
         Flat: 0.90 * factor
       };
 
-      const sortedSlabs = [...bootstrap.slabs].sort((a, b) => a.slab_index - b.slab_index).map(s => ({
+      const activeScheme = bootstrap.schemes?.find((s: any) => s.code === 'PM_SURYA_GHAR_2024' && s.is_active);
+      const schemeSlabs = activeScheme 
+        ? bootstrap.slabs.filter((s: any) => s.scheme_id === activeScheme.id)
+        : [];
+      const sortedSlabs = [...schemeSlabs].sort((a, b) => a.slab_index - b.slab_index).map(s => ({
         start_kw: Number(s.start_kw),
         end_kw: s.end_kw !== null ? Number(s.end_kw) : null,
         rate_per_kw: Number(s.rate_per_kw),
@@ -514,7 +557,7 @@ export const createCalculationSlice: StateCreator<
           } else if (item.battery_id) {
             const battery = mappedBatteries.find((b: any) => b.id === item.battery_id);
             rate = battery ? Number(battery.rate) : 0;
-            gstPct = battery ? Number(battery.gst_pct) : 0.18;
+            gstPct = battery ? Number(battery.gst_pct) : 0.12;
           } else if (item.solar_meter_id) {
             const meter = mappedMeters.find((m: any) => m.id === item.solar_meter_id);
             rate = meter ? Number(meter.rate) : 0;
@@ -539,6 +582,10 @@ export const createCalculationSlice: StateCreator<
             const comm = mappedCommDevices.find((c: any) => c.id === item.comm_device_id);
             rate = comm ? Number(comm.rate) : 0;
             gstPct = comm ? Number(comm.gst_pct) : 0.12;
+          } else if (item.structure_component_id) {
+            const comp = mappedStructureComponentMasters.find((c: any) => c.id === item.structure_component_id);
+            rate = comp ? Number(comp.rate) : 0;
+            gstPct = comp ? Number(comp.gst_pct) : 0.18;
           }
 
           return {
@@ -570,7 +617,15 @@ export const createCalculationSlice: StateCreator<
         dbInverters: mappedInverters,
         dbBatteries: mappedBatteries,
         dbSlabs: sortedSlabs,
+        dbActiveScheme: activeScheme || null,
         dbStructures: mappedStructures,
+        dbStructureVendors: bootstrap.structureVendors || [],
+        dbStructureAccessoryRates: bootstrap.structureAccessoryRates || [],
+        dbStructureMaterialRates: bootstrap.structureMaterialRates || [],
+        dbStructureTemplates: bootstrap.structureTemplates || [],
+        dbStructureTemplateItems: bootstrap.structureTemplateItems || [],
+        dbWalkwayTemplates: bootstrap.walkwayTemplates || [],
+        dbLadderTemplates: bootstrap.ladderTemplates || [],
         dbWeightLookups: bootstrap.weightLookups || [],
         dbMeters: mappedMeters,
         dbLAs: mappedLAs,

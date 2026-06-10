@@ -13,7 +13,7 @@ export const GET = withAuth(async (request, context) => {
 
   try {
     const data = await getOrSetCache(`erp:bootstrap:${orgId}`, async () => {
-      const supabaseAdmin = createAdminClient();
+      const supabaseAdmin = createAdminClient() as any;
 
       const [
         panelsRes,
@@ -34,7 +34,14 @@ export const GET = withAuth(async (request, context) => {
         structureComponentsRes,
         structureBomRes,
         structureAddonsRes,
-        appSettingsRes
+        appSettingsRes,
+        structureAccessoryRatesRes,
+        structureMaterialRatesRes,
+        structureTemplatesRes,
+        structureTemplateItemsRes,
+        walkwayTemplatesRes,
+        ladderTemplatesRes,
+        structureComponentMasterRes
       ] = await Promise.all([
         supabaseAdmin.from('eq_panels').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
         supabaseAdmin.from('eq_inverters').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
@@ -54,7 +61,14 @@ export const GET = withAuth(async (request, context) => {
         supabaseAdmin.from('eq_structure_components').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
         supabaseAdmin.from('eq_structure_bom').select('*'),
         supabaseAdmin.from('eq_structure_addons').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('app_settings').select('*').eq('org_id', orgId).maybeSingle()
+        supabaseAdmin.from('app_settings').select('*').eq('org_id', orgId).maybeSingle(),
+        supabaseAdmin.from('structure_accessory_rates').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
+        supabaseAdmin.from('structure_material_rates').select('*'),
+        supabaseAdmin.from('structure_templates').select('*'),
+        supabaseAdmin.from('structure_template_items').select('*'),
+        supabaseAdmin.from('walkway_templates').select('*'),
+        supabaseAdmin.from('ladder_templates').select('*'),
+        supabaseAdmin.from('structure_component_master').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true)
       ]);
 
       if (panelsRes.error) throw panelsRes.error;
@@ -76,6 +90,13 @@ export const GET = withAuth(async (request, context) => {
       if (structureBomRes.error) throw structureBomRes.error;
       if (structureAddonsRes.error) throw structureAddonsRes.error;
       if (appSettingsRes.error) throw appSettingsRes.error;
+      if (structureAccessoryRatesRes.error) throw structureAccessoryRatesRes.error;
+      if (structureMaterialRatesRes.error) throw structureMaterialRatesRes.error;
+      if (structureTemplatesRes.error) throw structureTemplatesRes.error;
+      if (structureTemplateItemsRes.error) throw structureTemplateItemsRes.error;
+      if (walkwayTemplatesRes.error) throw walkwayTemplatesRes.error;
+      if (ladderTemplatesRes.error) throw ladderTemplatesRes.error;
+      if (structureComponentMasterRes.error) throw structureComponentMasterRes.error;
 
       return {
         panels: panelsRes.data || [],
@@ -96,7 +117,15 @@ export const GET = withAuth(async (request, context) => {
         structureComponents: structureComponentsRes.data || [],
         structureBom: structureBomRes.data || [],
         structureAddons: structureAddonsRes.data || [],
-        appSettings: appSettingsRes.data || null
+        appSettings: appSettingsRes.data || null,
+        structureVendors: (vendorsRes.data || []).filter((v: any) => v.is_structure_vendor),
+        structureAccessoryRates: structureAccessoryRatesRes.data || [],
+        structureMaterialRates: structureMaterialRatesRes.data || [],
+        structureTemplates: structureTemplatesRes.data || [],
+        structureTemplateItems: structureTemplateItemsRes.data || [],
+        walkwayTemplates: walkwayTemplatesRes.data || [],
+        ladderTemplates: ladderTemplatesRes.data || [],
+        structureComponentMasters: structureComponentMasterRes.data || []
       };
     }, 300); // Cache for 5 minutes
 

@@ -112,8 +112,8 @@ export default function InvertersMasterPage() {
     if (!inverters) return [];
     return inverters.filter((i) => {
       const matchSearch =
-        i.brand.toLowerCase().includes(search.toLowerCase()) ||
-        i.model.toLowerCase().includes(search.toLowerCase()) ||
+        (i.brand || '').toLowerCase().includes(search.toLowerCase()) ||
+        (i.model || '').toLowerCase().includes(search.toLowerCase()) ||
         (i.description || '').toLowerCase().includes(search.toLowerCase());
       
       const matchType = typeFilter ? i.inverter_type === typeFilter : true;

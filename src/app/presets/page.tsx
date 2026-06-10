@@ -221,7 +221,7 @@ export default function PresetsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [customSystemDraft, setCustomSystemDraft] = useState({
     name: '',
-    baseSystemId: SYSTEMS[0]?.id ?? '',
+    baseSystemId: '',
     capacityKW: '',
     panelWattage: '',
     panelQty: '',
@@ -282,7 +282,25 @@ export default function PresetsPage() {
     const panelQty = parseInt(customSystemDraft.panelQty, 10);
     const panelWattage = parseInt(customSystemDraft.panelWattage, 10);
     const targetMarginPct = parseFloat(customSystemDraft.targetMarginPct);
-    const template = SYSTEMS[0]; // minimal BOM base
+    
+    // Fallback template when dbSystems is empty
+    const template = dbSystems[0] || SYSTEMS[0] || {
+      id: 'default_template',
+      name: 'Default Template',
+      category: 'on-grid',
+      capacityKW: 5,
+      panelWattage: 550,
+      panelQty: 10,
+      targetMarginPct: 0.2,
+      items: [
+        { description: 'Panel', qty: 10, ratePerUnit: 0, gstPct: 0.12 as any },
+        { description: 'Inverter', qty: 1, ratePerUnit: 0, gstPct: 0.18 as any },
+        { description: 'Structure', qty: 1, ratePerUnit: 0, gstPct: 0.18 as any },
+        { description: 'BOS / Cable / ACDB / DCDB / Earthing / LA', qty: 1, ratePerUnit: 0, gstPct: 0.18 as any },
+        { description: 'Net Metering / Solar Metering charges', qty: 1, ratePerUnit: 0, gstPct: 0.18 as any },
+        { description: 'Installation & Commissioning', qty: 1, ratePerUnit: 0, gstPct: 0.18 as any }
+      ]
+    };
 
     if (!name) return setCustomSystemError('System name is required.');
     if (!Number.isFinite(capacityKW) || capacityKW <= 0) return setCustomSystemError('Capacity must be > 0.');
@@ -309,7 +327,7 @@ export default function PresetsPage() {
 
     setSettings({ customSystems: [...customSystems, customSystem] });
     setCustomSystemError(null);
-    setCustomSystemDraft({ name: '', baseSystemId: SYSTEMS[0]?.id ?? '', capacityKW: '', panelWattage: '', panelQty: '', targetMarginPct: '20' });
+    setCustomSystemDraft({ name: '', baseSystemId: dbSystems[0]?.id ?? SYSTEMS[0]?.id ?? '', capacityKW: '', panelWattage: '', panelQty: '', targetMarginPct: '20' });
     setFormOpen(false);
     toast(`Preset "${name}" added locally. Press Commit to sync to DB.`, 'success');
   };

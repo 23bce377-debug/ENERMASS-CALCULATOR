@@ -357,6 +357,95 @@ CREATE TABLE structure_weight_lookup (
 
 CREATE INDEX idx_structure_weight ON structure_weight_lookup(structure_id, capacity_kw_min, capacity_kw_max);
 
+-- 5f-bis. STRUCTURE ERP DATA MODEL (Vendors, Material Rates, Templates, Items, Walkways, Ladders)
+CREATE TABLE structure_vendors (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name                TEXT NOT NULL UNIQUE,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE structure_material_rates (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id           UUID NOT NULL REFERENCES structure_vendors(id) ON DELETE CASCADE,
+  material_type       TEXT NOT NULL, -- 'GI' or 'GP'
+  rate_per_kg         NUMERIC(10,4) NOT NULL,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT uq_vendor_material UNIQUE (vendor_id, material_type)
+);
+
+CREATE TABLE structure_templates (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  capacity_kw         NUMERIC(8,3) NOT NULL,
+  panel_count         INTEGER NOT NULL,
+  structure_type      TEXT NOT NULL, -- 'GI' or 'GP'
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT uq_capacity_panels_type UNIQUE (capacity_kw, panel_count, structure_type)
+);
+
+CREATE TABLE structure_template_items (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  template_id         UUID NOT NULL REFERENCES structure_templates(id) ON DELETE CASCADE,
+  item                TEXT NOT NULL,
+  qty                 NUMERIC(10,4) NOT NULL,
+  weight              NUMERIC(10,4), -- Weight in kg (nullable, for weight-based primary members)
+  vendor_id           UUID REFERENCES structure_vendors(id) ON DELETE CASCADE, -- Nullable, for vendor-specific weights
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Structure Component Master ( Rajasthan Templates Integration )
+CREATE TABLE structure_component_master (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID REFERENCES organisations(id) ON DELETE CASCADE,
+  name                TEXT NOT NULL,
+  type                TEXT, -- 'tube', 'plate', 'channel', etc.
+  weight_per_meter    NUMERIC(10,4),
+  material            TEXT, -- 'GP', 'GI', etc.
+  selling_price       NUMERIC(12,4) NOT NULL DEFAULT 0,
+  buy_price           NUMERIC(12,4) NOT NULL DEFAULT 0,
+  gst_pct             NUMERIC(6,5) NOT NULL DEFAULT 0.18000,
+  is_active           BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX uq_struct_comp_name ON structure_component_master (name, COALESCE(org_id::text, 'global'));
+ALTER TABLE structure_component_master ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "structure_component_master_visibility" ON structure_component_master FOR SELECT USING ((org_id IS NULL) OR (org_id = auth_org_id()));
+CREATE POLICY "structure_component_master_write" ON structure_component_master FOR ALL TO authenticated USING (org_id = auth_org_id()) WITH CHECK (org_id = auth_org_id());
+
+CREATE TABLE walkway_templates (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  template            TEXT NOT NULL UNIQUE, -- e.g. 'gp_walkway'
+  length_m            NUMERIC(8,2) NOT NULL,
+  cost                NUMERIC(12,2) NOT NULL,
+  cost_per_meter      NUMERIC(12,2) NOT NULL,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE ladder_templates (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  template            TEXT NOT NULL UNIQUE, -- e.g. 'gp_ladder'
+  length_m            NUMERIC(8,2) NOT NULL,
+  cost                NUMERIC(12,2) NOT NULL,
+  cost_per_meter      NUMERIC(12,2) NOT NULL,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Enable RLS and add public SELECT access
+ALTER TABLE structure_vendors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE structure_material_rates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE structure_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE structure_template_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE walkway_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ladder_templates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "structure_vendors_visibility" ON structure_vendors FOR SELECT USING (true);
+CREATE POLICY "structure_material_rates_visibility" ON structure_material_rates FOR SELECT USING (true);
+CREATE POLICY "structure_templates_visibility" ON structure_templates FOR SELECT USING (true);
+CREATE POLICY "structure_template_items_visibility" ON structure_template_items FOR SELECT USING (true);
+CREATE POLICY "walkway_templates_visibility" ON walkway_templates FOR SELECT USING (true);
+CREATE POLICY "ladder_templates_visibility" ON ladder_templates FOR SELECT USING (true);
+
 -- 5g. GENERIC BOM ITEMS (Electrical, Earthing, Cabling, Wiring, Services)
 -- Covers: ACDB, DCDB, MAIN ACDB, ISOLATOR, DC CABLE, AC CABLE,
 --         EARTH ROD, GI STRIP, EARTH COMPOUND, CHAMBER BOX, EARTH BENCH,
@@ -409,16 +498,15 @@ CREATE TABLE eq_communication_devices (
 -- ============================================================
 
 CREATE TABLE rate_master (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id          UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
-  bom_item_id     UUID NOT NULL REFERENCES eq_bom_items(id) ON DELETE CASCADE,
-  override_rate   NUMERIC(12,4) NOT NULL,
-  is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-  changed_by      UUID REFERENCES profiles(id),
-  version         INTEGER NOT NULL DEFAULT 1,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT uq_rate_master UNIQUE (org_id, bom_item_id)
+  id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id        UUID          NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+  bom_item_id   UUID          REFERENCES eq_bom_items(id) ON DELETE SET NULL,
+  item_name     TEXT          NOT NULL,     -- fallback key if bom_item_id is null
+  override_rate NUMERIC(12,4) NOT NULL,
+  is_active     BOOLEAN       NOT NULL DEFAULT TRUE,
+  created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  CONSTRAINT uq_rate_master_item UNIQUE (org_id, item_name)
 );
 
 -- ============================================================
@@ -462,6 +550,7 @@ CREATE TABLE system_items (
   structure_id            UUID REFERENCES eq_mounting_structures(id),
   bom_item_id             UUID REFERENCES eq_bom_items(id),
   comm_device_id          UUID REFERENCES eq_communication_devices(id),
+  structure_component_id  UUID REFERENCES structure_component_master(id) ON DELETE SET NULL,
 
   -- Display (denormalized for fast reads without joins)
   section                 bom_section NOT NULL,
@@ -478,15 +567,16 @@ CREATE TABLE system_items (
 
   -- Enforce single reference
   CONSTRAINT ck_single_ref CHECK (
-    (CASE WHEN panel_id        IS NOT NULL THEN 1 ELSE 0 END +
-     CASE WHEN inverter_id     IS NOT NULL THEN 1 ELSE 0 END +
-     CASE WHEN battery_id      IS NOT NULL THEN 1 ELSE 0 END +
-     CASE WHEN solar_meter_id  IS NOT NULL THEN 1 ELSE 0 END +
-     CASE WHEN net_meter_id    IS NOT NULL THEN 1 ELSE 0 END +
-     CASE WHEN la_id           IS NOT NULL THEN 1 ELSE 0 END +
-     CASE WHEN structure_id    IS NOT NULL THEN 1 ELSE 0 END +
-     CASE WHEN bom_item_id     IS NOT NULL THEN 1 ELSE 0 END +
-     CASE WHEN comm_device_id  IS NOT NULL THEN 1 ELSE 0 END
+    (CASE WHEN panel_id               IS NOT NULL THEN 1 ELSE 0 END +
+     CASE WHEN inverter_id            IS NOT NULL THEN 1 ELSE 0 END +
+     CASE WHEN battery_id             IS NOT NULL THEN 1 ELSE 0 END +
+     CASE WHEN solar_meter_id         IS NOT NULL THEN 1 ELSE 0 END +
+     CASE WHEN net_meter_id           IS NOT NULL THEN 1 ELSE 0 END +
+     CASE WHEN la_id                  IS NOT NULL THEN 1 ELSE 0 END +
+     CASE WHEN structure_id           IS NOT NULL THEN 1 ELSE 0 END +
+     CASE WHEN bom_item_id            IS NOT NULL THEN 1 ELSE 0 END +
+     CASE WHEN comm_device_id         IS NOT NULL THEN 1 ELSE 0 END +
+     CASE WHEN structure_component_id IS NOT NULL THEN 1 ELSE 0 END
     ) = 1
   )
 );
@@ -1275,6 +1365,179 @@ INSERT INTO structure_weight_lookup (structure_id, capacity_kw_min, capacity_kw_
   ('e1000000-0000-0000-0000-000000000002', 4.500, 999.000, 9, 0.0000, 13.000, '5kW Deemac GP'),
   ('e1000000-0000-0000-0000-000000000003', 4.500, 999.000, 9, 0.0000, 121.000, '5kW Apollo GI'),
   ('e1000000-0000-0000-0000-000000000004', 4.500, 999.000, 9, 0.0000, 42.000, '5kW Tata GI');
+
+-- 19j. Structure ERP Model Seeds (Vendors, Material Rates, Templates, Items, Walkways, Ladders)
+-- Vendors
+INSERT INTO structure_vendors (id, name) VALUES
+  ('a1000000-0000-0000-0000-000000000001', 'Appolo'),
+  ('a1000000-0000-0000-0000-000000000002', 'Tata'),
+  ('a1000000-0000-0000-0000-000000000003', 'Deemac')
+ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name;
+
+-- Material Rates
+INSERT INTO structure_material_rates (vendor_id, material_type, rate_per_kg) VALUES
+  ('a1000000-0000-0000-0000-000000000001', 'GI', 120.0000),
+  ('a1000000-0000-0000-0000-000000000002', 'GI', 110.0000),
+  ('a1000000-0000-0000-0000-000000000001', 'GP', 100.0000),
+  ('a1000000-0000-0000-0000-000000000003', 'GP', 90.0000)
+ON CONFLICT (vendor_id, material_type) DO UPDATE SET rate_per_kg = EXCLUDED.rate_per_kg;
+
+-- Templates
+INSERT INTO structure_templates (id, capacity_kw, panel_count, structure_type) VALUES
+  ('t1000000-0000-0000-0000-000000000001', 3.000, 6, 'GI'),
+  ('t1000000-0000-0000-0000-000000000002', 3.000, 6, 'GP'),
+  ('t1000000-0000-0000-0000-000000000003', 4.000, 8, 'GI'),
+  ('t1000000-0000-0000-0000-000000000004', 4.000, 8, 'GP'),
+  ('t1000000-0000-0000-0000-000000000005', 5.000, 9, 'GI'),
+  ('t1000000-0000-0000-0000-000000000006', 5.000, 9, 'GP')
+ON CONFLICT (capacity_kw, panel_count, structure_type) DO UPDATE SET capacity_kw = EXCLUDED.capacity_kw;
+
+-- Template Items
+-- Rafters and Purlins for each template and vendor
+INSERT INTO structure_template_items (template_id, item, qty, weight, vendor_id) VALUES
+  -- 3KW GI Appolo
+  ('t1000000-0000-0000-0000-000000000001', 'Rafter 3x1.5 Rectangle Tube', 2.0, 10.0, 'a1000000-0000-0000-0000-000000000001'),
+  ('t1000000-0000-0000-0000-000000000001', 'Purlin 1.5x1.5 Rectangle Tube', 2.5, 8.0, 'a1000000-0000-0000-0000-000000000001'),
+  -- 3KW GI Tata
+  ('t1000000-0000-0000-0000-000000000001', 'Rafter 3x1.5 Rectangle Tube', 2.0, 12.0, 'a1000000-0000-0000-0000-000000000002'),
+  ('t1000000-0000-0000-0000-000000000001', 'Purlin 1.5x1.5 Rectangle Tube', 2.5, 9.0, 'a1000000-0000-0000-0000-000000000002'),
+  
+  -- 3KW GP Appolo
+  ('t1000000-0000-0000-0000-000000000002', 'Rafter 3x1.5 Rectangle Tube', 2.0, 7.0, 'a1000000-0000-0000-0000-000000000001'),
+  ('t1000000-0000-0000-0000-000000000002', 'Purlin 1.5x1.5 Rectangle Tube', 2.5, 5.0, 'a1000000-0000-0000-0000-000000000001'),
+  -- 3KW GP Deemac
+  ('t1000000-0000-0000-0000-000000000002', 'Rafter 3x1.5 Rectangle Tube', 2.0, 6.0, 'a1000000-0000-0000-0000-000000000003'),
+  ('t1000000-0000-0000-0000-000000000002', 'Purlin 1.5x1.5 Rectangle Tube', 2.5, 4.0, 'a1000000-0000-0000-0000-000000000003'),
+  
+  -- 4KW GI Appolo
+  ('t1000000-0000-0000-0000-000000000003', 'Rafter 3x1.5 Rectangle Tube', 2.0, 23.0, 'a1000000-0000-0000-0000-000000000001'),
+  ('t1000000-0000-0000-0000-000000000003', 'Purlin 1.5x1.5 Rectangle Tube', 3.0, 8.0, 'a1000000-0000-0000-0000-000000000001'),
+  -- 4KW GI Tata
+  ('t1000000-0000-0000-0000-000000000003', 'Rafter 3x1.5 Rectangle Tube', 2.0, 45.0, 'a1000000-0000-0000-0000-000000000002'),
+  ('t1000000-0000-0000-0000-000000000003', 'Purlin 1.5x1.5 Rectangle Tube', 3.0, 76.0, 'a1000000-0000-0000-0000-000000000002'),
+  
+  -- 4KW GP Appolo
+  ('t1000000-0000-0000-0000-000000000004', 'Rafter 3x1.5 Rectangle Tube', 2.0, 78.0, 'a1000000-0000-0000-0000-000000000001'),
+  ('t1000000-0000-0000-0000-000000000004', 'Purlin 1.5x1.5 Rectangle Tube', 3.0, 65.0, 'a1000000-0000-0000-0000-000000000001'),
+  -- 4KW GP Deemac
+  ('t1000000-0000-0000-0000-000000000004', 'Rafter 3x1.5 Rectangle Tube', 2.0, 12.0, 'a1000000-0000-0000-0000-000000000003'),
+  ('t1000000-0000-0000-0000-000000000004', 'Purlin 1.5x1.5 Rectangle Tube', 3.0, 34.0, 'a1000000-0000-0000-0000-000000000003'),
+
+  -- 5KW GI Appolo
+  ('t1000000-0000-0000-0000-000000000005', 'Rafter 3x1.5 Rectangle Tube', 3.0, 45.0, 'a1000000-0000-0000-0000-000000000001'),
+  ('t1000000-0000-0000-0000-000000000005', 'Purlin 1.5x1.5 Rectangle Tube', 4.0, 76.0, 'a1000000-0000-0000-0000-000000000001'),
+  -- 5KW GI Tata
+  ('t1000000-0000-0000-0000-000000000005', 'Rafter 3x1.5 Rectangle Tube', 3.0, 20.0, 'a1000000-0000-0000-0000-000000000002'),
+  ('t1000000-0000-0000-0000-000000000005', 'Purlin 1.5x1.5 Rectangle Tube', 4.0, 22.0, 'a1000000-0000-0000-0000-000000000002'),
+  
+  -- 5KW GP Appolo
+  ('t1000000-0000-0000-0000-000000000006', 'Rafter 3x1.5 Rectangle Tube', 3.0, 10.0, 'a1000000-0000-0000-0000-000000000001'),
+  ('t1000000-0000-0000-0000-000000000006', 'Purlin 1.5x1.5 Rectangle Tube', 4.0, 34.0, 'a1000000-0000-0000-0000-000000000001'),
+  -- 5KW GP Deemac
+  ('t1000000-0000-0000-0000-000000000006', 'Rafter 3x1.5 Rectangle Tube', 3.0, 5.0, 'a1000000-0000-0000-0000-000000000003'),
+  ('t1000000-0000-0000-0000-000000000006', 'Purlin 1.5x1.5 Rectangle Tube', 4.0, 8.0, 'a1000000-0000-0000-0000-000000000003');
+
+-- Accessories for 3KW Templates (vendor_id IS NULL)
+INSERT INTO structure_template_items (template_id, item, qty, weight, vendor_id) VALUES
+  ('t1000000-0000-0000-0000-000000000001', 'MS Hole Plate 4x4', 5.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000001', 'Anchor Bolt 8mm', 8.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000001', 'PVC End Cap 3x1.5', 4.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000001', 'PVC End Cap 1.5x1.5', 10.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000001', 'Epoxy Primer', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000001', 'Thinner', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000001', 'Roller Brush', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000001', 'Solid Block', 4.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000001', 'Nano Grout', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000001', 'Welding Rod', 40.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000001', 'Cutting Wheel', 4.0, NULL, NULL),
+  
+  ('t1000000-0000-0000-0000-000000000002', 'MS Hole Plate 4x4', 5.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000002', 'Anchor Bolt 8mm', 8.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000002', 'PVC End Cap 3x1.5', 4.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000002', 'PVC End Cap 1.5x1.5', 10.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000002', 'Epoxy Primer', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000002', 'Thinner', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000002', 'Roller Brush', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000002', 'Solid Block', 4.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000002', 'Nano Grout', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000002', 'Welding Rod', 40.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000002', 'Cutting Wheel', 4.0, NULL, NULL);
+
+-- Accessories for 4KW Templates
+INSERT INTO structure_template_items (template_id, item, qty, weight, vendor_id) VALUES
+  ('t1000000-0000-0000-0000-000000000003', 'MS Hole Plate 4x4', 6.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000003', 'Anchor Bolt 8mm', 10.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000003', 'PVC End Cap 3x1.5', 4.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000003', 'PVC End Cap 1.5x1.5', 12.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000003', 'Epoxy Primer', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000003', 'Thinner', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000003', 'Roller Brush', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000003', 'Solid Block', 4.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000003', 'Nano Grout', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000003', 'Welding Rod', 50.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000003', 'Cutting Wheel', 5.0, NULL, NULL),
+  
+  ('t1000000-0000-0000-0000-000000000004', 'MS Hole Plate 4x4', 6.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000004', 'Anchor Bolt 8mm', 10.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000004', 'PVC End Cap 3x1.5', 4.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000004', 'PVC End Cap 1.5x1.5', 12.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000004', 'Epoxy Primer', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000004', 'Thinner', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000004', 'Roller Brush', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000004', 'Solid Block', 4.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000004', 'Nano Grout', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000004', 'Welding Rod', 50.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000004', 'Cutting Wheel', 5.0, NULL, NULL);
+
+-- Accessories for 5KW Templates
+INSERT INTO structure_template_items (template_id, item, qty, weight, vendor_id) VALUES
+  ('t1000000-0000-0000-0000-000000000005', 'MS Hole Plate 4x4', 7.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000005', 'Anchor Bolt 8mm', 12.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000005', 'PVC End Cap 3x1.5', 6.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000005', 'PVC End Cap 1.5x1.5', 12.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000005', 'Epoxy Primer', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000005', 'Thinner', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000005', 'Roller Brush', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000005', 'Solid Block', 4.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000005', 'Nano Grout', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000005', 'Welding Rod', 60.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000005', 'Cutting Wheel', 6.0, NULL, NULL),
+  
+  ('t1000000-0000-0000-0000-000000000006', 'MS Hole Plate 4x4', 7.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000006', 'Anchor Bolt 8mm', 12.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000006', 'PVC End Cap 3x1.5', 6.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000006', 'PVC End Cap 1.5x1.5', 12.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000006', 'Epoxy Primer', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000006', 'Thinner', 0.5, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000006', 'Roller Brush', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000006', 'Solid Block', 4.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000006', 'Nano Grout', 1.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000006', 'Welding Rod', 60.0, NULL, NULL),
+  ('t1000000-0000-0000-0000-000000000006', 'Cutting Wheel', 6.0, NULL, NULL);
+
+-- Walkway Templates
+INSERT INTO walkway_templates (id, template, length_m, cost, cost_per_meter) VALUES
+  ('w1000000-0000-0000-0000-000000000001', 'gp_walkway', 6.00, 5024.00, 837.33)
+ON CONFLICT (template) DO UPDATE SET cost = EXCLUDED.cost, cost_per_meter = EXCLUDED.cost_per_meter;
+
+-- Ladder Templates
+INSERT INTO ladder_templates (id, template, length_m, cost, cost_per_meter) VALUES
+  ('l1000000-0000-0000-0000-000000000001', 'gp_ladder', 3.60, 3234.00, 898.33)
+ON CONFLICT (template) DO UPDATE SET cost = EXCLUDED.cost, cost_per_meter = EXCLUDED.cost_per_meter;
+
+-- Seed default accessory rates in rate_master
+INSERT INTO rate_master (org_id, item_name, override_rate) VALUES
+  ('00000000-0000-0000-0000-000000000001', 'MS Hole Plate 4x4', 120.0000),
+  ('00000000-0000-0000-0000-000000000001', 'Anchor Bolt 8mm', 10.0000),
+  ('00000000-0000-0000-0000-000000000001', 'PVC End Cap 3x1.5', 4.0000),
+  ('00000000-0000-0000-0000-000000000001', 'PVC End Cap 1.5x1.5', 4.0000),
+  ('00000000-0000-0000-0000-000000000001', 'Epoxy Primer', 380.0000),
+  ('00000000-0000-0000-0000-000000000001', 'Thinner', 140.0000),
+  ('00000000-0000-0000-0000-000000000001', 'Roller Brush', 100.0000),
+  ('00000000-0000-0000-0000-000000000001', 'Solid Block', 120.0000),
+  ('00000000-0000-0000-0000-000000000001', 'Nano Grout', 350.0000),
+  ('00000000-0000-0000-0000-000000000001', 'Welding Rod', 3.0000),
+  ('00000000-0000-0000-0000-000000000001', 'Cutting Wheel', 15.0000);
 
 
 -- ============================================================

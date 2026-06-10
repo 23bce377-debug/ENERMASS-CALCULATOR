@@ -88,7 +88,7 @@ export default function VendorsMasterPage() {
   const filteredVendors = useMemo(() => {
     if (!vendors) return [];
     return vendors.filter((v) =>
-      v.name.toLowerCase().includes(search.toLowerCase()) ||
+      (v.name || '').toLowerCase().includes(search.toLowerCase()) ||
       (v.contact_person || '').toLowerCase().includes(search.toLowerCase()) ||
       (v.email || '').toLowerCase().includes(search.toLowerCase()) ||
       (v.phone || '').toLowerCase().includes(search.toLowerCase()) ||

@@ -61,6 +61,7 @@ export const useCalculatorStore = create<CalculatorState>()(
         activeVariantId: state.activeVariantId,
         activeQuoteId: state.activeQuoteId,
         showInventoryInfo: state.showInventoryInfo,
+        applySubsidy: state.applySubsidy,
 
         // Structure & Meter & LA selections
         selectedStructureId: state.selectedStructureId,

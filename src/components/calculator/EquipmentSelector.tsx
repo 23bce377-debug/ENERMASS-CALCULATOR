@@ -35,9 +35,6 @@ interface StructureComponent {
   category: 'steel_section' | 'hardware' | 'finishing' | 'civil' | 'fabrication' | 'addon';
   name: string;
   unit: string;
-  rate_appolo: number;
-  rate_tata: number;
-  rate_deemac: number;
   selling_price: number;
   gst_pct: number;
 }
@@ -1991,6 +1988,27 @@ function StructureRateCell({
   );
 }
 
+const ACCESSORY_FALLBACK_RATES: Record<string, { rate: number; unit: string }> = {
+  'ms hole plate 4x4': { rate: 120, unit: 'Nos' },
+  'ms hole plate 4x4 ': { rate: 120, unit: 'Nos' },
+  'anchor bolt 8mm': { rate: 10, unit: 'Nos' },
+  'angor bolt 8 mm': { rate: 10, unit: 'Nos' },
+  'pvc end cap 3x1.5': { rate: 4, unit: 'Nos' },
+  'pvc end cap 3x1.1/2 -': { rate: 4, unit: 'Nos' },
+  'pvc end cap 1.5x1.5': { rate: 4, unit: 'Nos' },
+  'pvc end cap 1.1/2 x 1.1/2': { rate: 4, unit: 'Nos' },
+  'epoxy primer': { rate: 380, unit: 'L' },
+  'thinner': { rate: 140, unit: 'L' },
+  'roller brush': { rate: 100, unit: 'Nos' },
+  'solid block': { rate: 120, unit: 'Nos' },
+  'nano grout': { rate: 350, unit: 'Nos' },
+  'chemickal- nano grout': { rate: 350, unit: 'Nos' },
+  'welding rod': { rate: 3, unit: 'Nos' },
+  'welding- rad': { rate: 3, unit: 'Nos' },
+  'cutting wheel': { rate: 15, unit: 'Nos' },
+  'cutting wheel 4"': { rate: 15, unit: 'Nos' },
+};
+
 function StructureConfigTable() {
   const dbStructures = useCalculatorStore((s) => s.dbStructures);
   const dbWeightLookups = useCalculatorStore((s) => s.dbWeightLookups);
@@ -2015,6 +2033,23 @@ function StructureConfigTable() {
   const currentSystemId = useCalculatorStore((s) => s.selectedSystemId);
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
 
+  // ERP structure store variables
+  const dbStructureVendors = useCalculatorStore((s) => s.dbStructureVendors) || [];
+  const dbStructureMaterialRates = useCalculatorStore((s) => s.dbStructureMaterialRates) || [];
+  const dbStructureTemplates = useCalculatorStore((s) => s.dbStructureTemplates) || [];
+  const dbStructureTemplateItems = useCalculatorStore((s) => s.dbStructureTemplateItems) || [];
+  const dbWalkwayTemplates = useCalculatorStore((s) => s.dbWalkwayTemplates) || [];
+  const dbLadderTemplates = useCalculatorStore((s) => s.dbLadderTemplates) || [];
+
+  const structureVendorId = useCalculatorStore((s) => s.structureVendorId);
+  const structureMaterialType = useCalculatorStore((s) => s.structureMaterialType);
+  const walkwayLengthM = useCalculatorStore((s) => s.walkwayLengthM) ?? 0;
+  const ladderLengthM = useCalculatorStore((s) => s.ladderLengthM) ?? 0;
+
+  const setStructureTypeAndVendor = useCalculatorStore((s) => s.setStructureTypeAndVendor);
+  const setWalkwayLength = useCalculatorStore((s) => s.setWalkwayLength);
+  const setLadderLength = useCalculatorStore((s) => s.setLadderLength);
+
   // Resolve current system details (like capacity)
   const currentSystem = dbSystems.find((sys) => sys.id === currentSystemId);
   const capacityKW = currentSystem?.capacityKW ?? 0;
@@ -2023,6 +2058,26 @@ function StructureConfigTable() {
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [materialFilter, setMaterialFilter] = useState<'all' | 'GI' | 'GP'>('all');
+
+  const [activeTab, setActiveTab] = useState<'erp' | 'legacy'>(
+    (structureMaterialType && structureVendorId) ? 'erp' : 'legacy'
+  );
+
+  const switchToErp = () => {
+    setActiveTab('erp');
+    setStructureSelection(null);
+    if (!structureMaterialType || !structureVendorId) {
+      const defaultVendor = dbStructureVendors.find((v: any) => v.name === 'Appolo');
+      setStructureTypeAndVendor('GI', defaultVendor?.id || dbStructureVendors[0]?.id || null);
+    }
+  };
+
+  const switchToLegacy = () => {
+    setActiveTab('legacy');
+    setStructureTypeAndVendor(null, null);
+    setWalkwayLength(0);
+    setLadderLength(0);
+  };
 
   const getStructureRatesAndCost = (struct: any, pricingMode: 'weight' | 'per_watt' | 'flat') => {
     let rate = 0;
@@ -2190,23 +2245,363 @@ function StructureConfigTable() {
     ? getStructureRatesAndCost({ id: 'custom' }, structurePricingMode).cost
     : (selectedStructure ? getStructureRatesAndCost(selectedStructure, structurePricingMode).cost : 0);
 
+  // ERP specific hooks and filters
+  const vendorsForMaterial = useMemo(() => {
+    if (!structureMaterialType) return [];
+    const vendorIds = dbStructureMaterialRates
+      .filter((r: any) => r.material_type === structureMaterialType)
+      .map((r: any) => r.vendor_id);
+    return dbStructureVendors.filter((v: any) => vendorIds.includes(v.id));
+  }, [dbStructureVendors, dbStructureMaterialRates, structureMaterialType]);
+
+  const handleMaterialTypeChange = (mat: 'GI' | 'GP') => {
+    const vendorIds = dbStructureMaterialRates
+      .filter((r: any) => r.material_type === mat)
+      .map((r: any) => r.vendor_id);
+    const validVendors = dbStructureVendors.filter((v: any) => vendorIds.includes(v.id));
+    
+    let nextVendorId = structureVendorId;
+    if (!structureVendorId || !vendorIds.includes(structureVendorId)) {
+      nextVendorId = validVendors[0]?.id || null;
+    }
+    setStructureTypeAndVendor(mat, nextVendorId);
+  };
+
+  const matchedTemplate = useMemo(() => {
+    if (!structureMaterialType || dbStructureTemplates.length === 0) return null;
+    const templates = dbStructureTemplates.filter((t: any) => t.structure_type === structureMaterialType);
+    if (templates.length === 0) return null;
+    return templates.reduce((prev: any, curr: any) => 
+      Math.abs(Number(curr.capacity_kw) - capacityKW) < Math.abs(Number(prev.capacity_kw) - capacityKW) ? curr : prev
+    );
+  }, [dbStructureTemplates, structureMaterialType, capacityKW]);
+
+  const matchedTemplateItems = useMemo(() => {
+    if (!matchedTemplate || !structureVendorId) return [];
+    return dbStructureTemplateItems.filter((item: any) => 
+      item.template_id === matchedTemplate.id &&
+      (item.vendor_id === null || item.vendor_id === structureVendorId)
+    );
+  }, [dbStructureTemplateItems, matchedTemplate, structureVendorId]);
+
+  const resolvedVendor = useMemo(() => {
+    return dbStructureVendors.find((v: any) => v.id === structureVendorId);
+  }, [dbStructureVendors, structureVendorId]);
+
+  const rateRow = useMemo(() => {
+    if (!structureVendorId || !structureMaterialType) return null;
+    return dbStructureMaterialRates.find((r: any) => 
+      r.vendor_id === structureVendorId && r.material_type === structureMaterialType
+    );
+  }, [dbStructureMaterialRates, structureVendorId, structureMaterialType]);
+
+  const currentRatePerKg = rateRow ? Number(rateRow.rate_per_kg) : 0;
+
+  const walkwayTemplate = useMemo(() => {
+    if (!structureMaterialType) return null;
+    const key = `${structureMaterialType.toLowerCase()}_walkway`;
+    return dbWalkwayTemplates.find((w: any) => w.template === key) || dbWalkwayTemplates[0] || null;
+  }, [dbWalkwayTemplates, structureMaterialType]);
+
+  const ladderTemplate = useMemo(() => {
+    if (!structureMaterialType) return null;
+    const key = `${structureMaterialType.toLowerCase()}_ladder`;
+    return dbLadderTemplates.find((l: any) => l.template === key) || dbLadderTemplates[0] || null;
+  }, [dbLadderTemplates, structureMaterialType]);
+
+  const erpCalculationDetails = useMemo(() => {
+    if (!structureMaterialType || !structureVendorId || !matchedTemplate) return null;
+    
+    let rafterWeight = 0;
+    let purlinWeight = 0;
+    let primaryWeight = 0;
+    let primaryCost = 0;
+    let accessoryCost = 0;
+    const itemsList: any[] = [];
+    
+    matchedTemplateItems.forEach((item: any) => {
+      const itemLower = item.item.toLowerCase().trim();
+      const isPrimaryMember = itemLower.includes('rafter') || itemLower.includes('purlin');
+      const isRafter = itemLower.includes('rafter');
+      const isPurlin = itemLower.includes('purlin');
+      let cost = 0;
+      let rate = 0;
+      let unit = 'Nos';
+      let desc = item.item;
+      
+      if (isPrimaryMember) {
+        const itemWeight = Number(item.weight || 0);
+        rate = itemWeight * currentRatePerKg;
+        cost = Number(item.qty) * rate;
+        const w = itemWeight * Number(item.qty);
+        primaryWeight += w;
+        if (isRafter) {
+          rafterWeight += w;
+        }
+        if (isPurlin) {
+          purlinWeight += w;
+        }
+        primaryCost += cost;
+        desc = `${item.item} (${itemWeight} kg)`;
+      } else {
+        const fallback = ACCESSORY_FALLBACK_RATES[itemLower] || { rate: 0, unit: 'Nos' };
+        rate = fallback.rate;
+        unit = fallback.unit;
+        cost = Number(item.qty) * rate;
+        accessoryCost += cost;
+      }
+      
+      itemsList.push({
+        name: desc,
+        qty: Number(item.qty),
+        unit,
+        rate,
+        cost
+      });
+    });
+    
+    const walkwayCost = walkwayLengthM * (walkwayTemplate ? Number(walkwayTemplate.cost_per_meter) : 837.33);
+    const ladderCost = ladderLengthM * (ladderTemplate ? Number(ladderTemplate.cost_per_meter) : 898.33);
+    const grandTotal = primaryCost + accessoryCost + walkwayCost + ladderCost;
+    
+    return {
+      rafterWeight,
+      purlinWeight,
+      primaryWeight,
+      primaryCost,
+      accessoryCost,
+      itemsList,
+      walkwayCost,
+      ladderCost,
+      grandTotal
+    };
+  }, [structureMaterialType, structureVendorId, matchedTemplate, matchedTemplateItems, currentRatePerKg, walkwayLengthM, walkwayTemplate, ladderLengthM, ladderTemplate]);
+
   return (
     <div className="space-y-6 p-1 text-xs">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-text-muted">{dbStructures.length} structures available</span>
-        {selectedStructureId && (
-          <button
-            onClick={() => {
-              setStructureSelection(null);
-            }}
-            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs
-              text-error/80 hover:text-error hover:bg-error/10 transition-colors"
-          >
-            <X size={12} />
-            Clear Selection
-          </button>
-        )}
+      {/* Tab Selector for ERP vs Legacy */}
+      <div className="flex rounded-lg border border-border bg-background p-1 mb-4">
+        <button
+          onClick={switchToErp}
+          className={`flex-1 py-2 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${
+            activeTab === 'erp'
+              ? 'bg-accent text-background font-bold'
+              : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          ERP Structure Model (Recommended)
+        </button>
+        <button
+          onClick={switchToLegacy}
+          className={`flex-1 py-2 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${
+            activeTab === 'legacy'
+              ? 'bg-accent text-background font-bold'
+              : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Legacy Flat/Weight Models
+        </button>
       </div>
+
+      {activeTab === 'erp' ? (
+        <div className="space-y-6">
+          {/* ERP Form: Material type & Vendor selector */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-xl border border-border bg-surface-hover/30 p-4">
+            <div className="space-y-2">
+              <label className="block text-[10px] uppercase font-bold text-text-secondary tracking-wider">
+                Structure Type (Material)
+              </label>
+              <div className="flex rounded-md border border-border bg-background p-1 w-fit">
+                {(['GI', 'GP'] as const).map((mat) => (
+                  <button
+                    key={mat}
+                    onClick={() => handleMaterialTypeChange(mat)}
+                    className={`px-4 py-1.5 rounded text-xs font-semibold uppercase transition-colors ${
+                      structureMaterialType === mat
+                        ? 'bg-accent text-background'
+                        : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    {mat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-[10px] uppercase font-bold text-text-secondary tracking-wider">
+                Vendor
+              </label>
+              <div className="relative">
+                <select
+                  value={structureVendorId || ''}
+                  onChange={(e) => setStructureTypeAndVendor(structureMaterialType, e.target.value || null)}
+                  className="w-full px-3 py-2 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
+                >
+                  <option value="">Select Vendor</option>
+                  {vendorsForMaterial.map((v: any) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-[10px] uppercase font-bold text-text-secondary tracking-wider">
+                Walkway Length (m)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={walkwayLengthM === 0 ? '' : walkwayLengthM}
+                  onChange={(e) => setWalkwayLength(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+                  placeholder="Enter length in meters"
+                />
+                {walkwayTemplate && (
+                  <span className="text-[10px] text-text-muted whitespace-nowrap">
+                    ({walkwayTemplate.template}: ₹{Number(walkwayTemplate.cost_per_meter).toFixed(2)}/m)
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-[10px] uppercase font-bold text-text-secondary tracking-wider">
+                Ladder Length (m)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={ladderLengthM === 0 ? '' : ladderLengthM}
+                  onChange={(e) => setLadderLength(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent font-mono"
+                  placeholder="Enter length in meters"
+                />
+                {ladderTemplate && (
+                  <span className="text-[10px] text-text-muted whitespace-nowrap">
+                    ({ladderTemplate.template}: ₹{Number(ladderTemplate.cost_per_meter).toFixed(2)}/m)
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ERP Matched Template details */}
+          {matchedTemplate && erpCalculationDetails && (
+            <div className="rounded-xl border border-accent/20 bg-accent-glow/5 p-4 space-y-4">
+              <div className="border-b border-border/40 pb-3">
+                <h4 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-2">
+                  Structure
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-surface p-3 rounded-lg border border-border/60">
+                  <div>
+                    <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block">Structure Type</span>
+                    <span className="text-xs font-semibold text-text-primary">{structureMaterialType}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block">Vendor</span>
+                    <span className="text-xs font-semibold text-text-primary">{resolvedVendor?.name || 'Unknown'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block">Rafter Weight</span>
+                    <span className="text-xs font-semibold text-text-primary font-mono">{erpCalculationDetails.rafterWeight.toFixed(2)} kg</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block">Purlin Weight</span>
+                    <span className="text-xs font-semibold text-text-primary font-mono">{erpCalculationDetails.purlinWeight.toFixed(2)} kg</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block">Total Structure Cost</span>
+                    <span className="text-xs font-bold text-accent font-mono">₹{Math.round(erpCalculationDetails.grandTotal).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic BOM Table */}
+              <div className="space-y-2">
+                <h5 className="text-[10px] uppercase font-bold text-text-secondary tracking-widest">
+                  Detailed BOM
+                </h5>
+                <div className="overflow-x-auto rounded-lg border border-border/60">
+                  <table className="w-full text-xs font-mono text-left">
+                    <thead>
+                      <tr className="bg-surface-hover/50 text-[10px] text-text-muted uppercase font-bold border-b border-border/60">
+                        <th className="py-2 px-3">Item Description</th>
+                        <th className="py-2 px-3 text-right">Qty</th>
+                        <th className="py-2 px-3 text-right">Unit Rate</th>
+                        <th className="py-2 px-3 text-right">Total Price</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {erpCalculationDetails.itemsList.map((item, idx) => (
+                        <tr key={idx} className="border-b border-border/30 hover:bg-surface-hover/20">
+                          <td className="py-2 px-3 text-text-primary font-medium">{item.name}</td>
+                          <td className="py-2 px-3 text-right font-semibold">{item.qty} {item.unit}</td>
+                          <td className="py-2 px-3 text-right text-text-secondary">₹{Math.round(item.rate).toLocaleString('en-IN')}</td>
+                          <td className="py-2 px-3 text-right text-accent font-semibold">₹{Math.round(item.cost).toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                      {walkwayLengthM > 0 && (
+                        <tr className="border-b border-border/30 hover:bg-surface-hover/20">
+                          <td className="py-2 px-3 text-text-primary font-medium">Walkway ({structureMaterialType})</td>
+                          <td className="py-2 px-3 text-right font-semibold">{walkwayLengthM} m</td>
+                          <td className="py-2 px-3 text-right text-text-secondary">₹{Math.round(walkwayTemplate ? Number(walkwayTemplate.cost_per_meter) : 837.33).toLocaleString('en-IN')}</td>
+                          <td className="py-2 px-3 text-right text-accent font-semibold">₹{Math.round(erpCalculationDetails.walkwayCost).toLocaleString('en-IN')}</td>
+                        </tr>
+                      )}
+                      {ladderLengthM > 0 && (
+                        <tr className="border-b border-border/30 hover:bg-surface-hover/20">
+                          <td className="py-2 px-3 text-text-primary font-medium">Ladder ({structureMaterialType})</td>
+                          <td className="py-2 px-3 text-right font-semibold">{ladderLengthM} m</td>
+                          <td className="py-2 px-3 text-right text-text-secondary">₹{Math.round(ladderTemplate ? Number(ladderTemplate.cost_per_meter) : 898.33).toLocaleString('en-IN')}</td>
+                          <td className="py-2 px-3 text-right text-accent font-semibold">₹{Math.round(erpCalculationDetails.ladderCost).toLocaleString('en-IN')}</td>
+                        </tr>
+                      )}
+                      <tr className="bg-accent-dim/30 font-bold border-t border-border">
+                        <td className="py-2.5 px-3 text-text-primary">Total Calculated Cost (excl. GST)</td>
+                        <td colSpan={2} className="py-2.5 px-3"></td>
+                        <td className="py-2.5 px-3 text-right text-accent text-sm">
+                          ₹{Math.round(erpCalculationDetails.grandTotal).toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!matchedTemplate && (
+            <div className="rounded-xl border border-warning/20 bg-warning/5 p-4 text-center text-text-secondary">
+              No matching structure capacity template found for {capacityKW}kW. Please adjust capacity.
+            </div>
+          )}
+        </div>
+      ) : (
+        /* LEGACY MODELS VIEW */
+        <>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs text-text-muted">{dbStructures.length} structures available</span>
+            {selectedStructureId && (
+              <button
+                onClick={() => {
+                  setStructureSelection(null);
+                }}
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-xs
+                  text-error/80 hover:text-error hover:bg-error/10 transition-colors"
+              >
+                <X size={12} />
+                Clear Selection
+              </button>
+            )}
+          </div>
 
       {/* Search & Filters */}
       <div className="flex flex-col md:flex-row gap-3 mb-4">
@@ -2663,7 +3058,7 @@ function StructureConfigTable() {
           />
         </div>
       )}
-
+      </>)}
     </div>
   );
 }
@@ -2961,9 +3356,6 @@ function StructureBOMPanel({ structureId, capacityKW }: { structureId: string | 
                               <th className="p-2 text-left">Component</th>
                               <th className="p-2 text-center">Unit</th>
                               <th className="p-2 text-center w-36">Qty</th>
-                              <th className="p-2 text-right">₹ Appolo</th>
-                              <th className="p-2 text-right">₹ Tata</th>
-                              <th className="p-2 text-right">₹ Deemac</th>
                               <th className="p-2 text-right font-bold" style={{ color: meta.color }}>Selling ₹</th>
                               <th className="p-2 text-right font-bold" style={{ color: meta.color }}>Total ₹</th>
                             </tr>
@@ -3030,9 +3422,6 @@ function StructureBOMPanel({ structureId, capacityKW }: { structureId: string | 
                                       )}
                                     </div>
                                   </td>
-                                  <td className="p-2 text-right font-mono">{comp.rate_appolo > 0 ? `₹${comp.rate_appolo}` : '—'}</td>
-                                  <td className="p-2 text-right font-mono">{comp.rate_tata > 0 ? `₹${comp.rate_tata}` : '—'}</td>
-                                  <td className="p-2 text-right font-mono">{comp.rate_deemac > 0 ? `₹${comp.rate_deemac}` : '—'}</td>
                                   <td className="p-2 text-right font-mono font-bold" style={{ color: meta.color }}>₹{comp.selling_price}</td>
                                   <td className="p-2 text-right font-mono font-bold text-text-primary">₹{formatRate(qty * comp.selling_price)}</td>
                                 </tr>

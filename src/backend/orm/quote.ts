@@ -3,7 +3,11 @@ import type { Database } from '../../lib/types/schema.types';
 
 // Types
 export type QuoteRow = Database['public']['Tables']['quotes']['Row'];
-export type QuoteInsert = Database['public']['Tables']['quotes']['Insert'];
+export type QuoteInsert = Database['public']['Tables']['quotes']['Insert'] & {
+  panel_id?: string;
+  inverter_id?: string;
+  battery_id?: string;
+};
 export type QuoteUpdate = Database['public']['Tables']['quotes']['Update'];
 
 export type QuoteItemRow = Database['public']['Tables']['quote_items']['Row'];
@@ -45,64 +49,113 @@ export const QuoteORM = {
 
   async create(quote: QuoteInsert) {
     // 1. Rate drift validation
-    if (quote.panel_brand_model && quote.panel_rate_per_panel !== undefined && quote.panel_rate_per_panel !== null) {
-      const { data: panels } = await supabase
-        .from('eq_panels')
-        .select('selling_price, brand, model')
-        .eq('is_active', true);
-      const matched = panels?.find(p => 
-        `${p.brand} ${p.model}`.toUpperCase().includes(String(quote.panel_brand_model).toUpperCase()) ||
-        String(quote.panel_brand_model).toUpperCase().includes(`${p.brand} ${p.model}`.toUpperCase())
-      );
-      if (matched) {
-        const dbRate = Number(matched.selling_price);
-        const submittedRate = Number(quote.panel_rate_per_panel);
-        if (Math.abs(dbRate - submittedRate) > 1.0) {
-          throw new Error(`Rate drift detected for Panel: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+    if (quote.panel_rate_per_panel !== undefined && quote.panel_rate_per_panel !== null) {
+      if (quote.panel_id) {
+        const { data: panel } = await supabase
+          .from('eq_panels')
+          .select('selling_price')
+          .eq('id', quote.panel_id)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (panel) {
+          const dbRate = Number(panel.selling_price);
+          const submittedRate = Number(quote.panel_rate_per_panel);
+          if (Math.abs(dbRate - submittedRate) > 1.0) {
+            throw new Error(`Rate drift detected for Panel: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+          }
+        }
+      } else if (quote.panel_brand_model) {
+        const { data: panels } = await supabase
+          .from('eq_panels')
+          .select('selling_price, brand, model')
+          .eq('is_active', true);
+        const matched = panels?.find(p => 
+          `${p.brand} ${p.model}`.toUpperCase().includes(String(quote.panel_brand_model).toUpperCase()) ||
+          String(quote.panel_brand_model).toUpperCase().includes(`${p.brand} ${p.model}`.toUpperCase())
+        );
+        if (matched) {
+          const dbRate = Number(matched.selling_price);
+          const submittedRate = Number(quote.panel_rate_per_panel);
+          if (Math.abs(dbRate - submittedRate) > 1.0) {
+            throw new Error(`Rate drift detected for Panel: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+          }
         }
       }
     }
 
-    if (quote.inverter_brand_model && quote.inverter_rate !== undefined && quote.inverter_rate !== null) {
-      const { data: inverters } = await supabase
-        .from('eq_inverters')
-        .select('selling_price, brand, model')
-        .eq('is_active', true);
-      const matched = inverters?.find(inv => 
-        `${inv.brand} ${inv.model}`.toUpperCase().includes(String(quote.inverter_brand_model).toUpperCase()) ||
-        String(quote.inverter_brand_model).toUpperCase().includes(`${inv.brand} ${inv.model}`.toUpperCase())
-      );
-      if (matched) {
-        const dbRate = Number(matched.selling_price);
-        const submittedRate = Number(quote.inverter_rate);
-        if (Math.abs(dbRate - submittedRate) > 1.0) {
-          throw new Error(`Rate drift detected for Inverter: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+    if (quote.inverter_rate !== undefined && quote.inverter_rate !== null) {
+      if (quote.inverter_id) {
+        const { data: inverter } = await supabase
+          .from('eq_inverters')
+          .select('selling_price')
+          .eq('id', quote.inverter_id)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (inverter) {
+          const dbRate = Number(inverter.selling_price);
+          const submittedRate = Number(quote.inverter_rate);
+          if (Math.abs(dbRate - submittedRate) > 1.0) {
+            throw new Error(`Rate drift detected for Inverter: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+          }
+        }
+      } else if (quote.inverter_brand_model) {
+        const { data: inverters } = await supabase
+          .from('eq_inverters')
+          .select('selling_price, brand, model')
+          .eq('is_active', true);
+        const matched = inverters?.find(inv => 
+          `${inv.brand} ${inv.model}`.toUpperCase().includes(String(quote.inverter_brand_model).toUpperCase()) ||
+          String(quote.inverter_brand_model).toUpperCase().includes(`${inv.brand} ${inv.model}`.toUpperCase())
+        );
+        if (matched) {
+          const dbRate = Number(matched.selling_price);
+          const submittedRate = Number(quote.inverter_rate);
+          if (Math.abs(dbRate - submittedRate) > 1.0) {
+            throw new Error(`Rate drift detected for Inverter: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+          }
         }
       }
     }
 
-    if (quote.battery_brand_model && quote.battery_rate !== undefined && quote.battery_rate !== null) {
-      const { data: batteries } = await supabase
-        .from('eq_batteries')
-        .select('selling_price, brand, model')
-        .eq('is_active', true);
-      const matched = batteries?.find(b => 
-        `${b.brand} ${b.model}`.toUpperCase().includes(String(quote.battery_brand_model).toUpperCase()) ||
-        String(quote.battery_brand_model).toUpperCase().includes(`${b.brand} ${b.model}`.toUpperCase())
-      );
-      if (matched) {
-        const dbRate = Number(matched.selling_price);
-        const submittedRate = Number(quote.battery_rate);
-        if (Math.abs(dbRate - submittedRate) > 1.0) {
-          throw new Error(`Rate drift detected for Battery: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+    if (quote.battery_rate !== undefined && quote.battery_rate !== null) {
+      if (quote.battery_id) {
+        const { data: battery } = await supabase
+          .from('eq_batteries')
+          .select('selling_price')
+          .eq('id', quote.battery_id)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (battery) {
+          const dbRate = Number(battery.selling_price);
+          const submittedRate = Number(quote.battery_rate);
+          if (Math.abs(dbRate - submittedRate) > 1.0) {
+            throw new Error(`Rate drift detected for Battery: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+          }
+        }
+      } else if (quote.battery_brand_model) {
+        const { data: batteries } = await supabase
+          .from('eq_batteries')
+          .select('selling_price, brand, model')
+          .eq('is_active', true);
+        const matched = batteries?.find(b => 
+          `${b.brand} ${b.model}`.toUpperCase().includes(String(quote.battery_brand_model).toUpperCase()) ||
+          String(quote.battery_brand_model).toUpperCase().includes(`${b.brand} ${b.model}`.toUpperCase())
+        );
+        if (matched) {
+          const dbRate = Number(matched.selling_price);
+          const submittedRate = Number(quote.battery_rate);
+          if (Math.abs(dbRate - submittedRate) > 1.0) {
+            throw new Error(`Rate drift detected for Battery: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+          }
         }
       }
     }
 
-    // 2. Perform insert
+    // 2. Perform insert, excluding non-database columns panel_id, inverter_id, battery_id
+    const { panel_id, inverter_id, battery_id, ...dbQuote } = quote;
     const { data, error } = await supabase
       .from('quotes')
-      .insert(quote)
+      .insert(dbQuote)
       .select()
       .single();
     if (error) throw error;

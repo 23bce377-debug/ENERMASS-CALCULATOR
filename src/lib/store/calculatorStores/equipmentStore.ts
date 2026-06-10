@@ -13,6 +13,10 @@ export const createEquipmentSlice: StateCreator<
     | 'selectedBatteryMix'
     | 'backupLoadW'
     | 'selectedStructureId'
+    | 'structureVendorId'
+    | 'structureMaterialType'
+    | 'walkwayLengthM'
+    | 'ladderLengthM'
     | 'structurePricingMode'
     | 'structureRateOverride'
     | 'structureWastageOverride'
@@ -24,6 +28,9 @@ export const createEquipmentSlice: StateCreator<
     | 'structureCustomGalvanizingRate'
     | 'structureComponentMix'
     | 'structureAddonMix'
+    | 'setStructureTypeAndVendor'
+    | 'setWalkwayLength'
+    | 'setLadderLength'
     | 'solarMeterId'
     | 'solarMeterQty'
     | 'netMeterId'
@@ -54,6 +61,10 @@ export const createEquipmentSlice: StateCreator<
   backupLoadW: 0,
 
   selectedStructureId: null,
+  structureVendorId: null,
+  structureMaterialType: null,
+  walkwayLengthM: 0,
+  ladderLengthM: 0,
   structurePricingMode: 'weight',
   structureRateOverride: null,
   structureWastageOverride: null,
@@ -210,6 +221,21 @@ export const createEquipmentSlice: StateCreator<
       lightningArresterId: id,
       lightningArresterQty: qty !== undefined ? Math.max(0, qty) : get().lightningArresterQty,
     });
+    get().recalculate();
+  },
+
+  setStructureTypeAndVendor: (materialType: 'GI' | 'GP' | null, vendorId: string | null) => {
+    set({ structureMaterialType: materialType, structureVendorId: vendorId });
+    get().recalculate();
+  },
+
+  setWalkwayLength: (length: number) => {
+    set({ walkwayLengthM: Math.max(0, Number(length) || 0) });
+    get().recalculate();
+  },
+
+  setLadderLength: (length: number) => {
+    set({ ladderLengthM: Math.max(0, Number(length) || 0) });
     get().recalculate();
   },
 });

@@ -38,6 +38,7 @@ export function VariantsComparison() {
       dcCableLengthM: v.dcCableLengthM || 0,
       acCableLengthM: v.acCableLengthM || 0,
       electricityInflationRate: v.electricityInflationRate || 0,
+      applySubsidy: v.applySubsidy ?? true,
     };
 
     const { result, error } = runCalculation(mockState as any);

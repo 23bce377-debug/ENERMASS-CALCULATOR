@@ -21,6 +21,10 @@ export interface EquipmentSelection {
   netMeterId?: string;
   lightningArresterId?: string;
   structureId?: string;
+  structureVendorId?: string;
+  structureMaterialType?: string;
+  walkwayLengthM?: number;
+  ladderLengthM?: number;
 }
 
 export interface PricingContext {
@@ -59,6 +63,8 @@ export interface DbCalculatorOutput {
     fastenerWeightPct: number;
     lookupWeightKg?: number;
     totalWeightKg?: number;
+    rafterWeightKg?: number;
+    purlinWeightKg?: number;
     ratePerKg?: number;
     pricingMode: string;
   };
@@ -143,7 +149,8 @@ export async function calculateSystemFromDb(
       struct.raw_material_rate as struct_raw_material_rate, struct.fabrication_rate as struct_fabrication_rate, struct.galvanizing_rate as struct_galvanizing_rate,
       struct.base_weight_kg as struct_base_weight_kg, struct.wastage_pct as struct_wastage_pct, struct.fastener_weight_pct as struct_fastener_weight_pct,
       bom.selling_price as bom_rate, bom.gst_pct as bom_gst_pct,
-      comm.selling_price as comm_rate, comm.gst_pct as comm_gst_pct
+      comm.selling_price as comm_rate, comm.gst_pct as comm_gst_pct,
+      scm.selling_price as structure_component_rate, scm.gst_pct as structure_component_gst_pct
     FROM system_items si
     LEFT JOIN eq_panels p ON si.panel_id = p.id
     LEFT JOIN eq_inverters inv ON si.inverter_id = inv.id
@@ -154,13 +161,17 @@ export async function calculateSystemFromDb(
     LEFT JOIN eq_mounting_structures struct ON si.structure_id = struct.id
     LEFT JOIN eq_bom_items bom ON si.bom_item_id = bom.id
     LEFT JOIN eq_communication_devices comm ON si.comm_device_id = comm.id
+    LEFT JOIN structure_component_master scm ON si.structure_component_id = scm.id
     WHERE si.system_id = $1
     ORDER BY si.sort_order ASC`,
     [system.id]
   );
 
   // Fetch all active master equipment records (exactly like the frontend store has them cached)
-  const [pRes, invRes, batRes, mRes, laRes, sRes, wlRes, multRes] = await Promise.all([
+  const [
+    pRes, invRes, batRes, mRes, laRes, sRes, wlRes, multRes,
+    svRes, smrRes, stRes, stiRes, wtRes, ltRes, sarRes
+  ] = await Promise.all([
     client.query('SELECT * FROM eq_panels WHERE is_active = true'),
     client.query('SELECT * FROM eq_inverters WHERE is_active = true'),
     client.query('SELECT * FROM eq_batteries WHERE is_active = true'),
@@ -168,7 +179,14 @@ export async function calculateSystemFromDb(
     client.query('SELECT * FROM eq_lightning_arresters WHERE is_active = true'),
     client.query('SELECT * FROM eq_mounting_structures WHERE is_active = true'),
     client.query('SELECT * FROM structure_weight_lookup'),
-    client.query('SELECT orientation, multiplier FROM eq_orientation_multipliers')
+    client.query('SELECT orientation, multiplier FROM eq_orientation_multipliers'),
+    client.query('SELECT * FROM vendors WHERE is_structure_vendor = true'),
+    client.query('SELECT * FROM structure_material_rates'),
+    client.query('SELECT * FROM structure_templates'),
+    client.query('SELECT * FROM structure_template_items'),
+    client.query('SELECT * FROM walkway_templates'),
+    client.query('SELECT * FROM ladder_templates'),
+    client.query('SELECT * FROM structure_accessory_rates WHERE is_active = true')
   ]);
 
   const dbPanels = pRes.rows.map(p => ({
@@ -322,6 +340,9 @@ export async function calculateSystemFromDb(
     } else if (item.comm_device_id) {
       rate = Number(item.comm_rate || 0);
       gstPct = Number(item.comm_gst_pct || 0.12);
+    } else if (item.structure_component_id) {
+      rate = Number(item.structure_component_rate || 0);
+      gstPct = Number(item.structure_component_gst_pct || 0.18);
     }
     
     return {
@@ -396,7 +417,21 @@ export async function calculateSystemFromDb(
     dbLAs,
     dbStructures,
     dbWeightLookups,
-    dbOrientationMultipliers
+    dbOrientationMultipliers,
+
+    // new fields
+    structureVendorId: sel.structureVendorId,
+    structureMaterialType: sel.structureMaterialType,
+    walkwayLengthM: sel.walkwayLengthM,
+    ladderLengthM: sel.ladderLengthM,
+
+    dbStructureVendors: svRes.rows,
+    dbStructureAccessoryRates: sarRes.rows,
+    dbStructureMaterialRates: smrRes.rows,
+    dbStructureTemplates: stRes.rows,
+    dbStructureTemplateItems: stiRes.rows,
+    dbWalkwayTemplates: wtRes.rows,
+    dbLadderTemplates: ltRes.rows
   });
 
   // Map BOM line results and assign parent section names
@@ -437,7 +472,56 @@ export async function calculateSystemFromDb(
 
   // Re-generate structure requirements object
   let structureRequirements = undefined;
-  if (selectedStructureId) {
+  if (sel.structureVendorId && sel.structureMaterialType) {
+    const vendor = svRes.rows.find(v => v.id === sel.structureVendorId);
+    const vendorName = vendor ? vendor.name : 'Unknown';
+    const rateRow = smrRes.rows.find(r => r.vendor_id === sel.structureVendorId && r.material_type === sel.structureMaterialType);
+    const ratePerKg = rateRow ? Number(rateRow.rate_per_kg) : 0;
+    
+    // Find closest template
+    const templates = stRes.rows.filter(t => t.structure_type === sel.structureMaterialType);
+    let templateName = 'Unknown Template';
+    let totalWeight = 0;
+    let rafterWeight = 0;
+    let purlinWeight = 0;
+    if (templates.length > 0) {
+      const template = templates.reduce((prev, curr) => 
+        Math.abs(Number(curr.capacity_kw) - capacity) < Math.abs(Number(prev.capacity_kw) - capacity) ? curr : prev
+      );
+      templateName = `${template.capacity_kw}kW ${template.structure_type}`;
+      
+      const templateItems = stiRes.rows.filter(item => 
+        item.template_id === template.id &&
+        (item.vendor_id === null || item.vendor_id === sel.structureVendorId)
+      );
+      templateItems.forEach(item => {
+        const itemLower = item.item.toLowerCase().trim();
+        const isPrimaryMember = itemLower.includes('rafter') || itemLower.includes('purlin');
+        const isRafter = itemLower.includes('rafter');
+        const isPurlin = itemLower.includes('purlin');
+        if (isPrimaryMember) {
+          const w = Number(item.weight || 0) * Number(item.qty || 0);
+          totalWeight += w;
+          if (isRafter) rafterWeight += w;
+          if (isPurlin) purlinWeight += w;
+        }
+      });
+    }
+
+    structureRequirements = {
+      structureName: `${vendorName} ${templateName}`,
+      material: sel.structureMaterialType,
+      roofMountType: 'Ground/Roof',
+      baseWeightKg: 0,
+      wastagePct: 0,
+      fastenerWeightPct: 0,
+      totalWeightKg: totalWeight,
+      rafterWeightKg: rafterWeight,
+      purlinWeightKg: purlinWeight,
+      ratePerKg: ratePerKg,
+      pricingMode: 'erp'
+    };
+  } else if (selectedStructureId) {
     const struct = dbStructures.find(s => s.id === selectedStructureId);
     if (struct) {
       const mode = input.pricingContext?.priceType === 'premium' ? 'flat' : (struct.per_watt_rate ? 'per_watt' : 'weight');

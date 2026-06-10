@@ -16,6 +16,16 @@ export function roundTo5(num: number | null | undefined): number {
   return Math.round((num + Number.EPSILON) * 100000) / 100000;
 }
 
+/**
+ * FIX CALC-09: Financial amounts in INR must be rounded to 2 decimal places.
+ * Use this for all customer-facing monetary values (MRP, cost, subsidy, etc.).
+ * roundTo5 is retained for intermediate computation only.
+ */
+export function roundToINR(num: number | null | undefined): number {
+  if (num === null || num === undefined || isNaN(num)) return 0;
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 export interface RowOverride {
@@ -83,6 +93,10 @@ export interface CalcInput {
 
   // Structure selections
   structureId?: string;
+  structureVendorId?: string;
+  structureMaterialType?: string;
+  walkwayLengthM?: number;
+  ladderLengthM?: number;
   structurePricingMode?: 'weight' | 'per_watt' | 'flat';
   structureRateOverride?: number;
   structureWastageOverride?: number;
@@ -108,6 +122,12 @@ export interface CalcInput {
 
   // Master lists for database data
   dbStructures?: any[];
+  dbStructureVendors?: any[];
+  dbStructureMaterialRates?: any[];
+  dbStructureTemplates?: any[];
+  dbStructureTemplateItems?: any[];
+  dbWalkwayTemplates?: any[];
+  dbLadderTemplates?: any[];
   dbWeightLookups?: any[];
   dbMeters?: any[];
   dbLAs?: any[];
@@ -119,11 +139,17 @@ export interface CalcInput {
   dbPanels?: any[];
   dbInverters?: any[];
   dbBatteries?: any[];
+  // FIX CALC-01: Structure accessory rates from structure_accessory_rates table
+  dbStructureAccessoryRates?: any[];
   panelMix?: Record<string, number>;
   selectedInverterMix?: Record<string, number>;
   selectedBatteryMix?: Record<string, number>;
   selectedPanelId?: string | null;
   maxSubsidyCapacityKW?: number;
+  maxAbsoluteSubsidy?: number;
+  // FIX CALC-02: Additional state subsidy from state_scheme_overrides
+  additionalStateSubsidy?: number;
+  applySubsidy?: boolean;
 }
 
 export interface LineResult {
@@ -276,35 +302,67 @@ export function getSubsidyAmount(
     fixed_amount: number | null;
   }>,
   maxCapacityKW?: number,
+  maxAbsoluteSubsidy?: number,
+  // FIX CALC-02: additional_state_subsidy from state_scheme_overrides
+  additionalStateSubsidy?: number,
 ): number {
   // Commercial projects never receive residential subsidy
   if (projectType === 'commercial') {
     return 0;
   }
 
-  const eligibleCapacityKW = inverterCapacityKW !== undefined ? Math.min(panelCapacityKW, inverterCapacityKW) : panelCapacityKW;
+  const eligibleCapacityKW = inverterCapacityKW !== undefined
+    ? Math.min(panelCapacityKW, inverterCapacityKW)
+    : panelCapacityKW;
+
+  const maxCap = maxCapacityKW ?? 10.0;
+  if (eligibleCapacityKW > maxCap) {
+    return 0;
+  }
 
   if (!slabs || slabs.length === 0) {
     return 0;
   }
 
-  const capacityForSubsidy = Math.min(eligibleCapacityKW, maxCapacityKW ?? 10.0);
   let total = 0;
   for (const slab of slabs) {
     const start = Number(slab.start_kw);
-    if (capacityForSubsidy <= start) {
+    if (eligibleCapacityKW <= start) {
       break;
     }
     if (slab.is_fixed_amount) {
       total += Number(slab.fixed_amount ?? 0);
     } else {
-      const end = slab.end_kw === null ? capacityForSubsidy : Math.min(capacityForSubsidy, Number(slab.end_kw));
+      const end = slab.end_kw === null
+        ? eligibleCapacityKW
+        : Math.min(eligibleCapacityKW, Number(slab.end_kw));
       const applicable = end - start;
       total += applicable * Number(slab.rate_per_kw);
     }
   }
+
+  // FIX CALC-02: Add state-specific additional subsidy (e.g. Gujarat top-up)
+  if (additionalStateSubsidy !== undefined && additionalStateSubsidy > 0) {
+    total += additionalStateSubsidy;
+  }
+
+  if (maxAbsoluteSubsidy !== undefined && maxAbsoluteSubsidy > 0) {
+    return Math.min(total, maxAbsoluteSubsidy);
+  }
   return total;
 }
+
+// FIX CALC-01: ACCESSORY_FALLBACK_RATES removed.
+// All structure accessory rates must come from the structure_accessory_rates
+// database table via dbStructureAccessoryRates in CalcInput.
+// If the DB rate is missing for an accessory, the rate resolves to 0
+// and a warning is logged — this surfaces misconfiguration rather than
+// silently using wrong stale rates.
+//
+// To migrate: ensure all accessory items in structure_template_items
+// have a corresponding row in structure_accessory_rates.
+//
+// Reference: scripts/07_link_template_items_to_accessory_rates.sql
 
 export function resolveStructureItems(
   input: CalcInput,
@@ -317,6 +375,130 @@ export function resolveStructureItems(
   const items: BomItem[] = [];
   let removeGenericStructure = false;
 
+  // 1. Check if new ERP Structure model is selected
+  if (input.structureVendorId && input.structureMaterialType) {
+    removeGenericStructure = true;
+    
+    // Find vendor name
+    const vendor = (input.dbStructureVendors ?? []).find(v => v.id === input.structureVendorId);
+    const vendorName = vendor ? vendor.name : 'Unknown';
+    
+    // Find material rate per kg
+    const rateRow = (input.dbStructureMaterialRates ?? []).find(r => 
+      r.vendor_id === input.structureVendorId && 
+      r.material_type === input.structureMaterialType
+    );
+    const ratePerKg = rateRow ? Number(rateRow.rate_per_kg) : 0;
+    
+    // Find closest template
+    const templates = (input.dbStructureTemplates ?? []).filter(t => 
+      t.structure_type === input.structureMaterialType
+    );
+    
+    if (templates.length > 0) {
+      // Find template closest to capacityKW
+      const template = templates.reduce((prev, curr) => 
+        Math.abs(Number(curr.capacity_kw) - capacityKW) < Math.abs(Number(prev.capacity_kw) - capacityKW) ? curr : prev
+      );
+      
+      // Get all template items for this template and selected vendor
+      const templateItems = (input.dbStructureTemplateItems ?? []).filter(item => 
+        item.template_id === template.id &&
+        (item.vendor_id === null || item.vendor_id === input.structureVendorId)
+      );
+      
+      templateItems.forEach(item => {
+        const itemLower = item.item.toLowerCase().trim();
+        const isPrimaryMember = itemLower.includes('rafter') || itemLower.includes('purlin');
+        
+        let ratePerUnit = 0;
+        let unit = 'Nos';
+        let remarks = `Template: ${template.capacity_kw}kW ${template.structure_type}`;
+        
+        if (isPrimaryMember) {
+          // Weight-based pricing for primary members
+          const itemWeight = Number(item.weight || 0);
+          ratePerUnit = itemWeight * ratePerKg;
+          unit = 'Nos';
+          remarks = `${vendorName} ${template.structure_type} member (${itemWeight} kg)`;
+        } else {
+          // FIX CALC-01: Look up accessory rate from DB, not hardcoded map.
+          // input.dbStructureAccessoryRates is loaded by dbCalculator.ts from
+          // the structure_accessory_rates table.
+          const accessoryRates = (input.dbStructureAccessoryRates ?? []);
+          const accessoryRow = accessoryRates.find((r: any) => {
+            const rName = (r.item_name ?? r.name ?? '').toLowerCase().trim();
+            return rName === itemLower || itemLower.includes(rName) || rName.includes(itemLower);
+          });
+          if (accessoryRow) {
+            ratePerUnit = Number(accessoryRow.rate ?? accessoryRow.override_rate ?? 0);
+            unit = accessoryRow.unit ?? 'Nos';
+          } else {
+            // Log missing accessory rate — do NOT silently use 0 in production
+            console.warn(
+              `[CALC-01] No DB rate found for structure accessory: "${item.item}" ` +
+              `(template: ${template.capacity_kw}kW ${template.structure_type}). ` +
+              `Add to structure_accessory_rates table.`
+            );
+            ratePerUnit = 0;
+            unit = 'Nos';
+          }
+          remarks = `Accessory (DB rate)`;
+        }
+        
+        items.push({
+          description: item.item,
+          qty: Number(item.qty),
+          ratePerUnit: ratePerUnit,
+          unit: unit,
+          remarks: remarks,
+          gstPct: 0.18 as any, // Default 18% for structure components
+        });
+      });
+    }
+    
+    // Resolve Walkway
+    if (input.walkwayLengthM && input.walkwayLengthM > 0) {
+      const templateKey = `${input.structureMaterialType.toLowerCase()}_walkway`;
+      let walkwayTemplate = (input.dbWalkwayTemplates ?? []).find(w => w.template === templateKey);
+      if (!walkwayTemplate && (input.dbWalkwayTemplates ?? []).length > 0) {
+        walkwayTemplate = input.dbWalkwayTemplates?.[0];
+      }
+      
+      const costPerMeter = walkwayTemplate ? Number(walkwayTemplate.cost_per_meter) : 837.33;
+      items.push({
+        description: `Walkway (${input.structureMaterialType})`,
+        qty: input.walkwayLengthM,
+        ratePerUnit: costPerMeter,
+        unit: 'Meter',
+        remarks: walkwayTemplate ? `Walkway template: ${walkwayTemplate.template}` : 'Walkway',
+        gstPct: 0.18 as any,
+      });
+    }
+    
+    // Resolve Ladder
+    if (input.ladderLengthM && input.ladderLengthM > 0) {
+      const templateKey = `${input.structureMaterialType.toLowerCase()}_ladder`;
+      let ladderTemplate = (input.dbLadderTemplates ?? []).find(l => l.template === templateKey);
+      if (!ladderTemplate && (input.dbLadderTemplates ?? []).length > 0) {
+        ladderTemplate = input.dbLadderTemplates?.[0];
+      }
+      
+      const costPerMeter = ladderTemplate ? Number(ladderTemplate.cost_per_meter) : 898.33;
+      items.push({
+        description: `Ladder (${input.structureMaterialType})`,
+        qty: input.ladderLengthM,
+        ratePerUnit: costPerMeter,
+        unit: 'Meter',
+        remarks: ladderTemplate ? `Ladder template: ${ladderTemplate.template}` : 'Ladder',
+        gstPct: 0.18 as any,
+      });
+    }
+
+    return { items, removeGenericStructure };
+  }
+
+  // OLD FALLBACK LOGIC
   if (!input.structureId) {
     return { items, removeGenericStructure };
   }
@@ -599,7 +781,9 @@ export function calculateSystem(input: CalcInput): CalcResult {
               description: `BATTERY ${bat.brand} ${bat.model}`,
               qty: qty,
               ratePerUnit: bat.rate,
-              gstPct: bat.gst_pct ?? 0.18,
+              // FIX CALC-08: Battery GST is 12% by default (not 18%).
+              // Use the value from DB. Default 0.12 if DB column is NULL/zero.
+              gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : 0.12) as any,
               unit: 'Nos',
               remarks: item.remarks ?? '',
             });
@@ -821,14 +1005,33 @@ export function calculateSystem(input: CalcInput): CalcResult {
   });
 
   // ── Step 5: Cost aggregates ──
-  const costBeforeGST = roundTo5(lines.reduce((sum, l) => sum + l.lineTotal, 0));
-  const totalInputGST = roundTo5(lines.reduce((sum, l) => sum + l.lineGST, 0));
-  const totalIncGST = roundTo5(costBeforeGST + totalInputGST);
+  const costBeforeGST = roundToINR(lines.reduce((sum, l) => sum + l.lineTotal, 0));
+  const totalInputGST = roundToINR(lines.reduce((sum, l) => sum + l.lineGST, 0));
+  const totalIncGST = roundToINR(costBeforeGST + totalInputGST);
 
   // ── Step 7: Resolve output GST ──
+  // FIX CALC-03: Validate GST override against legal Indian GST slabs.
+  // Valid slabs: 0%, 5%, 12%, 18%, 28% (plus composite 8.9% / 13.8% for solar output)
+  const VALID_OUTPUT_GST_SLABS = new Set([0, 0.05, 0.089, 0.12, 0.138, 0.18, 0.28]);
+  const rawGstOverride = input.gstOnOutputOverride;
+  const resolvedGstOverride = (() => {
+    if (rawGstOverride === undefined || input.allowGstOverride !== true) return undefined;
+    // Validate: must match a known slab within floating-point tolerance
+    const isValid = [...VALID_OUTPUT_GST_SLABS].some(
+      slab => Math.abs(slab - rawGstOverride) < 0.0001
+    );
+    if (!isValid) {
+      throw new Error(
+        `Invalid GST output override: ${(rawGstOverride * 100).toFixed(3)}%. ` +
+        `Must be one of: ${[...VALID_OUTPUT_GST_SLABS].map(s => (s * 100).toFixed(1) + '%').join(', ')}`
+      );
+    }
+    return rawGstOverride;
+  })();
+
   const gstOutputRate = roundTo5(
-    input.gstOnOutputOverride !== undefined && input.allowGstOverride === true
-      ? input.gstOnOutputOverride
+    resolvedGstOverride !== undefined
+      ? resolvedGstOverride
       : (input.gstOnOutput !== undefined ? input.gstOnOutput : stateData.gstOnOutput)
   );
 
@@ -842,45 +1045,52 @@ export function calculateSystem(input: CalcInput): CalcResult {
     capacityWatts,
     defaultMarginPct: system.targetMarginPct
   });
-  const mrpInclGST = roundTo5(marginResults.mrpInclGST);
-  const mrpExclGST = roundTo5(marginResults.mrpExclGST);
-  const marginAmount = roundTo5(marginResults.marginAmount);
+  const mrpInclGST = roundToINR(marginResults.mrpInclGST);
+  const mrpExclGST = roundToINR(marginResults.mrpExclGST);
+  const marginAmount = roundToINR(marginResults.marginAmount);
   const effectiveMarginPct = roundTo5(marginResults.effectiveMarginPct);
 
   // ── Per-kW analysis ──
   const capKW = system.capacityKW || 0.001; // Avoid div by zero
-  const perKWexclGST = roundTo5(mrpExclGST / capKW);
-  const perKWinclGST = roundTo5(mrpInclGST / capKW);
+  const perKWexclGST = roundToINR(mrpExclGST / capKW);
+  const perKWinclGST = roundToINR(mrpInclGST / capKW);
 
   // ── Step 10: Discount ──
-  const discountAmount = roundTo5(calculateDiscountAmount({
+  const discountAmount = roundToINR(calculateDiscountAmount({
     mrpInclGST,
     discountType: input.discountType ?? 'none',
     discountVal: input.discountVal ?? 0
   }));
 
   // ── Step 11: Additional costs ──
-  const additionalCostTotal = roundTo5((input.additionalCosts ?? []).reduce(
+  const additionalCostTotal = roundToINR((input.additionalCosts ?? []).reduce(
     (sum, c) => sum + c.amount,
     0,
   ));
 
   // ── Step 12: Final customer price ──
-  const finalCustomerPrice = roundTo5(Math.max(0, mrpInclGST - discountAmount + additionalCostTotal));
+  const finalCustomerPrice = roundToINR(Math.max(0, mrpInclGST - discountAmount + additionalCostTotal));
 
   // ── Step 13: Subsidy ──
-  const subsidyAmount = roundTo5(getSubsidyAmount(
-    input.panelCapacityKW ?? system.capacityKW,
-    input.inverterCapacityKW,
-    input.state,
-    input.projectType,
-    input.stateData,
-    input.slabs,
-    input.maxSubsidyCapacityKW
-  ));
+  const subsidyAmount = input.applySubsidy !== false
+    ? roundToINR(input.rpcSubsidyAmount !== undefined
+        ? input.rpcSubsidyAmount
+        : getSubsidyAmount(
+            input.panelCapacityKW ?? system.capacityKW,
+            input.inverterCapacityKW,
+            input.state,
+            input.projectType,
+            input.stateData,
+            input.slabs,
+            input.maxSubsidyCapacityKW,
+            input.maxAbsoluteSubsidy,
+            // FIX CALC-02: Pass additional state subsidy
+            input.additionalStateSubsidy,
+          ))
+    : 0;
 
   // ── Step 14: Beneficiary contribution ──
-  const beneficiaryContribution = roundTo5(Math.max(0, finalCustomerPrice - subsidyAmount));
+  const beneficiaryContribution = roundToINR(Math.max(0, finalCustomerPrice - subsidyAmount));
 
   // ── Step 15: Energy generation ──
   const energyProjections = calculateEnergyProjections({
@@ -905,8 +1115,8 @@ export function calculateSystem(input: CalcInput): CalcResult {
       ? input.gridTariffPerKWh
       : stateGridTariff;
 
-  const monthlySavingsINR = roundTo5(monthlyGenerationKWh * effectiveGridTariffPerKWh);
-  const annualSavingsINR = roundTo5(annualGenerationKWh * effectiveGridTariffPerKWh);
+  const monthlySavingsINR = roundToINR(monthlyGenerationKWh * effectiveGridTariffPerKWh);
+  const annualSavingsINR = roundToINR(annualGenerationKWh * effectiveGridTariffPerKWh);
 
   // ── Step 17: Payback & LCOE ──
   const financialProjections = calculateFinancialProjections({
@@ -918,8 +1128,8 @@ export function calculateSystem(input: CalcInput): CalcResult {
     systemLifetimeYears: 25
   });
   const paybackYears = roundTo5(financialProjections.paybackYears);
-  const lcoe = roundTo5(financialProjections.lcoe);
-  const lifetimeSavingsINR = roundTo5(financialProjections.lifetimeSavingsINR);
+  const lcoe = roundToINR(financialProjections.lcoe);
+  const lifetimeSavingsINR = roundToINR(financialProjections.lifetimeSavingsINR);
 
   // ── Return complete result ──
   return {

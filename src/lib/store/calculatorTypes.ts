@@ -47,6 +47,7 @@ export interface Variant {
   dcCableLengthM: number;
   acCableLengthM: number;
   electricityInflationRate: number;
+  applySubsidy?: boolean;
 }
 
 export interface CalculatorState {
@@ -74,6 +75,10 @@ export interface CalculatorState {
 
   // Structure & Meter & LA selections
   selectedStructureId: string | null;
+  structureVendorId: string | null;
+  structureMaterialType: 'GI' | 'GP' | null;
+  walkwayLengthM: number;
+  ladderLengthM: number;
   structurePricingMode: 'weight' | 'per_watt' | 'flat';
   structureRateOverride: number | null;
   structureWastageOverride: number | null;
@@ -141,6 +146,9 @@ export interface CalculatorState {
   setBackupLoadW: (loadW: number) => void;
 
   setStructureSelection: (id: string | null, mode?: 'weight' | 'per_watt' | 'flat') => void;
+  setStructureTypeAndVendor: (materialType: 'GI' | 'GP' | null, vendorId: string | null) => void;
+  setWalkwayLength: (length: number) => void;
+  setLadderLength: (length: number) => void;
   setStructureCustomField: (field: string, val: number | null) => void;
   setStructureComponentQty: (id: string, qty: number | null) => void;
   setStructureAddonQty: (id: string, qty: number) => void;
@@ -176,6 +184,13 @@ export interface CalculatorState {
   dbBatteries: any[];
   dbSlabs: any[];
   dbStructures: any[];
+  dbStructureVendors: any[];
+  dbStructureAccessoryRates: any[];
+  dbStructureMaterialRates: any[];
+  dbStructureTemplates: any[];
+  dbStructureTemplateItems: any[];
+  dbWalkwayTemplates: any[];
+  dbLadderTemplates: any[];
   dbWeightLookups: any[];
   dbMeters: any[];
   dbLAs: any[];
@@ -187,8 +202,11 @@ export interface CalculatorState {
   inventorySummary: import('@/backend/orm/acquisition').InventorySummary[];
   dbLoaded: boolean;
   rpcSubsidyAmount: number | null;
+  applySubsidy: boolean;
+  dbActiveScheme: any | null;
   showInventoryInfo: boolean;
   setShowInventoryInfo: (val: boolean) => void;
+  setApplySubsidy: (val: boolean) => void;
   fetchRpcSubsidy: () => Promise<void>;
   fetchMasterData: () => Promise<void>;
 }
@@ -216,6 +234,10 @@ export const INITIAL_STATE = {
   backupLoadW: 0,
 
   selectedStructureId: null as string | null,
+  structureVendorId: null as string | null,
+  structureMaterialType: null as 'GI' | 'GP' | null,
+  walkwayLengthM: 0,
+  ladderLengthM: 0,
   structurePricingMode: 'weight' as 'weight' | 'per_watt' | 'flat',
   structureRateOverride: null as number | null,
   structureWastageOverride: null as number | null,
@@ -263,6 +285,13 @@ export const INITIAL_STATE = {
   dbBatteries: [] as any[],
   dbSlabs: [] as any[],
   dbStructures: [] as any[],
+  dbStructureVendors: [] as any[],
+  dbStructureAccessoryRates: [] as any[],
+  dbStructureMaterialRates: [] as any[],
+  dbStructureTemplates: [] as any[],
+  dbStructureTemplateItems: [] as any[],
+  dbWalkwayTemplates: [] as any[],
+  dbLadderTemplates: [] as any[],
   dbWeightLookups: [] as any[],
   dbMeters: [] as any[],
   dbLAs: [] as any[],
@@ -273,6 +302,8 @@ export const INITIAL_STATE = {
   dbOrientationMultipliers: { South: 1.0, 'East/West': 0.85, Flat: 0.90 } as Record<string, number>,
   dbLoaded: false,
   rpcSubsidyAmount: null as number | null,
+  applySubsidy: true,
+  dbActiveScheme: null as any | null,
 };
 
 export function randomId(): string {
@@ -511,6 +542,13 @@ const result = calculateSystem({
       lightningArresterId: state.lightningArresterId ?? undefined,
       lightningArresterQty: state.lightningArresterQty,
       dbStructures: state.dbStructures,
+      dbStructureVendors: state.dbStructureVendors,
+      dbStructureAccessoryRates: state.dbStructureAccessoryRates,
+      dbStructureMaterialRates: state.dbStructureMaterialRates,
+      dbStructureTemplates: state.dbStructureTemplates,
+      dbStructureTemplateItems: state.dbStructureTemplateItems,
+      dbWalkwayTemplates: state.dbWalkwayTemplates,
+      dbLadderTemplates: state.dbLadderTemplates,
       dbWeightLookups: state.dbWeightLookups,
       dbMeters: state.dbMeters,
       dbLAs: state.dbLAs,
@@ -523,6 +561,13 @@ const result = calculateSystem({
       targetMRPInclGST: state.targetMRPInclGST ?? undefined,
       targetMRPPerWatt: state.targetMRPPerWatt ?? undefined,
       rpcSubsidyAmount: state.rpcSubsidyAmount ?? undefined,
+      maxSubsidyCapacityKW: state.dbActiveScheme?.max_capacity_kw ? Number(state.dbActiveScheme.max_capacity_kw) : undefined,
+      maxAbsoluteSubsidy: state.dbActiveScheme?.max_absolute_subsidy ? Number(state.dbActiveScheme.max_absolute_subsidy) : undefined,
+      applySubsidy: state.applySubsidy,
+      structureVendorId: state.structureVendorId ?? undefined,
+      structureMaterialType: state.structureMaterialType ?? undefined,
+      walkwayLengthM: state.walkwayLengthM,
+      ladderLengthM: state.ladderLengthM,
     });
 
     return { result, error: null };

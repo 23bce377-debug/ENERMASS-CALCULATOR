@@ -463,3 +463,82 @@ export const CustomPresetORM = {
     return true;
   }
 };
+
+// ─── NEW NORMALIZED TABLES (created by migrations 02, 05, 08) ────────────────
+
+/**
+ * StructureAccessoryRatesORM
+ * Single canonical source of truth for structure accessory item rates.
+ * Replaces hardcoded ACCESSORY_FALLBACK_RATES in calculator.ts
+ */
+export const StructureAccessoryRatesORM = {
+  async getAll(orgId?: string) {
+    const query = (supabase as any)
+      .from('structure_accessory_rates')
+      .select('*')
+      .eq('is_active', true);
+    if (orgId) {
+      query.or('org_id.eq.' + orgId + ',org_id.is.null');
+    } else {
+      query.is('org_id', null);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as Array<{ id: string; org_id: string | null; item_name: string; item_aliases: string[]; unit: string; rate: number; gst_pct: number; is_active: boolean; created_at: string; updated_at: string; }>;
+  },
+  async resolveByName(itemName: string, orgId?: string) {
+    const allRates = await StructureAccessoryRatesORM.getAll(orgId);
+    const n = itemName.toLowerCase().trim();
+    return allRates.find(r => r.item_name.toLowerCase() === n || r.item_aliases.some((a: string) => a.toLowerCase() === n)) ?? null;
+  },
+  async upsert(item: { item_name: string; unit: string; rate: number; org_id?: string | null; item_aliases?: string[] }) {
+    const { data, error } = await (supabase as any).from('structure_accessory_rates').upsert({ ...item, is_active: true }, { onConflict: 'item_name' }).select().single();
+    if (error) throw error;
+    return data;
+  }
+};
+
+/**
+ * StructureComponentVendorRatesORM
+ * Normalized vendor-specific rates for eq_structure_components.
+ * Replaces removed columns: rate_appolo, rate_tata, rate_deemac.
+ */
+export const StructureComponentVendorRatesORM = {
+  async getByComponentId(componentId: string) {
+    const { data, error } = await (supabase as any).from('structure_component_vendor_rates').select('*, vendors(name)').eq('component_id', componentId);
+    if (error) throw error;
+    return data as Array<{ id: string; component_id: string; vendor_id: string; rate_per_unit: number; effective_from: string | null; created_at: string; updated_at: string; vendors: { name: string }; }>;
+  },
+  async upsert(componentId: string, vendorId: string, ratePerUnit: number) {
+    const { data, error } = await (supabase as any).from('structure_component_vendor_rates').upsert({ component_id: componentId, vendor_id: vendorId, rate_per_unit: ratePerUnit }, { onConflict: 'component_id,vendor_id' }).select().single();
+    if (error) throw error;
+    return data;
+  }
+};
+
+/**
+ * RateMasterORM
+ * Org-level BOM item rate overrides. Single source of truth for org-specific pricing.
+ * asRateMasterDict() feeds directly into the calculator engine RateMaster format.
+ */
+export const RateMasterORM = {
+  async getAll(orgId: string) {
+    const { data, error } = await (supabase as any).from('rate_master').select('*, eq_bom_items(description, section, unit, gst_pct)').eq('org_id', orgId).eq('is_active', true);
+    if (error) throw error;
+    return data as Array<{ id: string; org_id: string; bom_item_id: string | null; item_name: string; override_rate: number; is_active: boolean; created_at: string; updated_at: string; eq_bom_items: { description: string; section: string; unit: string; gst_pct: number } | null; }>;
+  },
+  async asRateMasterDict(orgId: string): Promise<Record<string, { rate: number; active: boolean }>> {
+    const rows = await RateMasterORM.getAll(orgId);
+    return Object.fromEntries(rows.map(r => [r.item_name, { rate: Number(r.override_rate), active: r.is_active }]));
+  },
+  async upsert(orgId: string, itemName: string, overrideRate: number, bomItemId?: string) {
+    const { data, error } = await (supabase as any).from('rate_master').upsert({ org_id: orgId, item_name: itemName, override_rate: overrideRate, bom_item_id: bomItemId ?? null, is_active: true }, { onConflict: 'org_id,item_name' }).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async deactivate(orgId: string, itemName: string) {
+    const { error } = await (supabase as any).from('rate_master').update({ is_active: false }).eq('org_id', orgId).eq('item_name', itemName);
+    if (error) throw error;
+    return true;
+  }
+};

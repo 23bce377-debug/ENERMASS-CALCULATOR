@@ -76,7 +76,7 @@ const CARDS = [
     desc: 'View unified equipment catalog rates and set baseline override parameters.',
     icon: <Tag size={24} className="text-rose-500" />,
     entity: 'pricing',
-    table: 'rate_master',
+    table: 'eq_bom_items',
   },
   {
     href: '/master/subsidy',
@@ -99,12 +99,22 @@ export default function MastersDashboardPage() {
       
       const fetchCount = async (table: string, orgIsolation: boolean = false) => {
         let q = supabase.from(table as any).select('id', { count: 'exact', head: true });
-        if (orgIsolation) {
-          q = q.eq('org_id', orgId);
-        } else {
-          q = q.or(`org_id.eq.${orgId},org_id.is.null`);
+        if (table !== 'calculation_schemes') {
+          if (orgIsolation) {
+            if (orgId) {
+              q = q.eq('org_id', orgId);
+            } else {
+              q = q.is('org_id', null);
+            }
+          } else {
+            if (orgId) {
+              q = q.or(`org_id.eq.${orgId},org_id.is.null`);
+            } else {
+              q = q.is('org_id', null);
+            }
+          }
         }
-        if (table !== 'rate_master') {
+        if (table !== 'vendors') {
           q = q.eq('is_active', true);
         }
         const { count, error } = await q;
@@ -118,7 +128,7 @@ export default function MastersDashboardPage() {
         fetchCount('eq_mounting_structures').then(c => countsMap.structures = c),
         fetchCount('eq_bom_items').then(c => countsMap.accessories = c),
         fetchCount('vendors', true).then(c => countsMap.vendors = c),
-        fetchCount('rate_master', true).then(c => countsMap.pricing = c),
+        fetchCount('eq_bom_items', true).then(c => countsMap.pricing = c),
         fetchCount('calculation_schemes').then(c => countsMap.subsidy = c),
       ]);
 

@@ -47,11 +47,48 @@ async function logAudit(
 
 function getEntityTable(entity: string): string {
   if (entity === 'vendors') return 'vendors';
-  if (entity === 'pricing') return 'rate_master';
+  if (entity === 'pricing') return 'eq_bom_items';
   if (entity === 'subsidy') return 'calculation_schemes';
   if (entity === 'accessories') return 'eq_bom_items';
   if (entity === 'structures') return 'eq_mounting_structures';
   return `eq_${entity}`;
+}
+
+function transformFromDb(entity: string, item: any): any {
+  if (!item) return item;
+  const copy = { ...item };
+  if (entity === 'panels') {
+    copy.rate_per_watt = copy.selling_price && copy.wattage_w ? Number(copy.selling_price) / Number(copy.wattage_w) : 0;
+  } else if (entity === 'batteries' || entity === 'inverters' || entity === 'accessories') {
+    copy.rate = copy.selling_price ?? 0;
+  } else if (entity === 'structures') {
+    copy.flat_rate = copy.selling_price;
+  }
+  return copy;
+}
+
+function transformToDb(entity: string, item: any, currentItem?: any): any {
+  if (!item) return item;
+  const copy = { ...item };
+  if (entity === 'panels') {
+    if ('rate_per_watt' in copy || 'wattage_w' in copy) {
+      const ratePerWatt = copy.rate_per_watt ?? (currentItem?.selling_price && currentItem?.wattage_w ? Number(currentItem.selling_price) / Number(currentItem.wattage_w) : 0);
+      const wattage = copy.wattage_w ?? currentItem?.wattage_w ?? 550;
+      copy.selling_price = Number(ratePerWatt) * Number(wattage);
+      delete copy.rate_per_watt;
+    }
+  } else if (entity === 'batteries' || entity === 'inverters' || entity === 'accessories') {
+    if ('rate' in copy) {
+      copy.selling_price = copy.rate;
+      delete copy.rate;
+    }
+  } else if (entity === 'structures') {
+    if ('flat_rate' in copy) {
+      copy.selling_price = copy.flat_rate;
+      delete copy.flat_rate;
+    }
+  }
+  return copy;
 }
 
 export function useMasterQuery<T>(entity: string, options?: any) {
@@ -63,15 +100,27 @@ export function useMasterQuery<T>(entity: string, options?: any) {
 
       let query = supabase.from(table as any).select('*');
       
-      // Enforce organisation filtering
+      // Enforce organisation filtering safely
       if (entity === 'vendors' || entity === 'pricing') {
-        query = query.eq('org_id', orgId);
+        if (orgId) {
+          query = query.eq('org_id', orgId);
+        } else {
+          query = query.is('org_id', null);
+        }
       } else if (entity === 'subsidy') {
         // Subsidy schemes can be global or org specific
-        query = query.or(`org_id.eq.${orgId},org_id.is.null`);
+        if (orgId) {
+          query = query.or(`org_id.eq.${orgId},org_id.is.null`);
+        } else {
+          query = query.is('org_id', null);
+        }
       } else {
         // Equipment tables allow either global default (org_id is null) or org overrides
-        query = query.or(`org_id.eq.${orgId},org_id.is.null`);
+        if (orgId) {
+          query = query.or(`org_id.eq.${orgId},org_id.is.null`);
+        } else {
+          query = query.is('org_id', null);
+        }
       }
 
       if (entity !== 'pricing') {
@@ -80,7 +129,7 @@ export function useMasterQuery<T>(entity: string, options?: any) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as T[];
+      return (data || []).map((item: any) => transformFromDb(entity, item)) as T[];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache validity
     ...options
@@ -95,7 +144,7 @@ export function useMasterCreateMutation<T>(entity: string) {
       const { orgId, userId } = await getOrgContext();
       const table = getEntityTable(entity);
 
-      const payload = { ...newItem, org_id: orgId };
+      const payload = { ...transformToDb(entity, newItem), org_id: orgId };
       const { data, error } = await (supabase
         .from(table as any)
         .insert(payload)
@@ -106,7 +155,7 @@ export function useMasterCreateMutation<T>(entity: string) {
 
       // Log Audit Event
       await logAudit(orgId, userId, 'masters', table, data.id, 'create', null, data);
-      return data as T;
+      return transformFromDb(entity, data) as T;
     },
     onSuccess: async () => {
       try {
@@ -135,7 +184,7 @@ export function useMasterUpdateMutation<T>(entity: string) {
       // 2. Perform update
       const { data, error } = await (supabase
         .from(table as any)
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update({ ...transformToDb(entity, updates, beforeState), updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
         .single() as any);
@@ -154,7 +203,7 @@ export function useMasterUpdateMutation<T>(entity: string) {
         new_values: data,
       });
 
-      return data as T;
+      return transformFromDb(entity, data) as T;
     },
     onSuccess: async () => {
       try {
@@ -241,7 +290,7 @@ export function useMasterBulkUpdateMutation(entity: string) {
         const before = beforeStates?.find((b: any) => b.id === id);
         const { data, error } = await (supabase
           .from(table as any)
-          .update({ ...updates, updated_at: new Date().toISOString() })
+          .update({ ...transformToDb(entity, updates, before), updated_at: new Date().toISOString() })
           .eq('id', id)
           .select()
           .single() as any);
@@ -258,7 +307,7 @@ export function useMasterBulkUpdateMutation(entity: string) {
           new_values: data,
         });
 
-        return data;
+        return transformFromDb(entity, data);
       });
 
       const results = await Promise.all(promises);
@@ -286,9 +335,14 @@ export function useAuditLogsQuery(entityTable: string, entityId?: string) {
       let query = supabase
         .from('sys_audit_logs')
         .select('*, actor:profiles(full_name)')
-        .eq('org_id', orgId)
         .eq('entity_type', entityTable)
         .order('created_at', { ascending: false });
+
+      if (orgId) {
+        query = query.eq('org_id', orgId);
+      } else {
+        query = query.is('org_id', null);
+      }
 
       if (entityId) {
         query = query.eq('entity_id', entityId);
@@ -329,10 +383,18 @@ export function useSubsidySchemesQuery() {
     queryKey: ['masters', 'subsidy'],
     queryFn: async () => {
       const { orgId } = await getOrgContext();
-      const { data, error } = await (supabase
+      
+      let query = supabase
         .from('calculation_schemes')
-        .select('*, scheme_slabs(*)')
-        .or(`org_id.eq.${orgId},org_id.is.null`)
+        .select('*, scheme_slabs(*)');
+
+      if (orgId) {
+        query = query.or(`org_id.eq.${orgId},org_id.is.null`);
+      } else {
+        query = query.is('org_id', null);
+      }
+
+      const { data, error } = await (query
         .eq('is_active', true)
         .order('created_at', { ascending: false }) as any);
 

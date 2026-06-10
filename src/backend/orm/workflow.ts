@@ -66,9 +66,37 @@ export interface DashboardConfig {
   updated_at?: string;
 }
 
-export async function createWarrantyClaim(claim: WarrantyClaim) {
+export async function createWarrantyClaim(claim: Omit<WarrantyClaim, 'org_id'> & { org_id?: string }) {
   const supabase = await createClient();
-  return (supabase as any).from('proc_warranty_claims').insert(claim).select().single();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    throw new Error('Unauthorized or session expired');
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('org_id')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError || !profile) {
+    throw new Error('User profile or organization not found');
+  }
+
+  const claimWithOrg = {
+    ...claim,
+    org_id: profile.org_id
+  };
+
+  return (supabase as any).from('proc_warranty_claims').insert(claimWithOrg).select().single();
+}
+
+export async function getWarrantyClaims(orgId: string) {
+  const supabase = await createClient();
+  return (supabase as any).from('proc_warranty_claims')
+    .select('*')
+    .eq('org_id', orgId)
+    .order('created_at', { ascending: false });
 }
 
 export async function createEscalation(escalation: Escalation) {

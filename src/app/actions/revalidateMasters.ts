@@ -1,29 +1,31 @@
 'use server';
 
 import { revalidateTag } from 'next/cache';
-import { CACHE_TAG } from '@/lib/cache/masterCache';
+import { CACHE_TAG, orgCacheKey } from '@/lib/cache/masterCache';
 import { invalidateCacheKeys } from '@/lib/cache/redisCache';
 import { createClient } from '@/lib/supabase/server';
 
 /**
  * Invalidates both the Next.js cache and the server-side Redis cache keys.
- * Next request to GET /api/masters will fetch fresh data from Supabase.
+ *
+ * FIX SC-08: Cache invalidation is now org-scoped.
+ * When Org A updates a panel, ONLY Org A's cache is invalidated.
+ * Global equipment keys are only invalidated when explicitly requested
+ * (e.g., when a super-admin updates a global row).
+ *
+ * @param orgId      - The org whose cache to invalidate (auto-resolved from session if omitted)
+ * @param invalidateGlobal - Also purge global equipment cache (use sparingly — affects ALL orgs)
  */
-export async function revalidateMasterCache(orgId?: string): Promise<void> {
-  // Invalidate Next.js cache tag
-  revalidateTag(CACHE_TAG, 'default');
-  
-  // Invalidate Redis keys
-  await invalidateCacheKeys(
-    'eq:panels:active',
-    'eq:inverters:active',
-    'eq:batteries:active',
-    'state_rules:all',
-    'subsidy_schemes:active'
-  );
+export async function revalidateMasterCache(
+  orgId?: string,
+  invalidateGlobal = false
+): Promise<void> {
+  // Always revalidate the Next.js tag (page-level caching)
+  revalidateTag(CACHE_TAG, 'max');
 
   let targetOrgId = orgId;
 
+  // Auto-resolve org from session if not provided
   if (!targetOrgId) {
     try {
       const supabase = await createClient();
@@ -39,16 +41,30 @@ export async function revalidateMasterCache(orgId?: string): Promise<void> {
         }
       }
     } catch (err) {
-      console.error('Failed to resolve user org_id for bootstrap invalidation:', err);
+      console.error('Failed to resolve user org_id for cache invalidation:', err);
     }
   }
 
+  // FIX SC-08: Invalidate ONLY this org's scoped cache keys
   if (targetOrgId) {
-    try {
-      await invalidateCacheKeys(`erp:bootstrap:${targetOrgId}`);
-    } catch (err) {
-      console.error(`Failed to invalidate bootstrap cache for org ${targetOrgId}:`, err);
-    }
+    await invalidateCacheKeys(
+      orgCacheKey(targetOrgId, 'panels'),
+      orgCacheKey(targetOrgId, 'inverters'),
+      orgCacheKey(targetOrgId, 'batteries'),
+      `rate_master:org:${targetOrgId}`,
+      `erp:bootstrap:${targetOrgId}`,
+      `category_margins:org:${targetOrgId}`
+    );
+  }
+
+  // Only invalidate global keys when explicitly requested (super-admin action)
+  if (invalidateGlobal) {
+    await invalidateCacheKeys(
+      'eq:global:panels:active',
+      'eq:global:inverters:active',
+      'eq:global:batteries:active',
+      'state_rules:all',
+      'subsidy_schemes:active'
+    );
   }
 }
-

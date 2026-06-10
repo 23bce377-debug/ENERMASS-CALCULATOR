@@ -114,6 +114,7 @@ function ComparisonPanel({ systemIds, onClose }: { systemIds: string[]; onClose:
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
   const dbStateData = useCalculatorStore((s) => s.dbStateData);
   const dbSlabs = useCalculatorStore((s) => s.dbSlabs);
+  const dbStructureAccessoryRates = useCalculatorStore((s) => s.dbStructureAccessoryRates);
 
   const results = useMemo(() => {
     return systemIds.map((id) => {
@@ -127,6 +128,7 @@ function ComparisonPanel({ systemIds, onClose }: { systemIds: string[]; onClose:
           projectType: 'residential',
           stateData: dbLoaded ? dbStateData : undefined,
           slabs: dbLoaded ? dbSlabs : undefined,
+          dbStructureAccessoryRates: dbLoaded ? dbStructureAccessoryRates : undefined,
         });
         return { system, calc, error: null };
       } catch (err) {

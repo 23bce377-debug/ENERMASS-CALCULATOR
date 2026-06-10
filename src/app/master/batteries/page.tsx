@@ -111,8 +111,8 @@ export default function BatteriesMasterPage() {
     if (!batteries) return [];
     return batteries.filter((b) => {
       const matchSearch =
-        b.brand.toLowerCase().includes(search.toLowerCase()) ||
-        b.model.toLowerCase().includes(search.toLowerCase()) ||
+        (b.brand || '').toLowerCase().includes(search.toLowerCase()) ||
+        (b.model || '').toLowerCase().includes(search.toLowerCase()) ||
         (b.description || '').toLowerCase().includes(search.toLowerCase());
       
       const matchChem = chemFilter ? b.chemistry === chemFilter : true;

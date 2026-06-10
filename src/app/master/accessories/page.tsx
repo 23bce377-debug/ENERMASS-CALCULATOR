@@ -110,8 +110,8 @@ export default function AccessoriesMasterPage() {
     if (!items) return [];
     return items.filter((i) => {
       const matchSearch =
-        i.description.toLowerCase().includes(search.toLowerCase()) ||
-        i.sub_type.toLowerCase().includes(search.toLowerCase()) ||
+        (i.description || '').toLowerCase().includes(search.toLowerCase()) ||
+        (i.sub_type || '').toLowerCase().includes(search.toLowerCase()) ||
         (i.remarks || '').toLowerCase().includes(search.toLowerCase());
       
       const matchSection = sectionFilter ? i.section === sectionFilter : true;

@@ -274,6 +274,10 @@ export default function CalculatorPage() {
   const clearBatteryMix = useCalculatorStore((s) => s.clearBatteryMix);
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
   const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
+  
+  const applySubsidy = useCalculatorStore((s) => s.applySubsidy);
+  const setApplySubsidy = useCalculatorStore((s) => s.setApplySubsidy);
+  const projectType = useCalculatorStore((s) => s.projectType);
 
   const requiredPanelQty = useMemo(() => {
     if (!selectedSystemId) return null;
@@ -339,6 +343,30 @@ export default function CalculatorPage() {
             <SystemSelector value={selectedSystemId} onChange={selectSystem} />
             <div className="h-px bg-border/60" />
             <StateSelector />
+            {projectType !== 'commercial' && (
+              <>
+                <div className="h-px bg-border/60" />
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-surface hover:border-border-light transition-all duration-200">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold text-text-primary">Apply Subsidy</span>
+                    <span className="text-[10px] text-text-muted truncate">PM Surya Ghar Scheme</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setApplySubsidy(!applySubsidy)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      applySubsidy ? 'bg-accent' : 'bg-border-light'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out ${
+                        applySubsidy ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </>
+            )}
             <PresetManager />
           </div>
           

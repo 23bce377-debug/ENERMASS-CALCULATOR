@@ -10,7 +10,20 @@ export interface PricingMarginInput {
   defaultMarginPct: number;
 }
 
+/**
+ * FIX CALC-07: Throw when both targetMRPPerWatt and targetMarginPct are provided.
+ * Previously targetMRPPerWatt silently won, masking a misconfiguration.
+ * Priority (documented): targetMRPInclGST > targetMRPPerWatt > targetMarginPct > defaultMarginPct
+ */
 export function calculatePricingAndMargins(input: PricingMarginInput) {
+  // FIX CALC-07: Conflict detection
+  if (input.targetMRPPerWatt !== undefined && input.targetMarginPct !== undefined) {
+    throw new Error(
+      'Pricing conflict: both targetMRPPerWatt and targetMarginPct are set. ' +
+      'Provide only one. Priority chain: targetMRPInclGST > targetMRPPerWatt > targetMarginPct.'
+    );
+  }
+
   let mrpInclGST = 0;
   let mrpExclGST = 0;
   let marginAmount = 0;
@@ -27,7 +40,9 @@ export function calculatePricingAndMargins(input: PricingMarginInput) {
     marginAmount = mrpExclGST - input.costBeforeGST;
     effectiveMarginPct = input.costBeforeGST > 0 ? marginAmount / input.costBeforeGST : 0;
   } else {
-    effectiveMarginPct = input.targetMarginPct !== undefined ? input.targetMarginPct : input.defaultMarginPct;
+    effectiveMarginPct = input.targetMarginPct !== undefined
+      ? input.targetMarginPct
+      : input.defaultMarginPct;
     effectiveMarginPct = Math.max(effectiveMarginPct, 0);
     marginAmount = input.costBeforeGST * effectiveMarginPct;
     mrpExclGST = input.costBeforeGST + marginAmount;

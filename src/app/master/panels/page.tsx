@@ -107,8 +107,8 @@ export default function PanelsMasterPage() {
     if (!panels) return [];
     return panels.filter((p) => {
       const matchSearch =
-        p.brand.toLowerCase().includes(search.toLowerCase()) ||
-        p.model.toLowerCase().includes(search.toLowerCase()) ||
+        (p.brand || '').toLowerCase().includes(search.toLowerCase()) ||
+        (p.model || '').toLowerCase().includes(search.toLowerCase()) ||
         (p.description || '').toLowerCase().includes(search.toLowerCase());
       
       const matchType = typeFilter ? p.panel_type === typeFilter : true;

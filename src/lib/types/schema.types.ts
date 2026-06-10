@@ -1622,6 +1622,30 @@ export interface Database {
         }
         Relationships: []
       }
+      eq_orientation_multipliers: {
+        Row: {
+          id: string
+          org_id: string | null
+          orientation: string
+          multiplier: number
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id?: string | null
+          orientation: string
+          multiplier: number
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string | null
+          orientation?: string
+          multiplier?: number
+          created_at?: string | null
+        }
+        Relationships: []
+      }
       eq_panels: {
         Row: {
           id: string
@@ -1694,99 +1718,6 @@ export interface Database {
         }
         Relationships: []
       }
-      eq_structure_components: {
-        Row: {
-          id: string
-          org_id: string | null
-          structure_id: string | null
-          category: 'steel_section' | 'hardware' | 'finishing' | 'civil' | 'fabrication' | 'addon'
-          name: string
-          description: string | null
-          unit: string
-          rate_appolo: number
-          rate_tata: number
-          rate_deemac: number
-          selling_price: number
-          buy_price: number
-          gst_pct: number
-          is_active: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          org_id?: string | null
-          structure_id?: string | null
-          category: 'steel_section' | 'hardware' | 'finishing' | 'civil' | 'fabrication' | 'addon'
-          name: string
-          description?: string | null
-          unit?: string
-          rate_appolo?: number
-          rate_tata?: number
-          rate_deemac?: number
-          selling_price?: number
-          buy_price?: number
-          gst_pct?: number
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          org_id?: string | null
-          structure_id?: string | null
-          category?: 'steel_section' | 'hardware' | 'finishing' | 'civil' | 'fabrication' | 'addon'
-          name?: string
-          description?: string | null
-          unit?: string
-          rate_appolo?: number
-          rate_tata?: number
-          rate_deemac?: number
-          selling_price?: number
-          buy_price?: number
-          gst_pct?: number
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      eq_structure_bom: {
-        Row: {
-          id: string
-          component_id: string
-          structure_id: string
-          capacity_kw_min: number
-          capacity_kw_max: number
-          panel_qty: number | null
-          qty: number
-          total_weight_kg: number | null
-          notes: string | null
-        }
-        Insert: {
-          id?: string
-          component_id: string
-          structure_id: string
-          capacity_kw_min: number
-          capacity_kw_max: number
-          panel_qty?: number | null
-          qty?: number
-          total_weight_kg?: number | null
-          notes?: string | null
-        }
-        Update: {
-          id?: string
-          component_id?: string
-          structure_id?: string
-          capacity_kw_min?: number
-          capacity_kw_max?: number
-          panel_qty?: number | null
-          qty?: number
-          total_weight_kg?: number | null
-          notes?: string | null
-        }
-        Relationships: []
-      }
       eq_structure_addons: {
         Row: {
           id: string
@@ -1826,6 +1757,90 @@ export interface Database {
           is_active?: boolean
           notes?: string | null
           created_at?: string
+        }
+        Relationships: []
+      }
+      eq_structure_bom: {
+        Row: {
+          id: string
+          component_id: string
+          structure_id: string
+          capacity_kw_min: number
+          capacity_kw_max: number
+          panel_qty: number | null
+          qty: number
+          total_weight_kg: number | null
+          notes: string | null
+        }
+        Insert: {
+          id?: string
+          component_id: string
+          structure_id: string
+          capacity_kw_min: number
+          capacity_kw_max: number
+          panel_qty?: number | null
+          qty?: number
+          total_weight_kg?: number | null
+          notes?: string | null
+        }
+        Update: {
+          id?: string
+          component_id?: string
+          structure_id?: string
+          capacity_kw_min?: number
+          capacity_kw_max?: number
+          panel_qty?: number | null
+          qty?: number
+          total_weight_kg?: number | null
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      eq_structure_components: {
+        Row: {
+          id: string
+          org_id: string | null
+          structure_id: string | null
+          category: string
+          name: string
+          description: string | null
+          unit: string
+          selling_price: number
+          buy_price: number
+          gst_pct: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id?: string | null
+          structure_id?: string | null
+          category: string
+          name: string
+          description?: string | null
+          unit?: string
+          selling_price?: number
+          buy_price?: number
+          gst_pct?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string | null
+          structure_id?: string | null
+          category?: string
+          name?: string
+          description?: string | null
+          unit?: string
+          selling_price?: number
+          buy_price?: number
+          gst_pct?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2357,6 +2372,33 @@ export interface Database {
           weighted_avg_cost?: number
           last_updated?: string
           catalog_item_id?: string
+        }
+        Relationships: []
+      }
+      ladder_templates: {
+        Row: {
+          id: string
+          template: string
+          length_m: number
+          cost: number
+          cost_per_meter: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          template: string
+          length_m: number
+          cost: number
+          cost_per_meter: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          template?: string
+          length_m?: number
+          cost?: number
+          cost_per_meter?: number
+          created_at?: string
         }
         Relationships: []
       }
@@ -2927,6 +2969,33 @@ export interface Database {
         }
         Relationships: []
       }
+      quote_history: {
+        Row: {
+          id: string
+          quote_id: string
+          version: number
+          quote_data: Json
+          changed_by: string | null
+          changed_at: string
+        }
+        Insert: {
+          id?: string
+          quote_id: string
+          version: number
+          quote_data: Json
+          changed_by?: string | null
+          changed_at?: string
+        }
+        Update: {
+          id?: string
+          quote_id?: string
+          version?: number
+          quote_data?: Json
+          changed_by?: string | null
+          changed_at?: string
+        }
+        Relationships: []
+      }
       quote_items: {
         Row: {
           id: string
@@ -3443,6 +3512,147 @@ export interface Database {
           version?: number
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      structure_component_master: {
+        Row: {
+          id: string
+          org_id: string | null
+          name: string
+          type: string | null
+          weight_per_meter: number | null
+          material: string | null
+          selling_price: number
+          buy_price: number
+          gst_pct: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id?: string | null
+          name: string
+          type?: string | null
+          weight_per_meter?: number | null
+          material?: string | null
+          selling_price?: number
+          buy_price?: number
+          gst_pct?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string | null
+          name?: string
+          type?: string | null
+          weight_per_meter?: number | null
+          material?: string | null
+          selling_price?: number
+          buy_price?: number
+          gst_pct?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      structure_material_rates: {
+        Row: {
+          id: string
+          vendor_id: string
+          material_type: string
+          rate_per_kg: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          vendor_id: string
+          material_type: string
+          rate_per_kg: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          vendor_id?: string
+          material_type?: string
+          rate_per_kg?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      structure_template_items: {
+        Row: {
+          id: string
+          template_id: string
+          item: string
+          qty: number
+          weight: number | null
+          vendor_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          item: string
+          qty: number
+          weight?: number | null
+          vendor_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          template_id?: string
+          item?: string
+          qty?: number
+          weight?: number | null
+          vendor_id?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      structure_templates: {
+        Row: {
+          id: string
+          capacity_kw: number
+          panel_count: number
+          structure_type: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          capacity_kw: number
+          panel_count: number
+          structure_type: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          capacity_kw?: number
+          panel_count?: number
+          structure_type?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      structure_vendors: {
+        Row: {
+          id: string
+          name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          created_at?: string
         }
         Relationships: []
       }
@@ -4118,6 +4328,7 @@ export interface Database {
           row_number: number | null
           imported_at: string | null
           imported_by: string | null
+          structure_component_id: string | null
         }
         Insert: {
           id?: string
@@ -4145,6 +4356,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          structure_component_id?: string | null
         }
         Update: {
           id?: string
@@ -4172,6 +4384,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          structure_component_id?: string | null
         }
         Relationships: []
       }
@@ -4283,6 +4496,33 @@ export interface Database {
         }
         Relationships: []
       }
+      walkway_templates: {
+        Row: {
+          id: string
+          template: string
+          length_m: number
+          cost: number
+          cost_per_meter: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          template: string
+          length_m: number
+          cost: number
+          cost_per_meter: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          template?: string
+          length_m?: number
+          cost?: number
+          cost_per_meter?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       v_active_batteries: {
@@ -4326,6 +4566,63 @@ export interface Database {
         }
         Relationships: []
       }
+      v_ar_aging: {
+        Row: {
+          org_id: string | null
+          invoice_id: string | null
+          invoice_number: string | null
+          invoice_date: string | null
+          due_date: string | null
+          total_invoice: number | null
+          status: Database['public']['Enums']['invoice_status'] | null
+          days_overdue: number | null
+        }
+        Relationships: []
+      }
+      v_inventory_valuation: {
+        Row: {
+          org_id: string | null
+          warehouse_id: string | null
+          warehouse_name: string | null
+          total_valuation: number | null
+          unique_items_count: number | null
+        }
+        Relationships: []
+      }
+      v_margin_trends: {
+        Row: {
+          org_id: string | null
+          month_label: string | null
+          won_quotes_count: number | null
+          avg_margin_pct: number | null
+        }
+        Relationships: []
+      }
+      v_procurement_spend: {
+        Row: {
+          org_id: string | null
+          vendor_id: string | null
+          vendor_name: string | null
+          total_spend: number | null
+          total_pos: number | null
+        }
+        Relationships: []
+      }
+      v_project_profitability: {
+        Row: {
+          org_id: string | null
+          project_id: string | null
+          project_number: string | null
+          project_status: Database['public']['Enums']['epc_project_status'] | null
+          budgeted_cost: number | null
+          actual_material_cost: number | null
+          actual_labor_cost: number | null
+          total_actual_cost: number | null
+          gross_profit_variance: number | null
+          margin_percentage_variance: number | null
+        }
+        Relationships: []
+      }
       v_project_profitability_audit: {
         Row: {
           project_id: string | null
@@ -4337,6 +4634,16 @@ export interface Database {
           total_actual_cost: number | null
           gross_profit_variance: number | null
           margin_percentage_variance: number | null
+        }
+        Relationships: []
+      }
+      v_quote_pipeline: {
+        Row: {
+          org_id: string | null
+          status: Database['public']['Enums']['quote_status'] | null
+          quote_count: number | null
+          total_value: number | null
+          avg_margin_pct: number | null
         }
         Relationships: []
       }
@@ -4404,6 +4711,16 @@ export interface Database {
           panel_qty: number | null
           target_margin_pct: number | null
           item_count: number | null
+        }
+        Relationships: []
+      }
+      v_vendor_performance: {
+        Row: {
+          org_id: string | null
+          vendor_id: string | null
+          vendor_name: string | null
+          total_orders: number | null
+          avg_delay_days: number | null
         }
         Relationships: []
       }
@@ -4502,7 +4819,6 @@ export interface Database {
       epc_project_status: 'draft' | 'survey_phase' | 'engineering_design' | 'permitting' | 'material_dispatched' | 'installation_started' | 'net_metering_pending' | 'commissioned' | 'closed' | 'cancelled'
       escalation_status: 'open' | 'acknowledged' | 'investigating' | 'resolved' | 'closed'
       event_status: 'pending' | 'processed' | 'failed'
-      gst_slab: '0' | '5' | '12' | '18' | '28'
       inverter_type: 'on_grid' | 'hybrid' | 'micro' | '3_phase'
       invoice_status: 'draft' | 'issued' | 'posted' | 'partially_paid' | 'paid' | 'overdue' | 'cancelled'
       la_type: 'single' | 'multi'

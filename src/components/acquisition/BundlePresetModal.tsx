@@ -66,9 +66,9 @@ export default function BundlePresetModal({
 
     dbPanels.forEach(p => {
       suggestions.push({
-        name: `${p.brand} ${p.model} ${p.wattage_w || p.wattage || ''}W Panel`,
+        name: `${p.brand} ${p.model} ${p.wattage || ''}W Panel`,
         category: 'solar_panels',
-        cost: Number(p.rate_per_panel || p.rate || 0),
+        cost: Number(p.ratePerWatt || 0) * Number(p.wattage || 1),
         gst: Number(p.gst_pct || 0.05),
         unit: 'Nos'
       });
@@ -76,7 +76,7 @@ export default function BundlePresetModal({
 
     dbInverters.forEach(inv => {
       suggestions.push({
-        name: `${inv.brand} ${inv.model} ${inv.capacity_kw || ''}kW Inverter`,
+        name: `${inv.brand} ${inv.model} ${inv.capacityKW || ''}kW Inverter`,
         category: 'power_electronics',
         cost: Number(inv.rate || 0),
         gst: Number(inv.gst_pct || 0.12),
@@ -86,7 +86,7 @@ export default function BundlePresetModal({
 
     dbBatteries.forEach(bat => {
       suggestions.push({
-        name: `${bat.brand} ${bat.model} ${bat.capacity_kwh || ''}kWh Battery`,
+        name: `${bat.brand} ${bat.model} ${bat.capacityKWh || ''}kWh Battery`,
         category: 'power_electronics',
         cost: Number(bat.rate || 0),
         gst: Number(bat.gst_pct || 0.12),
