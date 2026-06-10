@@ -660,8 +660,10 @@ CREATE TABLE quote_items (
   -- Override audit trail (was this row customized by user?)
   original_qty        NUMERIC(10,4),       -- Template default
   original_rate       NUMERIC(12,4),       -- Catalog default
+  original_gst        NUMERIC(6,5),        -- Catalog/Template default GST
   is_qty_overridden   BOOLEAN NOT NULL DEFAULT FALSE,
   is_rate_overridden  BOOLEAN NOT NULL DEFAULT FALSE,
+  is_gst_overridden   BOOLEAN NOT NULL DEFAULT FALSE,
 
   -- Checkbox state (THE key new feature)
   is_included         BOOLEAN NOT NULL DEFAULT TRUE,    -- User's checkbox state

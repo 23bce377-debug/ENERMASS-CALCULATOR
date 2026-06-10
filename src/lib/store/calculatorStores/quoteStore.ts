@@ -265,6 +265,7 @@ export const createQuoteSlice: StateCreator<
       gst_pct: line.effectiveGstPct,
       is_qty_overridden: state.overrides[line.index]?.qty !== undefined,
       is_rate_overridden: state.overrides[line.index]?.ratePerUnit !== undefined,
+      is_gst_overridden: state.overrides[line.index]?.gstPct !== undefined,
       is_included: !line.isDisabled,
       is_mandatory: line.description === 'PANEL' || line.description === 'INVERTER',
       line_total: line.lineTotal,

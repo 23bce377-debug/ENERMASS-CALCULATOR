@@ -608,7 +608,7 @@ async function run() {
   for (const [key, p] of uniquePanels) {
     const match = (dbPanels ?? []).find(x => x.brand === p.brand && x.model === p.model && x.wattage_w === p.wattage_w);
     if (match) {
-      const rateDiff = Math.abs(Number(match.rate_per_panel) - p.rate_per_panel) > 0.01;
+      const rateDiff = Math.abs(Number(match.selling_price) - p.rate_per_panel) > 0.01;
       const gstDiff = Math.abs(Number(match.gst_pct) - p.gst_pct) > 0.001;
 
       if (rateDiff || gstDiff) {
@@ -620,7 +620,7 @@ async function run() {
           brand: p.brand,
           model: p.model,
           change_type: 'updated',
-          old_values: { rate: match.rate_per_panel, gst: match.gst_pct },
+          old_values: { rate: match.selling_price, gst: match.gst_pct },
           new_values: { rate: p.rate_per_panel, gst: p.gst_pct }
         });
       }
@@ -647,7 +647,7 @@ async function run() {
   for (const [key, i] of uniqueInverters) {
     const match = (dbInverters ?? []).find(x => x.brand === i.brand && x.model === i.model && Number(x.capacity_kw) === i.capacity_kw && x.inverter_type === i.inverter_type);
     if (match) {
-      const rateDiff = Math.abs(Number(match.rate) - i.rate) > 0.01;
+      const rateDiff = Math.abs(Number(match.selling_price) - i.rate) > 0.01;
       const gstDiff = Math.abs(Number(match.gst_pct) - i.gst_pct) > 0.001;
 
       if (rateDiff || gstDiff) {
@@ -659,7 +659,7 @@ async function run() {
           brand: i.brand,
           model: i.model,
           change_type: 'updated',
-          old_values: { rate: match.rate, gst: match.gst_pct },
+          old_values: { rate: match.selling_price, gst: match.gst_pct },
           new_values: { rate: i.rate, gst: i.gst_pct }
         });
       }
@@ -686,7 +686,7 @@ async function run() {
   for (const [key, b] of uniqueBatteries) {
     const match = (dbBatteries ?? []).find(x => x.brand === b.brand && x.model === b.model && Number(x.capacity_kwh) === b.capacity_kwh);
     if (match) {
-      const rateDiff = Math.abs(Number(match.rate) - b.rate) > 0.01;
+      const rateDiff = Math.abs(Number(match.selling_price) - b.rate) > 0.01;
       const gstDiff = Math.abs(Number(match.gst_pct) - b.gst_pct) > 0.001;
 
       if (rateDiff || gstDiff) {
@@ -698,7 +698,7 @@ async function run() {
           brand: b.brand,
           model: b.model,
           change_type: 'updated',
-          old_values: { rate: match.rate, gst: match.gst_pct },
+          old_values: { rate: match.selling_price, gst: match.gst_pct },
           new_values: { rate: b.rate, gst: b.gst_pct }
         });
       }
@@ -725,7 +725,7 @@ async function run() {
   for (const [key, m] of uniqueMeters) {
     const match = (dbMeters ?? []).find(x => x.meter_type === m.meter_type && x.phases === m.phases && x.brand === m.brand && x.model === m.model);
     if (match) {
-      const rateDiff = Math.abs(Number(match.rate) - m.rate) > 0.01;
+      const rateDiff = Math.abs(Number(match.selling_price) - m.rate) > 0.01;
       const gstDiff = Math.abs(Number(match.gst_pct) - m.gst_pct) > 0.001;
 
       if (rateDiff || gstDiff) {
@@ -737,7 +737,7 @@ async function run() {
           brand: m.brand,
           model: m.model,
           change_type: 'updated',
-          old_values: { rate: match.rate, gst: match.gst_pct },
+          old_values: { rate: match.selling_price, gst: match.gst_pct },
           new_values: { rate: m.rate, gst: m.gst_pct }
         });
       }
@@ -763,7 +763,7 @@ async function run() {
   for (const [key, la] of uniqueLAs) {
     const match = (dbLAs ?? []).find(x => x.la_type === la.la_type && x.brand === la.brand && x.model === la.model);
     if (match) {
-      const rateDiff = Math.abs(Number(match.rate) - la.rate) > 0.01;
+      const rateDiff = Math.abs(Number(match.selling_price) - la.rate) > 0.01;
       const gstDiff = Math.abs(Number(match.gst_pct) - la.gst_pct) > 0.001;
 
       if (rateDiff || gstDiff) {
@@ -775,7 +775,7 @@ async function run() {
           brand: la.brand,
           model: la.model,
           change_type: 'updated',
-          old_values: { rate: match.rate, gst: match.gst_pct },
+          old_values: { rate: match.selling_price, gst: match.gst_pct },
           new_values: { rate: la.rate, gst: la.gst_pct }
         });
       }
@@ -801,7 +801,7 @@ async function run() {
   for (const [key, item] of uniqueBOMItems) {
     const match = (dbBOMItems ?? []).find(x => x.section === item.section && x.sub_type === item.sub_type);
     if (match) {
-      const rateDiff = Math.abs(Number(match.rate) - item.rate) > 0.01;
+      const rateDiff = Math.abs(Number(match.selling_price) - item.rate) > 0.01;
       const gstDiff = Math.abs(Number(match.gst_pct) - item.gst_pct) > 0.001;
 
       if (rateDiff || gstDiff) {
@@ -812,7 +812,7 @@ async function run() {
           entity_type: 'eq_bom_items',
           name: item.item_description,
           change_type: 'updated',
-          old_values: { rate: match.rate, gst: match.gst_pct },
+          old_values: { rate: match.selling_price, gst: match.gst_pct },
           new_values: { rate: item.rate, gst: item.gst_pct }
         });
       }
@@ -930,10 +930,14 @@ async function run() {
     if (connectionString) {
       console.log('Connecting via direct PostgreSQL client for transaction safety...');
       const pgClient = new Client({ connectionString });
+      pgClient.on('error', (err) => {
+        console.error('Database connection error event:', err);
+      });
       try {
         await pgClient.connect();
         await pgClient.query('BEGIN');
 
+        console.log('Inserting into master_data_imports...');
         const batchRes = await pgClient.query(
           `INSERT INTO master_data_imports (source_file, status, summary) VALUES ($1, $2, $3) RETURNING id`,
           ['PRICING_8.9%GST.xlsx & structure rate_formulae.xlsx', 'completed', JSON.stringify(summary)]
@@ -942,21 +946,22 @@ async function run() {
         console.log(`Created import batch ID: ${batchId}`);
 
         // Perform Panel Upserts
+        console.log(`Processing ${uniquePanels.size} unique panels...`);
         for (const [key, p] of uniquePanels) {
           const match = (dbPanels ?? []).find(x => x.brand === p.brand && x.model === p.model && x.wattage_w === p.wattage_w);
           if (match) {
             await pgClient.query(
-              `UPDATE eq_panels SET rate_per_watt = $1, gst_pct = $2, import_batch_id = $3, source_file = $4, sheet_name = $5, row_number = $6, imported_at = NOW(), version = version + 1 WHERE id = $7`,
-              [p.rate_per_watt, p.gst_pct, batchId, p.source_file, p.sheet_name, p.row_number, match.id]
+              `UPDATE eq_panels SET buy_price = $1, selling_price = $2, gst_pct = $3, import_batch_id = $4, source_file = $5, sheet_name = $6, row_number = $7, imported_at = NOW(), version = version + 1 WHERE id = $8`,
+              [p.rate_per_panel, p.rate_per_panel, p.gst_pct, batchId, p.source_file, p.sheet_name, p.row_number, match.id]
             );
             await pgClient.query(
               `INSERT INTO master_data_changes_log (import_batch_id, entity_type, entity_id, change_type, old_values, new_values) VALUES ($1, $2, $3, $4, $5, $6)`,
-              [batchId, 'eq_panels', match.id, 'updated', JSON.stringify({ rate: match.rate_per_panel, gst: match.gst_pct }), JSON.stringify({ rate: p.rate_per_panel, gst: p.gst_pct })]
+              [batchId, 'eq_panels', match.id, 'updated', JSON.stringify({ rate: match.selling_price, gst: match.gst_pct }), JSON.stringify({ rate: p.rate_per_panel, gst: p.gst_pct })]
             );
           } else {
             const insRes = await pgClient.query(
-              `INSERT INTO eq_panels (brand, model, wattage_w, panel_type, rate_per_watt, gst_pct, description, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()) RETURNING id`,
-              [p.brand, p.model, p.wattage_w, p.panel_type, p.rate_per_watt, p.gst_pct, p.description, batchId, p.source_file, p.sheet_name, p.row_number]
+              `INSERT INTO eq_panels (brand, model, wattage_w, panel_type, buy_price, selling_price, gst_pct, description, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) RETURNING id`,
+              [p.brand, p.model, p.wattage_w, p.panel_type, p.rate_per_panel, p.rate_per_panel, p.gst_pct, p.description, batchId, p.source_file, p.sheet_name, p.row_number]
             );
             const newId = insRes.rows[0].id;
             await pgClient.query(
@@ -971,17 +976,17 @@ async function run() {
           const match = (dbInverters ?? []).find(x => x.brand === i.brand && x.model === i.model && Number(x.capacity_kw) === i.capacity_kw && x.inverter_type === i.inverter_type);
           if (match) {
             await pgClient.query(
-              `UPDATE eq_inverters SET rate = $1, gst_pct = $2, import_batch_id = $3, source_file = $4, sheet_name = $5, row_number = $6, imported_at = NOW(), version = version + 1 WHERE id = $7`,
-              [i.rate, i.gst_pct, batchId, i.source_file, i.sheet_name, i.row_number, match.id]
+              `UPDATE eq_inverters SET buy_price = $1, selling_price = $2, gst_pct = $3, import_batch_id = $4, source_file = $5, sheet_name = $6, row_number = $7, imported_at = NOW(), version = version + 1 WHERE id = $8`,
+              [i.rate, i.rate, i.gst_pct, batchId, i.source_file, i.sheet_name, i.row_number, match.id]
             );
             await pgClient.query(
               `INSERT INTO master_data_changes_log (import_batch_id, entity_type, entity_id, change_type, old_values, new_values) VALUES ($1, $2, $3, $4, $5, $6)`,
-              [batchId, 'eq_inverters', match.id, 'updated', JSON.stringify({ rate: match.rate, gst: match.gst_pct }), JSON.stringify({ rate: i.rate, gst: i.gst_pct })]
+              [batchId, 'eq_inverters', match.id, 'updated', JSON.stringify({ rate: match.selling_price, gst: match.gst_pct }), JSON.stringify({ rate: i.rate, gst: i.gst_pct })]
             );
           } else {
             const insRes = await pgClient.query(
-              `INSERT INTO eq_inverters (brand, model, capacity_kw, inverter_type, phases, rate, gst_pct, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()) RETURNING id`,
-              [i.brand, i.model, i.capacity_kw, i.inverter_type, i.phases, i.rate, i.gst_pct, batchId, i.source_file, i.sheet_name, i.row_number]
+              `INSERT INTO eq_inverters (brand, model, capacity_kw, inverter_type, phases, buy_price, selling_price, gst_pct, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) RETURNING id`,
+              [i.brand, i.model, i.capacity_kw, i.inverter_type, i.phases, i.rate, i.rate, i.gst_pct, batchId, i.source_file, i.sheet_name, i.row_number]
             );
             const newId = insRes.rows[0].id;
             await pgClient.query(
@@ -996,17 +1001,17 @@ async function run() {
           const match = (dbBatteries ?? []).find(x => x.brand === b.brand && x.model === b.model && Number(x.capacity_kwh) === b.capacity_kwh);
           if (match) {
             await pgClient.query(
-              `UPDATE eq_batteries SET rate = $1, gst_pct = $2, import_batch_id = $3, source_file = $4, sheet_name = $5, row_number = $6, imported_at = NOW(), version = version + 1 WHERE id = $7`,
-              [b.rate, b.gst_pct, batchId, b.source_file, b.sheet_name, b.row_number, match.id]
+              `UPDATE eq_batteries SET buy_price = $1, selling_price = $2, gst_pct = $3, import_batch_id = $4, source_file = $5, sheet_name = $6, row_number = $7, imported_at = NOW(), version = version + 1 WHERE id = $8`,
+              [b.rate, b.rate, b.gst_pct, batchId, b.source_file, b.sheet_name, b.row_number, match.id]
             );
             await pgClient.query(
               `INSERT INTO master_data_changes_log (import_batch_id, entity_type, entity_id, change_type, old_values, new_values) VALUES ($1, $2, $3, $4, $5, $6)`,
-              [batchId, 'eq_batteries', match.id, 'updated', JSON.stringify({ rate: match.rate, gst: match.gst_pct }), JSON.stringify({ rate: b.rate, gst: b.gst_pct })]
+              [batchId, 'eq_batteries', match.id, 'updated', JSON.stringify({ rate: match.selling_price, gst: match.gst_pct }), JSON.stringify({ rate: b.rate, gst: b.gst_pct })]
             );
           } else {
             const insRes = await pgClient.query(
-              `INSERT INTO eq_batteries (brand, model, capacity_kwh, chemistry, dod_pct, rate, gst_pct, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()) RETURNING id`,
-              [b.brand, b.model, b.capacity_kwh, b.chemistry, b.dod_pct, b.rate, b.gst_pct, batchId, b.source_file, b.sheet_name, b.row_number]
+              `INSERT INTO eq_batteries (brand, model, capacity_kwh, chemistry, dod_pct, buy_price, selling_price, gst_pct, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) RETURNING id`,
+              [b.brand, b.model, b.capacity_kwh, b.chemistry, b.dod_pct, b.rate, b.rate, b.gst_pct, batchId, b.source_file, b.sheet_name, b.row_number]
             );
             const newId = insRes.rows[0].id;
             await pgClient.query(
@@ -1021,13 +1026,13 @@ async function run() {
           const match = (dbMeters ?? []).find(x => x.meter_type === m.meter_type && x.phases === m.phases && x.brand === m.brand && x.model === m.model);
           if (match) {
             await pgClient.query(
-              `UPDATE eq_meters SET rate = $1, gst_pct = $2, import_batch_id = $3, source_file = $4, sheet_name = $5, row_number = $6, imported_at = NOW(), version = version + 1 WHERE id = $7`,
-              [m.rate, m.gst_pct, batchId, m.source_file, m.sheet_name, m.row_number, match.id]
+              `UPDATE eq_meters SET buy_price = $1, selling_price = $2, gst_pct = $3, import_batch_id = $4, source_file = $5, sheet_name = $6, row_number = $7, imported_at = NOW(), version = version + 1 WHERE id = $8`,
+              [m.rate, m.rate, m.gst_pct, batchId, m.source_file, m.sheet_name, m.row_number, match.id]
             );
           } else {
             await pgClient.query(
-              `INSERT INTO eq_meters (meter_type, brand, model, phases, rate, gst_pct, description, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())`,
-              [m.meter_type, m.brand, m.model, m.phases, m.rate, m.gst_pct, m.description, batchId, m.source_file, m.sheet_name, m.row_number]
+              `INSERT INTO eq_meters (meter_type, brand, model, phases, buy_price, selling_price, gst_pct, description, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())`,
+              [m.meter_type, m.brand, m.model, m.phases, m.rate, m.rate, m.gst_pct, m.description, batchId, m.source_file, m.sheet_name, m.row_number]
             );
           }
         }
@@ -1037,13 +1042,13 @@ async function run() {
           const match = (dbLAs ?? []).find(x => x.la_type === la.la_type && x.brand === la.brand && x.model === la.model);
           if (match) {
             await pgClient.query(
-              `UPDATE eq_lightning_arresters SET rate = $1, gst_pct = $2, import_batch_id = $3, source_file = $4, sheet_name = $5, row_number = $6, imported_at = NOW(), version = version + 1 WHERE id = $7`,
-              [la.rate, la.gst_pct, batchId, la.source_file, la.sheet_name, la.row_number, match.id]
+              `UPDATE eq_lightning_arresters SET buy_price = $1, selling_price = $2, gst_pct = $3, import_batch_id = $4, source_file = $5, sheet_name = $6, row_number = $7, imported_at = NOW(), version = version + 1 WHERE id = $8`,
+              [la.rate, la.rate, la.gst_pct, batchId, la.source_file, la.sheet_name, la.row_number, match.id]
             );
           } else {
             await pgClient.query(
-              `INSERT INTO eq_lightning_arresters (la_type, brand, model, rate, gst_pct, description, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())`,
-              [la.la_type, la.brand, la.model, la.rate, la.gst_pct, la.description, batchId, la.source_file, la.sheet_name, la.row_number]
+              `INSERT INTO eq_lightning_arresters (la_type, brand, model, buy_price, selling_price, gst_pct, description, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())`,
+              [la.la_type, la.brand, la.model, la.rate, la.rate, la.gst_pct, la.description, batchId, la.source_file, la.sheet_name, la.row_number]
             );
           }
         }
@@ -1053,13 +1058,13 @@ async function run() {
           const match = (dbBOMItems ?? []).find(x => x.section === item.section && x.sub_type === item.sub_type);
           if (match) {
             await pgClient.query(
-              `UPDATE eq_bom_items SET rate = $1, gst_pct = $2, import_batch_id = $3, source_file = $4, sheet_name = $5, row_number = $6, imported_at = NOW(), version = version + 1 WHERE id = $7`,
-              [item.rate, item.gst_pct, batchId, item.source_file, item.sheet_name, item.row_number, match.id]
+              `UPDATE eq_bom_items SET buy_price = $1, selling_price = $2, gst_pct = $3, import_batch_id = $4, source_file = $5, sheet_name = $6, row_number = $7, imported_at = NOW(), version = version + 1 WHERE id = $8`,
+              [item.rate, item.rate, item.gst_pct, batchId, item.source_file, item.sheet_name, item.row_number, match.id]
             );
           } else {
             await pgClient.query(
-              `INSERT INTO eq_bom_items (section, sub_type, description, unit, rate, gst_pct, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())`,
-              [item.section, item.sub_type, item.item_description, item.unit, item.rate, item.gst_pct, batchId, item.source_file, item.sheet_name, item.row_number]
+              `INSERT INTO eq_bom_items (section, sub_type, description, unit, buy_price, selling_price, gst_pct, import_batch_id, source_file, sheet_name, row_number, imported_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())`,
+              [item.section, item.sub_type, item.item_description, item.unit, item.rate, item.rate, item.gst_pct, batchId, item.source_file, item.sheet_name, item.row_number]
             );
           }
         }

@@ -31,7 +31,10 @@ export const GET = withAuth(async (request, context) => {
         schemesRes,
         inventoryRes,
         vendorsRes,
-        quotesRes
+        quotesRes,
+        structureComponentsRes,
+        structureBomRes,
+        structureAddonsRes
       ] = await Promise.all([
         supabaseAdmin.from('eq_panels').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
         supabaseAdmin.from('eq_inverters').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
@@ -48,7 +51,10 @@ export const GET = withAuth(async (request, context) => {
         supabaseAdmin.from('calculation_schemes').select('*').eq('is_active', true),
         supabaseAdmin.from('inventory_summary').select('*').eq('org_id', orgId),
         supabaseAdmin.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true }),
-        supabaseAdmin.from('quotes').select('*, quote_items(*), quote_additional_costs(*)').eq('org_id', orgId).order('created_at', { ascending: false })
+        supabaseAdmin.from('quotes').select('*, quote_items(*), quote_additional_costs(*)').eq('org_id', orgId).order('created_at', { ascending: false }),
+        supabaseAdmin.from('eq_structure_components').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
+        supabaseAdmin.from('eq_structure_bom').select('*'),
+        supabaseAdmin.from('eq_structure_addons').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true)
       ]);
 
       if (panelsRes.error) throw panelsRes.error;
@@ -67,6 +73,9 @@ export const GET = withAuth(async (request, context) => {
       if (inventoryRes.error) throw inventoryRes.error;
       if (vendorsRes.error) throw vendorsRes.error;
       if (quotesRes.error) throw quotesRes.error;
+      if (structureComponentsRes.error) throw structureComponentsRes.error;
+      if (structureBomRes.error) throw structureBomRes.error;
+      if (structureAddonsRes.error) throw structureAddonsRes.error;
 
       return {
         panels: panelsRes.data || [],
@@ -84,7 +93,10 @@ export const GET = withAuth(async (request, context) => {
         schemes: schemesRes.data || [],
         inventorySummary: inventoryRes.data || [],
         vendors: vendorsRes.data || [],
-        quotes: quotesRes.data || []
+        quotes: quotesRes.data || [],
+        structureComponents: structureComponentsRes.data || [],
+        structureBom: structureBomRes.data || [],
+        structureAddons: structureAddonsRes.data || []
       };
     }, 300); // Cache for 5 minutes
 

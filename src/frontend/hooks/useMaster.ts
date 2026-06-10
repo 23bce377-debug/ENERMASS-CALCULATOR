@@ -2,13 +2,11 @@ import { useState, useEffect } from 'react';
 import {
   StateRuleORM,
   CalculationSchemeORM,
-  RateMasterORM,
   CategoryMarginORM,
   QuoteFormatTemplateORM,
   AppSettingORM,
   type StateRuleRow,
   type CalculationSchemeRow,
-  type RateMasterRow,
   type CategoryMarginRow,
   type QuoteFormatTemplateRow,
   type AppSettingRow,
@@ -18,7 +16,6 @@ import {
 export function useMasterData(orgId?: string) {
   const [stateRules, setStateRules] = useState<StateRuleRow[]>([]);
   const [schemes, setSchemes] = useState<CalculationSchemeRow[]>([]);
-  const [rateMaster, setRateMaster] = useState<RateMasterRow[]>([]);
   const [categoryMargins, setCategoryMargins] = useState<CategoryMarginRow[]>([]);
   const [templates, setTemplates] = useState<QuoteFormatTemplateRow[]>([]);
   const [settings, setSettings] = useState<AppSettingRow | null>(null);
@@ -32,14 +29,12 @@ export function useMasterData(orgId?: string) {
         Promise<StateRuleRow[]>,
         Promise<CalculationSchemeRow[]>,
         Promise<QuoteFormatTemplateRow[]>,
-        Promise<RateMasterRow[] | null>,
         Promise<CategoryMarginRow[] | null>,
         Promise<AppSettingRow | null>
       ] = [
         StateRuleORM.getAll(),
         CalculationSchemeORM.getAll(),
         QuoteFormatTemplateORM.getAll(orgId),
-        orgId ? RateMasterORM.getByOrgId(orgId) : Promise.resolve(null),
         orgId ? CategoryMarginORM.getByOrgId(orgId) : Promise.resolve(null),
         orgId ? AppSettingORM.getByOrgId(orgId) : Promise.resolve(null)
       ];
@@ -48,7 +43,6 @@ export function useMasterData(orgId?: string) {
         stateRulesData,
         schemesData,
         templatesData,
-        rateMasterData,
         categoryMarginsData,
         settingsData
       ] = await Promise.all(promises);
@@ -56,7 +50,6 @@ export function useMasterData(orgId?: string) {
       setStateRules(stateRulesData);
       setSchemes(schemesData);
       setTemplates(templatesData);
-      if (rateMasterData) setRateMaster(rateMasterData);
       if (categoryMarginsData) setCategoryMargins(categoryMarginsData);
       if (settingsData) setSettings(settingsData);
       
@@ -86,7 +79,6 @@ export function useMasterData(orgId?: string) {
   return {
     stateRules,
     schemes,
-    rateMaster,
     categoryMargins,
     templates,
     settings,

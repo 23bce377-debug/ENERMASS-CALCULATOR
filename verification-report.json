@@ -10,8 +10,8 @@
   "gstMasterCount": 354,
   "pricingReferencesCount": 16,
   "rulesCount": 5302,
-  "systemsCount": 81,
-  "systemItemsCount": 2307,
+  "systemsCount": 52,
+  "systemItemsCount": 1488,
   "checks": {
     "canLoadEquipment": true,
     "canBuildSystems": true,

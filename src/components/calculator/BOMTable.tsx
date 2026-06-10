@@ -15,7 +15,7 @@ import {
   Info,
 } from 'lucide-react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
-import { formatINR, type LineResult } from '@/lib/engine/calculator';
+import { formatINR, roundTo5, type LineResult } from '@/lib/engine/calculator';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useToast } from '@/components/ui/Toast';
 import { Select } from '@/components/ui/Select';
@@ -404,13 +404,13 @@ const BOMRow = memo(function BOMRow({
       <td className="py-1 px-1 w-15">
         {line.isDisabled ? (
           <div className="w-full text-right font-mono text-xs text-text-muted px-1.5 py-0.5 line-through">
-            {`${line.effectiveGstPct * 100}%`}
+            {`${roundTo5(line.effectiveGstPct * 100)}%`}
           </div>
         ) : (
           <InlineCell
-            value={line.effectiveGstPct * 100}
-            onCommit={(v) => onOverrideGst(line.index, v / 100)}
-            format={(v) => `${v}%`}
+            value={roundTo5(line.effectiveGstPct * 100)}
+            onCommit={(v) => onOverrideGst(line.index, roundTo5(v / 100))}
+            format={(v) => `${roundTo5(v)}%`}
           />
         )}
       </td>

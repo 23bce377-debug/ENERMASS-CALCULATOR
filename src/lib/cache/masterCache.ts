@@ -28,7 +28,7 @@ export interface CachedPanel {
   model: string;
   wattage: number;       // wattage_w
   type: string;          // panel_type
-  ratePerWatt: number;   // rate_per_watt
+  ratePerWatt: number;   // derived: selling_price / wattage_w
   gstPct: number;
 }
 
@@ -141,7 +141,8 @@ export const getCachedMasterData = unstable_cache(
       model: p.model,
       wattage: p.wattage_w,
       type: p.panel_type,
-      ratePerWatt: p.rate_per_watt,
+      // selling_price is the absolute per-panel price; derive per-watt rate
+      ratePerWatt: Number(p.wattage_w) > 0 ? Number(p.selling_price) / Number(p.wattage_w) : 0,
       gstPct: p.gst_pct,
     }));
 
@@ -152,7 +153,7 @@ export const getCachedMasterData = unstable_cache(
       capacityKW: i.capacity_kw,
       type: normalizeInverterType(i.inverter_type),
       phases: i.phases,
-      rate: i.rate,
+      rate: Number(i.selling_price),
       gstPct: i.gst_pct,
     }));
 
@@ -163,7 +164,7 @@ export const getCachedMasterData = unstable_cache(
       capacityKWh: b.capacity_kwh,
       chemistry: b.chemistry,
       dodPct: b.dod_pct,
-      rate: b.rate,
+      rate: Number(b.selling_price),
       gstPct: b.gst_pct,
     }));
 

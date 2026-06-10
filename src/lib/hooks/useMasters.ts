@@ -45,15 +45,21 @@ async function logAudit(
 
 // ─── Generic Masters Fetch / Mutation Hooks ───────────────────────────────────
 
+function getEntityTable(entity: string): string {
+  if (entity === 'vendors') return 'vendors';
+  if (entity === 'pricing') return 'rate_master';
+  if (entity === 'subsidy') return 'calculation_schemes';
+  if (entity === 'accessories') return 'eq_bom_items';
+  if (entity === 'structures') return 'eq_mounting_structures';
+  return `eq_${entity}`;
+}
+
 export function useMasterQuery<T>(entity: string, options?: any) {
   return useQuery<T[]>({
     queryKey: ['masters', entity],
     queryFn: async () => {
       const { orgId } = await getOrgContext();
-      let table = `eq_${entity}`;
-      if (entity === 'vendors') table = 'vendors';
-      else if (entity === 'pricing') table = 'rate_master';
-      else if (entity === 'subsidy') table = 'calculation_schemes';
+      const table = getEntityTable(entity);
 
       let query = supabase.from(table as any).select('*');
       
@@ -86,10 +92,7 @@ export function useMasterCreateMutation<T>(entity: string) {
   return useMutation({
     mutationFn: async (newItem: any) => {
       const { orgId, userId } = await getOrgContext();
-      let table = `eq_${entity}`;
-      if (entity === 'vendors') table = 'vendors';
-      else if (entity === 'pricing') table = 'rate_master';
-      else if (entity === 'subsidy') table = 'calculation_schemes';
+      const table = getEntityTable(entity);
 
       const payload = { ...newItem, org_id: orgId };
       const { data, error } = await (supabase
@@ -117,10 +120,7 @@ export function useMasterUpdateMutation<T>(entity: string) {
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
       const { orgId, userId } = await getOrgContext();
-      let table = `eq_${entity}`;
-      if (entity === 'vendors') table = 'vendors';
-      else if (entity === 'pricing') table = 'rate_master';
-      else if (entity === 'subsidy') table = 'calculation_schemes';
+      const table = getEntityTable(entity);
 
       // 1. Fetch current values for audit comparison
       const { data: beforeState } = await (supabase.from(table as any).select('*').eq('id', id).single() as any);
@@ -161,10 +161,7 @@ export function useMasterDeleteMutation(entity: string) {
   return useMutation({
     mutationFn: async (id: string) => {
       const { orgId, userId } = await getOrgContext();
-      let table = `eq_${entity}`;
-      if (entity === 'vendors') table = 'vendors';
-      else if (entity === 'pricing') table = 'rate_master';
-      else if (entity === 'subsidy') table = 'calculation_schemes';
+      const table = getEntityTable(entity);
 
       // Fetch before deleting
       const { data: beforeState } = await (supabase.from(table as any).select('*').eq('id', id).single() as any);
@@ -211,10 +208,7 @@ export function useMasterBulkUpdateMutation(entity: string) {
   return useMutation({
     mutationFn: async ({ ids, updates }: { ids: string[]; updates: any }) => {
       const { orgId, userId } = await getOrgContext();
-      let table = `eq_${entity}`;
-      if (entity === 'vendors') table = 'vendors';
-      else if (entity === 'pricing') table = 'rate_master';
-      else if (entity === 'subsidy') table = 'calculation_schemes';
+      const table = getEntityTable(entity);
 
       // 1. Fetch current values for audit comparison
       const { data: beforeStates } = await (supabase

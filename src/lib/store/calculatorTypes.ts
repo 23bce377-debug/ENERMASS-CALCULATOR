@@ -96,6 +96,9 @@ export interface CalculatorState {
   targetMRPInclGST: number | null;
   targetMRPPerWatt: number | null;
 
+  structureComponentMix: Record<string, number>;
+  structureAddonMix: Record<string, number>;
+
   // Engineering configs
   orientation: 'South' | 'East/West' | 'Flat';
   dcCableLengthM: number;
@@ -139,6 +142,9 @@ export interface CalculatorState {
 
   setStructureSelection: (id: string | null, mode?: 'weight' | 'per_watt' | 'flat') => void;
   setStructureCustomField: (field: string, val: number | null) => void;
+  setStructureComponentQty: (id: string, qty: number | null) => void;
+  setStructureAddonQty: (id: string, qty: number) => void;
+  clearStructureMix: () => void;
   setMeterSelection: (type: 'solar' | 'net', id: string | null, qty?: number) => void;
   setLASelection: (id: string | null, qty?: number) => void;
   setGSTOnOutputOverride: (val: number | null) => void;
@@ -172,6 +178,9 @@ export interface CalculatorState {
   dbMeters: any[];
   dbLAs: any[];
   dbStructureParts: any[];
+  dbStructureComponents: any[];
+  dbStructureBom: any[];
+  dbStructureAddons: any[];
   dbOrientationMultipliers: Record<string, number>;
   inventorySummary: import('@/backend/orm/acquisition').InventorySummary[];
   dbLoaded: boolean;
@@ -227,6 +236,9 @@ export const INITIAL_STATE = {
   targetMRPInclGST: null as number | null,
   targetMRPPerWatt: null as number | null,
 
+  structureComponentMix: {} as Record<string, number>,
+  structureAddonMix: {} as Record<string, number>,
+
   orientation: 'South' as 'South' | 'East/West' | 'Flat',
   dcCableLengthM: 0,
   acCableLengthM: 0,
@@ -253,6 +265,9 @@ export const INITIAL_STATE = {
   dbMeters: [] as any[],
   dbLAs: [] as any[],
   dbStructureParts: [] as any[],
+  dbStructureComponents: [] as any[],
+  dbStructureBom: [] as any[],
+  dbStructureAddons: [] as any[],
   dbOrientationMultipliers: { South: 1.0, 'East/West': 0.85, Flat: 0.90 } as Record<string, number>,
   dbLoaded: false,
   rpcSubsidyAmount: null as number | null,
@@ -481,6 +496,8 @@ const result = calculateSystem({
       structureCustomRawRate: state.structureCustomRawRate ?? undefined,
       structureCustomFabricationRate: state.structureCustomFabricationRate ?? undefined,
       structureCustomGalvanizingRate: state.structureCustomGalvanizingRate ?? undefined,
+      structureComponentMix: state.structureComponentMix,
+      structureAddonMix: state.structureAddonMix,
       solarMeterId: state.solarMeterId ?? undefined,
       solarMeterQty: state.solarMeterQty,
       netMeterId: state.netMeterId ?? undefined,
@@ -492,6 +509,9 @@ const result = calculateSystem({
       dbMeters: state.dbMeters,
       dbLAs: state.dbLAs,
       dbStructureParts: state.dbStructureParts,
+      dbStructureComponents: state.dbStructureComponents,
+      dbStructureBom: state.dbStructureBom,
+      dbStructureAddons: state.dbStructureAddons,
       dbOrientationMultipliers: state.dbOrientationMultipliers,
       gstOnOutputOverride: state.gstOnOutputOverride ?? undefined,
       targetMRPInclGST: state.targetMRPInclGST ?? undefined,

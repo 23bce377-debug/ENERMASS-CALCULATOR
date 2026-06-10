@@ -7,11 +7,11 @@ import { useCalculatorStore } from '../store/calculatorStore'
 function mapDbQuoteToQuote(q: any): Quote {
   const overrides: any = {}
   ;(q.quote_items || []).forEach((item: any) => {
-    if (item.is_qty_overridden || item.is_rate_overridden) {
+    if (item.is_qty_overridden || item.is_rate_overridden || item.is_gst_overridden) {
       overrides[item.sort_order] = {
         qty: item.is_qty_overridden ? Number(item.qty) : undefined,
         ratePerUnit: item.is_rate_overridden ? Number(item.rate_per_unit) : undefined,
-        gstPct: Number(item.gst_pct),
+        gstPct: item.is_gst_overridden ? Number(item.gst_pct) : undefined,
       }
     }
   })
@@ -35,7 +35,7 @@ function mapDbQuoteToQuote(q: any): Quote {
       lineTotal: Number(item.line_total),
       lineGST: Number(item.line_gst),
       lineSubTotal: Number(item.line_subtotal),
-      isOverridden: item.is_qty_overridden || item.is_rate_overridden,
+      isOverridden: item.is_qty_overridden || item.is_rate_overridden || !!item.is_gst_overridden,
       isDisabled: !item.is_included,
     })),
     costBeforeGST: Number(q.cost_before_gst),

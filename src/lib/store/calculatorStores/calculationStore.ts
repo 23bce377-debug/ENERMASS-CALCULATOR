@@ -46,6 +46,9 @@ export const createCalculationSlice: StateCreator<
     | 'dbMeters'
     | 'dbLAs'
     | 'dbStructureParts'
+    | 'dbStructureComponents'
+    | 'dbStructureBom'
+    | 'dbStructureAddons'
     | 'inventorySummary'
     | 'dbOrientationMultipliers'
     | 'dbLoaded'
@@ -107,6 +110,9 @@ export const createCalculationSlice: StateCreator<
   dbMeters: [],
   dbLAs: [],
   dbStructureParts: [],
+  dbStructureComponents: [],
+  dbStructureBom: [],
+  dbStructureAddons: [],
   dbOrientationMultipliers: { South: 1.0, 'East/West': 0.85, Flat: 0.90 } as Record<string, number>,
   inventorySummary: [],
   dbLoaded: false,
@@ -361,7 +367,7 @@ export const createCalculationSlice: StateCreator<
           model: p.model,
           wattage: Number(p.wattage_w),
           type: p.panel_type,
-          ratePerWatt: wac !== null ? wac / Number(p.wattage_w) : Number(p.rate_per_watt),
+          ratePerWatt: wac !== null ? wac / Number(p.wattage_w) : (Number(p.wattage_w) > 0 ? Number(p.selling_price) / Number(p.wattage_w) : 0),
           gst_pct: Number(p.gst_pct),
         };
       });
@@ -377,7 +383,7 @@ export const createCalculationSlice: StateCreator<
           capacityKW: Number(i.capacity_kw),
           type: i.inverter_type === 'on_grid' ? 'on-grid' : (i.inverter_type === 'micro' ? 'micro' : 'hybrid'),
           phases: Number(i.phases),
-          rate: wac !== null ? wac : Number(i.rate),
+          rate: wac !== null ? wac : Number(i.selling_price),
           gst_pct: Number(i.gst_pct),
         };
       });
@@ -393,7 +399,7 @@ export const createCalculationSlice: StateCreator<
           capacityKWh: Number(b.capacity_kwh),
           chemistry: b.chemistry,
           dodPct: Number(b.dod_pct),
-          rate: wac !== null ? wac : Number(b.rate),
+          rate: wac !== null ? wac : Number(b.selling_price),
           gst_pct: Number(b.gst_pct),
         };
       });
@@ -424,7 +430,7 @@ export const createCalculationSlice: StateCreator<
         return {
           ...m,
           phases: Number(m.phases),
-          rate: wac !== null ? wac : Number(m.rate),
+          rate: wac !== null ? wac : Number(m.selling_price),
           gst_pct: Number(m.gst_pct),
         };
       });
@@ -435,7 +441,7 @@ export const createCalculationSlice: StateCreator<
         const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           ...l,
-          rate: wac !== null ? wac : Number(l.rate),
+          rate: wac !== null ? wac : Number(l.selling_price),
           gst_pct: Number(l.gst_pct),
         };
       });
@@ -445,7 +451,7 @@ export const createCalculationSlice: StateCreator<
         const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           ...b,
-          rate: wac !== null ? wac : Number(b.rate),
+          rate: wac !== null ? wac : Number(b.selling_price),
           gst_pct: Number(b.gst_pct),
         };
       });
@@ -456,7 +462,7 @@ export const createCalculationSlice: StateCreator<
         const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           ...c,
-          rate: wac !== null ? wac : Number(c.rate),
+          rate: wac !== null ? wac : Number(c.selling_price),
           gst_pct: Number(c.gst_pct),
         };
       });
@@ -557,11 +563,11 @@ export const createCalculationSlice: StateCreator<
       const mappedQuotes = bootstrap.quotes.map((q: any) => {
         const overrides: Record<number, RowOverride> = {};
         (q.quote_items || []).forEach((item: any) => {
-          if (item.is_qty_overridden || item.is_rate_overridden) {
+          if (item.is_qty_overridden || item.is_rate_overridden || item.is_gst_overridden) {
             overrides[item.sort_order] = {
               qty: item.is_qty_overridden ? Number(item.qty) : undefined,
               ratePerUnit: item.is_rate_overridden ? Number(item.rate_per_unit) : undefined,
-              gstPct: Number(item.gst_pct) as any,
+              gstPct: item.is_gst_overridden ? Number(item.gst_pct) : undefined,
             };
           }
         });
@@ -585,7 +591,7 @@ export const createCalculationSlice: StateCreator<
             lineTotal: Number(item.line_total),
             lineGST: Number(item.line_gst),
             lineSubTotal: Number(item.line_subtotal),
-            isOverridden: item.is_qty_overridden || item.is_rate_overridden,
+            isOverridden: item.is_qty_overridden || item.is_rate_overridden || !!item.is_gst_overridden,
             isDisabled: !item.is_included,
           })),
           costBeforeGST: Number(q.cost_before_gst),
@@ -694,6 +700,9 @@ export const createCalculationSlice: StateCreator<
         dbMeters: mappedMeters,
         dbLAs: mappedLAs,
         dbStructureParts: mappedBomItems,
+        dbStructureComponents: bootstrap.structureComponents || [],
+        dbStructureBom: bootstrap.structureBom || [],
+        dbStructureAddons: bootstrap.structureAddons || [],
         dbOrientationMultipliers: orientationMultipliers,
         inventorySummary: bootstrap.inventorySummary,
         quotes: mappedQuotes,

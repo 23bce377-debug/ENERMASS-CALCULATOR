@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
-import { HistoryDrawer } from '@/components/masters/HistoryDrawer';
+import { HistoryDrawer } from '@/components/master/HistoryDrawer';
 import { formatINR } from '@/lib/engine/calculator';
 
 interface SchemeSlab {

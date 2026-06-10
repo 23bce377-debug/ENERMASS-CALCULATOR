@@ -16,7 +16,7 @@ async function runEngineSmoke() {
   // 1. Pick a system template
   const { data: systems, error: sysErr } = await supabase
     .from('systems')
-    .select('id, name, category, capacity_kw, panel_wattage, panel_qty, target_margin_pct')
+    .select('id, name, category, capacity_kw, panel_wattage_w, panel_qty, target_margin_pct')
     .limit(3);
   if (sysErr) throw sysErr;
   console.log(`✅ Systems found: ${systems?.length ?? 0}`);

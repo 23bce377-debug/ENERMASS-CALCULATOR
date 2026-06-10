@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Check, X, Sun, Cpu, Battery, Plus, Minus, ChevronDown, Edit3, RotateCcw, SlidersHorizontal, Layers } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase/client';
+import { Check, X, Sun, Cpu, Battery, Plus, Minus, ChevronDown, Edit3, RotateCcw, SlidersHorizontal, Layers, Package2, Wrench, Bolt, Droplets, Construction, Milestone, ChevronUp } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
 import type { PanelBrand, InverterBrand, BatteryBrand } from '@/lib/data/masters';
 import { useSettings } from '@/lib/hooks/useSettings';
@@ -26,6 +28,38 @@ interface EquipmentSelectorProps {
 }
 
 type TabKey = 'panel' | 'inverter' | 'battery' | 'structure';
+
+interface StructureComponent {
+  id: string;
+  structure_id: string;
+  category: 'steel_section' | 'hardware' | 'finishing' | 'civil' | 'fabrication' | 'addon';
+  name: string;
+  unit: string;
+  rate_appolo: number;
+  rate_tata: number;
+  rate_deemac: number;
+  selling_price: number;
+  gst_pct: number;
+}
+
+interface StructureAddon {
+  id: string;
+  name: string;
+  material: string;
+  unit: string;
+  rate_per_unit: number;
+  gst_pct: number;
+  notes: string | null;
+}
+
+const STRUCT_CATEGORY_META: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
+  steel_section: { label: 'Steel Sections',    color: '#6366f1', bg: 'rgba(99,102,241,0.08)',  icon: <Layers size={9} /> },
+  hardware:      { label: 'Hardware',           color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)',  icon: <Bolt size={9} /> },
+  finishing:     { label: 'Finishing',           color: '#a855f7', bg: 'rgba(168,85,247,0.08)',  icon: <Droplets size={9} /> },
+  civil:         { label: 'Civil / Foundation', color: '#f97316', bg: 'rgba(249,115,22,0.08)',  icon: <Construction size={9} /> },
+  fabrication:   { label: 'Fabrication',         color: '#C6973F', bg: 'rgba(198,151,63,0.08)',  icon: <Wrench size={9} /> },
+  addon:         { label: 'Add-ons',             color: '#22c55e', bg: 'rgba(34,197,94,0.08)',   icon: <Milestone size={9} /> },
+};
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'panel', label: 'Panels', icon: <Sun size={15} /> },
@@ -134,13 +168,14 @@ export function EquipmentSelector({
   const solarMeterId = useCalculatorStore((s) => s.solarMeterId);
   const netMeterId = useCalculatorStore((s) => s.netMeterId);
   const lightningArresterId = useCalculatorStore((s) => s.lightningArresterId);
+  const structureAddonMix = useCalculatorStore((s) => s.structureAddonMix);
 
   const selectionCounts = useMemo(() => ({
     panel: selectedPanelQty > 0 ? selectedPanelQty : (selectedPanelId ? 1 : 0),
     inverter: Object.values(selectedInverterMix).reduce((sum, qty) => sum + (Number.isFinite(qty) ? qty : 0), 0),
     battery: Object.values(selectedBatteryMix).reduce((sum, qty) => sum + (Number.isFinite(qty) ? qty : 0), 0),
-    structure: selectedStructureId ? 1 : 0,
-  }), [selectedPanelQty, selectedPanelId, selectedInverterMix, selectedBatteryMix, selectedStructureId]);
+    structure: (selectedStructureId ? 1 : 0) + Object.values(structureAddonMix).filter(q => q > 0).length,
+  }), [selectedPanelQty, selectedPanelId, selectedInverterMix, selectedBatteryMix, selectedStructureId, structureAddonMix]);
 
   const { settings, setSettings } = useSettings();
   const dbPanels = useCalculatorStore((s) => s.dbPanels);
@@ -1504,8 +1539,8 @@ function PanelRateCell({ brand }: { brand: PanelBrand }) {
 
   const dbPanels = useCalculatorStore((s) => s.dbPanels);
   const defaultBrand = dbPanels.find((p) => p.id === brand.id);
-  const defaultRatePerWatt = defaultBrand?.ratePerWatt ?? brand.ratePerWatt;
-  const currentRatePerWatt = brand.ratePerWatt;
+  const defaultRatePerWatt = (defaultBrand?.ratePerWatt ?? brand.ratePerWatt) || 0;
+  const currentRatePerWatt = brand.ratePerWatt || 0;
   const isOverridden = settings.currentEquipmentRates.panels[brand.id] !== undefined;
 
   const handleSave = () => {
@@ -2101,6 +2136,12 @@ function StructureConfigTable() {
         </div>
       )}
 
+      {/* ── Structure BOM Components ── */}
+      <StructureBOMPanel 
+        structureId={selectedStructureId !== 'custom' ? selectedStructureId : null} 
+        capacityKW={capacityKW}
+      />
+
       {selectedStructureId === 'custom' && (
         <div className="mt-6 border-t border-border pt-4">
           <EquipmentDetailCard
@@ -2216,6 +2257,294 @@ function EquipmentDetailCard({
             <div>Last Purchase Cost:</div>
             <div className="text-right text-accent font-bold">₹{formatRate(wac)}</div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Structure BOM Panel ─────────────────────────────────────────────────────
+// Shows itemized components for the selected mounting structure,
+// grouped by category, with per-supplier rates.
+
+function StructureBOMPanel({ structureId, capacityKW }: { structureId: string | null; capacityKW: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const [addonsExpanded, setAddonsExpanded] = useState(false);
+
+  const structureComponentMix = useCalculatorStore((s) => s.structureComponentMix);
+  const structureAddonMix = useCalculatorStore((s) => s.structureAddonMix);
+  const setStructureComponentQty = useCalculatorStore((s) => s.setStructureComponentQty);
+  const setStructureAddonQty = useCalculatorStore((s) => s.setStructureAddonQty);
+
+  const { data: components, isLoading } = useQuery<StructureComponent[]>({
+    queryKey: ['structure-components', structureId],
+    queryFn: async () => {
+      if (!structureId) return [];
+      const { data, error } = await (supabase as any)
+        .from('eq_structure_components')
+        .select('*')
+        .eq('structure_id', structureId)
+        .eq('is_active', true)
+        .order('category')
+        .order('name');
+      if (error) return [];
+      return (data || []) as StructureComponent[];
+    },
+    enabled: !!structureId,
+  });
+
+  const { data: bomQtyEntries } = useQuery<any[]>({
+    queryKey: ['structure-bom-qtys', structureId],
+    queryFn: async () => {
+      if (!structureId) return [];
+      const { data, error } = await (supabase as any)
+        .from('eq_structure_bom')
+        .select('*')
+        .eq('structure_id', structureId);
+      if (error) return [];
+      return data || [];
+    },
+    enabled: !!structureId,
+  });
+
+  const { data: addons } = useQuery<StructureAddon[]>({
+    queryKey: ['structure-addons'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('eq_structure_addons')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      if (error) return [];
+      return (data || []) as StructureAddon[];
+    },
+  });
+
+  if (!structureId) return null;
+  if (isLoading) return (
+    <div className="mt-4 p-3 rounded-lg border border-border bg-surface-hover/20 text-[10px] text-text-muted animate-pulse">
+      Loading structure components…
+    </div>
+  );
+  if (!components || components.length === 0) return null;
+
+  return (
+    <div className="mt-4 space-y-2">
+
+      {/* ── BOM Components Collapsible ── */}
+      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-hover/40 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Package2 size={13} className="text-accent" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+              Structure BOM — Itemized Components
+            </span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-bold border border-accent/20">
+              {components.length} items
+            </span>
+          </div>
+          {expanded ? <ChevronUp size={14} className="text-text-muted" /> : <ChevronDown size={14} className="text-text-muted" />}
+        </button>
+
+        {expanded && (
+          <div className="px-4 pb-4 space-y-4 border-t border-border">
+            {Object.entries(STRUCT_CATEGORY_META).map(([cat, meta]) => {
+              const items = components.filter((c) => c.category === cat);
+              if (items.length === 0) return null;
+              return (
+                <div key={cat} className="space-y-1.5">
+                  {/* Category pill */}
+                  <div
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider mt-3"
+                    style={{ color: meta.color, background: meta.bg }}
+                  >
+                    {meta.icon}
+                    {meta.label}
+                  </div>
+
+                  {/* Component rows */}
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    <table className="w-full text-[10px] border-collapse">
+                      <thead>
+                        <tr className="bg-surface-hover text-text-muted border-b border-border text-[8px] uppercase font-bold tracking-wider">
+                          <th className="p-2 text-left">Component</th>
+                          <th className="p-2 text-center">Unit</th>
+                          <th className="p-2 text-center w-36">Qty</th>
+                          <th className="p-2 text-right">₹ Appolo</th>
+                          <th className="p-2 text-right">₹ Tata</th>
+                          <th className="p-2 text-right">₹ Deemac</th>
+                          <th className="p-2 text-right font-bold" style={{ color: meta.color }}>Selling ₹</th>
+                          <th className="p-2 text-right font-bold" style={{ color: meta.color }}>Total ₹</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map((comp) => {
+                          let bomEntry = bomQtyEntries?.find(b => 
+                            b.component_id === comp.id && 
+                            capacityKW >= Number(b.capacity_kw_min) && 
+                            capacityKW <= Number(b.capacity_kw_max)
+                          );
+                          if (!bomEntry && bomQtyEntries && bomQtyEntries.length > 0) {
+                            const sameCompBom = bomQtyEntries.filter(b => b.component_id === comp.id);
+                            if (sameCompBom.length > 0) {
+                              bomEntry = sameCompBom.reduce((prev, curr) => 
+                                Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
+                              );
+                            }
+                          }
+                          const defaultQty = bomEntry ? Number(bomEntry.qty) : 0;
+                          const overrideQty = structureComponentMix[comp.id];
+                          const qty = overrideQty !== undefined ? overrideQty : defaultQty;
+                          const isOverridden = overrideQty !== undefined;
+
+                          return (
+                            <tr key={comp.id} className="border-b border-border/30 hover:bg-surface-hover/20 transition-colors">
+                              <td className="p-2 font-medium text-text-primary">{comp.name}</td>
+                              <td className="p-2 text-center text-text-muted">{comp.unit}</td>
+                              <td className="p-2" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    onClick={() => setStructureComponentQty(comp.id, Math.max(0, qty - 1))}
+                                    className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                                    title="Decrease qty"
+                                  >
+                                    <Minus size={11} />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={qty === 0 ? '' : qty}
+                                    onChange={(e) => {
+                                      const val = parseFloat(e.target.value);
+                                      setStructureComponentQty(comp.id, isNaN(val) ? 0 : val);
+                                    }}
+                                    className="w-14 px-2 py-1 rounded bg-background border border-border text-center text-xs font-mono text-text-primary outline-none focus:border-accent"
+                                    placeholder="0"
+                                  />
+                                  <button
+                                    onClick={() => setStructureComponentQty(comp.id, qty + 1)}
+                                    className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                                    title="Increase qty"
+                                  >
+                                    <Plus size={11} />
+                                  </button>
+                                  {isOverridden && (
+                                    <button
+                                      onClick={() => setStructureComponentQty(comp.id, null)}
+                                      className="p-1 rounded hover:bg-warning/15 text-warning/70 hover:text-warning transition-colors cursor-pointer"
+                                      title="Reset to default"
+                                    >
+                                      <RotateCcw size={11} />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-2 text-right font-mono">{comp.rate_appolo > 0 ? `₹${comp.rate_appolo}` : '—'}</td>
+                              <td className="p-2 text-right font-mono">{comp.rate_tata > 0 ? `₹${comp.rate_tata}` : '—'}</td>
+                              <td className="p-2 text-right font-mono">{comp.rate_deemac > 0 ? `₹${comp.rate_deemac}` : '—'}</td>
+                              <td className="p-2 text-right font-mono font-bold" style={{ color: meta.color }}>₹{comp.selling_price}</td>
+                              <td className="p-2 text-right font-mono font-bold text-text-primary">₹{formatRate(qty * comp.selling_price)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Add-ons: Walkway & Ladder ── */}
+      {addons && addons.length > 0 && (
+        <div className="rounded-xl border border-border bg-surface overflow-hidden">
+          <button
+            onClick={() => setAddonsExpanded((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-hover/40 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Milestone size={13} className="text-emerald-400" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+                Structure Add-ons — Walkway & Ladder
+              </span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
+                ₹/meter
+              </span>
+            </div>
+            {addonsExpanded ? <ChevronUp size={14} className="text-text-muted" /> : <ChevronDown size={14} className="text-text-muted" />}
+          </button>
+
+          {addonsExpanded && (
+            <div className="border-t border-border">
+              <table className="w-full text-[10px] border-collapse">
+                <thead>
+                  <tr className="bg-surface-hover text-text-muted border-b border-border text-[8px] uppercase font-bold tracking-wider">
+                    <th className="p-2.5 text-left">Add-on</th>
+                    <th className="p-2.5 text-left">Material</th>
+                    <th className="p-2.5 text-center">Unit</th>
+                    <th className="p-2.5 text-right">Rate / Unit</th>
+                    <th className="p-2.5 text-center">GST</th>
+                    <th className="p-2.5 text-center w-36">Qty</th>
+                    <th className="p-2.5 text-right">Total ₹</th>
+                    <th className="p-2.5 text-left">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {addons.map((addon) => {
+                    const qty = structureAddonMix[addon.id] ?? 0;
+                    const isSelected = qty > 0;
+                    return (
+                      <tr key={addon.id} className={`border-b border-border/30 hover:bg-surface-hover/20 transition-colors ${isSelected ? 'bg-accent-glow/10' : ''}`}>
+                        <td className="p-2.5 font-semibold text-text-primary">{addon.name}</td>
+                        <td className="p-2.5 text-text-muted">{addon.material}</td>
+                        <td className="p-2.5 text-center text-text-muted">{addon.unit}</td>
+                        <td className="p-2.5 text-right font-mono font-bold text-emerald-400">₹{addon.rate_per_unit.toFixed(2)}</td>
+                        <td className="p-2.5 text-center text-text-muted">{(addon.gst_pct * 100).toFixed(0)}%</td>
+                        <td className="p-2.5" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => setStructureAddonQty(addon.id, Math.max(0, qty - 1))}
+                              className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                              title="Decrease qty"
+                            >
+                              <Minus size={11} />
+                            </button>
+                            <input
+                              type="number"
+                              min={0}
+                              value={qty || ''}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                setStructureAddonQty(addon.id, isNaN(val) ? 0 : val);
+                              }}
+                              className="w-14 px-2 py-1 rounded bg-background border border-border text-center text-xs font-mono text-text-primary outline-none focus:border-accent"
+                              placeholder="0"
+                            />
+                            <button
+                              onClick={() => setStructureAddonQty(addon.id, qty + 1)}
+                              className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                              title="Increase qty"
+                            >
+                              <Plus size={11} />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="p-2.5 text-right font-mono font-bold text-text-primary">
+                          {qty > 0 ? `₹${formatRate(qty * addon.rate_per_unit)}` : '—'}
+                        </td>
+                        <td className="p-2.5 text-text-muted text-[9px] max-w-[180px] truncate" title={addon.notes ?? ''}>{addon.notes ?? '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>

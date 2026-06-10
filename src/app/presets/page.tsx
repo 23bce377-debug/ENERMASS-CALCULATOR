@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { SYSTEMS, type SolarSystem } from '@/lib/data/bom';
@@ -207,6 +208,7 @@ function PresetCard({
 export default function PresetsPage() {
   const { settings, setSettings, commitToDb, isSyncing } = useSettings();
   const selectSystem = useCalculatorStore((s) => s.selectSystem);
+  const router = useRouter();
   const confirm = useConfirm();
   const { toast } = useToast();
 
@@ -334,7 +336,8 @@ export default function PresetsPage() {
 
   const loadPreset = (id: string) => {
     selectSystem(id);
-    toast('Preset loaded into Calculator', 'success');
+    toast('Preset loaded — opening Calculator', 'success');
+    router.push('/calculator');
   };
 
   const handleCommit = async () => {
@@ -570,7 +573,7 @@ export default function PresetsPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {visibleSystems.map((sys) => {
               const isCustom = customSystems.some((c) => c.id === sys.id);
               return (

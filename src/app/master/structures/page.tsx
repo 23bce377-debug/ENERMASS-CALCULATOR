@@ -25,12 +25,19 @@ import {
   Square,
   ChevronDown,
   ChevronUp,
-  Scale
+  Scale,
+  Package2,
+  Wrench,
+  Layers,
+  Bolt,
+  Droplets,
+  Construction,
+  Milestone,
 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
-import { HistoryDrawer } from '@/components/masters/HistoryDrawer';
-import { BulkEditModal, type FieldSchema } from '@/components/masters/BulkEditModal';
+import { HistoryDrawer } from '@/components/master/HistoryDrawer';
+import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditModal';
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
 
@@ -66,6 +73,39 @@ interface WeightLookup {
   notes: string | null;
 }
 
+interface StructureComponent {
+  id: string;
+  structure_id: string;
+  category: 'steel_section' | 'hardware' | 'finishing' | 'civil' | 'fabrication' | 'addon';
+  name: string;
+  unit: string;
+  rate_appolo: number;
+  rate_tata: number;
+  rate_deemac: number;
+  selling_price: number;
+  gst_pct: number;
+  is_active: boolean;
+}
+
+interface StructureAddon {
+  id: string;
+  name: string;
+  material: string;
+  unit: string;
+  rate_per_unit: number;
+  gst_pct: number;
+  notes: string | null;
+}
+
+const CATEGORY_META: Record<string, { label: string; color: string; bg: string }> = {
+  steel_section: { label: 'Steel Sections',  color: '#6366f1', bg: 'rgba(99,102,241,0.10)' },
+  hardware:      { label: 'Hardware',         color: '#0ea5e9', bg: 'rgba(14,165,233,0.10)' },
+  finishing:     { label: 'Finishing',         color: '#a855f7', bg: 'rgba(168,85,247,0.10)' },
+  civil:         { label: 'Civil / Foundation', color: '#f97316', bg: 'rgba(249,115,22,0.10)' },
+  fabrication:   { label: 'Fabrication',       color: '#C6973F', bg: 'rgba(198,151,63,0.10)' },
+  addon:         { label: 'Add-ons',           color: '#22c55e', bg: 'rgba(34,197,94,0.10)' },
+};
+
 export default function StructuresMasterPage() {
   const { data: structures, isLoading } = useMasterQuery<Structure>('structures');
   const createMutation = useMasterCreateMutation<Structure>('structures');
@@ -86,6 +126,38 @@ export default function StructuresMasterPage() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Structure | null>(null);
+
+  // Structure BOM Components query (fires when a row is expanded)
+  const { data: structureComponents } = useQuery<StructureComponent[]>({
+    queryKey: ['structure-components', expandedId],
+    queryFn: async () => {
+      if (!expandedId) return [];
+      const { data, error } = await (supabase as any)
+        .from('eq_structure_components')
+        .select('*')
+        .eq('structure_id', expandedId)
+        .eq('is_active', true)
+        .order('category')
+        .order('name');
+      if (error) throw error;
+      return (data || []) as StructureComponent[];
+    },
+    enabled: !!expandedId,
+  });
+
+  // Global structure add-ons (walkway, ladder)
+  const { data: structureAddons } = useQuery<StructureAddon[]>({
+    queryKey: ['structure-addons'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('eq_structure_addons')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      return (data || []) as StructureAddon[];
+    },
+  });
 
   // Weight Lookup sub-form state
   const [lookupFormOpen, setLookupFormOpen] = useState(false);
@@ -530,128 +602,150 @@ export default function StructuresMasterPage() {
                       </td>
                     </tr>
 
-                    {/* Expandable sub-table for Weight Lookup entries */}
+                    {/* Expandable row: weight lookups + BOM components */}
                     {isExpanded && (
                       <tr>
                         <td colSpan={11} className="bg-surface-2 p-5 border-y border-border">
-                          <div className="space-y-4 max-w-4xl">
-                            <div className="flex items-center justify-between border-b border-border pb-2">
-                              <h4 className="text-xs font-bold text-accent uppercase tracking-wider flex items-center gap-1.5">
-                                <Scale size={14} />
-                                capacity Weight Lookup Slabs ({s.name})
-                              </h4>
-                              <button
-                                onClick={() => {
-                                  setLookupDraft({
-                                    capacity_kw_min: 0,
-                                    capacity_kw_max: 999,
-                                    panel_qty: 10,
-                                    weight_per_panel_kg: 5.5,
-                                    bracket_fixed_weight: 12,
-                                    notes: '',
-                                  });
-                                  setLookupFormOpen(true);
-                                }}
-                                className="px-3 py-1 rounded bg-accent text-background text-[10px] font-bold hover:bg-accent-hover transition-colors"
-                              >
-                                + Add Weight slab
-                              </button>
+                          <div className="space-y-6">
+
+                            {/* ── Weight Lookup Slabs ────────────────── */}
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between border-b border-border pb-2">
+                                <h4 className="text-xs font-bold text-accent uppercase tracking-wider flex items-center gap-1.5">
+                                  <Scale size={14} />
+                                  Capacity Weight Lookup ({s.name})
+                                </h4>
+                                <button
+                                  onClick={() => {
+                                    setLookupDraft({ capacity_kw_min: 0, capacity_kw_max: 999, panel_qty: 10, weight_per_panel_kg: 5.5, bracket_fixed_weight: 12, notes: '' });
+                                    setLookupFormOpen(true);
+                                  }}
+                                  className="px-3 py-1 rounded bg-accent text-background text-[10px] font-bold hover:bg-accent-hover transition-colors"
+                                >
+                                  + Add Weight Slab
+                                </button>
+                              </div>
+
+                              {lookupFormOpen && (
+                                <div className="p-4 rounded-lg bg-background border border-accent/20 grid grid-cols-2 sm:grid-cols-5 gap-3 items-end animate-fade-in">
+                                  <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Min KW *</label>
+                                    <input type="number" step={0.01} value={lookupDraft.capacity_kw_min} onChange={(e) => setLookupDraft({ ...lookupDraft, capacity_kw_min: parseFloat(e.target.value) })} className="w-full px-2 py-1.5 rounded bg-surface border border-border text-xs text-text-primary outline-none" />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Max KW *</label>
+                                    <input type="number" step={0.01} value={lookupDraft.capacity_kw_max} onChange={(e) => setLookupDraft({ ...lookupDraft, capacity_kw_max: parseFloat(e.target.value) })} className="w-full px-2 py-1.5 rounded bg-surface border border-border text-xs text-text-primary outline-none" />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Panel Qty *</label>
+                                    <input type="number" value={lookupDraft.panel_qty} onChange={(e) => setLookupDraft({ ...lookupDraft, panel_qty: parseInt(e.target.value, 10) })} className="w-full px-2 py-1.5 rounded bg-surface border border-border text-xs text-text-primary outline-none" />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider">kg / Panel *</label>
+                                    <input type="number" step={0.01} value={lookupDraft.weight_per_panel_kg} onChange={(e) => setLookupDraft({ ...lookupDraft, weight_per_panel_kg: parseFloat(e.target.value) })} className="w-full px-2 py-1.5 rounded bg-surface border border-border text-xs text-text-primary outline-none" />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button type="button" onClick={() => addLookupMutation.mutate(lookupDraft)} className="flex-1 px-3 py-1.5 rounded bg-accent text-background text-xs font-bold hover:bg-accent-hover transition-colors">Add</button>
+                                    <button type="button" onClick={() => setLookupFormOpen(false)} className="px-2 py-1.5 rounded bg-surface border border-border text-xs text-text-muted hover:text-text-primary"><X size={15} /></button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {!lookups || lookups.length === 0 ? (
+                                <p className="text-[11px] text-text-muted italic py-2">No weight slabs configured.</p>
+                              ) : (
+                                <table className="w-full border-collapse text-xs text-left bg-background border border-border rounded-lg overflow-hidden">
+                                  <thead>
+                                    <tr className="bg-surface-hover text-text-muted border-b border-border text-[9px] uppercase font-bold tracking-wider">
+                                      <th className="p-2">kW Range</th>
+                                      <th className="p-2">Panels</th>
+                                      <th className="p-2">kg/Panel</th>
+                                      <th className="p-2">Bracket kg</th>
+                                      <th className="p-2">Total kg</th>
+                                      <th className="p-2 text-right"></th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {lookups.map((lu) => (
+                                      <tr key={lu.id} className="border-b border-border/40 hover:bg-surface-hover/30 transition-colors">
+                                        <td className="p-2 font-mono">{lu.capacity_kw_min}–{lu.capacity_kw_max} kW</td>
+                                        <td className="p-2 font-mono">{lu.panel_qty}</td>
+                                        <td className="p-2 font-mono">{lu.weight_per_panel_kg} kg</td>
+                                        <td className="p-2 font-mono">{lu.bracket_fixed_weight} kg</td>
+                                        <td className="p-2 font-mono font-bold text-accent">{lu.total_weight_kg ?? '—'} kg</td>
+                                        <td className="p-2 text-right">
+                                          <button onClick={() => deleteLookupMutation.mutate(lu.id)} className="text-text-secondary hover:text-error"><Trash2 size={13} /></button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
                             </div>
 
-                            {/* Lookup add form inline */}
-                            {lookupFormOpen && (
-                              <div className="p-4 rounded-lg bg-background border border-accent/20 grid grid-cols-2 sm:grid-cols-5 gap-3 items-end animate-fade-in">
-                                <div className="space-y-1">
-                                  <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Min KW *</label>
-                                  <input
-                                    type="number" step={0.01}
-                                    value={lookupDraft.capacity_kw_min}
-                                    onChange={(e) => setLookupDraft({ ...lookupDraft, capacity_kw_min: parseFloat(e.target.value) })}
-                                    className="w-full px-2 py-1.5 rounded bg-surface border border-border text-xs text-text-primary outline-none"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Max KW *</label>
-                                  <input
-                                    type="number" step={0.01}
-                                    value={lookupDraft.capacity_kw_max}
-                                    onChange={(e) => setLookupDraft({ ...lookupDraft, capacity_kw_max: parseFloat(e.target.value) })}
-                                    className="w-full px-2 py-1.5 rounded bg-surface border border-border text-xs text-text-primary outline-none"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Panel Qty *</label>
-                                  <input
-                                    type="number"
-                                    value={lookupDraft.panel_qty}
-                                    onChange={(e) => setLookupDraft({ ...lookupDraft, panel_qty: parseInt(e.target.value, 10) })}
-                                    className="w-full px-2 py-1.5 rounded bg-surface border border-border text-xs text-text-primary outline-none"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider">kg / Panel *</label>
-                                  <input
-                                    type="number" step={0.01}
-                                    value={lookupDraft.weight_per_panel_kg}
-                                    onChange={(e) => setLookupDraft({ ...lookupDraft, weight_per_panel_kg: parseFloat(e.target.value) })}
-                                    className="w-full px-2 py-1.5 rounded bg-surface border border-border text-xs text-text-primary outline-none"
-                                  />
-                                </div>
-                                <div className="flex gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => addLookupMutation.mutate(lookupDraft)}
-                                    className="flex-1 px-3 py-1.5 rounded bg-accent text-background text-xs font-bold hover:bg-accent-hover transition-colors"
-                                  >
-                                    Add
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setLookupFormOpen(false)}
-                                    className="px-2 py-1.5 rounded bg-surface border border-border text-xs text-text-muted hover:text-text-primary"
-                                  >
-                                    <X size={15} />
-                                  </button>
-                                </div>
-                              </div>
-                            )}
+                            {/* ── BOM Components by Category ─────────── */}
+                            <div className="space-y-3">
+                              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5 border-b border-border pb-2">
+                                <Package2 size={14} />
+                                BOM Components — {s.name}
+                              </h4>
 
-                            {/* Weight lookup list */}
-                            {!lookups || lookups.length === 0 ? (
-                              <p className="text-[11px] text-text-muted italic py-3">No lookup formulas configured. Add ranges to compute weight-based quote structures.</p>
-                            ) : (
-                              <table className="w-full border-collapse text-xs text-left bg-background border border-border rounded-lg overflow-hidden">
-                                <thead>
-                                  <tr className="bg-surface-hover text-text-muted border-b border-border text-[9px] uppercase font-bold tracking-wider">
-                                    <th className="p-2.5">Capacity KW Range</th>
-                                    <th className="p-2.5">Base Panel Count</th>
-                                    <th className="p-2.5">Multiplier Cost Weight (kg/panel)</th>
-                                    <th className="p-2.5">Bracket Fixed weight (kg)</th>
-                                    <th className="p-2.5">Generated total weight (kg)</th>
-                                    <th className="p-2.5 text-right w-12">Action</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {lookups.map((lu) => (
-                                    <tr key={lu.id} className="border-b border-border/40 hover:bg-surface-hover/30 transition-colors">
-                                      <td className="p-2.5 font-mono">{lu.capacity_kw_min} kW - {lu.capacity_kw_max} kW</td>
-                                      <td className="p-2.5 font-mono">{lu.panel_qty} panels</td>
-                                      <td className="p-2.5 font-mono">{lu.weight_per_panel_kg} kg/panel</td>
-                                      <td className="p-2.5 font-mono">{lu.bracket_fixed_weight} kg</td>
-                                      <td className="p-2.5 font-mono font-bold text-accent">{lu.total_weight_kg ? `${lu.total_weight_kg} kg` : '—'}</td>
-                                      <td className="p-2.5 text-right">
-                                        <button
-                                          onClick={() => deleteLookupMutation.mutate(lu.id)}
-                                          className="text-text-secondary hover:text-error"
+                              {!structureComponents || structureComponents.length === 0 ? (
+                                <p className="text-[11px] text-text-muted italic py-2">
+                                  No BOM components imported yet. Run <code className="text-accent text-[10px] bg-accent/10 px-1 rounded">importStructureComponents.ts</code> to seed from Excel.
+                                </p>
+                              ) : (
+                                <div className="space-y-4">
+                                  {Object.entries(CATEGORY_META).map(([cat, meta]) => {
+                                    const items = structureComponents.filter((c) => c.category === cat);
+                                    if (items.length === 0) return null;
+                                    return (
+                                      <div key={cat}>
+                                        <div
+                                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider mb-2"
+                                          style={{ color: meta.color, background: meta.bg }}
                                         >
-                                          <Trash2 size={13} />
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            )}
+                                          {cat === 'steel_section' && <Layers size={10} />}
+                                          {cat === 'hardware' && <Bolt size={10} />}
+                                          {cat === 'finishing' && <Droplets size={10} />}
+                                          {cat === 'civil' && <Construction size={10} />}
+                                          {cat === 'fabrication' && <Wrench size={10} />}
+                                          {cat === 'addon' && <Milestone size={10} />}
+                                          {meta.label}
+                                        </div>
+                                        <table className="w-full border-collapse text-xs bg-background border border-border rounded-lg overflow-hidden">
+                                          <thead>
+                                            <tr className="text-[9px] uppercase tracking-wider text-text-muted font-bold bg-surface-hover border-b border-border">
+                                              <th className="p-2 text-left">Component</th>
+                                              <th className="p-2 text-center">Unit</th>
+                                              <th className="p-2 text-right">₹ Appolo</th>
+                                              <th className="p-2 text-right">₹ Tata</th>
+                                              <th className="p-2 text-right">₹ Deemac</th>
+                                              <th className="p-2 text-right font-bold">Selling ₹</th>
+                                              <th className="p-2 text-center">GST</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {items.map((comp) => (
+                                              <tr key={comp.id} className="border-b border-border/40 hover:bg-surface-hover/20 transition-colors">
+                                                <td className="p-2 font-medium text-text-primary">{comp.name}</td>
+                                                <td className="p-2 text-center text-text-muted text-[10px]">{comp.unit}</td>
+                                                <td className="p-2 text-right font-mono">{comp.rate_appolo > 0 ? `₹${comp.rate_appolo}` : '—'}</td>
+                                                <td className="p-2 text-right font-mono">{comp.rate_tata > 0 ? `₹${comp.rate_tata}` : '—'}</td>
+                                                <td className="p-2 text-right font-mono">{comp.rate_deemac > 0 ? `₹${comp.rate_deemac}` : '—'}</td>
+                                                <td className="p-2 text-right font-mono font-bold text-accent">₹{comp.selling_price}</td>
+                                                <td className="p-2 text-center text-text-muted text-[10px]">{(comp.gst_pct * 100).toFixed(0)}%</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+
                           </div>
                         </td>
                       </tr>
@@ -663,6 +757,40 @@ export default function StructuresMasterPage() {
           </table>
         )}
       </div>
+
+      {/* Add-ons Panel: Walkway & Ladder */}
+      {structureAddons && structureAddons.length > 0 && (
+        <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
+          <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-2">
+            <Milestone size={14} className="text-accent" />
+            Structure Add-ons (Walkway & Ladder)
+          </h3>
+          <table className="w-full border-collapse text-xs bg-background border border-border rounded-lg overflow-hidden">
+            <thead>
+              <tr className="text-[9px] uppercase tracking-wider text-text-muted font-bold bg-surface-hover border-b border-border">
+                <th className="p-2.5 text-left">Add-on</th>
+                <th className="p-2.5 text-left">Material</th>
+                <th className="p-2.5 text-center">Unit</th>
+                <th className="p-2.5 text-right">Rate / Unit</th>
+                <th className="p-2.5 text-center">GST</th>
+                <th className="p-2.5 text-left">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {structureAddons.map((addon) => (
+                <tr key={addon.id} className="border-b border-border/40 hover:bg-surface-hover/20 transition-colors">
+                  <td className="p-2.5 font-semibold text-text-primary">{addon.name}</td>
+                  <td className="p-2.5 text-text-muted">{addon.material}</td>
+                  <td className="p-2.5 text-center text-text-muted">{addon.unit}</td>
+                  <td className="p-2.5 text-right font-mono font-bold text-accent">₹{addon.rate_per_unit.toFixed(2)}</td>
+                  <td className="p-2.5 text-center text-text-muted">{(addon.gst_pct * 100).toFixed(0)}%</td>
+                  <td className="p-2.5 text-text-muted text-[10px] max-w-xs truncate" title={addon.notes ?? ''}>{addon.notes ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Editor Modal */}
       {editorOpen && (

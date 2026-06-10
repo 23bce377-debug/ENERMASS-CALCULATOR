@@ -22,6 +22,8 @@ export const createEquipmentSlice: StateCreator<
     | 'structureCustomRawRate'
     | 'structureCustomFabricationRate'
     | 'structureCustomGalvanizingRate'
+    | 'structureComponentMix'
+    | 'structureAddonMix'
     | 'solarMeterId'
     | 'solarMeterQty'
     | 'netMeterId'
@@ -38,6 +40,9 @@ export const createEquipmentSlice: StateCreator<
     | 'setBackupLoadW'
     | 'setStructureSelection'
     | 'setStructureCustomField'
+    | 'setStructureComponentQty'
+    | 'setStructureAddonQty'
+    | 'clearStructureMix'
     | 'setMeterSelection'
     | 'setLASelection'
   >
@@ -58,6 +63,8 @@ export const createEquipmentSlice: StateCreator<
   structureCustomRawRate: null,
   structureCustomFabricationRate: null,
   structureCustomGalvanizingRate: null,
+  structureComponentMix: {},
+  structureAddonMix: {},
 
   solarMeterId: null,
   solarMeterQty: 1,
@@ -135,10 +142,16 @@ export const createEquipmentSlice: StateCreator<
   },
 
   setStructureSelection: (id: string | null, mode?: 'weight' | 'per_watt' | 'flat') => {
-    set({
+    const prevId = get().selectedStructureId;
+    const updates: Partial<CalculatorState> = {
       selectedStructureId: id,
       structurePricingMode: mode ?? get().structurePricingMode,
-    });
+    };
+    if (prevId !== id) {
+      updates.structureComponentMix = {};
+      updates.structureAddonMix = {};
+    }
+    set(updates);
     get().recalculate();
   },
 
@@ -146,6 +159,34 @@ export const createEquipmentSlice: StateCreator<
     set({
       [field]: val,
     } as any);
+    get().recalculate();
+  },
+
+  setStructureComponentQty: (id: string, qty: number | null) => {
+    const nextMix = { ...get().structureComponentMix };
+    if (qty === null || qty < 0) {
+      delete nextMix[id];
+    } else {
+      nextMix[id] = qty;
+    }
+    set({ structureComponentMix: nextMix });
+    get().recalculate();
+  },
+
+  setStructureAddonQty: (id: string, qty: number) => {
+    const nextMix = { ...get().structureAddonMix };
+    const safeQty = Math.max(0, qty);
+    if (safeQty === 0) {
+      delete nextMix[id];
+    } else {
+      nextMix[id] = safeQty;
+    }
+    set({ structureAddonMix: nextMix });
+    get().recalculate();
+  },
+
+  clearStructureMix: () => {
+    set({ structureComponentMix: {}, structureAddonMix: {} });
     get().recalculate();
   },
 

@@ -18,10 +18,6 @@ export type StateSchemeOverrideRow = Database['public']['Tables']['state_scheme_
 export type StateSchemeOverrideInsert = Database['public']['Tables']['state_scheme_overrides']['Insert'];
 export type StateSchemeOverrideUpdate = Database['public']['Tables']['state_scheme_overrides']['Update'];
 
-export type RateMasterRow = Database['public']['Tables']['rate_master']['Row'];
-export type RateMasterInsert = Database['public']['Tables']['rate_master']['Insert'];
-export type RateMasterUpdate = Database['public']['Tables']['rate_master']['Update'];
-
 export type CategoryMarginRow = Database['public']['Tables']['category_margins']['Row'];
 export type CategoryMarginInsert = Database['public']['Tables']['category_margins']['Insert'];
 export type CategoryMarginUpdate = Database['public']['Tables']['category_margins']['Update'];
@@ -102,24 +98,6 @@ export const StateSchemeOverrideORM = {
   },
   async create(item: StateSchemeOverrideInsert) {
     const { data, error } = await supabase.from('state_scheme_overrides').insert(item).select().single();
-    if (error) throw error;
-    return data;
-  }
-};
-
-export const RateMasterORM = {
-  async getByOrgId(orgId: string) {
-    const { data, error } = await supabase.from('rate_master').select('*').eq('org_id', orgId).eq('is_active', true);
-    if (error) throw error;
-    return data;
-  },
-  async create(item: RateMasterInsert) {
-    const { data, error } = await supabase.from('rate_master').insert(item).select().single();
-    if (error) throw error;
-    return data;
-  },
-  async update(id: string, updates: RateMasterUpdate) {
-    const { data, error } = await supabase.from('rate_master').update(updates).eq('id', id).select().single();
     if (error) throw error;
     return data;
   }

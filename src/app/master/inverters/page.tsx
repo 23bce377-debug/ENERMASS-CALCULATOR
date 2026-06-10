@@ -24,101 +24,104 @@ import {
 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
-import { HistoryDrawer } from '@/components/masters/HistoryDrawer';
-import { BulkEditModal, type FieldSchema } from '@/components/masters/BulkEditModal';
+import { HistoryDrawer } from '@/components/master/HistoryDrawer';
+import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditModal';
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
 
-interface BomItem {
+interface Inverter {
   id: string;
-  org_id: string | null;
-  section: 'solar_panels' | 'power_electronics' | 'metering' | 'mounting_structure' | 'electrical_protection' | 'earthing' | 'cabling' | 'wiring' | 'services';
-  sub_type: string;
-  description: string;
-  remarks: string | null;
-  unit: string;
+  brand: string;
+  model: string;
+  capacity_kw: number;
+  inverter_type: 'on_grid' | 'hybrid' | 'micro' | '3_phase';
+  phases: number;
   rate: number;
   gst_pct: number;
-  is_active: boolean;
+  description: string | null;
+  org_id: string | null;
 }
 
-const SECTION_OPTIONS = [
-  { value: 'solar_panels', label: 'Solar Panels' },
-  { value: 'power_electronics', label: 'Power Electronics' },
-  { value: 'metering', label: 'Metering' },
-  { value: 'mounting_structure', label: 'Mounting Structure' },
-  { value: 'electrical_protection', label: 'Electrical Protection' },
-  { value: 'earthing', label: 'Earthing Systems' },
-  { value: 'cabling', label: 'Cabling' },
-  { value: 'wiring', label: 'Wiring Devices' },
-  { value: 'services', label: 'Installation & Services' },
-];
-
-export default function AccessoriesMasterPage() {
-  const { data: items, isLoading } = useMasterQuery<BomItem>('accessories');
-  const createMutation = useMasterCreateMutation<BomItem>('accessories');
-  const updateMutation = useMasterUpdateMutation<BomItem>('accessories');
-  const deleteMutation = useMasterDeleteMutation('accessories');
-  const bulkUpdateMutation = useMasterBulkUpdateMutation('accessories');
+export default function InvertersMasterPage() {
+  const { data: inverters, isLoading } = useMasterQuery<Inverter>('inverters');
+  const createMutation = useMasterCreateMutation<Inverter>('inverters');
+  const updateMutation = useMasterUpdateMutation<Inverter>('inverters');
+  const deleteMutation = useMasterDeleteMutation('inverters');
+  const bulkUpdateMutation = useMasterBulkUpdateMutation('inverters');
 
   const confirm = useConfirm();
   const { toast } = useToast();
 
   // State controls
   const [search, setSearch] = useState('');
-  const [sectionFilter, setSectionFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [brandFilter, setBrandFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   const [historyOpen, setHistoryOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   
   const [editorOpen, setEditorOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<BomItem | null>(null);
-
-  // Accessories draft state
+  const [editingItem, setEditingItem] = useState<Inverter | null>(null);
+  
+  // Inverter Draft values
   const [draft, setDraft] = useState({
-    section: 'electrical_protection' as any,
-    sub_type: '',
+    brand: '',
+    model: '',
+    capacity_kw: 5,
+    inverter_type: 'on_grid',
+    phases: 1,
+    rate: 35000,
+    gst_pct: 0.12,
     description: '',
-    remarks: '',
-    unit: 'Nos',
-    rate: 1500,
-    gst_pct: 0.18,
   });
 
   // Bulk Edit Schema
   const bulkEditFields: FieldSchema[] = [
-    { name: 'section', label: 'BOM Section', type: 'select', options: SECTION_OPTIONS },
-    { name: 'unit', label: 'Standard Unit', type: 'select', options: [
-      { value: 'Nos', label: 'Nos / Units' },
-      { value: 'Mtr', label: 'Meters' },
-      { value: 'kg', label: 'Kilograms' },
-      { value: 'Set', label: 'Sets' },
-      { value: 'Lump', label: 'Lump Sum' }
+    { name: 'brand', label: 'Inverter Brand', type: 'text' },
+    { name: 'inverter_type', label: 'Inverter Type', type: 'select', options: [
+      { value: 'on_grid', label: 'On-Grid' },
+      { value: 'hybrid', label: 'Hybrid' },
+      { value: 'micro', label: 'Micro Inverter' },
+      { value: '3_phase', label: '3-Phase Grid' }
     ]},
-    { name: 'rate', label: 'Cost Rate (₹)', type: 'number' },
-    { name: 'gst_pct', label: 'GST Slabs', type: 'select', options: [
-      { value: 0.18, label: '18% Standard' },
-      { value: 0.12, label: '12% Special' },
-      { value: 0.05, label: '5% Solar Panel slab' }
+    { name: 'phases', label: 'System Phase', type: 'select', options: [
+      { value: 1, label: '1 Phase' },
+      { value: 3, label: '3 Phase' }
+    ]},
+    { name: 'rate', label: 'Base Rate (₹)', type: 'number' },
+    { name: 'gst_pct', label: 'GST Percentage', type: 'select', options: [
+      { value: 0.12, label: '12%' },
+      { value: 0.18, label: '18%' }
     ]},
   ];
 
   // ─── Filter & Search Logic ──────────────────────────────────────────────────
   
-  const filteredItems = useMemo(() => {
-    if (!items) return [];
-    return items.filter((i) => {
-      const matchSearch =
-        i.description.toLowerCase().includes(search.toLowerCase()) ||
-        i.sub_type.toLowerCase().includes(search.toLowerCase()) ||
-        (i.remarks || '').toLowerCase().includes(search.toLowerCase());
-      
-      const matchSection = sectionFilter ? i.section === sectionFilter : true;
+  const uniqueBrands = useMemo(() => {
+    if (!inverters) return [];
+    return Array.from(new Set(inverters.map((i) => i.brand).filter(Boolean)));
+  }, [inverters]);
 
-      return matchSearch && matchSection;
+  const uniqueTypes = useMemo(() => {
+    if (!inverters) return [];
+    return Array.from(new Set(inverters.map((i) => i.inverter_type).filter(Boolean)));
+  }, [inverters]);
+
+  const filteredInverters = useMemo(() => {
+    if (!inverters) return [];
+    return inverters.filter((i) => {
+      const matchSearch =
+        i.brand.toLowerCase().includes(search.toLowerCase()) ||
+        i.model.toLowerCase().includes(search.toLowerCase()) ||
+        (i.description || '').toLowerCase().includes(search.toLowerCase());
+      
+      const matchType = typeFilter ? i.inverter_type === typeFilter : true;
+      const matchBrand = brandFilter ? i.brand === brandFilter : true;
+
+      return matchSearch && matchType && matchBrand;
     });
-  }, [items, search, sectionFilter]);
+  }, [inverters, search, typeFilter, brandFilter]);
 
   // ─── Selection Logic ────────────────────────────────────────────────────────
 
@@ -129,39 +132,41 @@ export default function AccessoriesMasterPage() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === filteredItems.length) {
+    if (selectedIds.length === filteredInverters.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredItems.map((i) => i.id));
+      setSelectedIds(filteredInverters.map((i) => i.id));
     }
   };
 
-  // ─── CRUD Handlers ──────────────────────────────────────────────────────────
+  // ─── Actions handlers ────────────────────────────────────────────────────────
 
   const handleOpenAdd = () => {
     setEditingItem(null);
     setDraft({
-      section: 'electrical_protection',
-      sub_type: '',
+      brand: '',
+      model: '',
+      capacity_kw: 5,
+      inverter_type: 'on_grid',
+      phases: 1,
+      rate: 35000,
+      gst_pct: 0.12,
       description: '',
-      remarks: '',
-      unit: 'Nos',
-      rate: 1500,
-      gst_pct: 0.18,
     });
     setEditorOpen(true);
   };
 
-  const handleOpenEdit = (item: BomItem) => {
-    setEditingItem(item);
+  const handleOpenEdit = (inverter: Inverter) => {
+    setEditingItem(inverter);
     setDraft({
-      section: item.section,
-      sub_type: item.sub_type,
-      description: item.description,
-      remarks: item.remarks || '',
-      unit: item.unit,
-      rate: item.rate,
-      gst_pct: item.gst_pct,
+      brand: inverter.brand,
+      model: inverter.model,
+      capacity_kw: inverter.capacity_kw,
+      inverter_type: inverter.inverter_type,
+      phases: inverter.phases,
+      rate: inverter.rate,
+      gst_pct: inverter.gst_pct,
+      description: inverter.description || '',
     });
     setEditorOpen(true);
   };
@@ -171,10 +176,10 @@ export default function AccessoriesMasterPage() {
     try {
       if (editingItem) {
         await updateMutation.mutateAsync({ id: editingItem.id, updates: draft });
-        toast('BOM accessory updated ✓', 'success');
+        toast('Inverter specifications updated ✓', 'success');
       } else {
         await createMutation.mutateAsync(draft);
-        toast('New BOM accessory added ✓', 'success');
+        toast('New inverter specifications added ✓', 'success');
       }
       setEditorOpen(false);
     } catch (err: any) {
@@ -184,9 +189,9 @@ export default function AccessoriesMasterPage() {
 
   const handleDelete = async (id: string) => {
     const confirmed = await confirm({
-      title: 'Remove Accessory?',
-      message: 'Are you sure you want to delete this accessory / BOM item from the catalog?',
-      confirmLabel: 'Delete Item',
+      title: 'Remove Inverter?',
+      message: 'Are you sure you want to delete this inverter specifications from masters?',
+      confirmLabel: 'Delete Inverter',
       cancelLabel: 'Cancel',
       type: 'danger',
     });
@@ -194,9 +199,9 @@ export default function AccessoriesMasterPage() {
     try {
       await deleteMutation.mutateAsync(id);
       setSelectedIds((prev) => prev.filter((item) => item !== id));
-      toast('Accessory catalog item deleted', 'success');
+      toast('Inverter specification deleted', 'success');
     } catch (err: any) {
-      toast(err.message || 'Failed to delete accessory', 'error');
+      toast(err.message || 'Failed to delete inverter', 'error');
     }
   };
 
@@ -204,7 +209,7 @@ export default function AccessoriesMasterPage() {
     try {
       await bulkUpdateMutation.mutateAsync({ ids: selectedIds, updates });
       setSelectedIds([]);
-      toast(`Bulk updated ${selectedIds.length} accessory items`, 'success');
+      toast(`Bulk updated ${selectedIds.length} rows successfully`, 'success');
     } catch (err: any) {
       toast(err.message || 'Bulk edit failed', 'error');
     }
@@ -213,16 +218,17 @@ export default function AccessoriesMasterPage() {
   // ─── Import / Export ────────────────────────────────────────────────────────
 
   const handleExport = () => {
-    const dataToExport = filteredItems.map((i) => ({
-      Section: i.section,
-      'Sub Type': i.sub_type,
-      Description: i.description,
-      Remarks: i.remarks || '',
-      Unit: i.unit,
+    const dataToExport = filteredInverters.map((i) => ({
+      Brand: i.brand,
+      Model: i.model,
+      'Capacity (kW)': i.capacity_kw,
+      'Inverter Type': i.inverter_type,
+      Phases: i.phases,
       'Selling Rate (INR)': i.rate,
       'GST Percentage': i.gst_pct,
+      Description: i.description || '',
     }));
-    exportToExcel(dataToExport, 'Accessories_Master', 'Accessories');
+    exportToExcel(dataToExport, 'Inverters_Master', 'Inverters');
     toast('Master list exported to Excel', 'success');
   };
 
@@ -234,14 +240,15 @@ export default function AccessoriesMasterPage() {
       const rawData = await importFromExcel(file);
       
       const parsedRows = rawData.map((row: any) => ({
-        section: row.Section || row.section || 'electrical_protection',
-        sub_type: row['Sub Type'] || row.sub_type || 'ACCESSORY',
-        description: row.Description || row.description,
-        remarks: row.Remarks || row.remarks || '',
-        unit: row.Unit || row.unit || 'Nos',
+        brand: row.Brand || row.brand,
+        model: row.Model || row.model,
+        capacity_kw: parseFloat(row['Capacity (kW)'] || row.capacity_kw || row.capacity),
+        inverter_type: row['Inverter Type'] || row.inverter_type || 'on_grid',
+        phases: parseInt(row.Phases || row.phases || 1, 10),
         rate: parseFloat(row['Selling Rate (INR)'] || row.rate || 0),
-        gst_pct: parseFloat(row['GST Percentage'] || row.gst_pct || 0.18),
-      })).filter((r) => r.description && !isNaN(r.rate));
+        gst_pct: parseFloat(row['GST Percentage'] || row.gst_pct || 0.12),
+        description: row.Description || row.description || '',
+      })).filter((r) => r.brand && r.model && !isNaN(r.capacity_kw) && !isNaN(r.rate));
 
       if (parsedRows.length === 0) {
         toast('No valid rows found in Excel sheet. Check column headers.', 'error');
@@ -249,8 +256,8 @@ export default function AccessoriesMasterPage() {
       }
 
       const confirmed = await confirm({
-        title: `Import ${parsedRows.length} Accessories?`,
-        message: `This will insert ${parsedRows.length} accessory spec rows into database. Continue?`,
+        title: `Import ${parsedRows.length} Inverters?`,
+        message: `This will insert ${parsedRows.length} Inverters spec rows into database. Continue?`,
         confirmLabel: 'Import Now',
         cancelLabel: 'Cancel',
         type: 'warning',
@@ -262,7 +269,7 @@ export default function AccessoriesMasterPage() {
         await createMutation.mutateAsync(row);
       }
 
-      toast(`Successfully imported ${parsedRows.length} accessories`, 'success');
+      toast(`Successfully imported ${parsedRows.length} inverters`, 'success');
     } catch (err: any) {
       toast(err.message || 'Import failed', 'error');
     } finally {
@@ -280,7 +287,7 @@ export default function AccessoriesMasterPage() {
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
             <input
               type="text"
-              placeholder="Search sub type, description, specs..."
+              placeholder="Search brand, model, phase..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-lg bg-surface border border-border text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent/40"
@@ -288,18 +295,29 @@ export default function AccessoriesMasterPage() {
           </div>
 
           <select
-            value={sectionFilter}
-            onChange={(e) => setSectionFilter(e.target.value)}
+            value={brandFilter}
+            onChange={(e) => setBrandFilter(e.target.value)}
+            className="px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary outline-none cursor-pointer hover:bg-surface-hover"
+          >
+            <option value="">All Brands</option>
+            {uniqueBrands.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
             className="px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary outline-none cursor-pointer hover:bg-surface-hover capitalize"
           >
-            <option value="">All BOM Sections</option>
-            {SECTION_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option value="">All Inverter Types</option>
+            {uniqueTypes.map((t) => (
+              <option key={t} value={t}>{t.replace('_', ' ')}</option>
             ))}
           </select>
         </div>
 
-        {/* Actions */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           {selectedIds.length > 0 && (
             <button
@@ -314,7 +332,7 @@ export default function AccessoriesMasterPage() {
             onClick={handleOpenAdd}
             className="flex items-center gap-1.5 px-4.5 py-2 rounded-lg bg-accent text-background text-xs font-semibold hover:bg-accent-hover transition-all cursor-pointer"
           >
-            <Plus size={14} /> Add Accessory
+            <Plus size={14} /> Add Inverter
           </button>
 
           <button
@@ -341,40 +359,40 @@ export default function AccessoriesMasterPage() {
       {/* Database Table */}
       <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-md">
         {isLoading ? (
-          <div className="p-12 text-center text-xs text-text-muted">Loading accessories catalog...</div>
-        ) : filteredItems.length === 0 ? (
-          <div className="p-16 text-center text-xs text-text-muted italic">No accessories registered in catalog database.</div>
+          <div className="p-12 text-center text-xs text-text-muted">Loading inverters...</div>
+        ) : filteredInverters.length === 0 ? (
+          <div className="p-16 text-center text-xs text-text-muted italic">No inverters registered. Click Add or Import.</div>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
                 <th className="w-10">
                   <button onClick={toggleSelectAll} className="text-text-muted hover:text-text-primary">
-                    {selectedIds.length === filteredItems.length ? (
+                    {selectedIds.length === filteredInverters.length ? (
                       <CheckSquare size={16} className="text-accent" />
                     ) : (
                       <Square size={16} />
                     )}
                   </button>
                 </th>
-                <th>BOM Section</th>
-                <th>Sub-Type</th>
-                <th>Description</th>
-                <th>Specification Remarks</th>
-                <th>Billing Unit</th>
-                <th>Cost Rate</th>
+                <th>Brand</th>
+                <th>Model</th>
+                <th>Capacity (kW)</th>
+                <th>Inverter Type</th>
+                <th>Phases</th>
+                <th>Selling Price</th>
                 <th>GST Rate</th>
                 <th>Scope</th>
                 <th className="w-20 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((item) => {
-                const isSelected = selectedIds.includes(item.id);
+              {filteredInverters.map((i) => {
+                const isSelected = selectedIds.includes(i.id);
                 return (
-                  <tr key={item.id} className={isSelected ? 'bg-accent-glow/50' : ''}>
+                  <tr key={i.id} className={isSelected ? 'bg-accent-glow/50' : ''}>
                     <td>
-                      <button onClick={() => toggleSelectRow(item.id)} className="text-text-muted hover:text-text-primary">
+                      <button onClick={() => toggleSelectRow(i.id)} className="text-text-muted hover:text-text-primary">
                         {isSelected ? (
                           <CheckSquare size={16} className="text-accent" />
                         ) : (
@@ -382,30 +400,35 @@ export default function AccessoriesMasterPage() {
                         )}
                       </button>
                     </td>
-                    <td className="capitalize font-semibold text-text-secondary">
-                      {item.section.replace(/_/g, ' ')}
+                    <td className="font-semibold">{i.brand}</td>
+                    <td className="text-text-secondary font-mono">{i.model}</td>
+                    <td>{i.capacity_kw} kW</td>
+                    <td className="capitalize">
+                      <span className={`badge-base ${
+                        i.inverter_type === 'on_grid' ? 'badge-on-grid' :
+                        i.inverter_type === 'hybrid' ? 'badge-hybrid' :
+                        i.inverter_type === 'micro' ? 'badge-micro-inverter' :
+                        i.inverter_type === '3_phase' ? 'badge-3-phase' : 'badge-upgrade'
+                      }`}>{i.inverter_type.replace('_', ' ')}</span>
                     </td>
-                    <td className="font-mono text-xs">{item.sub_type}</td>
-                    <td className="font-semibold text-text-primary">{item.description}</td>
-                    <td className="text-text-muted italic text-xs">{item.remarks || '—'}</td>
-                    <td>{item.unit}</td>
-                    <td className="font-mono font-semibold text-text-primary">{formatINR(item.rate)}</td>
-                    <td>{(item.gst_pct * 100).toFixed(0)}%</td>
+                    <td>{i.phases} Ph</td>
+                    <td className="font-mono font-semibold text-text-primary">{formatINR(i.rate)}</td>
+                    <td>{(i.gst_pct * 100).toFixed(0)}%</td>
                     <td>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${item.org_id ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
-                        {item.org_id ? 'Org' : 'Global'}
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${i.org_id ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                        {i.org_id ? 'Org Overrides' : 'Global Baseline'}
                       </span>
                     </td>
                     <td className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => handleOpenEdit(item)}
+                          onClick={() => handleOpenEdit(i)}
                           className="p-1 rounded bg-surface border border-border text-text-secondary hover:text-accent hover:border-accent/30 cursor-pointer"
                         >
                           <Edit2 size={13} />
                         </button>
                         <button
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => handleDelete(i.id)}
                           className="p-1 rounded bg-surface border border-border text-text-secondary hover:text-error hover:border-error/30 cursor-pointer"
                         >
                           <Trash2 size={13} />
@@ -427,7 +450,7 @@ export default function AccessoriesMasterPage() {
           <div className="relative w-full max-w-lg bg-surface border border-border rounded-xl shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-5 border-b border-border flex justify-between items-center bg-surface-2">
               <h3 className="text-sm font-bold text-text-primary">
-                {editingItem ? 'Edit BOM Item Accessory' : 'Add New BOM Accessory'}
+                {editingItem ? 'Edit Inverter specifications' : 'Add New Inverter'}
               </h3>
               <button onClick={() => setEditorOpen(false)} className="text-text-muted hover:text-text-primary">
                 <X size={16} />
@@ -437,82 +460,89 @@ export default function AccessoriesMasterPage() {
             <form onSubmit={handleSave} className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">BOM Section *</label>
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Brand Name *</label>
+                  <input
+                    type="text" required
+                    value={draft.brand}
+                    onChange={(e) => setDraft({ ...draft, brand: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
+                    placeholder="e.g. Growatt, SMA"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Model SKU *</label>
+                  <input
+                    type="text" required
+                    value={draft.model}
+                    onChange={(e) => setDraft({ ...draft, model: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
+                    placeholder="e.g. MIN-5000, SunnyBoy"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Inverter Capacity (kW) *</label>
+                  <input
+                    type="number" required min={0.1} step={0.01}
+                    value={draft.capacity_kw}
+                    onChange={(e) => setDraft({ ...draft, capacity_kw: parseFloat(e.target.value) })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Inverter Type *</label>
                   <select
-                    value={draft.section}
-                    onChange={(e) => setDraft({ ...draft, section: e.target.value as any })}
+                    value={draft.inverter_type}
+                    onChange={(e) => setDraft({ ...draft, inverter_type: e.target.value as any })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
                   >
-                    {SECTION_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
+                    <option value="on_grid">On-Grid</option>
+                    <option value="hybrid">Hybrid</option>
+                    <option value="micro">Micro Inverter</option>
+                    <option value="3_phase">3-Phase</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Sub Type Identifier *</label>
-                  <input
-                    type="text" required
-                    value={draft.sub_type}
-                    onChange={(e) => setDraft({ ...draft, sub_type: e.target.value.toUpperCase() })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
-                    placeholder="e.g. ACDB, GI_STRIP"
-                  />
-                </div>
-                <div className="space-y-1 col-span-2">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Description Label *</label>
-                  <input
-                    type="text" required
-                    value={draft.description}
-                    onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                    placeholder="e.g. 4sqmm AC Cable (Polycab)"
-                  />
-                </div>
-                <div className="space-y-1 col-span-2">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Technical Specifications Remarks</label>
-                  <input
-                    type="text"
-                    value={draft.remarks}
-                    onChange={(e) => setDraft({ ...draft, remarks: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                    placeholder="e.g. 10SWG copper wire, 1kg compound rod"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Standard billing Unit *</label>
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">System Phases *</label>
                   <select
-                    value={draft.unit}
-                    onChange={(e) => setDraft({ ...draft, unit: e.target.value })}
+                    value={draft.phases}
+                    onChange={(e) => setDraft({ ...draft, phases: parseInt(e.target.value, 10) })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
                   >
-                    <option value="Nos">Nos</option>
-                    <option value="Mtr">Mtr (Meters)</option>
-                    <option value="kg">kg (Kilograms)</option>
-                    <option value="Set">Set</option>
-                    <option value="Lump">Lump Sum</option>
+                    <option value={1}>1 Phase</option>
+                    <option value={3}>3 Phase</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Base Cost Rate (INR) *</label>
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Base Selling Rate (INR) *</label>
                   <input
-                    type="number" required min={0} step={0.01}
+                    type="number" required min={0} step={1}
                     value={draft.rate}
                     onChange={(e) => setDraft({ ...draft, rate: parseFloat(e.target.value) })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
                   />
                 </div>
-                <div className="space-y-1 col-span-2">
+                <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Standard GST Slabs *</label>
                   <select
                     value={draft.gst_pct}
                     onChange={(e) => setDraft({ ...draft, gst_pct: parseFloat(e.target.value) })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
                   >
-                    <option value={0.18}>18% GST (Cables, Protection, Earthing)</option>
-                    <option value={0.12}>12% GST (Alternative slabs)</option>
-                    <option value={0.05}>5% GST (Solar panels standard)</option>
+                    <option value={0.12}>12% GST (Default Inverters)</option>
+                    <option value={0.18}>18% GST (Alternative / Accessories)</option>
                   </select>
                 </div>
+              </div>
+              
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Remarks / Technical Specifications</label>
+                <textarea
+                  value={draft.description}
+                  onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none resize-none"
+                  placeholder="Warranty terms, maximum input voltage, MPPT channels..."
+                />
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-border mt-5">
@@ -527,7 +557,7 @@ export default function AccessoriesMasterPage() {
                   type="submit"
                   className="px-5 py-2 text-xs font-semibold text-background bg-accent hover:bg-accent-hover rounded-lg transition-all"
                 >
-                  Save Accessory
+                  Save Inverter
                 </button>
               </div>
             </form>
@@ -539,8 +569,8 @@ export default function AccessoriesMasterPage() {
       <HistoryDrawer
         isOpen={historyOpen}
         onClose={() => setHistoryOpen(false)}
-        entityTable="eq_bom_items"
-        title="Accessories Catalog"
+        entityTable="eq_inverters"
+        title="Power Inverters Master"
       />
 
       {/* Bulk Edit Modal */}

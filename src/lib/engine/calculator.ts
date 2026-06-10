@@ -14,6 +14,11 @@ import { calculateFinancialProjections } from './financials';
 
 const GRID_TARIFF_PER_KWH = 8.0;
 
+export function roundTo5(num: number | null | undefined): number {
+  if (num === null || num === undefined || isNaN(num)) return 0;
+  return Math.round((num + Number.EPSILON) * 100000) / 100000;
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 export interface RowOverride {
@@ -90,6 +95,8 @@ export interface CalcInput {
   structureCustomRawRate?: number;
   structureCustomFabricationRate?: number;
   structureCustomGalvanizingRate?: number;
+  structureComponentMix?: Record<string, number>;
+  structureAddonMix?: Record<string, number>;
 
   // Meters selections
   solarMeterId?: string;
@@ -107,6 +114,9 @@ export interface CalcInput {
   dbMeters?: any[];
   dbLAs?: any[];
   dbStructureParts?: any[];
+  dbStructureComponents?: any[];
+  dbStructureBom?: any[];
+  dbStructureAddons?: any[];
   dbOrientationMultipliers?: Record<string, number>;
   dbPanels?: any[];
   dbInverters?: any[];
@@ -528,56 +538,119 @@ export function calculateSystem(input: CalcInput): CalcResult {
       if (struct) {
         structureGst = Number(struct.gst_pct);
         const mode = input.structurePricingMode ?? (struct.flat_rate !== null ? 'flat' : 'weight');
-        if (mode === 'weight') {
-          // Weight lookup
-          let lookup = (input.dbWeightLookups ?? []).find(l => 
-            l.structure_id === struct.id && 
-            capacityKW >= Number(l.capacity_kw_min) && 
-            capacityKW <= Number(l.capacity_kw_max)
-          );
-          if (!lookup && (input.dbWeightLookups ?? []).length > 0) {
-            // Find closest by capacity
-            const sameStructLookups = (input.dbWeightLookups ?? []).filter(l => l.structure_id === struct.id);
-            if (sameStructLookups.length > 0) {
-              lookup = sameStructLookups.reduce((prev, curr) => 
-                Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
-              );
+        
+        const structComponents = (input.dbStructureComponents ?? []).filter(c => c.structure_id === struct.id);
+        
+        if (mode === 'weight' && structComponents.length > 0) {
+          structComponents.forEach(c => {
+            let bomEntry = (input.dbStructureBom ?? []).find(b => 
+              b.component_id === c.id && 
+              capacityKW >= Number(b.capacity_kw_min) && 
+              capacityKW <= Number(b.capacity_kw_max)
+            );
+            if (!bomEntry && (input.dbStructureBom ?? []).length > 0) {
+              const sameCompBom = (input.dbStructureBom ?? []).filter(b => b.component_id === c.id);
+              if (sameCompBom.length > 0) {
+                bomEntry = sameCompBom.reduce((prev, curr) => 
+                  Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
+                );
+              }
             }
+            
+            // Check override quantity in structureComponentMix
+            const overrideQty = input.structureComponentMix?.[c.id] !== undefined
+              ? input.structureComponentMix[c.id]
+              : (input.structureComponentMix?.[c.name] !== undefined ? input.structureComponentMix[c.name] : undefined);
+
+            const qty = overrideQty !== undefined ? overrideQty : (bomEntry ? Number(bomEntry.qty) : 0);
+
+            if (qty > 0) {
+              upsertItem(`STRUCTURE - ${c.name}`, {
+                qty: qty,
+                ratePerUnit: Number(c.selling_price),
+                unit: c.unit,
+                remarks: `${struct.name} component`,
+                gstPct: Number(c.gst_pct) as any,
+              });
+            }
+          });
+          
+          // Remove the default generic 'STRUCTURE' line item if it is in resolvedItems
+          const idx = resolvedItems.findIndex(item => item.description.toUpperCase() === 'STRUCTURE');
+          if (idx >= 0) {
+            resolvedItems.splice(idx, 1);
+          }
+        } else {
+          if (mode === 'weight') {
+            // Weight lookup
+            let lookup = (input.dbWeightLookups ?? []).find(l => 
+              l.structure_id === struct.id && 
+              capacityKW >= Number(l.capacity_kw_min) && 
+              capacityKW <= Number(l.capacity_kw_max)
+            );
+            if (!lookup && (input.dbWeightLookups ?? []).length > 0) {
+              // Find closest by capacity
+              const sameStructLookups = (input.dbWeightLookups ?? []).filter(l => l.structure_id === struct.id);
+              if (sameStructLookups.length > 0) {
+                lookup = sameStructLookups.reduce((prev, curr) => 
+                  Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
+                );
+              }
+            }
+            
+            const lookupWeight = lookup ? Number(lookup.total_weight_kg) : 0;
+            const baseWeight = Number(struct.base_weight_kg ?? 0);
+            const wastage = Number(struct.wastage_pct ?? 0.05);
+            const fasteners = Number(struct.fastener_weight_pct ?? 0.02);
+            const ratePerKg = Number(struct.rate_per_kg ?? (Number(struct.raw_material_rate ?? 0) + Number(struct.fabrication_rate ?? 0) + Number(struct.galvanizing_rate ?? 0)));
+            
+            const finalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
+            
+            structureQty = finalWeight;
+            structureRate = ratePerKg;
+            structureUnit = 'kg';
+            structureRemarks = `${struct.name} (${lookupWeight}kg lookup)`;
+          } else if (mode === 'per_watt') {
+            structureQty = 1;
+            structureRate = capacityWatts * Number(struct.per_watt_rate ?? 0);
+            structureUnit = 'Set';
+            structureRemarks = `${struct.name} (Per watt)`;
+          } else {
+            structureQty = 1;
+            structureRate = Number(struct.flat_rate ?? 0);
+            structureUnit = 'Set';
+            structureRemarks = `${struct.name} (Flat rate)`;
           }
           
-          const lookupWeight = lookup ? Number(lookup.total_weight_kg) : 0;
-          const baseWeight = Number(struct.base_weight_kg ?? 0);
-          const wastage = Number(struct.wastage_pct ?? 0.05);
-          const fasteners = Number(struct.fastener_weight_pct ?? 0.02);
-          const ratePerKg = Number(struct.rate_per_kg ?? (Number(struct.raw_material_rate ?? 0) + Number(struct.fabrication_rate ?? 0) + Number(struct.galvanizing_rate ?? 0)));
-          
-          const finalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
-          
-          structureQty = finalWeight;
-          structureRate = ratePerKg;
-          structureUnit = 'kg';
-          structureRemarks = `${struct.name} (${lookupWeight}kg lookup)`;
-        } else if (mode === 'per_watt') {
-          structureQty = 1;
-          structureRate = capacityWatts * Number(struct.per_watt_rate ?? 0);
-          structureUnit = 'Set';
-          structureRemarks = `${struct.name} (Per watt)`;
-        } else {
-          structureQty = 1;
-          structureRate = Number(struct.flat_rate ?? 0);
-          structureUnit = 'Set';
-          structureRemarks = `${struct.name} (Flat rate)`;
+          upsertItem('STRUCTURE', {
+            qty: structureQty,
+            ratePerUnit: structureRate,
+            unit: structureUnit,
+            remarks: structureRemarks,
+            gstPct: structureGst as any,
+          });
         }
-        
-        upsertItem('STRUCTURE', {
-          qty: structureQty,
-          ratePerUnit: structureRate,
-          unit: structureUnit,
-          remarks: structureRemarks,
-          gstPct: structureGst as any,
-        });
       }
     }
+  }
+
+  // 1b. Resolve STRUCTURE ADD-ONS (Walkway, Ladder, etc.)
+  if (input.dbStructureAddons && input.dbStructureAddons.length > 0) {
+    input.dbStructureAddons.forEach((addon: any) => {
+      const addonQty = input.structureAddonMix?.[addon.id] !== undefined
+        ? input.structureAddonMix[addon.id]
+        : (input.structureAddonMix?.[addon.name] !== undefined ? input.structureAddonMix[addon.name] : 0);
+      
+      if (addonQty > 0) {
+        upsertItem(`STRUCTURE - ${addon.name} (${addon.material})`, {
+          qty: addonQty,
+          ratePerUnit: Number(addon.rate_per_unit),
+          unit: addon.unit || 'Meter',
+          remarks: addon.notes || 'Structure addon',
+          gstPct: Number(addon.gst_pct ?? 0.18) as any,
+        });
+      }
+    });
   }
 
   // 2. Resolve SOLAR METER
@@ -653,7 +726,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
     const isDisabled = input.disabledItemIndices?.[index] === true;
 
     // Resolve effective values
-    const effectiveQty =
+    const effectiveQty = roundTo5(
       rowOverride?.qty !== undefined
         ? rowOverride.qty
         : item.description.toUpperCase() === 'PANEL' &&
@@ -669,23 +742,25 @@ export function calculateSystem(input: CalcInput): CalcResult {
         ? input.dcCableLengthM
         : item.description.toUpperCase() === 'AC CABLE' && input.acCableLengthM !== undefined
         ? input.acCableLengthM
-        : item.qty;
+        : item.qty
+    );
 
-    const effectiveRate = resolveRate(
+    const effectiveRate = roundTo5(resolveRate(
       item,
       index,
       input.overrides,
       input.rateMaster,
       equipmentOverrides,
+    ));
+
+    const effectiveGstPct = roundTo5(
+      rowOverride?.gstPct !== undefined ? rowOverride.gstPct : item.gstPct
     );
 
-    const effectiveGstPct =
-      rowOverride?.gstPct !== undefined ? rowOverride.gstPct : item.gstPct;
-
-    // Compute line totals — NO rounding (set to 0 if item is unchecked/disabled)
-    const lineTotal = isDisabled ? 0 : effectiveQty * effectiveRate;
-    const lineGST = isDisabled ? 0 : lineTotal * effectiveGstPct;
-    const lineSubTotal = lineTotal + lineGST;
+    // Compute line totals — rounded to 5 decimal places (set to 0 if item is unchecked/disabled)
+    const lineTotal = isDisabled ? 0 : roundTo5(effectiveQty * effectiveRate);
+    const lineGST = isDisabled ? 0 : roundTo5(lineTotal * effectiveGstPct);
+    const lineSubTotal = roundTo5(lineTotal + lineGST);
 
     const descUpper = item.description.toUpperCase();
     const isEquipment = ['PANEL', 'INVERTER', 'BATTERY'].some(prefix =>
@@ -730,15 +805,16 @@ export function calculateSystem(input: CalcInput): CalcResult {
   });
 
   // ── Step 5: Cost aggregates ──
-  const costBeforeGST = lines.reduce((sum, l) => sum + l.lineTotal, 0);
-  const totalInputGST = lines.reduce((sum, l) => sum + l.lineGST, 0);
-  const totalIncGST = costBeforeGST + totalInputGST;
+  const costBeforeGST = roundTo5(lines.reduce((sum, l) => sum + l.lineTotal, 0));
+  const totalInputGST = roundTo5(lines.reduce((sum, l) => sum + l.lineGST, 0));
+  const totalIncGST = roundTo5(costBeforeGST + totalInputGST);
 
   // ── Step 7: Resolve output GST ──
-  const gstOutputRate =
+  const gstOutputRate = roundTo5(
     input.gstOnOutputOverride !== undefined
       ? input.gstOnOutputOverride
-      : (input.gstOnOutput !== undefined ? input.gstOnOutput : stateData.gstOnOutput);
+      : (input.gstOnOutput !== undefined ? input.gstOnOutput : stateData.gstOnOutput)
+  );
 
   // ── Step 8 & 6: Resolve MRP & Margin ──
   const marginResults = calculatePricingAndMargins({
@@ -750,31 +826,34 @@ export function calculateSystem(input: CalcInput): CalcResult {
     capacityWatts,
     defaultMarginPct: system.targetMarginPct
   });
-  const { mrpInclGST, mrpExclGST, marginAmount, effectiveMarginPct } = marginResults;
+  const mrpInclGST = roundTo5(marginResults.mrpInclGST);
+  const mrpExclGST = roundTo5(marginResults.mrpExclGST);
+  const marginAmount = roundTo5(marginResults.marginAmount);
+  const effectiveMarginPct = roundTo5(marginResults.effectiveMarginPct);
 
   // ── Per-kW analysis ──
   const capKW = system.capacityKW || 0.001; // Avoid div by zero
-  const perKWexclGST = mrpExclGST / capKW;
-  const perKWinclGST = mrpInclGST / capKW;
+  const perKWexclGST = roundTo5(mrpExclGST / capKW);
+  const perKWinclGST = roundTo5(mrpInclGST / capKW);
 
   // ── Step 10: Discount ──
-  const discountAmount = calculateDiscountAmount({
+  const discountAmount = roundTo5(calculateDiscountAmount({
     mrpInclGST,
     discountType: input.discountType ?? 'none',
     discountVal: input.discountVal ?? 0
-  });
+  }));
 
   // ── Step 11: Additional costs ──
-  const additionalCostTotal = (input.additionalCosts ?? []).reduce(
+  const additionalCostTotal = roundTo5((input.additionalCosts ?? []).reduce(
     (sum, c) => sum + c.amount,
     0,
-  );
+  ));
 
   // ── Step 12: Final customer price ──
-  const finalCustomerPrice = Math.max(0, mrpInclGST - discountAmount + additionalCostTotal);
+  const finalCustomerPrice = roundTo5(Math.max(0, mrpInclGST - discountAmount + additionalCostTotal));
 
   // ── Step 13: Subsidy ──
-  const subsidyAmount = input.rpcSubsidyAmount !== undefined
+  const subsidyAmount = roundTo5(input.rpcSubsidyAmount !== undefined
     ? input.rpcSubsidyAmount
     : calculateSubsidyAmount({
         panelCapacityKW: input.panelCapacityKW ?? system.capacityKW,
@@ -782,10 +861,10 @@ export function calculateSystem(input: CalcInput): CalcResult {
         projectType: input.projectType,
         slabs: input.slabs,
         maxCapacityKW: 10.0
-      });
+      }));
 
   // ── Step 14: Beneficiary contribution ──
-  const beneficiaryContribution = Math.max(0, finalCustomerPrice - subsidyAmount);
+  const beneficiaryContribution = roundTo5(Math.max(0, finalCustomerPrice - subsidyAmount));
 
   // ── Step 15: Energy generation ──
   const energyProjections = calculateEnergyProjections({
@@ -796,7 +875,9 @@ export function calculateSystem(input: CalcInput): CalcResult {
     orientation: input.orientation,
     orientationMultipliers: input.dbOrientationMultipliers
   });
-  const { dailyGenerationKWh, monthlyGenerationKWh, annualGenerationKWh } = energyProjections;
+  const dailyGenerationKWh = roundTo5(energyProjections.dailyGenerationKWh);
+  const monthlyGenerationKWh = roundTo5(energyProjections.monthlyGenerationKWh);
+  const annualGenerationKWh = roundTo5(energyProjections.annualGenerationKWh);
 
   // ── Step 16: Savings ──
   const stateGridTariff = (stateData as any).gridTariffInr ?? 8.0;
@@ -805,8 +886,8 @@ export function calculateSystem(input: CalcInput): CalcResult {
       ? input.gridTariffPerKWh
       : stateGridTariff;
 
-  const monthlySavingsINR = monthlyGenerationKWh * effectiveGridTariffPerKWh;
-  const annualSavingsINR = annualGenerationKWh * effectiveGridTariffPerKWh;
+  const monthlySavingsINR = roundTo5(monthlyGenerationKWh * effectiveGridTariffPerKWh);
+  const annualSavingsINR = roundTo5(annualGenerationKWh * effectiveGridTariffPerKWh);
 
   // ── Step 17: Payback & LCOE ──
   const financialProjections = calculateFinancialProjections({
@@ -817,7 +898,9 @@ export function calculateSystem(input: CalcInput): CalcResult {
     electricityInflationRate: input.electricityInflationRate,
     systemLifetimeYears: 25
   });
-  const { paybackYears, lcoe, lifetimeSavingsINR } = financialProjections;
+  const paybackYears = roundTo5(financialProjections.paybackYears);
+  const lcoe = roundTo5(financialProjections.lcoe);
+  const lifetimeSavingsINR = roundTo5(financialProjections.lifetimeSavingsINR);
 
   // ── Return complete result ──
   return {

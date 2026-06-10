@@ -69,6 +69,8 @@ export const useCalculatorStore = create<CalculatorState>()(
         structureCustomRawRate: state.structureCustomRawRate,
         structureCustomFabricationRate: state.structureCustomFabricationRate,
         structureCustomGalvanizingRate: state.structureCustomGalvanizingRate,
+        structureComponentMix: state.structureComponentMix,
+        structureAddonMix: state.structureAddonMix,
         solarMeterId: state.solarMeterId,
         solarMeterQty: state.solarMeterQty,
         netMeterId: state.netMeterId,
@@ -82,6 +84,9 @@ export const useCalculatorStore = create<CalculatorState>()(
         dbMeters: state.dbMeters,
         dbLAs: state.dbLAs,
         dbStructureParts: state.dbStructureParts,
+        dbStructureComponents: state.dbStructureComponents,
+        dbStructureBom: state.dbStructureBom,
+        dbStructureAddons: state.dbStructureAddons,
 
         // Pricing overrides (survive page refresh)
         gstOnOutputOverride: state.gstOnOutputOverride,

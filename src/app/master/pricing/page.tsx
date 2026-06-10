@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
-import { HistoryDrawer } from '@/components/masters/HistoryDrawer';
+import { HistoryDrawer } from '@/components/master/HistoryDrawer';
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
 
@@ -87,34 +87,39 @@ export default function PricingMasterPage() {
     queryFn: async () => {
       const { orgId } = await getOrgContext();
       
-      // Select rate overrides
-      const { data: overrides, error: ovrError } = await supabase
-        .from('rate_master')
-        .select('*')
-        .eq('org_id', orgId);
-
-      if (ovrError) throw ovrError;
-
       // Select bom items
       const { data: boms, error: bomError } = await supabase
         .from('eq_bom_items')
-        .select('*');
+        .select('*')
+        .or(`org_id.eq.${orgId},org_id.is.null`);
 
       if (bomError) throw bomError;
 
-      // Map joined fields
-      const rows: PricingRow[] = (overrides || []).map((o: any) => {
-        const bom = (boms || []).find((b) => b.id === o.bom_item_id);
+      // Group by description (or section+sub_type) and prefer org_id if present to override global ones
+      const map = new Map<string, any>();
+      for (const b of boms || []) {
+        const key = `${b.section}:${b.sub_type}`;
+        const existing = map.get(key);
+        if (!existing || b.org_id) {
+          map.set(key, b);
+        }
+      }
+
+      const uniqueBoms = Array.from(map.values());
+
+      // Map fields directly to PricingRow format
+      const rows: PricingRow[] = uniqueBoms.map((b) => {
         return {
-          id: o.id,
-          bom_item_id: o.bom_item_id,
-          override_rate: o.override_rate,
-          is_active: o.is_active,
-          bom_description: bom?.description || 'BOM Item',
-          bom_section: bom?.section || 'Accessories',
-          bom_unit: bom?.unit || 'Nos',
-          bom_default_rate: bom?.rate || 0,
-        };
+          id: b.id,
+          bom_item_id: b.id,
+          override_rate: b.selling_price || 0,
+          is_active: b.is_active,
+          bom_description: b.description || 'BOM Item',
+          bom_section: b.section || 'Accessories',
+          bom_unit: b.unit || 'Nos',
+          bom_default_rate: b.buy_price || 0,
+          is_override: b.org_id !== null,
+        } as any;
       });
 
       return rows;
@@ -125,12 +130,29 @@ export default function PricingMasterPage() {
   const createMutation = useMutation({
     mutationFn: async (payload: any) => {
       const { orgId, userId } = await getOrgContext();
+      
+      // Get the metadata of the target global BOM item
+      const { data: targetItem, error: fetchError } = await supabase
+        .from('eq_bom_items')
+        .select('*')
+        .eq('id', payload.bom_item_id)
+        .single();
+      if (fetchError) throw fetchError;
+
+      // Insert organization override in eq_bom_items
       const { data, error } = await supabase
-        .from('rate_master')
+        .from('eq_bom_items')
         .insert({
-          ...payload,
           org_id: orgId,
-          changed_by: userId,
+          section: targetItem.section,
+          sub_type: targetItem.sub_type,
+          description: targetItem.description,
+          remarks: targetItem.remarks,
+          unit: targetItem.unit,
+          buy_price: targetItem.buy_price,
+          selling_price: payload.override_rate,
+          gst_pct: targetItem.gst_pct,
+          is_active: true,
           updated_at: new Date().toISOString()
         })
         .select()
@@ -149,10 +171,9 @@ export default function PricingMasterPage() {
     mutationFn: async ({ id, override_rate }: { id: string; override_rate: number }) => {
       const { userId } = await getOrgContext();
       const { data, error } = await supabase
-        .from('rate_master')
+        .from('eq_bom_items')
         .update({
-          override_rate,
-          changed_by: userId,
+          selling_price: override_rate,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -170,10 +191,12 @@ export default function PricingMasterPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      const { orgId } = await getOrgContext();
       const { error } = await supabase
-        .from('rate_master')
+        .from('eq_bom_items')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('org_id', orgId); // Safe deletion: only delete their org row
       if (error) throw error;
       return id;
     },
@@ -223,12 +246,38 @@ export default function PricingMasterPage() {
         } else {
           newRate = row.override_rate + markupValue;
         }
+        newRate = Math.round(newRate);
 
-        const { error } = await supabase
-          .from('rate_master')
-          .update({ override_rate: Math.round(newRate), updated_at: new Date().toISOString() })
-          .eq('id', id);
-        if (error) throw error;
+        if (!(row as any).is_override) {
+          // Create override
+          const { orgId } = await getOrgContext();
+          const { data: targetItem } = await supabase
+            .from('eq_bom_items')
+            .select('*')
+            .eq('id', row.bom_item_id)
+            .single();
+          if (targetItem) {
+            await supabase.from('eq_bom_items').insert({
+              org_id: orgId,
+              section: targetItem.section,
+              sub_type: targetItem.sub_type,
+              description: targetItem.description,
+              remarks: targetItem.remarks,
+              unit: targetItem.unit,
+              buy_price: targetItem.buy_price,
+              selling_price: newRate,
+              gst_pct: targetItem.gst_pct,
+              is_active: true,
+              updated_at: new Date().toISOString()
+            });
+          }
+        } else {
+          // Update override
+          await supabase
+            .from('eq_bom_items')
+            .update({ selling_price: newRate, updated_at: new Date().toISOString() })
+            .eq('id', id);
+        }
       });
 
       await Promise.all(promises);
@@ -267,7 +316,11 @@ export default function PricingMasterPage() {
     e.preventDefault();
     try {
       if (editingItem) {
-        await updateMutation.mutateAsync({ id: editingItem.id, override_rate: draft.override_rate });
+        if (!(editingItem as any).is_override) {
+          await createMutation.mutateAsync({ bom_item_id: editingItem.bom_item_id, override_rate: draft.override_rate });
+        } else {
+          await updateMutation.mutateAsync({ id: editingItem.id, override_rate: draft.override_rate });
+        }
       } else {
         await createMutation.mutateAsync(draft);
       }
@@ -458,9 +511,9 @@ export default function PricingMasterPage() {
                     onChange={(e) => setDraft({ ...draft, bom_item_id: e.target.value })}
                     className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none cursor-pointer"
                   >
-                    {bomItems?.map((item) => (
+                    {bomItems?.map((item: any) => (
                       <option key={item.id} value={item.id}>
-                        {item.description} ({item.unit}) — Baseline: ₹{item.rate}
+                        {item.description} ({item.unit}) — Baseline: ₹{item.buy_price}
                       </option>
                     ))}
                   </select>
@@ -572,7 +625,7 @@ export default function PricingMasterPage() {
       <HistoryDrawer
         isOpen={historyOpen}
         onClose={() => setHistoryOpen(false)}
-        entityTable="rate_master"
+        entityTable="eq_bom_items"
         title="Rate Master Pricing"
       />
     </div>

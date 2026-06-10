@@ -423,8 +423,6 @@ export function useSettings() {
       const rateMaster = useCalculatorStore.getState().rateMaster;
       const equipmentRates = settings.currentEquipmentRates;
 
-      // 2. Persist BOM Category Overrides (rate_master table)
-      // First, get all eq_bom_items for this org/global to map description → id
       const { data: bomItems } = await supabase
         .from('eq_bom_items')
         .select('id, description')
@@ -432,27 +430,18 @@ export function useSettings() {
 
       if (bomItems) {
         const descToId = new Map(bomItems.map(b => [b.description, b.id]));
-        const rateMasterRows = Object.entries(rateMaster)
+        const updatePromises = Object.entries(rateMaster)
           .filter(([_, val]) => val.active)
-          .map(([desc, val]) => {
+          .map(async ([desc, val]) => {
             const bomItemId = descToId.get(desc);
-            if (!bomItemId) return null;
-            return {
-              org_id: orgId,
-              bom_item_id: bomItemId,
-              override_rate: val.rate,
-              is_active: true,
-              changed_by: userId,
-              updated_at: new Date().toISOString(),
-            };
-          })
-          .filter(Boolean);
-
-        if (rateMasterRows.length > 0) {
-          const { error: rmError } = await (supabase.from('rate_master') as any)
-            .upsert(rateMasterRows, { onConflict: 'org_id,bom_item_id' });
-          if (rmError) console.warn('[commitRateMaster] rate_master upsert error:', rmError.message);
-        }
+            if (!bomItemId) return;
+            const { error: eqError } = await supabase
+              .from('eq_bom_items')
+              .update({ selling_price: val.rate, updated_at: new Date().toISOString() })
+              .eq('id', bomItemId);
+            if (eqError) console.warn(`[commitRateMaster] eq_bom_items update error for ${bomItemId}:`, eqError.message);
+          });
+        await Promise.all(updatePromises);
       }
 
       // 3. Persist Equipment Rates (Panels, Inverters, Batteries)
@@ -470,9 +459,9 @@ export function useSettings() {
         }
       };
 
-      if (equipmentRates.panels) await updateEquipment('eq_panels', equipmentRates.panels, 'rate_per_watt');
-      if (equipmentRates.inverters) await updateEquipment('eq_inverters', equipmentRates.inverters, 'rate');
-      if (equipmentRates.batteries) await updateEquipment('eq_batteries', equipmentRates.batteries, 'rate');
+      if (equipmentRates.panels) await updateEquipment('eq_panels', equipmentRates.panels, 'selling_price');
+      if (equipmentRates.inverters) await updateEquipment('eq_inverters', equipmentRates.inverters, 'selling_price');
+      if (equipmentRates.batteries) await updateEquipment('eq_batteries', equipmentRates.batteries, 'selling_price');
 
       setLastSynced(new Date());
       return null;

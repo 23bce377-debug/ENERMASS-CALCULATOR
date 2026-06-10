@@ -25,8 +25,8 @@ import {
 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
-import { HistoryDrawer } from '@/components/masters/HistoryDrawer';
-import { BulkEditModal, type FieldSchema } from '@/components/masters/BulkEditModal';
+import { HistoryDrawer } from '@/components/master/HistoryDrawer';
+import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditModal';
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
 

@@ -159,7 +159,7 @@ async function verify() {
     console.log(`${results.checks.bomResolvesComponents ? '✅' : '❌'} Check: BOM engine resolves all components (orphans: ${orphansCount})`);
 
     // Verification 4: Pricing engine resolves rates
-    const zeroRatesRes = await client.query('SELECT COUNT(*) FROM eq_bom_items WHERE rate = 0 AND is_active = true');
+    const zeroRatesRes = await client.query('SELECT COUNT(*) FROM eq_bom_items WHERE selling_price = 0 AND is_active = true');
     const zeroRates = parseInt(zeroRatesRes.rows[0].count);
     results.checks.pricingResolvesRates = zeroRates < results.bomItemsCount; // at least some rates resolved
     console.log(`${results.checks.pricingResolvesRates ? '✅' : '❌'} Check: Pricing engine resolves rates`);

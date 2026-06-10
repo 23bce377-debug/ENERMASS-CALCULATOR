@@ -1074,7 +1074,7 @@ export interface Database {
           voltage_v: number | null
           chemistry: Database['public']['Enums']['battery_chemistry']
           dod_pct: number
-          rate: number
+          selling_price: number
           gst_pct: number
           description: string | null
           is_active: boolean
@@ -1088,6 +1088,7 @@ export interface Database {
           row_number: number | null
           imported_at: string | null
           imported_by: string | null
+          buy_price: number
         }
         Insert: {
           id?: string
@@ -1098,7 +1099,7 @@ export interface Database {
           voltage_v?: number | null
           chemistry?: Database['public']['Enums']['battery_chemistry']
           dod_pct?: number
-          rate: number
+          selling_price: number
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1112,6 +1113,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Update: {
           id?: string
@@ -1122,7 +1124,7 @@ export interface Database {
           voltage_v?: number | null
           chemistry?: Database['public']['Enums']['battery_chemistry']
           dod_pct?: number
-          rate?: number
+          selling_price?: number
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1136,6 +1138,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Relationships: []
       }
@@ -1148,7 +1151,7 @@ export interface Database {
           description: string
           remarks: string | null
           unit: string
-          rate: number
+          selling_price: number
           gst_pct: number
           is_active: boolean
           version: number
@@ -1160,6 +1163,7 @@ export interface Database {
           row_number: number | null
           imported_at: string | null
           imported_by: string | null
+          buy_price: number
         }
         Insert: {
           id?: string
@@ -1169,7 +1173,7 @@ export interface Database {
           description: string
           remarks?: string | null
           unit?: string
-          rate: number
+          selling_price: number
           gst_pct?: number
           is_active?: boolean
           version?: number
@@ -1181,6 +1185,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Update: {
           id?: string
@@ -1190,7 +1195,7 @@ export interface Database {
           description?: string
           remarks?: string | null
           unit?: string
-          rate?: number
+          selling_price?: number
           gst_pct?: number
           is_active?: boolean
           version?: number
@@ -1202,6 +1207,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Relationships: []
       }
@@ -1212,7 +1218,7 @@ export interface Database {
           brand: string
           model: string
           compatible_inverter_brand: string | null
-          rate: number
+          selling_price: number
           gst_pct: number
           description: string | null
           is_active: boolean
@@ -1225,6 +1231,7 @@ export interface Database {
           row_number: number | null
           imported_at: string | null
           imported_by: string | null
+          buy_price: number
         }
         Insert: {
           id?: string
@@ -1232,7 +1239,7 @@ export interface Database {
           brand: string
           model: string
           compatible_inverter_brand?: string | null
-          rate: number
+          selling_price: number
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1245,6 +1252,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Update: {
           id?: string
@@ -1252,7 +1260,7 @@ export interface Database {
           brand?: string
           model?: string
           compatible_inverter_brand?: string | null
-          rate?: number
+          selling_price?: number
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1265,6 +1273,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Relationships: []
       }
@@ -1277,7 +1286,7 @@ export interface Database {
           capacity_kw: number
           inverter_type: Database['public']['Enums']['inverter_type']
           phases: number
-          rate: number
+          selling_price: number
           gst_pct: number
           description: string | null
           is_active: boolean
@@ -1291,6 +1300,7 @@ export interface Database {
           row_number: number | null
           imported_at: string | null
           imported_by: string | null
+          buy_price: number
         }
         Insert: {
           id?: string
@@ -1300,7 +1310,7 @@ export interface Database {
           capacity_kw: number
           inverter_type: Database['public']['Enums']['inverter_type']
           phases?: number
-          rate: number
+          selling_price: number
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1314,6 +1324,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Update: {
           id?: string
@@ -1323,7 +1334,7 @@ export interface Database {
           capacity_kw?: number
           inverter_type?: Database['public']['Enums']['inverter_type']
           phases?: number
-          rate?: number
+          selling_price?: number
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1337,6 +1348,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Relationships: []
       }
@@ -1348,7 +1360,7 @@ export interface Database {
           brand: string | null
           model: string
           max_capacity_kw: number | null
-          rate: number
+          selling_price: number
           gst_pct: number
           description: string | null
           is_active: boolean
@@ -1361,6 +1373,7 @@ export interface Database {
           row_number: number | null
           imported_at: string | null
           imported_by: string | null
+          buy_price: number
         }
         Insert: {
           id?: string
@@ -1369,7 +1382,7 @@ export interface Database {
           brand?: string | null
           model: string
           max_capacity_kw?: number | null
-          rate: number
+          selling_price: number
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1382,6 +1395,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Update: {
           id?: string
@@ -1390,7 +1404,7 @@ export interface Database {
           brand?: string | null
           model?: string
           max_capacity_kw?: number | null
-          rate?: number
+          selling_price?: number
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1403,6 +1417,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Relationships: []
       }
@@ -1415,7 +1430,7 @@ export interface Database {
           model: string
           phases: number
           is_smart: boolean
-          rate: number
+          selling_price: number
           gst_pct: number
           description: string | null
           is_active: boolean
@@ -1428,6 +1443,7 @@ export interface Database {
           row_number: number | null
           imported_at: string | null
           imported_by: string | null
+          buy_price: number
         }
         Insert: {
           id?: string
@@ -1437,7 +1453,7 @@ export interface Database {
           model: string
           phases?: number
           is_smart?: boolean
-          rate: number
+          selling_price: number
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1450,6 +1466,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Update: {
           id?: string
@@ -1459,7 +1476,7 @@ export interface Database {
           model?: string
           phases?: number
           is_smart?: boolean
-          rate?: number
+          selling_price?: number
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1472,6 +1489,7 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
         }
         Relationships: []
       }
@@ -1490,7 +1508,7 @@ export interface Database {
           wastage_pct: number
           fastener_weight_pct: number
           base_weight_kg: number
-          flat_rate: number | null
+          selling_price: number | null
           gst_pct: number
           description: string | null
           is_active: boolean
@@ -1505,6 +1523,7 @@ export interface Database {
           imported_at: string | null
           imported_by: string | null
           per_watt_rate: number | null
+          buy_price: number
         }
         Insert: {
           id?: string
@@ -1520,7 +1539,7 @@ export interface Database {
           wastage_pct?: number
           fastener_weight_pct?: number
           base_weight_kg?: number
-          flat_rate?: number | null
+          selling_price?: number | null
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1535,6 +1554,7 @@ export interface Database {
           imported_at?: string | null
           imported_by?: string | null
           per_watt_rate?: number | null
+          buy_price?: number
         }
         Update: {
           id?: string
@@ -1550,7 +1570,7 @@ export interface Database {
           wastage_pct?: number
           fastener_weight_pct?: number
           base_weight_kg?: number
-          flat_rate?: number | null
+          selling_price?: number | null
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1565,6 +1585,7 @@ export interface Database {
           imported_at?: string | null
           imported_by?: string | null
           per_watt_rate?: number | null
+          buy_price?: number
         }
         Relationships: []
       }
@@ -1576,8 +1597,6 @@ export interface Database {
           model: string
           wattage_w: number
           panel_type: string
-          rate_per_watt: number
-          rate_per_panel: number | null
           gst_pct: number
           description: string | null
           is_active: boolean
@@ -1591,6 +1610,8 @@ export interface Database {
           row_number: number | null
           imported_at: string | null
           imported_by: string | null
+          buy_price: number
+          selling_price: number
         }
         Insert: {
           id?: string
@@ -1599,8 +1620,6 @@ export interface Database {
           model: string
           wattage_w: number
           panel_type?: string
-          rate_per_watt: number
-          rate_per_panel?: number | null
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1614,6 +1633,8 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
+          selling_price?: number
         }
         Update: {
           id?: string
@@ -1622,8 +1643,6 @@ export interface Database {
           model?: string
           wattage_w?: number
           panel_type?: string
-          rate_per_watt?: number
-          rate_per_panel?: number | null
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1637,6 +1656,8 @@ export interface Database {
           row_number?: number | null
           imported_at?: string | null
           imported_by?: string | null
+          buy_price?: number
+          selling_price?: number
         }
         Relationships: []
       }
@@ -2761,6 +2782,8 @@ export interface Database {
           line_subtotal: number
           created_at: string
           updated_at: string
+          is_gst_overridden: boolean
+          original_gst: number | null
         }
         Insert: {
           id?: string
@@ -2784,6 +2807,8 @@ export interface Database {
           line_subtotal?: number
           created_at?: string
           updated_at?: string
+          is_gst_overridden?: boolean
+          original_gst?: number | null
         }
         Update: {
           id?: string
@@ -2807,6 +2832,8 @@ export interface Database {
           line_subtotal?: number
           created_at?: string
           updated_at?: string
+          is_gst_overridden?: boolean
+          original_gst?: number | null
         }
         Relationships: []
       }
@@ -3128,42 +3155,6 @@ export interface Database {
           net_meter_qty?: number | null
           la_id?: string | null
           la_qty?: number | null
-        }
-        Relationships: []
-      }
-      rate_master: {
-        Row: {
-          id: string
-          org_id: string
-          bom_item_id: string
-          override_rate: number
-          is_active: boolean
-          changed_by: string | null
-          version: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          org_id: string
-          bom_item_id: string
-          override_rate: number
-          is_active?: boolean
-          changed_by?: string | null
-          version?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          org_id?: string
-          bom_item_id?: string
-          override_rate?: number
-          is_active?: boolean
-          changed_by?: string | null
-          version?: number
-          created_at?: string
-          updated_at?: string
         }
         Relationships: []
       }

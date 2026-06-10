@@ -328,3 +328,138 @@ export const CommunicationDeviceORM = {
     return true;
   }
 };
+
+// Structure Components, BOM, Add-ons and Presets Types
+export type EqStructureComponentRow = Database['public']['Tables']['eq_structure_components']['Row'];
+export type EqStructureComponentInsert = Database['public']['Tables']['eq_structure_components']['Insert'];
+export type EqStructureComponentUpdate = Database['public']['Tables']['eq_structure_components']['Update'];
+
+export type EqStructureBomRow = Database['public']['Tables']['eq_structure_bom']['Row'];
+export type EqStructureBomInsert = Database['public']['Tables']['eq_structure_bom']['Insert'];
+export type EqStructureBomUpdate = Database['public']['Tables']['eq_structure_bom']['Update'];
+
+export type EqStructureAddonRow = Database['public']['Tables']['eq_structure_addons']['Row'];
+export type EqStructureAddonInsert = Database['public']['Tables']['eq_structure_addons']['Insert'];
+export type EqStructureAddonUpdate = Database['public']['Tables']['eq_structure_addons']['Update'];
+
+export type CustomPresetRow = Database['public']['Tables']['custom_presets']['Row'];
+export type CustomPresetInsert = Database['public']['Tables']['custom_presets']['Insert'];
+export type CustomPresetUpdate = Database['public']['Tables']['custom_presets']['Update'];
+
+// Structure Component ORM
+export const StructureComponentORM = {
+  async getAll(orgId?: string) {
+    const query = supabase.from('eq_structure_components').select('*');
+    if (orgId) {
+      query.or(`org_id.eq.${orgId},org_id.is.null`);
+    } else {
+      query.is('org_id', null);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+  },
+  async getByStructureId(structureId: string) {
+    const { data, error } = await supabase.from('eq_structure_components').select('*').eq('structure_id', structureId);
+    if (error) throw error;
+    return data;
+  },
+  async create(item: EqStructureComponentInsert) {
+    const { data, error } = await supabase.from('eq_structure_components').insert(item).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async update(id: string, updates: EqStructureComponentUpdate) {
+    const { data, error } = await supabase.from('eq_structure_components').update(updates).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from('eq_structure_components').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+};
+
+// Structure BOM ORM
+export const StructureBomORM = {
+  async getByStructureId(structureId: string) {
+    const { data, error } = await supabase.from('eq_structure_bom').select('*').eq('structure_id', structureId);
+    if (error) throw error;
+    return data;
+  },
+  async getByComponentId(componentId: string) {
+    const { data, error } = await supabase.from('eq_structure_bom').select('*').eq('component_id', componentId);
+    if (error) throw error;
+    return data;
+  },
+  async create(item: EqStructureBomInsert) {
+    const { data, error } = await supabase.from('eq_structure_bom').insert(item).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from('eq_structure_bom').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+};
+
+// Structure Addon ORM
+export const StructureAddonORM = {
+  async getAll(orgId?: string) {
+    const query = supabase.from('eq_structure_addons').select('*');
+    if (orgId) {
+      query.or(`org_id.eq.${orgId},org_id.is.null`);
+    } else {
+      query.is('org_id', null);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+  },
+  async create(item: EqStructureAddonInsert) {
+    const { data, error } = await supabase.from('eq_structure_addons').insert(item).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async update(id: string, updates: EqStructureAddonUpdate) {
+    const { data, error } = await supabase.from('eq_structure_addons').update(updates).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from('eq_structure_addons').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+};
+
+// Custom Presets ORM
+export const CustomPresetORM = {
+  async getAll(orgId: string) {
+    const { data, error } = await supabase.from('custom_presets').select('*').eq('org_id', orgId);
+    if (error) throw error;
+    return data;
+  },
+  async getById(id: string) {
+    const { data, error } = await supabase.from('custom_presets').select('*').eq('id', id).single();
+    if (error) throw error;
+    return data;
+  },
+  async create(item: CustomPresetInsert) {
+    const { data, error } = await supabase.from('custom_presets').insert(item).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async update(id: string, updates: CustomPresetUpdate) {
+    const { data, error } = await supabase.from('custom_presets').update(updates).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from('custom_presets').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+};

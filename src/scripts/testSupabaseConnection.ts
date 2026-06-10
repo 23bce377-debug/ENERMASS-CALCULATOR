@@ -28,6 +28,7 @@ const tables = [
   'eq_bom_items',
   'eq_communication_devices',
   'rate_master',
+  'eq_accessories',
   'systems',
   'system_items',
   'vendors',
