@@ -299,6 +299,27 @@ export const createQuoteSlice: StateCreator<
       activeQuoteId: quote.quoteId,
     });
 
+    // Upload JSON representation to Supabase Storage Bucket for remote storage
+    try {
+      const fileContent = JSON.stringify(quote, null, 2);
+      const filePath = `${orgId}/${quote.quoteId}.json`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('quotes')
+        .upload(filePath, new Blob([fileContent], { type: 'application/json' }), {
+          contentType: 'application/json',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('[quoteStore] Failed to upload quote JSON to storage bucket:', uploadError.message || uploadError);
+      } else {
+        console.log(`[quoteStore] Successfully uploaded quote JSON to storage bucket: ${filePath}`);
+      }
+    } catch (err) {
+      console.error('[quoteStore] Error uploading quote to storage bucket:', err);
+    }
+
     return quote;
   },
 

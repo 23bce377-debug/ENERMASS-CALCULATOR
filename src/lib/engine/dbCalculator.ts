@@ -1,5 +1,6 @@
 import { Client } from 'pg';
 import * as crypto from 'crypto';
+import { calculateSystem, type CalcInput, type CalcResult } from './calculator';
 
 function getUuid(namespace: string, key: string): string {
   const hash = crypto.createHash('sha1').update(`${namespace}:${key}`).digest('hex');
@@ -129,20 +130,20 @@ export async function calculateSystemFromDb(
 
   // 3. Fetch system items junction rows
   const itemsRes = await client.query(
-    `SELECT 
+    `SELECT
       si.*,
-      p.rate_per_watt as panel_rate_per_watt, p.gst_pct as panel_gst_pct, p.wattage_w as panel_wattage_w,
-      inv.rate as inverter_rate, inv.gst_pct as inverter_gst_pct,
-      bat.rate as battery_rate, bat.gst_pct as battery_gst_pct,
-      sm.rate as solar_meter_rate, sm.gst_pct as solar_meter_gst_pct,
-      nm.rate as net_meter_rate, nm.gst_pct as net_meter_gst_pct,
-      la.rate as la_rate, la.gst_pct as la_gst_pct,
+      (p.selling_price / p.wattage_w) as panel_rate_per_watt, p.gst_pct as panel_gst_pct, p.wattage_w as panel_wattage_w,
+      inv.selling_price as inverter_rate, inv.gst_pct as inverter_gst_pct,
+      bat.selling_price as battery_rate, bat.gst_pct as battery_gst_pct,
+      sm.selling_price as solar_meter_rate, sm.gst_pct as solar_meter_gst_pct,
+      nm.selling_price as net_meter_rate, nm.gst_pct as net_meter_gst_pct,
+      la.selling_price as la_rate, la.gst_pct as la_gst_pct,
       struct.name as struct_name, struct.material as struct_material, struct.roof_mount_type as struct_roof_mount_type,
-      struct.flat_rate as struct_flat_rate, struct.per_watt_rate as struct_per_watt_rate, struct.gst_pct as struct_gst_pct,
+      struct.selling_price as struct_flat_rate, struct.per_watt_rate as struct_per_watt_rate, struct.gst_pct as struct_gst_pct,
       struct.raw_material_rate as struct_raw_material_rate, struct.fabrication_rate as struct_fabrication_rate, struct.galvanizing_rate as struct_galvanizing_rate,
       struct.base_weight_kg as struct_base_weight_kg, struct.wastage_pct as struct_wastage_pct, struct.fastener_weight_pct as struct_fastener_weight_pct,
-      bom.rate as bom_rate, bom.gst_pct as bom_gst_pct,
-      comm.rate as comm_rate, comm.gst_pct as comm_gst_pct
+      bom.selling_price as bom_rate, bom.gst_pct as bom_gst_pct,
+      comm.selling_price as comm_rate, comm.gst_pct as comm_gst_pct
     FROM system_items si
     LEFT JOIN eq_panels p ON si.panel_id = p.id
     LEFT JOIN eq_inverters inv ON si.inverter_id = inv.id
@@ -158,250 +159,126 @@ export async function calculateSystemFromDb(
     [system.id]
   );
 
-  const lines = [];
-  let structureRequirements: DbCalculatorOutput['structureRequirements'] = undefined;
+  // Fetch all active master equipment records (exactly like the frontend store has them cached)
+  const [pRes, invRes, batRes, mRes, laRes, sRes, wlRes, multRes] = await Promise.all([
+    client.query('SELECT * FROM eq_panels WHERE is_active = true'),
+    client.query('SELECT * FROM eq_inverters WHERE is_active = true'),
+    client.query('SELECT * FROM eq_batteries WHERE is_active = true'),
+    client.query('SELECT * FROM eq_meters WHERE is_active = true'),
+    client.query('SELECT * FROM eq_lightning_arresters WHERE is_active = true'),
+    client.query('SELECT * FROM eq_mounting_structures WHERE is_active = true'),
+    client.query('SELECT * FROM structure_weight_lookup'),
+    client.query('SELECT orientation, multiplier FROM eq_orientation_multipliers')
+  ]);
 
-  for (const item of itemsRes.rows) {
-    const descUpper = item.description.toUpperCase();
-    let rate = 0;
-    let qty = Number(item.default_qty || 0);
-    let gstPct = 0.18;
-    let remarks = item.remarks || '';
-    let unit = item.unit || 'Nos';
+  const dbPanels = pRes.rows.map(p => ({
+    id: p.id,
+    brand: p.brand,
+    model: p.model,
+    wattage: Number(p.wattage_w),
+    ratePerWatt: Number(p.rate_per_watt || (Number(p.selling_price) / Number(p.wattage_w))),
+    gst_pct: Number(p.gst_pct)
+  }));
 
-    // Apply equipment selection overrides if matching description
-    if (descUpper === 'PANEL') {
-      const panelId = input.equipmentSelection?.panelId;
-      let pRatePerWatt = Number(item.panel_rate_per_watt || 0);
-      let pGstPct = Number(item.panel_gst_pct || 0.05);
-      let pWattage = Number(item.panel_wattage_w || 550);
-      if (panelId) {
-        const pRes = await client.query('SELECT * FROM eq_panels WHERE id = $1', [panelId]);
-        if (pRes.rows.length > 0) {
-          pRatePerWatt = Number(pRes.rows[0].rate_per_watt || 0);
-          pGstPct = Number(pRes.rows[0].gst_pct || 0.05);
-          pWattage = Number(pRes.rows[0].wattage_w || 550);
-        }
-      }
-      rate = pRatePerWatt * pWattage;
-      gstPct = pGstPct;
-    } 
-    else if (descUpper === 'INVERTER') {
-      const inverterId = input.equipmentSelection?.inverterId;
-      let invRate = Number(item.inverter_rate || 0);
-      let invGst = Number(item.inverter_gst_pct || 0.12);
-      if (inverterId) {
-        const invRes = await client.query('SELECT * FROM eq_inverters WHERE id = $1', [inverterId]);
-        if (invRes.rows.length > 0) {
-          invRate = Number(invRes.rows[0].rate || 0);
-          invGst = Number(invRes.rows[0].gst_pct || 0.12);
-        }
-      }
-      rate = invRate;
-      gstPct = invGst;
-    } 
-    else if (descUpper === 'BATTERY') {
-      const batteryId = input.equipmentSelection?.batteryId;
-      let batRate = Number(item.battery_rate || 0);
-      let batGst = Number(item.battery_gst_pct || 0.12);
-      if (batteryId) {
-        const batRes = await client.query('SELECT * FROM eq_batteries WHERE id = $1', [batteryId]);
-        if (batRes.rows.length > 0) {
-          batRate = Number(batRes.rows[0].rate || 0);
-          batGst = Number(batRes.rows[0].gst_pct || 0.12);
-        }
-      }
-      rate = batRate;
-      gstPct = batGst;
-    }
-    else if (descUpper.includes('SOLAR METER')) {
-      const meterId = input.equipmentSelection?.solarMeterId;
-      let mRate = Number(item.solar_meter_rate || 0);
-      let mGst = Number(item.solar_meter_gst_pct || 0.18);
-      if (meterId) {
-        const mRes = await client.query('SELECT * FROM eq_meters WHERE id = $1', [meterId]);
-        if (mRes.rows.length > 0) {
-          mRate = Number(mRes.rows[0].rate || 0);
-          mGst = Number(mRes.rows[0].gst_pct || 0.18);
-        }
-      }
-      rate = mRate;
-      gstPct = mGst;
-    }
-    else if (descUpper.includes('NET METER')) {
-      const meterId = input.equipmentSelection?.netMeterId;
-      let mRate = Number(item.net_meter_rate || 0);
-      let mGst = Number(item.net_meter_gst_pct || 0.18);
-      if (meterId) {
-        const mRes = await client.query('SELECT * FROM eq_meters WHERE id = $1', [meterId]);
-        if (mRes.rows.length > 0) {
-          mRate = Number(mRes.rows[0].rate || 0);
-          mGst = Number(mRes.rows[0].gst_pct || 0.18);
-        }
-      }
-      rate = mRate;
-      gstPct = mGst;
-    }
-    else if (descUpper.includes('LIGHTNING') || descUpper === 'L/A' || descUpper === 'LIGHTNING ARRESTER') {
-      const laId = input.equipmentSelection?.lightningArresterId;
-      let laRate = Number(item.la_rate || 0);
-      let laGst = Number(item.la_gst_pct || 0.18);
-      if (laId) {
-        const laRes = await client.query('SELECT * FROM eq_lightning_arresters WHERE id = $1', [laId]);
-        if (laRes.rows.length > 0) {
-          laRate = Number(laRes.rows[0].rate || 0);
-          laGst = Number(laRes.rows[0].gst_pct || 0.18);
-        }
-      }
-      rate = laRate;
-      gstPct = laGst;
-    }
-    else if (descUpper === 'STRUCTURE') {
-      const structId = input.equipmentSelection?.structureId || item.structure_id;
-      let structRow = item;
-      if (input.equipmentSelection?.structureId) {
-        const sRes = await client.query('SELECT * FROM eq_mounting_structures WHERE id = $1', [structId]);
-        if (sRes.rows.length > 0) {
-          const r = sRes.rows[0];
-          structRow = {
-            ...item,
-            struct_name: r.name,
-            struct_material: r.material,
-            struct_roof_mount_type: r.roof_mount_type,
-            struct_flat_rate: r.flat_rate,
-            struct_per_watt_rate: r.per_watt_rate,
-            struct_gst_pct: r.gst_pct,
-            struct_raw_material_rate: r.raw_material_rate,
-            struct_fabrication_rate: r.fabrication_rate,
-            struct_galvanizing_rate: r.galvanizing_rate,
-            struct_base_weight_kg: r.base_weight_kg,
-            struct_wastage_pct: r.wastage_pct,
-            struct_fastener_weight_pct: r.fastener_weight_pct
-          };
-        }
-      }
+  const dbInverters = invRes.rows.map(inv => ({
+    id: inv.id,
+    brand: inv.brand,
+    model: inv.model,
+    rate: Number(inv.selling_price || inv.rate),
+    capacityKW: Number(inv.capacity_kw),
+    gst_pct: Number(inv.gst_pct)
+  }));
 
-      if (structRow.struct_name) {
-        gstPct = Number(structRow.struct_gst_pct || 0.18);
-        if (structRow.struct_flat_rate !== null && Number(structRow.struct_flat_rate) > 0) {
-          rate = Number(structRow.struct_flat_rate);
-          qty = Number(item.default_qty || 1);
-          unit = 'Set';
-          structureRequirements = {
-            structureName: structRow.struct_name,
-            material: structRow.struct_material,
-            roofMountType: structRow.struct_roof_mount_type,
-            baseWeightKg: 0,
-            wastagePct: 0,
-            fastenerWeightPct: 0,
-            pricingMode: 'flat'
-          };
-        } 
-        else if (structRow.struct_per_watt_rate !== null && Number(structRow.struct_per_watt_rate) > 0) {
-          rate = Number(structRow.struct_per_watt_rate) * capacity * 1000;
-          qty = 1;
-          unit = 'Set';
-          structureRequirements = {
-            structureName: structRow.struct_name,
-            material: structRow.struct_material,
-            roofMountType: structRow.struct_roof_mount_type,
-            baseWeightKg: 0,
-            wastagePct: 0,
-            fastenerWeightPct: 0,
-            pricingMode: 'per_watt'
-          };
-        } 
-        else {
-          // Weight-based calculation
-          const lookupRes = await client.query(
-            `SELECT * FROM structure_weight_lookup 
-             WHERE structure_id = $1 AND $2 >= capacity_kw_min AND $2 <= capacity_kw_max LIMIT 1`,
-            [structId, capacity]
-          );
+  const dbBatteries = batRes.rows.map(bat => ({
+    id: bat.id,
+    brand: bat.brand,
+    model: bat.model,
+    rate: Number(bat.selling_price || bat.rate),
+    gst_pct: Number(bat.gst_pct)
+  }));
 
-          let lookupWeight = 0;
-          if (lookupRes.rows.length > 0) {
-            lookupWeight = Number(lookupRes.rows[0].total_weight_kg);
-          }
+  const dbMeters = mRes.rows.map(m => ({
+    id: m.id,
+    brand: m.brand,
+    model: m.model,
+    rate: Number(m.selling_price || m.rate),
+    gst_pct: Number(m.gst_pct),
+    description: m.description || `${m.brand || ''} ${m.model || ''}`.trim(),
+    meter_type: m.meter_type
+  }));
 
-          const baseWeight = Number(structRow.struct_base_weight_kg || 0);
-          const wastage = Number(structRow.struct_wastage_pct || 0.05);
-          const fasteners = Number(structRow.struct_fastener_weight_pct || 0.02);
+  const dbLAs = laRes.rows.map(la => ({
+    id: la.id,
+    brand: la.brand,
+    model: la.model,
+    rate: Number(la.selling_price || la.rate),
+    gst_pct: Number(la.gst_pct),
+    description: la.description || `${la.brand || ''} ${la.model || ''}`.trim()
+  }));
 
-          const finalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
-          const ratePerKg = Number(structRow.struct_raw_material_rate || 0) + 
-                            Number(structRow.struct_fabrication_rate || 0) + 
-                            Number(structRow.struct_galvanizing_rate || 0);
+  const sel = input.equipmentSelection || {};
 
-          qty = finalWeight;
-          rate = ratePerKg;
-          unit = 'kg';
-          remarks = `${structRow.struct_name} (${lookupWeight.toFixed(1)}kg lookup)`;
+  // Resolve default selections from junction rows if not overridden
+  const selectedPanelId = sel.panelId || itemsRes.rows.find(i => i.description.toUpperCase() === 'PANEL')?.panel_id;
+  const selectedInverterId = sel.inverterId || itemsRes.rows.find(i => i.description.toUpperCase() === 'INVERTER')?.inverter_id;
+  const selectedBatteryId = sel.batteryId || itemsRes.rows.find(i => i.description.toUpperCase() === 'BATTERY')?.battery_id;
+  const selectedSolarMeterId = sel.solarMeterId || itemsRes.rows.find(i => i.description.toUpperCase().includes('SOLAR METER'))?.solar_meter_id;
+  const selectedNetMeterId = sel.netMeterId || itemsRes.rows.find(i => i.description.toUpperCase().includes('NET METER'))?.net_meter_id;
+  const selectedLAId = sel.lightningArresterId || itemsRes.rows.find(i => i.description.toUpperCase().includes('LIGHTNING') || i.description.toUpperCase() === 'L/A' || i.description.toUpperCase() === 'LIGHTNING ARRESTER')?.la_id;
+  const selectedStructureId = sel.structureId || itemsRes.rows.find(i => i.description.toUpperCase() === 'STRUCTURE')?.structure_id;
 
-          structureRequirements = {
-            structureName: structRow.struct_name,
-            material: structRow.struct_material,
-            roofMountType: structRow.struct_roof_mount_type,
-            baseWeightKg: baseWeight,
-            wastagePct: wastage,
-            fastenerWeightPct: fasteners,
-            lookupWeightKg: lookupWeight,
-            totalWeightKg: finalWeight,
-            ratePerKg: ratePerKg,
-            pricingMode: 'weight'
-          };
-        }
-      }
-    } 
-    else if (item.bom_item_id) {
-      rate = Number(item.bom_rate || 0);
-      gstPct = Number(item.bom_gst_pct || 0.18);
-    } 
-    else if (item.comm_device_id) {
-      rate = Number(item.comm_rate || 0);
-      gstPct = Number(item.comm_gst_pct || 0.18);
-    }
+  // Derive fallbacks from loaded active arrays for optional fields
+  const dbDefaultSolarMeterId = dbMeters.find(m => m.meter_type === 'solar_meter')?.id;
+  const dbDefaultNetMeterId = dbMeters.find(m => m.meter_type === 'net_meter')?.id;
+  const dbDefaultLAId = dbLAs[0]?.id;
 
-    const lineTotal = qty * rate;
-    const lineGST = lineTotal * gstPct;
-    const lineSubTotal = lineTotal + lineGST;
+  const finalSolarMeterId = selectedSolarMeterId || dbDefaultSolarMeterId;
+  const finalNetMeterId = selectedNetMeterId || dbDefaultNetMeterId;
+  const finalLAId = selectedLAId || dbDefaultLAId;
 
-    lines.push({
-      description: item.description,
-      section: item.section,
-      qty,
-      rate,
-      gstPct,
-      lineTotal,
-      lineGST,
-      lineSubTotal,
-      remarks,
-      unit
-    });
-  }
+  const dbStructures = sRes.rows.map(s => ({
+    id: s.id,
+    name: s.name,
+    material: s.material,
+    roof_mount_type: s.roof_mount_type,
+    flat_rate: s.flat_rate !== undefined ? s.flat_rate : s.selling_price,
+    selling_price: s.selling_price || s.flat_rate,
+    per_watt_rate: s.per_watt_rate,
+    gst_pct: s.gst_pct,
+    raw_material_rate: s.raw_material_rate,
+    fabrication_rate: s.fabrication_rate,
+    galvanizing_rate: s.galvanizing_rate,
+    base_weight_kg: s.base_weight_kg,
+    wastage_pct: s.wastage_pct,
+    fastener_weight_pct: s.fastener_weight_pct
+  }));
 
-  // 4. Calculate aggregates
-  const costBeforeGST = lines.reduce((sum, l) => sum + l.lineTotal, 0);
-  const totalInputGST = lines.reduce((sum, l) => sum + l.lineGST, 0);
-  const totalIncGST = costBeforeGST + totalInputGST;
+  const dbWeightLookups = wlRes.rows.map(w => ({
+    id: w.id,
+    structure_id: w.structure_id,
+    capacity_kw_min: Number(w.capacity_kw_min),
+    capacity_kw_max: Number(w.capacity_kw_max),
+    panel_qty: w.panel_qty,
+    weight_per_panel_kg: Number(w.weight_per_panel_kg),
+    bracket_fixed_weight: Number(w.bracket_fixed_weight),
+    total_weight_kg: Number(w.total_weight_kg)
+  }));
 
-  // 5. Margin & Pricing
+  const dbOrientationMultipliers: Record<string, number> = {};
+  multRes.rows.forEach(r => {
+    dbOrientationMultipliers[r.orientation] = Number(r.multiplier);
+  });
+
   const projectType = input.pricingContext?.projectType || 'residential';
   const targetMarginPct = input.pricingContext?.targetMarginPct !== undefined
     ? Number(input.pricingContext.targetMarginPct)
-    : Number(system.targetMarginPct);
+    : Number(system.target_margin_pct);
 
   const gstOnOutput = Number(stateRule.gst_on_output);
 
-  const mrpExclGST = costBeforeGST * (1 + targetMarginPct);
-  const outputGstAmount = mrpExclGST * gstOnOutput;
-  const mrpInclGST = mrpExclGST + outputGstAmount;
-  const marginAmount = mrpExclGST - costBeforeGST;
-
-  const finalCustomerPrice = mrpInclGST;
-
-  // 6. Subsidy Slabs
-  let subsidyAmount = 0;
+  // Load schemes and slabs
+  let slabs: any[] = [];
+  let maxCapacity = undefined;
   let schemeName = undefined;
 
   if (projectType === 'residential') {
@@ -421,90 +298,216 @@ export async function calculateSystemFromDb(
       );
       const override = overrideRes.rows[0];
 
-      const maxCapacity = override && override.max_absolute_override !== null
+      maxCapacity = override && override.max_absolute_override !== null
         ? Number(override.max_absolute_override)
         : Number(scheme.max_capacity_kw);
-
-      const capacityForSubsidy = Math.min(capacity, maxCapacity);
 
       const slabsRes = await client.query(
         `SELECT * FROM scheme_slabs WHERE scheme_id = $1 ORDER BY slab_index ASC`,
         [scheme.id]
       );
-      const slabs = slabsRes.rows;
-
-      let subsidy = 0;
-      for (const slab of slabs) {
-        const start = Number(slab.start_kw);
-        if (capacityForSubsidy <= start) {
-          break;
-        }
-        if (slab.is_fixed_amount) {
-          subsidy += Number(slab.fixed_amount ?? 0);
-        } else {
-          const end = slab.end_kw === null ? capacityForSubsidy : Math.min(capacityForSubsidy, Number(slab.end_kw));
-          subsidy += (end - start) * Number(slab.rate_per_kw);
-        }
-      }
-
-      let finalSubsidy = subsidy;
-      if (scheme.max_absolute_subsidy) {
-        finalSubsidy = Math.min(finalSubsidy, Number(scheme.max_absolute_subsidy));
-      }
-      if (override && override.max_absolute_override) {
-        finalSubsidy = Math.min(finalSubsidy, Number(override.max_absolute_override));
-      }
-      if (override && override.additional_state_subsidy) {
-        finalSubsidy += Number(override.additional_state_subsidy);
-      }
-      subsidyAmount = finalSubsidy;
+      slabs = slabsRes.rows;
     }
   }
 
-  const beneficiaryContribution = Math.max(0, finalCustomerPrice - subsidyAmount);
+  // Construct generic system items for matching and fallback
+  const systemItems = itemsRes.rows.map(item => {
+    const descUpper = item.description.toUpperCase();
+    let rate = 0;
+    let gstPct = 0.18;
+    
+    if (item.bom_item_id) {
+      rate = Number(item.bom_rate || 0);
+      gstPct = Number(item.bom_gst_pct || 0.18);
+    } else if (item.comm_device_id) {
+      rate = Number(item.comm_rate || 0);
+      gstPct = Number(item.comm_gst_pct || 0.12);
+    }
+    
+    return {
+      description: item.description,
+      qty: Number(item.default_qty || 0),
+      ratePerUnit: rate,
+      gstPct: gstPct,
+      unit: item.unit || 'Nos',
+      remarks: item.remarks || '',
+    };
+  });
 
-  // 7. Energy projections (database state rule driven)
-  const sunHours = Number(stateRule.sun_hours_per_day);
-  const perfRatio = Number(stateRule.performance_ratio);
-  const dailyGen = capacity * sunHours * perfRatio;
-  const annualGen = dailyGen * 365;
-  
-  const tariff = Number(stateRule.grid_tariff_inr);
-  const annualSavings = annualGen * tariff;
-  const payback = annualSavings > 0 ? beneficiaryContribution / annualSavings : 0;
+  const mockSystem: any = {
+    id: system.id,
+    name: system.name,
+    category: system.category,
+    capacityKW: capacity,
+    panelWattage: system.panel_wattage_w,
+    panelQty: system.panel_qty,
+    targetMarginPct: Number(system.target_margin_pct),
+    items: systemItems
+  };
+
+  const stateData = {
+    [stateRule.state_name]: {
+      name: stateRule.state_name,
+      sunHoursPerDay: Number(stateRule.sun_hours_per_day),
+      performanceRatio: Number(stateRule.performance_ratio),
+      labourMultiplier: Number(stateRule.labour_multiplier),
+      gstOnOutput: Number(stateRule.gst_on_output),
+      gridTariffInr: Number(stateRule.grid_tariff_inr),
+      subsidyRules: []
+    }
+  };
+
+  const selectedInverterMix = selectedInverterId ? { [selectedInverterId]: Number(system.inverter_qty || 1) } : {};
+  const selectedBatteryMix = selectedBatteryId ? { [selectedBatteryId]: Number(system.battery_qty || 1) } : {};
+  const panelMix = selectedPanelId ? { [selectedPanelId]: Number(system.panel_qty || system.panel_qty || 0) } : {};
+
+  // Invoke the single source of truth pure function calculateSystem
+  const calcResult: CalcResult = calculateSystem({
+    systemId: system.id,
+    systems: [mockSystem],
+    state: stateRule.state_name,
+    projectType: projectType,
+    targetMarginPct: targetMarginPct,
+    gstOnOutput: gstOnOutput,
+    stateData,
+    slabs,
+    maxSubsidyCapacityKW: maxCapacity,
+    
+    selectedPanelId,
+    panelMix,
+    selectedInverterMix,
+    selectedBatteryMix,
+    
+    structureId: selectedStructureId,
+    structurePricingMode: input.pricingContext?.priceType === 'premium' ? 'flat' : undefined,
+    
+    solarMeterId: finalSolarMeterId,
+    solarMeterQty: 1,
+    netMeterId: finalNetMeterId,
+    netMeterQty: 1,
+    
+    lightningArresterId: finalLAId,
+    lightningArresterQty: 1,
+    
+    dbPanels,
+    dbInverters,
+    dbBatteries,
+    dbMeters,
+    dbLAs,
+    dbStructures,
+    dbWeightLookups,
+    dbOrientationMultipliers
+  });
+
+  // Map BOM line results and assign parent section names
+  const lines = calcResult.lines.map(line => {
+    const desc = line.description.toUpperCase();
+    let section = 'services';
+    
+    if (desc.startsWith('PANEL')) section = 'solar_panels';
+    else if (desc.startsWith('INVERTER')) section = 'power_electronics';
+    else if (desc.startsWith('BATTERY')) section = 'power_electronics';
+    else if (desc.includes('SOLAR METER')) section = 'metering';
+    else if (desc.includes('NET METER')) section = 'metering';
+    else if (desc.includes('STRUCTURE')) section = 'mounting_structure';
+    else if (desc.includes('LIGHTNING') || desc === 'L/A' || desc === 'LIGHTNING ARRESTER') section = 'earthing';
+    else {
+      const matched = itemsRes.rows.find(i => 
+        i.description.toUpperCase() === desc || 
+        desc.includes(i.description.toUpperCase())
+      );
+      if (matched) {
+        section = matched.section;
+      }
+    }
+
+    return {
+      description: line.description,
+      section,
+      qty: line.effectiveQty,
+      rate: line.effectiveRate,
+      gstPct: line.effectiveGstPct,
+      lineTotal: line.lineTotal,
+      lineGST: line.lineGST,
+      lineSubTotal: line.lineSubTotal,
+      remarks: line.remarks || '',
+      unit: line.unit || 'Nos'
+    };
+  });
+
+  // Re-generate structure requirements object
+  let structureRequirements = undefined;
+  if (selectedStructureId) {
+    const struct = dbStructures.find(s => s.id === selectedStructureId);
+    if (struct) {
+      const mode = input.pricingContext?.priceType === 'premium' ? 'flat' : (struct.per_watt_rate ? 'per_watt' : 'weight');
+      if (mode === 'weight') {
+        const wl = dbWeightLookups.find(w => w.structure_id === struct.id);
+        const lookupWeight = wl ? wl.total_weight_kg : 0;
+        const baseWeight = struct.base_weight_kg;
+        const wastage = struct.wastage_pct;
+        const fasteners = struct.fastener_weight_pct;
+        const finalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
+        const ratePerKg = Number(struct.raw_material_rate || 0) + Number(struct.fabrication_rate || 0) + Number(struct.galvanizing_rate || 0);
+        
+        structureRequirements = {
+          structureName: struct.name,
+          material: struct.material,
+          roofMountType: struct.roof_mount_type,
+          baseWeightKg: baseWeight,
+          wastagePct: wastage,
+          fastenerWeightPct: fasteners,
+          lookupWeightKg: lookupWeight,
+          totalWeightKg: finalWeight,
+          ratePerKg,
+          pricingMode: 'weight'
+        };
+      } else {
+        structureRequirements = {
+          structureName: struct.name,
+          material: struct.material,
+          roofMountType: struct.roof_mount_type,
+          baseWeightKg: 0,
+          wastagePct: 0,
+          fastenerWeightPct: 0,
+          pricingMode: mode
+        };
+      }
+    }
+  }
 
   return {
     lines,
     structureRequirements,
     pricing: {
-      costBeforeGST,
-      totalInputGST,
-      totalIncGST,
-      mrpExclGST,
-      mrpInclGST,
-      discountAmount: 0
+      costBeforeGST: calcResult.costBeforeGST,
+      totalInputGST: calcResult.totalInputGST,
+      totalIncGST: calcResult.totalIncGST,
+      mrpExclGST: calcResult.mrpExclGST,
+      mrpInclGST: calcResult.mrpInclGST,
+      discountAmount: calcResult.discountAmount
     },
     gst: {
       gstOnOutput,
-      outputGstAmount
+      outputGstAmount: calcResult.mrpExclGST * gstOnOutput
     },
     subsidy: {
       schemeName,
-      subsidyAmount
+      subsidyAmount: calcResult.subsidyAmount
     },
     margin: {
-      targetMarginPct,
-      marginAmount
+      targetMarginPct: calcResult.effectiveMarginPct,
+      marginAmount: calcResult.marginAmount
     },
     customerPrice: {
-      finalCustomerPrice,
-      beneficiaryContribution
+      finalCustomerPrice: calcResult.finalCustomerPrice,
+      beneficiaryContribution: calcResult.beneficiaryContribution
     },
     energy: {
-      dailyGenerationKWh: dailyGen,
-      annualGenerationKWh: annualGen,
-      annualSavingsINR: annualSavings,
-      paybackYears: payback
+      dailyGenerationKWh: calcResult.dailyGenerationKWh,
+      annualGenerationKWh: calcResult.annualGenerationKWh,
+      annualSavingsINR: calcResult.annualSavingsINR,
+      paybackYears: calcResult.paybackYears
     }
   };
 }

@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
-import { Check, X, Sun, Cpu, Battery, Plus, Minus, ChevronDown, Edit3, RotateCcw, SlidersHorizontal, Layers, Package2, Wrench, Bolt, Droplets, Construction, Milestone, ChevronUp } from 'lucide-react';
+import { Check, X, Sun, Cpu, Battery, Plus, Minus, ChevronDown, Edit3, RotateCcw, SlidersHorizontal, Layers, Package2, Wrench, Bolt, Droplets, Construction, Milestone, ChevronUp, Search } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
 import type { PanelBrand, InverterBrand, BatteryBrand } from '@/lib/data/masters';
 import { useSettings } from '@/lib/hooks/useSettings';
@@ -72,6 +72,29 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 
 function formatRate(val: number): string {
   return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 }).format(val);
+}
+
+function fuzzySearch(text: string, query: string): boolean {
+  if (!query) return true;
+  const target = text.toLowerCase();
+  const search = query.toLowerCase();
+  
+  if (target.includes(search)) return true;
+  
+  let searchIdx = 0;
+  for (let i = 0; i < target.length; i++) {
+    if (target[i] === search[searchIdx]) {
+      searchIdx++;
+      if (searchIdx === search.length) return true;
+    }
+  }
+  
+  const words = search.split(/\s+/).filter(Boolean);
+  if (words.length > 1) {
+    return words.every(word => target.includes(word));
+  }
+  
+  return false;
 }
 
 function buildOptimalMix<T extends { id: string; capacity: number; rate: number }>(
@@ -418,6 +441,7 @@ function PanelTable({
     qty: '',
   });
 
+  const [searchQuery, setSearchQuery] = useState('');
 
   const filteredBrands = useMemo(() => {
     const min = parseFloat(range.min);
@@ -425,9 +449,13 @@ function PanelTable({
     return brands.filter((brand) => {
       if (!isNaN(min) && brand.wattage < min) return false;
       if (!isNaN(max) && brand.wattage > max) return false;
+      if (searchQuery) {
+        const searchText = `${brand.brand} ${brand.model} ${brand.type}`.toLowerCase();
+        return fuzzySearch(searchText, searchQuery);
+      }
       return true;
     });
-  }, [brands, range.min, range.max]);
+  }, [brands, range.min, range.max, searchQuery]);
 
   const selectedPanelQty = useMemo(
     () => Object.values(panelMix).reduce((sum, qty) => sum + (Number.isFinite(qty) ? qty : 0), 0),
@@ -645,13 +673,30 @@ function PanelTable({
           </div>
         </div>
       </div>
-      <RangeFilter
-        label="Wattage Filter (W)"
-        minPlaceholder="Min"
-        maxPlaceholder="Max"
-        range={range}
-        onChange={onRangeChange}
-      />
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
+        <div className="flex-1 space-y-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-text-muted">Search Panels</p>
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Fuzzy search brand, model, type (e.g. 'tata Mono' or 'mono PERC')..."
+              className="w-full pl-8 pr-3 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
+            />
+          </div>
+        </div>
+        <div className="w-full md:w-64 shrink-0">
+          <RangeFilter
+            label="Wattage Filter (W)"
+            minPlaceholder="Min"
+            maxPlaceholder="Max"
+            range={range}
+            onChange={onRangeChange}
+          />
+        </div>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
@@ -913,15 +958,21 @@ function InverterTable({
   onAdd: (brand: InverterBrand) => void;
   onRemove: (id: string) => void;
 }) {
+  const [searchQuery, setSearchQuery] = useState('');
+
   const filteredBrands = useMemo(() => {
     const min = parseFloat(range.min);
     const max = parseFloat(range.max);
     return brands.filter((brand) => {
       if (!isNaN(min) && brand.capacityKW < min) return false;
       if (!isNaN(max) && brand.capacityKW > max) return false;
+      if (searchQuery) {
+        const searchText = `${brand.brand} ${brand.model} ${brand.type}`.toLowerCase();
+        return fuzzySearch(searchText, searchQuery);
+      }
       return true;
     });
-  }, [brands, range.min, range.max]);
+  }, [brands, range.min, range.max, searchQuery]);
 
   const activeInverters = useMemo(() => {
     const mixEntries = Object.entries(selectedMix).filter(([, qty]) => qty > 0);
@@ -1032,13 +1083,30 @@ function InverterTable({
         </div>
       </div>
 
-      <RangeFilter
-        label="Capacity Filter (kW)"
-        minPlaceholder="Min"
-        maxPlaceholder="Max"
-        range={range}
-        onChange={onRangeChange}
-      />
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
+        <div className="flex-1 space-y-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-text-muted">Search Inverters</p>
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Fuzzy search brand, model, type (e.g. 'growatt' or 'hybrid')..."
+              className="w-full pl-8 pr-3 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
+            />
+          </div>
+        </div>
+        <div className="w-full md:w-64 shrink-0">
+          <RangeFilter
+            label="Capacity Filter (kW)"
+            minPlaceholder="Min"
+            maxPlaceholder="Max"
+            range={range}
+            onChange={onRangeChange}
+          />
+        </div>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
@@ -1234,15 +1302,21 @@ function BatteryTable({
   onAdd: (brand: BatteryBrand) => void;
   onRemove: (id: string) => void;
 }) {
+  const [searchQuery, setSearchQuery] = useState('');
+
   const filteredBrands = useMemo(() => {
     const min = parseFloat(range.min);
     const max = parseFloat(range.max);
     return brands.filter((brand) => {
       if (!isNaN(min) && brand.capacityKWh < min) return false;
       if (!isNaN(max) && brand.capacityKWh > max) return false;
+      if (searchQuery) {
+        const searchText = `${brand.brand} ${brand.model} ${brand.chemistry}`.toLowerCase();
+        return fuzzySearch(searchText, searchQuery);
+      }
       return true;
     });
-  }, [brands, range.min, range.max]);
+  }, [brands, range.min, range.max, searchQuery]);
 
   const activeBatteries = useMemo(() => {
     const mixEntries = Object.entries(selectedMix).filter(([, qty]) => qty > 0);
@@ -1313,13 +1387,30 @@ function BatteryTable({
           {selectedQty} units · {selectedCapacityKWh.toLocaleString('en-IN')} kWh total
         </div>
       </div>
-      <RangeFilter
-        label="Capacity Filter (kWh)"
-        minPlaceholder="Min"
-        maxPlaceholder="Max"
-        range={range}
-        onChange={onRangeChange}
-      />
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
+        <div className="flex-1 space-y-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-text-muted">Search Batteries</p>
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Fuzzy search brand, model, chemistry (e.g. 'tata' or 'LFP')..."
+              className="w-full pl-8 pr-3 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
+            />
+          </div>
+        </div>
+        <div className="w-full md:w-64 shrink-0">
+          <RangeFilter
+            label="Capacity Filter (kWh)"
+            minPlaceholder="Min"
+            maxPlaceholder="Max"
+            range={range}
+            onChange={onRangeChange}
+          />
+        </div>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
@@ -1784,9 +1875,128 @@ function BatteryRateCell({ brand }: { brand: BatteryBrand }) {
   );
 }
 
+// ─── Structure Rate Cell ──────────────────────────────────────────────────────
+function StructureRateCell({
+  struct,
+  pricingMode,
+  rateOverride,
+  onSaveOverride,
+}: {
+  struct: any;
+  pricingMode: 'weight' | 'per_watt' | 'flat';
+  rateOverride: number | null;
+  onSaveOverride: (val: number | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+
+  const defaultRate = useMemo(() => {
+    if (struct.id === 'custom') return 0;
+    if (pricingMode === 'per_watt') return Number(struct.per_watt_rate ?? 0);
+    if (pricingMode === 'flat') return Number(struct.flat_rate ?? 0);
+    return Number(struct.rate_per_kg ?? 0);
+  }, [struct, pricingMode]);
+
+  const currentRate = rateOverride !== null ? rateOverride : defaultRate;
+  const isOverridden = rateOverride !== null && struct.id !== 'custom';
+
+  const handleSave = () => {
+    const val = parseFloat(editValue);
+    if (isNaN(val) || val < 0) {
+      setEditing(false);
+      return;
+    }
+    onSaveOverride(val);
+    setEditing(false);
+  };
+
+  const handleReset = () => {
+    onSaveOverride(null);
+  };
+
+  if (pricingMode === 'weight') {
+    if (struct.id === 'custom') {
+      return (
+        <span className="font-mono text-text-primary text-right font-semibold block">
+          ₹{struct.rate_per_kg.toFixed(2)}/kg
+        </span>
+      );
+    }
+    return (
+      <span className="font-mono text-text-secondary text-right block">
+        ₹{defaultRate.toFixed(2)}/kg
+      </span>
+    );
+  }
+
+  const unitLabel = pricingMode === 'per_watt' ? '/W' : ' Flat';
+
+  if (editing) {
+    return (
+      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+        <span className="text-[10px] text-text-muted">₹</span>
+        <input
+          autoFocus
+          type="number"
+          step={pricingMode === 'per_watt' ? '0.1' : '100'}
+          min="0"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSave();
+            if (e.key === 'Escape') setEditing(false);
+          }}
+          onBlur={handleSave}
+          className="w-16 px-1.5 py-0.5 rounded bg-background border border-accent/50 text-right text-xs font-mono text-text-primary outline-none"
+        />
+        <span className="text-[9px] text-text-muted font-mono">{unitLabel}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-1.5 group/rate" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-col items-end">
+        {isOverridden && (
+          <span className="text-[9px] font-mono text-text-muted line-through">
+            ₹{defaultRate.toFixed(2)}
+            {unitLabel}
+          </span>
+        )}
+        <span className={`text-xs font-mono font-semibold ${isOverridden ? 'text-warning' : 'text-accent'}`}>
+          ₹{currentRate.toFixed(2)}
+          {unitLabel}
+        </span>
+      </div>
+      <button
+        onClick={() => {
+          setEditValue(String(currentRate));
+          setEditing(true);
+        }}
+        className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-accent/10 text-text-muted hover:text-accent transition-all"
+        title="Edit rate"
+      >
+        <Edit3 size={10} />
+      </button>
+      {isOverridden && (
+        <button
+          onClick={handleReset}
+          className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-error/10 text-text-muted hover:text-error transition-all"
+          title="Reset to default"
+        >
+          <RotateCcw size={10} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function StructureConfigTable() {
   const dbStructures = useCalculatorStore((s) => s.dbStructures);
   const dbWeightLookups = useCalculatorStore((s) => s.dbWeightLookups);
+  const dbStructureComponents = useCalculatorStore((s) => s.dbStructureComponents);
+  const dbStructureBom = useCalculatorStore((s) => s.dbStructureBom);
+  const structureComponentMix = useCalculatorStore((s) => s.structureComponentMix);
 
   const selectedStructureId = useCalculatorStore((s) => s.selectedStructureId);
   const structurePricingMode = useCalculatorStore((s) => s.structurePricingMode);
@@ -1804,10 +2014,124 @@ function StructureConfigTable() {
 
   const currentSystemId = useCalculatorStore((s) => s.selectedSystemId);
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
-  
+
   // Resolve current system details (like capacity)
-  const currentSystem = dbSystems.find(sys => sys.id === currentSystemId);
+  const currentSystem = dbSystems.find((sys) => sys.id === currentSystemId);
   const capacityKW = currentSystem?.capacityKW ?? 0;
+  const capacityWatts = capacityKW * 1000;
+
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [materialFilter, setMaterialFilter] = useState<'all' | 'GI' | 'GP'>('all');
+
+  const getStructureRatesAndCost = (struct: any, pricingMode: 'weight' | 'per_watt' | 'flat') => {
+    let rate = 0;
+    let cost = 0;
+    let unit = '';
+
+    const isSelected = struct.id === selectedStructureId;
+
+    if (pricingMode === 'weight') {
+      if (struct.id === 'custom') {
+        const lookupWeight = structureWeightLookupKg ?? 0;
+        const baseWeight = structureBaseWeightOverride ?? 0;
+        const wastage = structureWastageOverride ?? 0.05;
+        const fasteners = structureFastenerOverride ?? 0.02;
+        const rawRate = structureCustomRawRate ?? 0;
+        const fabRate = structureCustomFabricationRate ?? 0;
+        const galvRate = structureCustomGalvanizingRate ?? 0;
+        const ratePerKg = rawRate + fabRate + galvRate;
+        const finalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
+        cost = finalWeight * ratePerKg;
+        rate = ratePerKg;
+        unit = 'kg';
+      } else {
+        const structComponents = dbStructureComponents.filter((c: any) => c.structure_id === struct.id);
+        if (structComponents.length > 0) {
+          let sumCost = 0;
+          structComponents.forEach((c: any) => {
+            let bomEntry = dbStructureBom.find((b: any) =>
+              b.component_id === c.id &&
+              capacityKW >= Number(b.capacity_kw_min) &&
+              capacityKW <= Number(b.capacity_kw_max)
+            );
+            if (!bomEntry && dbStructureBom.length > 0) {
+              const sameCompBom = dbStructureBom.filter((b: any) => b.component_id === c.id);
+              if (sameCompBom.length > 0) {
+                bomEntry = sameCompBom.reduce((prev: any, curr: any) =>
+                  Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
+                );
+              }
+            }
+            const overrideQty = isSelected ? structureComponentMix[c.id] : undefined;
+            const qty = overrideQty !== undefined ? overrideQty : (bomEntry ? Number(bomEntry.qty) : 0);
+            sumCost += qty * Number(c.selling_price);
+          });
+          cost = sumCost;
+          rate = struct.rate_per_kg || 0;
+          unit = 'kg (Itemized)';
+        } else {
+          let lookup = dbWeightLookups.find((l: any) =>
+            l.structure_id === struct.id &&
+            capacityKW >= Number(l.capacity_kw_min) &&
+            capacityKW <= Number(l.capacity_kw_max)
+          );
+          if (!lookup && dbWeightLookups.length > 0) {
+            const sameStructLookups = dbWeightLookups.filter((l: any) => l.structure_id === struct.id);
+            if (sameStructLookups.length > 0) {
+              lookup = sameStructLookups.reduce((prev: any, curr: any) =>
+                Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
+              );
+            }
+          }
+          const lookupWeight = (isSelected && structureWeightLookupKg !== null)
+            ? structureWeightLookupKg
+            : (lookup ? Number(lookup.total_weight_kg) : 0);
+          const baseWeight = (isSelected && structureBaseWeightOverride !== null)
+            ? structureBaseWeightOverride
+            : Number(struct.base_weight_kg ?? 0);
+          const wastage = (isSelected && structureWastageOverride !== null)
+            ? structureWastageOverride
+            : Number(struct.wastage_pct ?? 0.05);
+          const fasteners = (isSelected && structureFastenerOverride !== null)
+            ? structureFastenerOverride
+            : Number(struct.fastener_weight_pct ?? 0.02);
+          const ratePerKg = Number(struct.rate_per_kg ?? 0);
+          const finalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
+          cost = finalWeight * ratePerKg;
+          rate = ratePerKg;
+          unit = 'kg';
+        }
+      }
+    } else if (pricingMode === 'per_watt') {
+      const perWattRate = (isSelected && structureRateOverride !== null)
+        ? structureRateOverride
+        : Number(struct.per_watt_rate ?? 0);
+      rate = perWattRate;
+      cost = capacityWatts * rate;
+      unit = 'W';
+    } else {
+      const flatRate = (isSelected && structureRateOverride !== null)
+        ? structureRateOverride
+        : Number(struct.flat_rate ?? 0);
+      rate = flatRate;
+      cost = rate;
+      unit = 'Flat';
+    }
+
+    return { rate, cost, unit };
+  };
+
+  const filteredStructures = useMemo(() => {
+    return dbStructures.filter((struct: any) => {
+      if (materialFilter !== 'all' && struct.material !== materialFilter) return false;
+      if (searchQuery) {
+        const searchText = `${struct.name} ${struct.material} ${struct.roof_mount_type}`.toLowerCase();
+        return fuzzySearch(searchText, searchQuery);
+      }
+      return true;
+    });
+  }, [dbStructures, materialFilter, searchQuery]);
 
   // Find selected standard structure
   const selectedStructure = useMemo(() => {
@@ -1817,7 +2141,7 @@ function StructureConfigTable() {
   // Find active weight lookup for standard structure
   const activeLookup = useMemo(() => {
     if (!selectedStructureId || selectedStructureId === 'custom' || !capacityKW) return null;
-    return dbWeightLookups.find((l: any) => 
+    return dbWeightLookups.find((l: any) =>
       l.structure_id === selectedStructureId &&
       capacityKW >= Number(l.capacity_kw_min) &&
       capacityKW <= Number(l.capacity_kw_max)
@@ -1862,46 +2186,206 @@ function StructureConfigTable() {
   }, [selectedStructureId, selectedStructure, structureCustomRawRate, structureCustomFabricationRate, structureCustomGalvanizingRate]);
 
   const finalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
-  const totalCost = finalWeight * ratePerKg;
+  const totalCost = selectedStructureId === 'custom'
+    ? getStructureRatesAndCost({ id: 'custom' }, structurePricingMode).cost
+    : (selectedStructure ? getStructureRatesAndCost(selectedStructure, structurePricingMode).cost : 0);
 
   return (
     <div className="space-y-6 p-1 text-xs">
-      {/* ── Structure Selection ── */}
-      <div className="space-y-3">
-        <h4 className="text-xs uppercase font-bold text-text-secondary tracking-wider">Mounting Structure</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-[10px] text-text-muted uppercase mb-1 font-semibold">Select Model</label>
-            <Select
-              value={selectedStructureId || ''}
-              onChange={(v) => setStructureSelection(v === '' ? null : v)}
-              placeholder="None (Unselected)"
-              options={[
-                { value: '', label: 'None (Unselected)' },
-                ...dbStructures.map((struct: any) => ({
-                  value: struct.id,
-                  label: `${struct.name} (${struct.material.replace('_', ' ')})`,
-                })),
-                { value: 'custom', label: 'Custom Structure' },
-              ]}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs text-text-muted">{dbStructures.length} structures available</span>
+        {selectedStructureId && (
+          <button
+            onClick={() => {
+              setStructureSelection(null);
+            }}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs
+              text-error/80 hover:text-error hover:bg-error/10 transition-colors"
+          >
+            <X size={12} />
+            Clear Selection
+          </button>
+        )}
+      </div>
+
+      {/* Search & Filters */}
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
+        <div className="flex-1 space-y-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-text-muted">Search Structures</p>
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Fuzzy search name, material, mount type..."
+              className="w-full pl-8 pr-3 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
             />
           </div>
-
-          {selectedStructureId && (
-            <div>
-              <label className="block text-[10px] text-text-muted uppercase mb-1 font-semibold">Pricing Mode</label>
-              <Select
-                value={structurePricingMode}
-                onChange={(v) => setStructureSelection(selectedStructureId, v as any)}
-                options={[
-                  { value: 'weight', label: 'Weight-based' },
-                  { value: 'per_watt', label: 'Per-watt price' },
-                  { value: 'flat', label: 'Flat price' },
-                ]}
-              />
-            </div>
-          )}
         </div>
+        <div className="space-y-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-text-muted">Material Filter</p>
+          <div className="flex rounded-md border border-border bg-background p-1">
+            {(['all', 'GI', 'GP'] as const).map((mat) => (
+              <button
+                key={mat}
+                onClick={() => setMaterialFilter(mat)}
+                className={`px-3 py-1 rounded text-xs font-semibold uppercase transition-colors ${
+                  materialFilter === mat
+                    ? 'bg-accent text-background'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {mat}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Structure Options Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 px-2 text-text-muted font-medium">Model Name</th>
+              <th className="text-left py-2 px-2 text-text-muted font-medium">Material</th>
+              <th className="text-left py-2 px-2 text-text-muted font-medium">Roof Mount Type</th>
+              <th className="text-right py-2 px-2 text-text-muted font-medium">Elevation</th>
+              <th className="text-right py-2 px-2 text-text-muted font-medium">Base Weight</th>
+              <th className="text-center py-2 px-2 text-text-muted font-medium w-36">Pricing Mode</th>
+              <th className="text-right py-2 px-2 text-text-muted font-medium">Rate / Unit</th>
+              <th className="text-right py-2 px-2 text-text-muted font-medium">Estimated Cost</th>
+              <th className="w-10"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredStructures.map((struct: any) => {
+              const isSelected = struct.id === selectedStructureId;
+              const rowMode = isSelected ? structurePricingMode : (struct.flat_rate !== null ? 'flat' : 'weight');
+              const { rate, cost, unit } = getStructureRatesAndCost(struct, rowMode);
+
+              return (
+                <tr
+                  key={struct.id}
+                  onClick={() => {
+                    setStructureSelection(isSelected ? null : struct.id, rowMode);
+                  }}
+                  className={`border-b border-border/50 cursor-pointer transition-all duration-150
+                    ${isSelected
+                      ? 'bg-accent-dim'
+                      : 'hover:bg-surface-hover'
+                    }`}
+                >
+                  <td className="py-2.5 px-2 font-medium text-text-primary">{struct.name}</td>
+                  <td className="py-2.5 px-2 text-text-secondary">{struct.material}</td>
+                  <td className="py-2.5 px-2 text-text-secondary capitalize">{struct.roof_mount_type.replace(/_/g, ' ')}</td>
+                  <td className="py-2.5 px-2 text-right font-mono text-text-primary">{struct.elevation_height_mm}mm</td>
+                  <td className="py-2.5 px-2 text-right font-mono text-text-primary">{struct.base_weight_kg} kg</td>
+                  <td className="py-2.5 px-2" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      size="sm"
+                      value={rowMode}
+                      onChange={(v) => {
+                        setStructureSelection(struct.id, v as any);
+                      }}
+                      options={[
+                        { value: 'weight', label: 'Weight-based' },
+                        { value: 'per_watt', label: 'Per-watt' },
+                        { value: 'flat', label: 'Flat rate' },
+                      ]}
+                    />
+                  </td>
+                  <td className="py-2.5 px-2">
+                    <StructureRateCell
+                      struct={struct}
+                      pricingMode={rowMode}
+                      rateOverride={isSelected ? structureRateOverride : null}
+                      onSaveOverride={(val) => {
+                        if (!isSelected) {
+                          setStructureSelection(struct.id, rowMode);
+                        }
+                        setStructureCustomField('structureRateOverride', val);
+                      }}
+                    />
+                  </td>
+                  <td className="py-2.5 px-2 text-right font-mono font-semibold text-text-primary">
+                    ₹{Math.round(cost).toLocaleString('en-IN')}
+                  </td>
+                  <td className="py-2.5 px-2 text-center">
+                    {isSelected && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-success/15 text-success">
+                        <Check size={10} />
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+
+            {/* Custom Structure Row */}
+            {(() => {
+              const isSelected = selectedStructureId === 'custom';
+              const { rate, cost, unit } = getStructureRatesAndCost({ id: 'custom', rate_per_kg: ratePerKg }, structurePricingMode);
+
+              return (
+                <tr
+                  onClick={() => {
+                    setStructureSelection(isSelected ? null : 'custom', structurePricingMode);
+                  }}
+                  className={`border-b border-border/50 cursor-pointer transition-all duration-150
+                    ${isSelected
+                      ? 'bg-accent-dim'
+                      : 'hover:bg-surface-hover'
+                    }`}
+                >
+                  <td className="py-2.5 px-2 font-medium text-accent">Custom Structure Build</td>
+                  <td className="py-2.5 px-2 text-text-secondary">Custom</td>
+                  <td className="py-2.5 px-2 text-text-secondary">Custom Build</td>
+                  <td className="py-2.5 px-2 text-right text-text-muted">—</td>
+                  <td className="py-2.5 px-2 text-right font-mono text-text-primary">{baseWeight} kg</td>
+                  <td className="py-2.5 px-2" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      size="sm"
+                      value={structurePricingMode}
+                      onChange={(v) => {
+                        setStructureSelection('custom', v as any);
+                      }}
+                      options={[
+                        { value: 'weight', label: 'Weight-based' },
+                        { value: 'per_watt', label: 'Per-watt' },
+                        { value: 'flat', label: 'Flat rate' },
+                      ]}
+                    />
+                  </td>
+                  <td className="py-2.5 px-2">
+                    <StructureRateCell
+                      struct={{ id: 'custom', rate_per_kg: ratePerKg }}
+                      pricingMode={structurePricingMode}
+                      rateOverride={isSelected ? structureRateOverride : null}
+                      onSaveOverride={(val) => {
+                        if (!isSelected) {
+                          setStructureSelection('custom', structurePricingMode);
+                        }
+                        setStructureCustomField('structureRateOverride', val);
+                      }}
+                    />
+                  </td>
+                  <td className="py-2.5 px-2 text-right font-mono font-semibold text-accent">
+                    ₹{Math.round(cost).toLocaleString('en-IN')}
+                  </td>
+                  <td className="py-2.5 px-2 text-center">
+                    {isSelected && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-success/15 text-success">
+                        <Check size={10} />
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })()}
+          </tbody>
+        </table>
       </div>
 
       {/* ── Custom Structure & Weight Details ── */}
@@ -2136,9 +2620,28 @@ function StructureConfigTable() {
         </div>
       )}
 
+      {selectedStructureId === 'custom' && (
+        <div className="mt-6 border-t border-border pt-4">
+          <EquipmentDetailCard
+            title="Custom Structure"
+            brand="Custom"
+            model="GI/GP Custom Build"
+            category="Mounting Gear"
+            specs={[
+              `Pricing Mode: ${structurePricingMode}`,
+              `Total Calculated Weight: ${finalWeight.toFixed(1)} kg`,
+              `Custom Rate per kg: ₹${ratePerKg.toFixed(2)}/kg`
+            ]}
+            gstPct={0.18}
+            sellingPrice={totalCost}
+            itemDescForInventory="Custom Structure"
+          />
+        </div>
+      )}
+
       {/* ── Structure BOM Components ── */}
       <StructureBOMPanel 
-        structureId={selectedStructureId !== 'custom' ? selectedStructureId : null} 
+        structureId={selectedStructureId} 
         capacityKW={capacityKW}
       />
 
@@ -2268,8 +2771,11 @@ function EquipmentDetailCard({
 // grouped by category, with per-supplier rates.
 
 function StructureBOMPanel({ structureId, capacityKW }: { structureId: string | null; capacityKW: number }) {
-  const [expanded, setExpanded] = useState(false);
-  const [addonsExpanded, setAddonsExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+  const [addonsExpanded, setAddonsExpanded] = useState(true);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const structureComponentMix = useCalculatorStore((s) => s.structureComponentMix);
   const structureAddonMix = useCalculatorStore((s) => s.structureAddonMix);
@@ -2279,7 +2785,7 @@ function StructureBOMPanel({ structureId, capacityKW }: { structureId: string | 
   const { data: components, isLoading } = useQuery<StructureComponent[]>({
     queryKey: ['structure-components', structureId],
     queryFn: async () => {
-      if (!structureId) return [];
+      if (!structureId || structureId === 'custom') return [];
       const { data, error } = await (supabase as any)
         .from('eq_structure_components')
         .select('*')
@@ -2290,13 +2796,13 @@ function StructureBOMPanel({ structureId, capacityKW }: { structureId: string | 
       if (error) return [];
       return (data || []) as StructureComponent[];
     },
-    enabled: !!structureId,
+    enabled: !!structureId && structureId !== 'custom',
   });
 
   const { data: bomQtyEntries } = useQuery<any[]>({
     queryKey: ['structure-bom-qtys', structureId],
     queryFn: async () => {
-      if (!structureId) return [];
+      if (!structureId || structureId === 'custom') return [];
       const { data, error } = await (supabase as any)
         .from('eq_structure_bom')
         .select('*')
@@ -2304,7 +2810,7 @@ function StructureBOMPanel({ structureId, capacityKW }: { structureId: string | 
       if (error) return [];
       return data || [];
     },
-    enabled: !!structureId,
+    enabled: !!structureId && structureId !== 'custom',
   });
 
   const { data: addons } = useQuery<StructureAddon[]>({
@@ -2320,16 +2826,33 @@ function StructureBOMPanel({ structureId, capacityKW }: { structureId: string | 
     },
   });
 
-  if (!structureId) return null;
-  if (isLoading) return (
-    <div className="mt-4 p-3 rounded-lg border border-border bg-surface-hover/20 text-[10px] text-text-muted animate-pulse">
-      Loading structure components…
-    </div>
-  );
-  if (!components || components.length === 0) return null;
+  const filteredComponents = useMemo(() => {
+    if (!components) return [];
+    return components.filter((comp) => {
+      if (selectedCategory !== 'all' && comp.category !== selectedCategory) return false;
+      if (searchQuery) {
+        const searchText = `${comp.name} ${comp.category}`.toLowerCase();
+        return fuzzySearch(searchText, searchQuery);
+      }
+      return true;
+    });
+  }, [components, selectedCategory, searchQuery]);
+
+  const filteredAddons = useMemo(() => {
+    if (!addons) return [];
+    return addons.filter((addon) => {
+      if (searchQuery) {
+        const searchText = `${addon.name} ${addon.material} ${addon.notes || ''}`.toLowerCase();
+        return fuzzySearch(searchText, searchQuery);
+      }
+      return true;
+    });
+  }, [addons, searchQuery]);
+
+  const showBOM = !!(structureId && structureId !== 'custom' && components && components.length > 0);
 
   return (
-    <div className="mt-4 space-y-2">
+    <div className="mt-4 space-y-4">
 
       {/* ── BOM Components Collapsible ── */}
       <div className="rounded-xl border border-border bg-surface overflow-hidden">
@@ -2342,126 +2865,193 @@ function StructureBOMPanel({ structureId, capacityKW }: { structureId: string | 
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">
               Structure BOM — Itemized Components
             </span>
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-bold border border-accent/20">
-              {components.length} items
-            </span>
+            {showBOM && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-bold border border-accent/20">
+                {filteredComponents.length} of {components.length} items
+              </span>
+            )}
           </div>
           {expanded ? <ChevronUp size={14} className="text-text-muted" /> : <ChevronDown size={14} className="text-text-muted" />}
         </button>
 
         {expanded && (
           <div className="px-4 pb-4 space-y-4 border-t border-border">
-            {Object.entries(STRUCT_CATEGORY_META).map(([cat, meta]) => {
-              const items = components.filter((c) => c.category === cat);
-              if (items.length === 0) return null;
-              return (
-                <div key={cat} className="space-y-1.5">
-                  {/* Category pill */}
-                  <div
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider mt-3"
-                    style={{ color: meta.color, background: meta.bg }}
-                  >
-                    {meta.icon}
-                    {meta.label}
+            {isLoading && (
+              <div className="py-8 text-center text-xs text-text-muted animate-pulse">
+                Loading structure BOM components…
+              </div>
+            )}
+
+            {!isLoading && !showBOM && (
+              <div className="py-6 text-center text-[11px] text-text-muted">
+                Select a standard structure in the table above to load and customize its specific steel section, hardware, finishing, and foundation BOM components.
+              </div>
+            )}
+
+            {!isLoading && showBOM && (
+              <>
+                {/* Filters & Search */}
+                <div className="flex flex-col lg:flex-row gap-3 mt-4 mb-3">
+                  <div className="flex-1 space-y-1.5">
+                    <p className="text-[10px] uppercase tracking-wider text-text-muted">Search BOM Components</p>
+                    <div className="relative">
+                      <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Fuzzy search component name (e.g. 'beam' or 'fastener')..."
+                        className="w-full pl-8 pr-3 py-1.5 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
+                      />
+                    </div>
                   </div>
-
-                  {/* Component rows */}
-                  <div className="rounded-lg border border-border overflow-hidden">
-                    <table className="w-full text-[10px] border-collapse">
-                      <thead>
-                        <tr className="bg-surface-hover text-text-muted border-b border-border text-[8px] uppercase font-bold tracking-wider">
-                          <th className="p-2 text-left">Component</th>
-                          <th className="p-2 text-center">Unit</th>
-                          <th className="p-2 text-center w-36">Qty</th>
-                          <th className="p-2 text-right">₹ Appolo</th>
-                          <th className="p-2 text-right">₹ Tata</th>
-                          <th className="p-2 text-right">₹ Deemac</th>
-                          <th className="p-2 text-right font-bold" style={{ color: meta.color }}>Selling ₹</th>
-                          <th className="p-2 text-right font-bold" style={{ color: meta.color }}>Total ₹</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {items.map((comp) => {
-                          let bomEntry = bomQtyEntries?.find(b => 
-                            b.component_id === comp.id && 
-                            capacityKW >= Number(b.capacity_kw_min) && 
-                            capacityKW <= Number(b.capacity_kw_max)
-                          );
-                          if (!bomEntry && bomQtyEntries && bomQtyEntries.length > 0) {
-                            const sameCompBom = bomQtyEntries.filter(b => b.component_id === comp.id);
-                            if (sameCompBom.length > 0) {
-                              bomEntry = sameCompBom.reduce((prev, curr) => 
-                                Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
-                              );
-                            }
-                          }
-                          const defaultQty = bomEntry ? Number(bomEntry.qty) : 0;
-                          const overrideQty = structureComponentMix[comp.id];
-                          const qty = overrideQty !== undefined ? overrideQty : defaultQty;
-                          const isOverridden = overrideQty !== undefined;
-
-                          return (
-                            <tr key={comp.id} className="border-b border-border/30 hover:bg-surface-hover/20 transition-colors">
-                              <td className="p-2 font-medium text-text-primary">{comp.name}</td>
-                              <td className="p-2 text-center text-text-muted">{comp.unit}</td>
-                              <td className="p-2" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex items-center justify-center gap-1">
-                                  <button
-                                    onClick={() => setStructureComponentQty(comp.id, Math.max(0, qty - 1))}
-                                    className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-                                    title="Decrease qty"
-                                  >
-                                    <Minus size={11} />
-                                  </button>
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    value={qty === 0 ? '' : qty}
-                                    onChange={(e) => {
-                                      const val = parseFloat(e.target.value);
-                                      setStructureComponentQty(comp.id, isNaN(val) ? 0 : val);
-                                    }}
-                                    className="w-14 px-2 py-1 rounded bg-background border border-border text-center text-xs font-mono text-text-primary outline-none focus:border-accent"
-                                    placeholder="0"
-                                  />
-                                  <button
-                                    onClick={() => setStructureComponentQty(comp.id, qty + 1)}
-                                    className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-                                    title="Increase qty"
-                                  >
-                                    <Plus size={11} />
-                                  </button>
-                                  {isOverridden && (
-                                    <button
-                                      onClick={() => setStructureComponentQty(comp.id, null)}
-                                      className="p-1 rounded hover:bg-warning/15 text-warning/70 hover:text-warning transition-colors cursor-pointer"
-                                      title="Reset to default"
-                                    >
-                                      <RotateCcw size={11} />
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="p-2 text-right font-mono">{comp.rate_appolo > 0 ? `₹${comp.rate_appolo}` : '—'}</td>
-                              <td className="p-2 text-right font-mono">{comp.rate_tata > 0 ? `₹${comp.rate_tata}` : '—'}</td>
-                              <td className="p-2 text-right font-mono">{comp.rate_deemac > 0 ? `₹${comp.rate_deemac}` : '—'}</td>
-                              <td className="p-2 text-right font-mono font-bold" style={{ color: meta.color }}>₹{comp.selling_price}</td>
-                              <td className="p-2 text-right font-mono font-bold text-text-primary">₹{formatRate(qty * comp.selling_price)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                  <div className="space-y-1.5 shrink-0">
+                    <p className="text-[10px] uppercase tracking-wider text-text-muted">Category Filter</p>
+                    <div className="flex flex-wrap gap-1">
+                      <button
+                        onClick={() => setSelectedCategory('all')}
+                        className={`px-2.5 py-1.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
+                          selectedCategory === 'all'
+                            ? 'bg-accent/15 text-accent border-accent/30 font-bold'
+                            : 'bg-surface border-border text-text-muted hover:text-text-primary hover:border-border-light'
+                        }`}
+                      >
+                        All
+                      </button>
+                      {Object.entries(STRUCT_CATEGORY_META).filter(([cat]) => cat !== 'addon').map(([cat, meta]) => (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`px-2.5 py-1.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
+                            selectedCategory === cat
+                              ? 'bg-accent/15 text-accent border-accent/30 font-bold'
+                              : 'bg-surface border-border text-text-muted hover:text-text-primary hover:border-border-light'
+                          }`}
+                        >
+                          {meta.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              );
-            })}
+
+                {filteredComponents.length === 0 && (
+                  <div className="text-center py-8 text-xs text-text-muted">No matching components found</div>
+                )}
+
+                {Object.entries(STRUCT_CATEGORY_META).filter(([cat]) => cat !== 'addon').map(([cat, meta]) => {
+                  const items = filteredComponents.filter((c) => c.category === cat);
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={cat} className="space-y-1.5">
+                      {/* Category pill */}
+                      <div
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider mt-3"
+                        style={{ color: meta.color, background: meta.bg }}
+                      >
+                        {meta.icon}
+                        {meta.label}
+                      </div>
+
+                      {/* Component rows */}
+                      <div className="rounded-lg border border-border overflow-hidden">
+                        <table className="w-full text-[10px] border-collapse">
+                          <thead>
+                            <tr className="bg-surface-hover text-text-muted border-b border-border text-[8px] uppercase font-bold tracking-wider">
+                              <th className="p-2 text-left">Component</th>
+                              <th className="p-2 text-center">Unit</th>
+                              <th className="p-2 text-center w-36">Qty</th>
+                              <th className="p-2 text-right">₹ Appolo</th>
+                              <th className="p-2 text-right">₹ Tata</th>
+                              <th className="p-2 text-right">₹ Deemac</th>
+                              <th className="p-2 text-right font-bold" style={{ color: meta.color }}>Selling ₹</th>
+                              <th className="p-2 text-right font-bold" style={{ color: meta.color }}>Total ₹</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {items.map((comp) => {
+                              let bomEntry = bomQtyEntries?.find(b => 
+                                b.component_id === comp.id && 
+                                capacityKW >= Number(b.capacity_kw_min) && 
+                                capacityKW <= Number(b.capacity_kw_max)
+                              );
+                              if (!bomEntry && bomQtyEntries && bomQtyEntries.length > 0) {
+                                const sameCompBom = bomQtyEntries.filter(b => b.component_id === comp.id);
+                                if (sameCompBom.length > 0) {
+                                  bomEntry = sameCompBom.reduce((prev, curr) => 
+                                    Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
+                                  );
+                                }
+                              }
+                              const defaultQty = bomEntry ? Number(bomEntry.qty) : 0;
+                              const overrideQty = structureComponentMix[comp.id];
+                              const qty = overrideQty !== undefined ? overrideQty : defaultQty;
+                              const isOverridden = overrideQty !== undefined;
+
+                              return (
+                                <tr key={comp.id} className="border-b border-border/30 hover:bg-surface-hover/20 transition-colors">
+                                  <td className="p-2 font-medium text-text-primary">{comp.name}</td>
+                                  <td className="p-2 text-center text-text-muted">{comp.unit}</td>
+                                  <td className="p-2" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center justify-center gap-1">
+                                      <button
+                                        onClick={() => setStructureComponentQty(comp.id, Math.max(0, qty - 1))}
+                                        className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                                        title="Decrease qty"
+                                      >
+                                        <Minus size={11} />
+                                      </button>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={qty === 0 ? '' : qty}
+                                        onChange={(e) => {
+                                          const val = parseFloat(e.target.value);
+                                          setStructureComponentQty(comp.id, isNaN(val) ? 0 : val);
+                                        }}
+                                        className="w-14 px-2 py-1 rounded bg-background border border-border text-center text-xs font-mono text-text-primary outline-none focus:border-accent"
+                                        placeholder="0"
+                                      />
+                                      <button
+                                        onClick={() => setStructureComponentQty(comp.id, qty + 1)}
+                                        className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                                        title="Increase qty"
+                                      >
+                                        <Plus size={11} />
+                                      </button>
+                                      {isOverridden && (
+                                        <button
+                                          onClick={() => setStructureComponentQty(comp.id, null)}
+                                          className="p-1 rounded hover:bg-warning/15 text-warning/70 hover:text-warning transition-colors cursor-pointer"
+                                          title="Reset to default"
+                                        >
+                                          <RotateCcw size={11} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-right font-mono">{comp.rate_appolo > 0 ? `₹${comp.rate_appolo}` : '—'}</td>
+                                  <td className="p-2 text-right font-mono">{comp.rate_tata > 0 ? `₹${comp.rate_tata}` : '—'}</td>
+                                  <td className="p-2 text-right font-mono">{comp.rate_deemac > 0 ? `₹${comp.rate_deemac}` : '—'}</td>
+                                  <td className="p-2 text-right font-mono font-bold" style={{ color: meta.color }}>₹{comp.selling_price}</td>
+                                  <td className="p-2 text-right font-mono font-bold text-text-primary">₹{formatRate(qty * comp.selling_price)}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
           </div>
         )}
       </div>
 
       {/* ── Add-ons: Walkway & Ladder ── */}
-      {addons && addons.length > 0 && (
+      {addons && addons.length > 0 && (selectedCategory === 'all' || selectedCategory === 'addon') && (
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
           <button
             onClick={() => setAddonsExpanded((v) => !v)}
@@ -2473,7 +3063,7 @@ function StructureBOMPanel({ structureId, capacityKW }: { structureId: string | 
                 Structure Add-ons — Walkway & Ladder
               </span>
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
-                ₹/meter
+                {filteredAddons.length} of {addons.length} items
               </span>
             </div>
             {addonsExpanded ? <ChevronUp size={14} className="text-text-muted" /> : <ChevronDown size={14} className="text-text-muted" />}
@@ -2481,68 +3071,72 @@ function StructureBOMPanel({ structureId, capacityKW }: { structureId: string | 
 
           {addonsExpanded && (
             <div className="border-t border-border">
-              <table className="w-full text-[10px] border-collapse">
-                <thead>
-                  <tr className="bg-surface-hover text-text-muted border-b border-border text-[8px] uppercase font-bold tracking-wider">
-                    <th className="p-2.5 text-left">Add-on</th>
-                    <th className="p-2.5 text-left">Material</th>
-                    <th className="p-2.5 text-center">Unit</th>
-                    <th className="p-2.5 text-right">Rate / Unit</th>
-                    <th className="p-2.5 text-center">GST</th>
-                    <th className="p-2.5 text-center w-36">Qty</th>
-                    <th className="p-2.5 text-right">Total ₹</th>
-                    <th className="p-2.5 text-left">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {addons.map((addon) => {
-                    const qty = structureAddonMix[addon.id] ?? 0;
-                    const isSelected = qty > 0;
-                    return (
-                      <tr key={addon.id} className={`border-b border-border/30 hover:bg-surface-hover/20 transition-colors ${isSelected ? 'bg-accent-glow/10' : ''}`}>
-                        <td className="p-2.5 font-semibold text-text-primary">{addon.name}</td>
-                        <td className="p-2.5 text-text-muted">{addon.material}</td>
-                        <td className="p-2.5 text-center text-text-muted">{addon.unit}</td>
-                        <td className="p-2.5 text-right font-mono font-bold text-emerald-400">₹{addon.rate_per_unit.toFixed(2)}</td>
-                        <td className="p-2.5 text-center text-text-muted">{(addon.gst_pct * 100).toFixed(0)}%</td>
-                        <td className="p-2.5" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => setStructureAddonQty(addon.id, Math.max(0, qty - 1))}
-                              className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-                              title="Decrease qty"
-                            >
-                              <Minus size={11} />
-                            </button>
-                            <input
-                              type="number"
-                              min={0}
-                              value={qty || ''}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value);
-                                setStructureAddonQty(addon.id, isNaN(val) ? 0 : val);
-                              }}
-                              className="w-14 px-2 py-1 rounded bg-background border border-border text-center text-xs font-mono text-text-primary outline-none focus:border-accent"
-                              placeholder="0"
-                            />
-                            <button
-                              onClick={() => setStructureAddonQty(addon.id, qty + 1)}
-                              className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-                              title="Increase qty"
-                            >
-                              <Plus size={11} />
-                            </button>
-                          </div>
-                        </td>
-                        <td className="p-2.5 text-right font-mono font-bold text-text-primary">
-                          {qty > 0 ? `₹${formatRate(qty * addon.rate_per_unit)}` : '—'}
-                        </td>
-                        <td className="p-2.5 text-text-muted text-[9px] max-w-[180px] truncate" title={addon.notes ?? ''}>{addon.notes ?? '—'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              {filteredAddons.length === 0 ? (
+                <div className="text-center py-6 text-xs text-text-muted">No matching add-ons found</div>
+              ) : (
+                <table className="w-full text-[10px] border-collapse">
+                  <thead>
+                    <tr className="bg-surface-hover text-text-muted border-b border-border text-[8px] uppercase font-bold tracking-wider">
+                      <th className="p-2.5 text-left">Add-on</th>
+                      <th className="p-2.5 text-left">Material</th>
+                      <th className="p-2.5 text-center">Unit</th>
+                      <th className="p-2.5 text-right">Rate / Unit</th>
+                      <th className="p-2.5 text-center">GST</th>
+                      <th className="p-2.5 text-center w-36">Qty</th>
+                      <th className="p-2.5 text-right">Total ₹</th>
+                      <th className="p-2.5 text-left">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAddons.map((addon) => {
+                      const qty = structureAddonMix[addon.id] ?? 0;
+                      const isSelected = qty > 0;
+                      return (
+                        <tr key={addon.id} className={`border-b border-border/30 hover:bg-surface-hover/20 transition-colors ${isSelected ? 'bg-accent-glow/10' : ''}`}>
+                          <td className="p-2.5 font-semibold text-text-primary">{addon.name}</td>
+                          <td className="p-2.5 text-text-muted">{addon.material}</td>
+                          <td className="p-2.5 text-center text-text-muted">{addon.unit}</td>
+                          <td className="p-2.5 text-right font-mono font-bold text-emerald-400">₹{addon.rate_per_unit.toFixed(2)}</td>
+                          <td className="p-2.5 text-center text-text-muted">{(addon.gst_pct * 100).toFixed(0)}%</td>
+                          <td className="p-2.5" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => setStructureAddonQty(addon.id, Math.max(0, qty - 1))}
+                                className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                                title="Decrease qty"
+                              >
+                                <Minus size={11} />
+                              </button>
+                              <input
+                                type="number"
+                                min={0}
+                                value={qty || ''}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value);
+                                  setStructureAddonQty(addon.id, isNaN(val) ? 0 : val);
+                                }}
+                                className="w-14 px-2 py-1 rounded bg-background border border-border text-center text-xs font-mono text-text-primary outline-none focus:border-accent"
+                                placeholder="0"
+                              />
+                              <button
+                                onClick={() => setStructureAddonQty(addon.id, qty + 1)}
+                                className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                                title="Increase qty"
+                              >
+                                <Plus size={11} />
+                              </button>
+                            </div>
+                          </td>
+                          <td className="p-2.5 text-right font-mono font-bold text-text-primary">
+                            {qty > 0 ? `₹${formatRate(qty * addon.rate_per_unit)}` : '—'}
+                          </td>
+                          <td className="p-2.5 text-text-muted text-[9px] max-w-[180px] truncate" title={addon.notes ?? ''}>{addon.notes ?? '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </div>

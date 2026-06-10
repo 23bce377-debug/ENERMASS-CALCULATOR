@@ -435,7 +435,6 @@ export interface Database {
         Row: {
           id: string
           org_id: string
-          default_state_id: string | null
           default_grid_tariff_inr: number
           default_validity_days: number
           electricity_inflation_pct: number
@@ -447,7 +446,6 @@ export interface Database {
         Insert: {
           id?: string
           org_id: string
-          default_state_id?: string | null
           default_grid_tariff_inr?: number
           default_validity_days?: number
           electricity_inflation_pct?: number
@@ -459,7 +457,6 @@ export interface Database {
         Update: {
           id?: string
           org_id?: string
-          default_state_id?: string | null
           default_grid_tariff_inr?: number
           default_validity_days?: number
           electricity_inflation_pct?: number

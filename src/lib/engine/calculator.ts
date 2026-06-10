@@ -8,11 +8,8 @@
 import { SYSTEMS, type SolarSystem, type BomItem } from '../data/bom';
 import { type StateData } from '../data/masters';
 import { calculateEnergyProjections } from './energy';
-import { calculateSubsidyAmount } from './subsidy';
 import { calculatePricingAndMargins, calculateDiscountAmount } from './margin';
 import { calculateFinancialProjections } from './financials';
-
-const GRID_TARIFF_PER_KWH = 8.0;
 
 export function roundTo5(num: number | null | undefined): number {
   if (num === null || num === undefined || isNaN(num)) return 0;
@@ -43,6 +40,7 @@ export type ProjectType = 'residential' | 'commercial';
 export interface CalcInput {
   systemId: string;
   systems?: SolarSystem[];
+  rpcSubsidyAmount?: number;
   state: string;
   projectType: ProjectType;
   targetMarginPct?: number;
@@ -50,6 +48,7 @@ export interface CalcInput {
   targetMRPPerWatt?: number;
   gstOnOutput?: number;
   gstOnOutputOverride?: number;
+  allowGstOverride?: boolean;
   overrides?: Record<number, RowOverride>;
   rateMaster?: RateMaster;
   disabledItemIndices?: Record<number, boolean>;
@@ -81,7 +80,6 @@ export interface CalcInput {
     is_fixed_amount: boolean;
     fixed_amount: number | null;
   }>;
-  rpcSubsidyAmount?: number;
 
   // Structure selections
   structureId?: string;
@@ -125,6 +123,7 @@ export interface CalcInput {
   selectedInverterMix?: Record<string, number>;
   selectedBatteryMix?: Record<string, number>;
   selectedPanelId?: string | null;
+  maxSubsidyCapacityKW?: number;
 }
 
 export interface LineResult {
@@ -245,7 +244,11 @@ export function resolveRate(
   }
 
   // 3. Item default (already carries the per-model DB rate)
-  return item.ratePerUnit;
+  const defaultRate = item.ratePerUnit;
+  if (defaultRate < 0) {
+    throw new Error(`Rate not configured for "${item.description}" (index ${index})`);
+  }
+  return defaultRate;
 }
 
 // ─── Subsidy Calculation ────────────────────────────────────────────────────────
@@ -272,6 +275,7 @@ export function getSubsidyAmount(
     is_fixed_amount: boolean;
     fixed_amount: number | null;
   }>,
+  maxCapacityKW?: number,
 ): number {
   // Commercial projects never receive residential subsidy
   if (projectType === 'commercial') {
@@ -280,39 +284,196 @@ export function getSubsidyAmount(
 
   const eligibleCapacityKW = inverterCapacityKW !== undefined ? Math.min(panelCapacityKW, inverterCapacityKW) : panelCapacityKW;
 
-  // Use dynamic database-driven slabs if available
-  if (slabs && slabs.length > 0) {
-    // Clamp to max 10.0 kW for PM Surya Ghar subsidy calculations
-    const capacityForSubsidy = Math.min(eligibleCapacityKW, 10.0);
-    let total = 0;
-    for (const slab of slabs) {
-      const start = Number(slab.start_kw);
-      if (capacityForSubsidy <= start) {
-        break;
-      }
-      if (slab.is_fixed_amount) {
-        total += Number(slab.fixed_amount ?? 0);
-      } else {
-        const end = slab.end_kw === null ? capacityForSubsidy : Math.min(capacityForSubsidy, Number(slab.end_kw));
-        const applicable = end - start;
-        total += applicable * Number(slab.rate_per_kw);
-      }
-    }
-    return total;
+  if (!slabs || slabs.length === 0) {
+    return 0;
   }
 
-  // Fallback to exact PM Surya Ghar piecewise linear formula:
-  // - First 2 kW: ₹30,000 per kW (₹300 per watt)
-  // - Next 1 kW (2 kW to 3 kW): ₹18,000 per kW (₹180 per watt)
-  // - Capped at ₹78,000 total (reached at 3 kW or above)
-  const capacityForSubsidy = Math.min(eligibleCapacityKW, 10.0);
-  const tier1Capacity = Math.min(capacityForSubsidy, 2.0);
-  const tier1Amount = tier1Capacity * 30000;
+  const capacityForSubsidy = Math.min(eligibleCapacityKW, maxCapacityKW ?? 10.0);
+  let total = 0;
+  for (const slab of slabs) {
+    const start = Number(slab.start_kw);
+    if (capacityForSubsidy <= start) {
+      break;
+    }
+    if (slab.is_fixed_amount) {
+      total += Number(slab.fixed_amount ?? 0);
+    } else {
+      const end = slab.end_kw === null ? capacityForSubsidy : Math.min(capacityForSubsidy, Number(slab.end_kw));
+      const applicable = end - start;
+      total += applicable * Number(slab.rate_per_kw);
+    }
+  }
+  return total;
+}
 
-  const tier2Capacity = Math.max(0.0, Math.min(capacityForSubsidy - 2.0, 1.0));
-  const tier2Amount = tier2Capacity * 18000;
+export function resolveStructureItems(
+  input: CalcInput,
+  capacityKW: number,
+  capacityWatts: number
+): {
+  items: BomItem[];
+  removeGenericStructure: boolean;
+} {
+  const items: BomItem[] = [];
+  let removeGenericStructure = false;
 
-  return tier1Amount + tier2Amount;
+  if (!input.structureId) {
+    return { items, removeGenericStructure };
+  }
+
+  if (input.structureId === 'custom') {
+    const mode = input.structurePricingMode ?? 'weight';
+    if (mode === 'weight') {
+      const lookupWeight = input.structureWeightLookupKg ?? 0;
+      const baseWeight = input.structureBaseWeightOverride ?? 0;
+      const wastage = input.structureWastageOverride ?? 0.05;
+      const fasteners = input.structureFastenerOverride ?? 0.02;
+      const rawRate = input.structureCustomRawRate ?? 0;
+      const fabRate = input.structureCustomFabricationRate ?? 0;
+      const galvRate = input.structureCustomGalvanizingRate ?? 0;
+      
+      const ratePerKg = rawRate + fabRate + galvRate;
+      const totalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
+      const weightMultiplier = lookupWeight > 0 ? totalWeight / lookupWeight : 1;
+
+      const structureParts = (input.dbStructureParts ?? []).filter((p: any) => 
+        p.section === 'mounting_structure' && p.is_active
+      );
+      
+      structureParts.forEach((part: any) => {
+        const qtyMultiplier = Number(part.weight_multiplier ?? 1);
+        items.push({
+          description: part.description,
+          qty: qtyMultiplier * weightMultiplier,
+          ratePerUnit: Number(part.rate ?? 0),
+          unit: part.unit ?? 'Nos',
+          remarks: part.remarks ?? '',
+          gstPct: Number(part.gst_pct ?? 0.18) as any,
+        });
+      });
+    } else if (mode === 'per_watt') {
+      items.push({
+        description: 'STRUCTURE',
+        qty: 1,
+        ratePerUnit: capacityWatts * (input.structureRateOverride ?? 0),
+        unit: 'Set',
+        remarks: 'Custom Structure (Per watt)',
+        gstPct: 0.18 as any,
+      });
+    } else {
+      items.push({
+        description: 'STRUCTURE',
+        qty: 1,
+        ratePerUnit: input.structureRateOverride ?? 0,
+        unit: 'Set',
+        remarks: 'Custom Structure (Flat rate)',
+        gstPct: 0.18 as any,
+      });
+    }
+  } else {
+    const struct = (input.dbStructures ?? []).find(s => s.id === input.structureId);
+    if (struct) {
+      const structureGst = Number(struct.gst_pct);
+      const mode = input.structurePricingMode ?? (struct.flat_rate !== null ? 'flat' : 'weight');
+      const structComponents = (input.dbStructureComponents ?? []).filter(c => c.structure_id === struct.id);
+      
+      if (mode === 'weight' && structComponents.length > 0) {
+        structComponents.forEach(c => {
+          let bomEntry = (input.dbStructureBom ?? []).find(b => 
+            b.component_id === c.id && 
+            capacityKW >= Number(b.capacity_kw_min) && 
+            capacityKW <= Number(b.capacity_kw_max)
+          );
+          if (!bomEntry && (input.dbStructureBom ?? []).length > 0) {
+            const sameCompBom = (input.dbStructureBom ?? []).filter(b => b.component_id === c.id);
+            if (sameCompBom.length > 0) {
+              bomEntry = sameCompBom.reduce((prev, curr) => 
+                Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
+              );
+            }
+          }
+          const overrideQty = input.structureComponentMix?.[c.id];
+          const qty = overrideQty !== undefined ? overrideQty : (bomEntry ? Number(bomEntry.qty) : 0);
+
+          if (qty > 0) {
+            items.push({
+              description: `STRUCTURE - ${c.name}`,
+              qty: qty,
+              ratePerUnit: Number(c.selling_price),
+              unit: c.unit,
+              remarks: `${struct.name} component`,
+              gstPct: Number(c.gst_pct) as any,
+            });
+          }
+        });
+        removeGenericStructure = true;
+      } else {
+        let structureQty = 0;
+        let structureRate = 0;
+        let structureUnit = 'Set';
+        let structureRemarks = '';
+
+        if (mode === 'weight') {
+          let lookup = (input.dbWeightLookups ?? []).find(l => 
+            l.structure_id === struct.id && 
+            capacityKW >= Number(l.capacity_kw_min) && 
+            capacityKW <= Number(l.capacity_kw_max)
+          );
+          if (!lookup) {
+            throw new Error(`No structure_weight_lookup for structure ${struct.id} at capacity ${capacityKW}kW`);
+          }
+          const lookupWeight = Number(lookup.total_weight_kg);
+          const baseWeight = Number(struct.base_weight_kg ?? 0);
+          const wastage = Number(struct.wastage_pct ?? 0.05);
+          const fasteners = Number(struct.fastener_weight_pct ?? 0.02);
+          const ratePerKg = Number(struct.rate_per_kg ?? (Number(struct.raw_material_rate ?? 0) + Number(struct.fabrication_rate ?? 0) + Number(struct.galvanizing_rate ?? 0)));
+          
+          structureQty = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
+          structureRate = ratePerKg;
+          structureUnit = 'kg';
+          structureRemarks = `${struct.name} (${lookupWeight}kg lookup)`;
+        } else if (mode === 'per_watt') {
+          structureQty = 1;
+          structureRate = capacityWatts * Number(struct.per_watt_rate ?? 0);
+          structureUnit = 'Set';
+          structureRemarks = `${struct.name} (Per watt)`;
+        } else {
+          structureQty = 1;
+          structureRate = Number(struct.flat_rate ?? 0);
+          structureUnit = 'Set';
+          structureRemarks = `${struct.name} (Flat rate)`;
+        }
+        
+        items.push({
+          description: 'STRUCTURE',
+          qty: structureQty,
+          ratePerUnit: structureRate,
+          unit: structureUnit,
+          remarks: structureRemarks,
+          gstPct: structureGst as any,
+        });
+      }
+    }
+  }
+
+  // Resolve STRUCTURE ADD-ONS (Walkway, Ladder, etc.)
+  if (input.dbStructureAddons && input.dbStructureAddons.length > 0) {
+    input.dbStructureAddons.forEach((addon: any) => {
+      const addonQty = input.structureAddonMix?.[addon.id];
+      if (addonQty !== undefined && addonQty > 0) {
+        items.push({
+          description: `STRUCTURE - ${addon.name} (${addon.material})`,
+          qty: addonQty,
+          ratePerUnit: Number(addon.rate_per_unit),
+          unit: addon.unit || 'Meter',
+          remarks: addon.notes || 'Structure addon',
+          gstPct: Number(addon.gst_pct ?? 0.18) as any,
+        });
+      }
+    });
+  }
+
+  return { items, removeGenericStructure };
 }
 
 // ─── Main Calculation Engine ────────────────────────────────────────────────────
@@ -477,180 +638,16 @@ export function calculateSystem(input: CalcInput): CalcResult {
     }
   };
 
-  // 1. Resolve STRUCTURE
-  let structureGst = 0.18;
-  let structureQty = 0;
-  let structureRate = 0;
-  let structureUnit = 'Set';
-  let structureRemarks = '';
-  if (input.structureId) {
-    if (input.structureId === 'custom') {
-      const mode = input.structurePricingMode ?? 'weight';
-      if (mode === 'weight') {
-        const lookupWeight = input.structureWeightLookupKg ?? 0;
-        const baseWeight = input.structureBaseWeightOverride ?? 0;
-        const wastage = input.structureWastageOverride ?? 0.05;
-        const fasteners = input.structureFastenerOverride ?? 0.02;
-        const rawRate = input.structureCustomRawRate ?? 0;
-        const fabRate = input.structureCustomFabricationRate ?? 0;
-        const galvRate = input.structureCustomGalvanizingRate ?? 0;
-        
-        const ratePerKg = rawRate + fabRate + galvRate;
-        
-        // Decompose into individual parts from database
-        const totalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
-        const weightMultiplier = lookupWeight > 0 ? totalWeight / lookupWeight : 1;
-
-        // Parts list from database (eq_bom_items with section = 'mounting_structure')
-        const structureParts = (input.dbStructureParts ?? []).filter((p: any) => 
-          p.section === 'mounting_structure' && p.is_active
-        );
-        
-        structureParts.forEach((part: any) => {
-          const qtyMultiplier = Number(part.weight_multiplier ?? 1);
-          upsertItem(part.description, {
-            qty: qtyMultiplier * weightMultiplier,
-            ratePerUnit: Number(part.rate ?? 0),
-            unit: part.unit ?? 'Nos',
-            remarks: part.remarks ?? '',
-            gstPct: Number(part.gst_pct ?? 0.18) as any,
-          });
-        });
-      } else if (mode === 'per_watt') {
-        upsertItem('STRUCTURE', {
-          qty: 1,
-          ratePerUnit: capacityWatts * (input.structureRateOverride ?? 0),
-          unit: 'Set',
-          remarks: 'Custom Structure (Per watt)',
-          gstPct: 0.18 as any,
-        });
-      } else {
-        upsertItem('STRUCTURE', {
-          qty: 1,
-          ratePerUnit: input.structureRateOverride ?? 0,
-          unit: 'Set',
-          remarks: 'Custom Structure (Flat rate)',
-          gstPct: 0.18 as any,
-        });
-      }
-    } else {
-      const struct = (input.dbStructures ?? []).find(s => s.id === input.structureId);
-      if (struct) {
-        structureGst = Number(struct.gst_pct);
-        const mode = input.structurePricingMode ?? (struct.flat_rate !== null ? 'flat' : 'weight');
-        
-        const structComponents = (input.dbStructureComponents ?? []).filter(c => c.structure_id === struct.id);
-        
-        if (mode === 'weight' && structComponents.length > 0) {
-          structComponents.forEach(c => {
-            let bomEntry = (input.dbStructureBom ?? []).find(b => 
-              b.component_id === c.id && 
-              capacityKW >= Number(b.capacity_kw_min) && 
-              capacityKW <= Number(b.capacity_kw_max)
-            );
-            if (!bomEntry && (input.dbStructureBom ?? []).length > 0) {
-              const sameCompBom = (input.dbStructureBom ?? []).filter(b => b.component_id === c.id);
-              if (sameCompBom.length > 0) {
-                bomEntry = sameCompBom.reduce((prev, curr) => 
-                  Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
-                );
-              }
-            }
-            
-            // Check override quantity in structureComponentMix
-            const overrideQty = input.structureComponentMix?.[c.id] !== undefined
-              ? input.structureComponentMix[c.id]
-              : (input.structureComponentMix?.[c.name] !== undefined ? input.structureComponentMix[c.name] : undefined);
-
-            const qty = overrideQty !== undefined ? overrideQty : (bomEntry ? Number(bomEntry.qty) : 0);
-
-            if (qty > 0) {
-              upsertItem(`STRUCTURE - ${c.name}`, {
-                qty: qty,
-                ratePerUnit: Number(c.selling_price),
-                unit: c.unit,
-                remarks: `${struct.name} component`,
-                gstPct: Number(c.gst_pct) as any,
-              });
-            }
-          });
-          
-          // Remove the default generic 'STRUCTURE' line item if it is in resolvedItems
-          const idx = resolvedItems.findIndex(item => item.description.toUpperCase() === 'STRUCTURE');
-          if (idx >= 0) {
-            resolvedItems.splice(idx, 1);
-          }
-        } else {
-          if (mode === 'weight') {
-            // Weight lookup
-            let lookup = (input.dbWeightLookups ?? []).find(l => 
-              l.structure_id === struct.id && 
-              capacityKW >= Number(l.capacity_kw_min) && 
-              capacityKW <= Number(l.capacity_kw_max)
-            );
-            if (!lookup && (input.dbWeightLookups ?? []).length > 0) {
-              // Find closest by capacity
-              const sameStructLookups = (input.dbWeightLookups ?? []).filter(l => l.structure_id === struct.id);
-              if (sameStructLookups.length > 0) {
-                lookup = sameStructLookups.reduce((prev, curr) => 
-                  Math.abs(Number(curr.capacity_kw_min) - capacityKW) < Math.abs(Number(prev.capacity_kw_min) - capacityKW) ? curr : prev
-                );
-              }
-            }
-            
-            const lookupWeight = lookup ? Number(lookup.total_weight_kg) : 0;
-            const baseWeight = Number(struct.base_weight_kg ?? 0);
-            const wastage = Number(struct.wastage_pct ?? 0.05);
-            const fasteners = Number(struct.fastener_weight_pct ?? 0.02);
-            const ratePerKg = Number(struct.rate_per_kg ?? (Number(struct.raw_material_rate ?? 0) + Number(struct.fabrication_rate ?? 0) + Number(struct.galvanizing_rate ?? 0)));
-            
-            const finalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
-            
-            structureQty = finalWeight;
-            structureRate = ratePerKg;
-            structureUnit = 'kg';
-            structureRemarks = `${struct.name} (${lookupWeight}kg lookup)`;
-          } else if (mode === 'per_watt') {
-            structureQty = 1;
-            structureRate = capacityWatts * Number(struct.per_watt_rate ?? 0);
-            structureUnit = 'Set';
-            structureRemarks = `${struct.name} (Per watt)`;
-          } else {
-            structureQty = 1;
-            structureRate = Number(struct.flat_rate ?? 0);
-            structureUnit = 'Set';
-            structureRemarks = `${struct.name} (Flat rate)`;
-          }
-          
-          upsertItem('STRUCTURE', {
-            qty: structureQty,
-            ratePerUnit: structureRate,
-            unit: structureUnit,
-            remarks: structureRemarks,
-            gstPct: structureGst as any,
-          });
-        }
-      }
+  // 1. Resolve STRUCTURE & ADD-ONS
+  const resolvedStruct = resolveStructureItems(input, capacityKW, capacityWatts);
+  resolvedStruct.items.forEach(item => {
+    upsertItem(item.description, item, true);
+  });
+  if (resolvedStruct.removeGenericStructure) {
+    const idx = resolvedItems.findIndex(item => item.description.toUpperCase() === 'STRUCTURE');
+    if (idx >= 0) {
+      resolvedItems.splice(idx, 1);
     }
-  }
-
-  // 1b. Resolve STRUCTURE ADD-ONS (Walkway, Ladder, etc.)
-  if (input.dbStructureAddons && input.dbStructureAddons.length > 0) {
-    input.dbStructureAddons.forEach((addon: any) => {
-      const addonQty = input.structureAddonMix?.[addon.id] !== undefined
-        ? input.structureAddonMix[addon.id]
-        : (input.structureAddonMix?.[addon.name] !== undefined ? input.structureAddonMix[addon.name] : 0);
-      
-      if (addonQty > 0) {
-        upsertItem(`STRUCTURE - ${addon.name} (${addon.material})`, {
-          qty: addonQty,
-          ratePerUnit: Number(addon.rate_per_unit),
-          unit: addon.unit || 'Meter',
-          remarks: addon.notes || 'Structure addon',
-          gstPct: Number(addon.gst_pct ?? 0.18) as any,
-        });
-      }
-    });
   }
 
   // 2. Resolve SOLAR METER
@@ -664,12 +661,19 @@ export function calculateSystem(input: CalcInput): CalcResult {
     }, true);
   } else {
     const solarMeterMeter = (input.dbMeters ?? []).find(m => m.id === input.solarMeterId);
+    if (!solarMeterMeter) {
+      throw new Error(`Solar meter not found: ${input.solarMeterId}`);
+    }
+    const gst = Number(solarMeterMeter.gst_pct);
+    if (isNaN(gst) || gst <= 0) {
+      throw new Error(`Solar meter GST not configured for ${solarMeterMeter.id}`);
+    }
     upsertItem('SOLAR METER', {
-      qty: solarMeterMeter ? (input.solarMeterQty ?? 1) : 0,
-      ratePerUnit: solarMeterMeter ? Number(solarMeterMeter.rate) : 0,
-      gstPct: solarMeterMeter ? (Number(solarMeterMeter.gst_pct) as any) : 0.18,
+      qty: input.solarMeterQty ?? 1,
+      ratePerUnit: Number(solarMeterMeter.rate),
+      gstPct: gst as any,
       unit: 'Nos',
-      remarks: solarMeterMeter ? (solarMeterMeter.description ?? `${solarMeterMeter.brand} ${solarMeterMeter.model}`) : 'Solar Meter (unselected)',
+      remarks: solarMeterMeter.description ?? `${solarMeterMeter.brand} ${solarMeterMeter.model}`,
     }, true);
   }
 
@@ -684,12 +688,19 @@ export function calculateSystem(input: CalcInput): CalcResult {
     }, true);
   } else {
     const netMeterMeter = (input.dbMeters ?? []).find(m => m.id === input.netMeterId);
+    if (!netMeterMeter) {
+      throw new Error(`Net meter not found: ${input.netMeterId}`);
+    }
+    const gst = Number(netMeterMeter.gst_pct);
+    if (isNaN(gst) || gst <= 0) {
+      throw new Error(`Net meter GST not configured for ${netMeterMeter.id}`);
+    }
     upsertItem('NET METER', {
-      qty: netMeterMeter ? (input.netMeterQty ?? 1) : 0,
-      ratePerUnit: netMeterMeter ? Number(netMeterMeter.rate) : 0,
-      gstPct: netMeterMeter ? (Number(netMeterMeter.gst_pct) as any) : 0.18,
+      qty: input.netMeterQty ?? 1,
+      ratePerUnit: Number(netMeterMeter.rate),
+      gstPct: gst as any,
       unit: 'Nos',
-      remarks: netMeterMeter ? (netMeterMeter.description ?? `${netMeterMeter.brand} ${netMeterMeter.model}`) : 'Net Meter (unselected)',
+      remarks: netMeterMeter.description ?? `${netMeterMeter.brand} ${netMeterMeter.model}`,
     }, true);
   }
 
@@ -706,16 +717,21 @@ export function calculateSystem(input: CalcInput): CalcResult {
       });
     } else {
       const la = (input.dbLAs ?? []).find(l => l.id === input.lightningArresterId);
-      if (la) {
-        const laKey = resolvedItems.some(item => item.description.toUpperCase() === 'L/A') ? 'L/A' : 'LIGHTNING ARRESTER';
-        upsertItem(laKey, {
-          qty: input.lightningArresterQty ?? 1,
-          ratePerUnit: Number(la.rate),
-          gstPct: Number(la.gst_pct) as any,
-          unit: 'Nos',
-          remarks: la.description ?? la.model,
-        });
+      if (!la) {
+        throw new Error(`Lightning arrester not found: ${input.lightningArresterId}`);
       }
+      const gst = Number(la.gst_pct);
+      if (isNaN(gst) || gst <= 0) {
+        throw new Error(`Lightning arrester GST not configured for ${la.id}`);
+      }
+      const laKey = resolvedItems.some(item => item.description.toUpperCase() === 'L/A') ? 'L/A' : 'LIGHTNING ARRESTER';
+      upsertItem(laKey, {
+        qty: input.lightningArresterQty ?? 1,
+        ratePerUnit: Number(la.rate),
+        gstPct: gst as any,
+        unit: 'Nos',
+        remarks: la.description ?? la.model,
+      });
     }
   }
 
@@ -811,7 +827,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
 
   // ── Step 7: Resolve output GST ──
   const gstOutputRate = roundTo5(
-    input.gstOnOutputOverride !== undefined
+    input.gstOnOutputOverride !== undefined && input.allowGstOverride === true
       ? input.gstOnOutputOverride
       : (input.gstOnOutput !== undefined ? input.gstOnOutput : stateData.gstOnOutput)
   );
@@ -853,15 +869,15 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const finalCustomerPrice = roundTo5(Math.max(0, mrpInclGST - discountAmount + additionalCostTotal));
 
   // ── Step 13: Subsidy ──
-  const subsidyAmount = roundTo5(input.rpcSubsidyAmount !== undefined
-    ? input.rpcSubsidyAmount
-    : calculateSubsidyAmount({
-        panelCapacityKW: input.panelCapacityKW ?? system.capacityKW,
-        inverterCapacityKW: input.inverterCapacityKW,
-        projectType: input.projectType,
-        slabs: input.slabs,
-        maxCapacityKW: 10.0
-      }));
+  const subsidyAmount = roundTo5(getSubsidyAmount(
+    input.panelCapacityKW ?? system.capacityKW,
+    input.inverterCapacityKW,
+    input.state,
+    input.projectType,
+    input.stateData,
+    input.slabs,
+    input.maxSubsidyCapacityKW
+  ));
 
   // ── Step 14: Beneficiary contribution ──
   const beneficiaryContribution = roundTo5(Math.max(0, finalCustomerPrice - subsidyAmount));
@@ -880,7 +896,10 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const annualGenerationKWh = roundTo5(energyProjections.annualGenerationKWh);
 
   // ── Step 16: Savings ──
-  const stateGridTariff = (stateData as any).gridTariffInr ?? 8.0;
+  const stateGridTariff = (stateData as any).gridTariffInr;
+  if (stateGridTariff === undefined) {
+    throw new Error('grid_tariff_inr not configured for state');
+  }
   const effectiveGridTariffPerKWh =
     input.gridTariffPerKWh !== undefined && input.gridTariffPerKWh >= 0
       ? input.gridTariffPerKWh

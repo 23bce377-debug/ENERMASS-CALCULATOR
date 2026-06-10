@@ -44,6 +44,62 @@ export const QuoteORM = {
   },
 
   async create(quote: QuoteInsert) {
+    // 1. Rate drift validation
+    if (quote.panel_brand_model && quote.panel_rate_per_panel !== undefined && quote.panel_rate_per_panel !== null) {
+      const { data: panels } = await supabase
+        .from('eq_panels')
+        .select('selling_price, brand, model')
+        .eq('is_active', true);
+      const matched = panels?.find(p => 
+        `${p.brand} ${p.model}`.toUpperCase().includes(String(quote.panel_brand_model).toUpperCase()) ||
+        String(quote.panel_brand_model).toUpperCase().includes(`${p.brand} ${p.model}`.toUpperCase())
+      );
+      if (matched) {
+        const dbRate = Number(matched.selling_price);
+        const submittedRate = Number(quote.panel_rate_per_panel);
+        if (Math.abs(dbRate - submittedRate) > 1.0) {
+          throw new Error(`Rate drift detected for Panel: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+        }
+      }
+    }
+
+    if (quote.inverter_brand_model && quote.inverter_rate !== undefined && quote.inverter_rate !== null) {
+      const { data: inverters } = await supabase
+        .from('eq_inverters')
+        .select('selling_price, brand, model')
+        .eq('is_active', true);
+      const matched = inverters?.find(inv => 
+        `${inv.brand} ${inv.model}`.toUpperCase().includes(String(quote.inverter_brand_model).toUpperCase()) ||
+        String(quote.inverter_brand_model).toUpperCase().includes(`${inv.brand} ${inv.model}`.toUpperCase())
+      );
+      if (matched) {
+        const dbRate = Number(matched.selling_price);
+        const submittedRate = Number(quote.inverter_rate);
+        if (Math.abs(dbRate - submittedRate) > 1.0) {
+          throw new Error(`Rate drift detected for Inverter: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+        }
+      }
+    }
+
+    if (quote.battery_brand_model && quote.battery_rate !== undefined && quote.battery_rate !== null) {
+      const { data: batteries } = await supabase
+        .from('eq_batteries')
+        .select('selling_price, brand, model')
+        .eq('is_active', true);
+      const matched = batteries?.find(b => 
+        `${b.brand} ${b.model}`.toUpperCase().includes(String(quote.battery_brand_model).toUpperCase()) ||
+        String(quote.battery_brand_model).toUpperCase().includes(`${b.brand} ${b.model}`.toUpperCase())
+      );
+      if (matched) {
+        const dbRate = Number(matched.selling_price);
+        const submittedRate = Number(quote.battery_rate);
+        if (Math.abs(dbRate - submittedRate) > 1.0) {
+          throw new Error(`Rate drift detected for Battery: Database rate is ${dbRate}, but submitted rate is ${submittedRate}`);
+        }
+      }
+    }
+
+    // 2. Perform insert
     const { data, error } = await supabase
       .from('quotes')
       .insert(quote)

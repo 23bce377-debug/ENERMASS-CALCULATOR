@@ -7,8 +7,10 @@
 
 'use client';
 
+import '../mockStorage';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase/client';
+import localforage from 'localforage';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -31,7 +33,6 @@ export interface CategoryMargins {
 }
 
 export interface AppSettings {
-  defaultState: string;
   defaultGridTariff: number;
   categoryMargins: CategoryMargins;
   company: CompanyInfo;
@@ -45,7 +46,6 @@ export interface AppSettings {
 const STORAGE_KEY = 'enermass-settings';
 
 const DEFAULT_SETTINGS: AppSettings = {
-  defaultState: 'Gujarat',
   defaultGridTariff: 8,
   categoryMargins: {
     'on-grid': 0.20,
@@ -79,59 +79,128 @@ export function useSettings() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
 
-  // Load from localStorage on mount
+  // Load from partitioned storage on mount
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<AppSettings>;
-        setSettingsState({
-          ...DEFAULT_SETTINGS,
-          ...parsed,
-          currentEquipmentRates: {
-            panels: {
-              ...DEFAULT_SETTINGS.currentEquipmentRates.panels,
-              ...(parsed.currentEquipmentRates?.panels ?? {}),
-            },
-            inverters: {
-              ...DEFAULT_SETTINGS.currentEquipmentRates.inverters,
-              ...(parsed.currentEquipmentRates?.inverters ?? {}),
-            },
-            batteries: {
-              ...DEFAULT_SETTINGS.currentEquipmentRates.batteries,
-              ...(parsed.currentEquipmentRates?.batteries ?? {}),
-            },
-          },
-        });
+    async function loadSettings() {
+      let lsSettings: Partial<AppSettings> = {};
+      try {
+        if (typeof window !== 'undefined') {
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            lsSettings = JSON.parse(raw) as Partial<AppSettings>;
+          }
+        }
+      } catch {
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem(STORAGE_KEY);
+        }
       }
-    } catch {
-      // Corrupted data — reset
-      localStorage.removeItem(STORAGE_KEY);
+
+      let dbSettings: Partial<AppSettings> = {};
+      try {
+        const keys = ['customSystems', 'customPanels', 'customInverters', 'customBatteries', 'currentEquipmentRates'];
+        const values = await Promise.all(keys.map(k => localforage.getItem<any>(k)));
+        keys.forEach((k, idx) => {
+          if (values[idx] !== null) {
+            dbSettings[k as keyof AppSettings] = values[idx];
+          }
+        });
+      } catch (err) {
+        console.warn('[useSettings] Failed to load from IndexedDB:', err);
+      }
+
+      setSettingsState({
+        ...DEFAULT_SETTINGS,
+        ...lsSettings,
+        ...dbSettings,
+        currentEquipmentRates: {
+          panels: {
+            ...DEFAULT_SETTINGS.currentEquipmentRates.panels,
+            ...(lsSettings.currentEquipmentRates?.panels ?? {}),
+            ...(dbSettings.currentEquipmentRates?.panels ?? {}),
+          },
+          inverters: {
+            ...DEFAULT_SETTINGS.currentEquipmentRates.inverters,
+            ...(lsSettings.currentEquipmentRates?.inverters ?? {}),
+            ...(dbSettings.currentEquipmentRates?.inverters ?? {}),
+          },
+          batteries: {
+            ...DEFAULT_SETTINGS.currentEquipmentRates.batteries,
+            ...(lsSettings.currentEquipmentRates?.batteries ?? {}),
+            ...(dbSettings.currentEquipmentRates?.batteries ?? {}),
+          },
+        },
+      });
+      setLoaded(true);
     }
-    setLoaded(true);
+    loadSettings();
   }, []);
 
   // Persist on change
   const setSettings = useCallback((update: Partial<AppSettings>) => {
     setSettingsState((prev) => {
       const next = { ...prev, ...update };
+      
+      // Separate LocalStorage and localforage fields
+      const lsKeys = ['defaultGridTariff', 'categoryMargins', 'company'];
+      const dbKeys = ['customSystems', 'customPanels', 'customInverters', 'customBatteries', 'currentEquipmentRates'];
+      
+      const lsUpdate: any = {};
+      lsKeys.forEach(k => {
+        if (next[k as keyof AppSettings] !== undefined) {
+          lsUpdate[k] = next[k as keyof AppSettings];
+        }
+      });
+      
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lsUpdate));
+        }
       } catch (err) {
-        // Quota exceeded — warn but don't crash
-        console.warn('[useSettings] Failed to persist settings — localStorage may be full:', err);
+        console.warn('[useSettings] Failed to persist settings to localStorage:', err);
       }
+
+      dbKeys.forEach(async (k) => {
+        if (next[k as keyof AppSettings] !== undefined) {
+          try {
+            await localforage.setItem(k, next[k as keyof AppSettings]);
+          } catch (err) {
+            console.warn(`[useSettings] Failed to persist ${k} to IndexedDB:`, err);
+          }
+        }
+      });
+
       return next;
     });
   }, []);
 
-  const resetSettings = useCallback(() => {
+  const resetSettings = useCallback(async () => {
     setSettingsState(DEFAULT_SETTINGS);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
+    try {
+      const lsUpdate = {
+        defaultGridTariff: DEFAULT_SETTINGS.defaultGridTariff,
+        categoryMargins: DEFAULT_SETTINGS.categoryMargins,
+        company: DEFAULT_SETTINGS.company
+      };
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lsUpdate));
+      }
+    } catch (err) {
+      console.warn('[useSettings] Failed to reset localStorage:', err);
+    }
+    
+    const dbKeys = ['customSystems', 'customPanels', 'customInverters', 'customBatteries', 'currentEquipmentRates'];
+    await Promise.all(dbKeys.map(async (k) => {
+      try {
+        await localforage.setItem(k, DEFAULT_SETTINGS[k as keyof AppSettings]);
+      } catch (err) {
+        console.warn(`[useSettings] Failed to reset ${k} in IndexedDB:`, err);
+      }
+    }));
   }, []);
 
   /**
-   * commitToDb — pushes the current localStorage settings to Supabase.
+   * commitToDb — pushes the current settings to Supabase.
    * Writes company info → organisations table
    * Writes numeric defaults + margins blob → app_settings table
    * Returns an error string if something went wrong, or null on success.
@@ -159,13 +228,7 @@ export function useSettings() {
       }
 
       const orgId = profile.org_id;
-      const currentSettings = JSON.parse(
-        localStorage.getItem(STORAGE_KEY) ?? 'null'
-      ) as Partial<AppSettings> | null;
-
-      if (!currentSettings) {
-        return 'No local settings found to commit.';
-      }
+      const currentSettings = settings;
 
       // 3. Update company info in organisations table
       if (currentSettings.company) {
@@ -251,11 +314,11 @@ export function useSettings() {
     } finally {
       setIsSyncing(false);
     }
-  }, []);
+  }, [settings]);
 
 
   /**
-   * loadFromDb — pulls the latest settings from Supabase and merges into localStorage.
+   * loadFromDb — pulls the latest settings from Supabase and merges into partitioned storage.
    * Company info ← organisations, numeric defaults ← app_settings.
    */
   const loadFromDb = useCallback(async (): Promise<string | null> => {
@@ -294,7 +357,7 @@ export function useSettings() {
       // Fetch app settings
       const { data: appSettingsRow, error: appSettingsError } = await (supabase
         .from('app_settings') as any)
-        .select('default_grid_tariff_inr, default_state_id')
+        .select('default_grid_tariff_inr')
         .eq('org_id', orgId)
         .single();
 
@@ -304,9 +367,7 @@ export function useSettings() {
         .select('*')
         .eq('org_id', orgId);
 
-      const current = JSON.parse(
-        localStorage.getItem(STORAGE_KEY) ?? 'null'
-      ) as Partial<AppSettings> | null ?? {};
+      const current = settings;
 
       let fetchedPresets: SolarSystem[] = [];
       if (!dbPresetsError && dbPresets) {
@@ -339,8 +400,7 @@ export function useSettings() {
           : (current.customSystems ?? []),
       };
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-      setSettingsState(merged);
+      setSettings(merged);
       setLastSynced(new Date());
       return null;
     } catch (err) {
@@ -350,23 +410,38 @@ export function useSettings() {
     } finally {
       setIsSyncing(false);
     }
-  }, []);
+  }, [settings, setSettings]);
 
-  // Export all app data as JSON
-  const exportData = useCallback(() => {
+  // Export all app data (LocalStorage & IndexedDB) as JSON
+  const exportData = useCallback(async () => {
     const data: Record<string, unknown> = {};
 
-    // Gather all enermass keys
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('enermass')) {
-        try {
-          data[key] = JSON.parse(localStorage.getItem(key) || '{}');
-        } catch {
-          data[key] = localStorage.getItem(key);
+    // Gather all enermass keys from localStorage
+    if (typeof window !== 'undefined') {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i);
+        if (key && key.startsWith('enermass')) {
+          try {
+            data[key] = JSON.parse(window.localStorage.getItem(key) || '{}');
+          } catch {
+            data[key] = window.localStorage.getItem(key);
+          }
         }
       }
     }
+
+    // Gather enermass keys from IndexedDB (localforage)
+    const dbKeys = ['customSystems', 'customPanels', 'customInverters', 'customBatteries', 'currentEquipmentRates'];
+    await Promise.all(dbKeys.map(async (k) => {
+      try {
+        const val = await localforage.getItem(k);
+        if (val !== null) {
+          data[`indexeddb-${k}`] = val;
+        }
+      } catch (err) {
+        console.warn(`[exportData] Failed to export ${k} from IndexedDB:`, err);
+      }
+    }));
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -381,17 +456,68 @@ export function useSettings() {
   const importData = useCallback((file: File) => {
     return new Promise<void>((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         try {
           const data = JSON.parse(reader.result as string) as Record<string, unknown>;
+          
+          // We will update both localStorage and IndexedDB
+          const lsKeys = ['defaultGridTariff', 'categoryMargins', 'company'];
+          const dbKeys = ['customSystems', 'customPanels', 'customInverters', 'customBatteries', 'currentEquipmentRates'];
+          
+          let lsUpdate: any = {};
+          
           for (const [key, value] of Object.entries(data)) {
-            localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+            if (key.startsWith('indexeddb-')) {
+              const realKey = key.replace('indexeddb-', '');
+              if (dbKeys.includes(realKey)) {
+                await localforage.setItem(realKey, value);
+              }
+            } else if (key === STORAGE_KEY) {
+              const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+              lsKeys.forEach(k => {
+                if (parsed[k] !== undefined) {
+                  lsUpdate[k] = parsed[k];
+                }
+              });
+              dbKeys.forEach(async (k) => {
+                if (parsed[k] !== undefined) {
+                  await localforage.setItem(k, parsed[k]);
+                }
+              });
+            } else if (key.startsWith('enermass')) {
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+              }
+            }
           }
-          // Reload settings
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            setSettingsState({ ...DEFAULT_SETTINGS, ...JSON.parse(raw) });
+          
+          if (Object.keys(lsUpdate).length > 0) {
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lsUpdate));
+            }
           }
+          
+          // Reload settings state
+          const lsSettingsRaw = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
+          let lsSettings = {};
+          if (lsSettingsRaw) {
+            lsSettings = JSON.parse(lsSettingsRaw);
+          }
+          
+          let dbSettings: any = {};
+          const dbValues = await Promise.all(dbKeys.map(k => localforage.getItem<any>(k)));
+          dbKeys.forEach((k, idx) => {
+            if (dbValues[idx] !== null) {
+              dbSettings[k] = dbValues[idx];
+            }
+          });
+          
+          setSettingsState({
+            ...DEFAULT_SETTINGS,
+            ...lsSettings,
+            ...dbSettings,
+          });
+          
           resolve();
         } catch (err) {
           reject(err);
@@ -445,10 +571,6 @@ export function useSettings() {
       }
 
       // 3. Persist Equipment Rates (Panels, Inverters, Batteries)
-      // We try to update existing records for this org. 
-      // Note: This logic assumes the org has its own records or we are allowed to update global ones (if single tenant).
-      // Given schema constraints, we'll focus on updating what exists.
-      
       const updateEquipment = async (table: string, rates: Record<string, number>, rateColumn: string) => {
         const entries = Object.entries(rates);
         for (const [id, newRate] of entries) {

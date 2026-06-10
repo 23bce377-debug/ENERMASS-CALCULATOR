@@ -156,6 +156,8 @@ export interface CalculatorState {
   recalculate: () => void;
   saveVariant: (name: string) => void;
   loadVariant: (id: string) => void;
+  deleteVariant: (id: string) => void;
+  duplicateVariant: (id: string) => void;
   saveQuote: (info: {
     customer: CustomerInfo;
     address: AddressInfo;
@@ -430,15 +432,19 @@ export function runCalculation(state: CalculatorState): {
     let panelDegradationRate = 0.005;
     if (panelMixEntries.length > 0) {
       panelCapacityKW = 0;
-      let isTopCon = false;
+      let weightedDegradationSum = 0;
       for (const [panelId, qty] of panelMixEntries) {
         const p = allPanels.find(x => x.id === panelId);
         if (p) {
-          panelCapacityKW += (p.wattage * qty) / 1000;
-          if ('type' in p && p.type === 'TOPCon') isTopCon = true;
+          const capKW = (p.wattage * qty) / 1000;
+          panelCapacityKW += capKW;
+          const deg = ('type' in p && p.type === 'TOPCon') ? 0.004 : 0.0055;
+          weightedDegradationSum += deg * capKW;
         }
       }
-      panelDegradationRate = isTopCon ? 0.004 : 0.0055;
+      if (panelCapacityKW > 0) {
+        panelDegradationRate = weightedDegradationSum / panelCapacityKW;
+      }
     } else if (state.selectedPanelId) {
       const p = allPanels.find(x => x.id === state.selectedPanelId);
       const qty = system?.panelQty ?? 0;

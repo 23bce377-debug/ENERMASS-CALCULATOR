@@ -8,6 +8,17 @@ export async function proxy(request: NextRequest) {
     },
   })
 
+  // Public endpoints bypass authentication checks
+  const publicRoutes = ['/login', '/api/erp/health']
+  const isPublicRoute = publicRoutes.some((route) => 
+    request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route + '/')
+  )
+
+  // Quick bypass for health check API to minimize latency and avoid DB connection overhead here
+  if (request.nextUrl.pathname === '/api/erp/health') {
+    return response
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -17,7 +28,7 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({
             request,
           })
@@ -31,10 +42,6 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Define public routes here
-  const publicRoutes = ['/login']
-  const isPublicRoute = publicRoutes.some((route) => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route + '/'))
-
   if (!user && !isPublicRoute) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/login'
@@ -42,7 +49,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Redirect logged-in users away from login
-  if (user && isPublicRoute) {
+  if (user && request.nextUrl.pathname === '/login') {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/calculator'
     return NextResponse.redirect(redirectUrl)

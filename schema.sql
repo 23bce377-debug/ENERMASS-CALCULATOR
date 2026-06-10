@@ -541,7 +541,7 @@ CREATE TABLE quotes (
 
   -- Site
   meter_number            TEXT,
-  sanctioned_load_kw      NUMERIC(8,3),           -- NUMERIC, not text (per requirement)
+  sanctioned_load_kw      NUMERIC(8,3),           -- NUMERIC, not text (per requirement)  
   monthly_bill_inr        NUMERIC(10,2),          -- NUMERIC, not text
   roof_type               TEXT,
   roof_area_sqft          NUMERIC(10,2),          -- NUMERIC, not text
@@ -559,7 +559,7 @@ CREATE TABLE quotes (
   system_category         system_category,
   system_capacity_kw      NUMERIC(10,3),
 
-  -- Equipment snapshots (brand + model text, not FK, to survive catalog deletions)
+  -- Equipment snapshots (brand + model text, not FK, to survive catalog deletions)       
   panel_brand_model       TEXT,                   -- e.g., 'Adani 620W Mono PERC'
   panel_qty               INTEGER,
   panel_rate_per_panel    NUMERIC(12,2),
@@ -574,6 +574,37 @@ CREATE TABLE quotes (
   -- Discount
   discount_type           discount_type NOT NULL DEFAULT 'none',
   discount_val            NUMERIC(12,4) NOT NULL DEFAULT 0,
+
+  -- Quote validity (30 days from creation)
+  valid_until             DATE,
+
+  -- Optimistic locking
+  version                 INTEGER NOT NULL DEFAULT 1,
+
+  -- Audit
+  created_by              UUID REFERENCES profiles(id),
+  created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  -- Centralized structure, meter and LA selections
+  structure_id            UUID REFERENCES eq_mounting_structures(id) ON DELETE SET NULL,  
+  structure_pricing_mode  TEXT DEFAULT 'weight',
+  solar_meter_id          UUID REFERENCES eq_meters(id) ON DELETE SET NULL,
+  solar_meter_qty         INTEGER DEFAULT 1,
+  net_meter_id            UUID REFERENCES eq_meters(id) ON DELETE SET NULL,
+  net_meter_qty           INTEGER DEFAULT 1,
+  la_id                   UUID REFERENCES eq_lightning_arresters(id) ON DELETE SET NULL,  
+  la_qty                  INTEGER DEFAULT 1,
+
+  -- Overrides for full editability
+  gst_output_override     NUMERIC(5,4),
+  target_mrp_incl_gst     NUMERIC(14,4),
+  target_mrp_per_watt     NUMERIC(14,4)
+);
+
+CREATE TABLE quote_financials (
+  quote_id                UUID PRIMARY KEY REFERENCES quotes(id) ON DELETE CASCADE,
+  org_id                  UUID NOT NULL REFERENCES organisations(id),
 
   -- Financial snapshot (computed at quote creation, immutable thereafter)
   cost_before_gst         NUMERIC(14,4) NOT NULL DEFAULT 0,
@@ -600,31 +631,8 @@ CREATE TABLE quotes (
   lifetime_savings_inr    NUMERIC(14,2),
   co2_offset_kg_per_year  NUMERIC(12,2),
 
-  -- Quote validity (30 days from creation)
-  valid_until             DATE,
-
-  -- Optimistic locking
-  version                 INTEGER NOT NULL DEFAULT 1,
-
-  -- Audit
-  created_by              UUID REFERENCES profiles(id),
   created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  -- Centralized structure, meter and LA selections
-  structure_id            UUID REFERENCES eq_mounting_structures(id) ON DELETE SET NULL,
-  structure_pricing_mode  TEXT DEFAULT 'weight',
-  solar_meter_id          UUID REFERENCES eq_meters(id) ON DELETE SET NULL,
-  solar_meter_qty         INTEGER DEFAULT 1,
-  net_meter_id            UUID REFERENCES eq_meters(id) ON DELETE SET NULL,
-  net_meter_qty           INTEGER DEFAULT 1,
-  la_id                   UUID REFERENCES eq_lightning_arresters(id) ON DELETE SET NULL,
-  la_qty                  INTEGER DEFAULT 1,
-
-  -- Overrides for full editability
-  gst_output_override     NUMERIC(5,4),
-  target_mrp_incl_gst     NUMERIC(14,4),
-  target_mrp_per_watt     NUMERIC(14,4)
+  updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_quotes_org_status    ON quotes(org_id, status, created_at DESC);
@@ -641,6 +649,7 @@ CREATE INDEX idx_quotes_exec          ON quotes(exec_id, status);
 
 CREATE TABLE quote_items (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
   quote_id            UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
 
   -- Position in BOM
@@ -779,7 +788,6 @@ CREATE UNIQUE INDEX idx_quote_templates_default
 CREATE TABLE app_settings (
   id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id                  UUID UNIQUE NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
-  default_state_id        UUID REFERENCES state_rules(id),
   default_grid_tariff_inr NUMERIC(8,4) NOT NULL DEFAULT 8.0000,
   default_validity_days   INTEGER NOT NULL DEFAULT 30,
   electricity_inflation_pct NUMERIC(6,5) NOT NULL DEFAULT 0.04500,  -- 4.5% annual
@@ -1120,8 +1128,8 @@ CREATE POLICY "quotes_org_write" ON quotes
   FOR ALL USING (org_id = auth_org_id());
 
 -- Quote items, costs, history, variants: follow parent quote's org
-CREATE POLICY "quote_items_via_quote" ON quote_items
-  USING (quote_id IN (SELECT id FROM quotes WHERE org_id = auth_org_id()));
+CREATE POLICY "quote_items_org_isolation" ON quote_items
+  USING (org_id = auth_org_id());
 
 CREATE POLICY "quote_costs_via_quote" ON quote_additional_costs
   USING (quote_id IN (SELECT id FROM quotes WHERE org_id = auth_org_id()));
@@ -1299,14 +1307,15 @@ CREATE VIEW v_quote_summary AS
     q.customer_name, q.customer_phone,
     s.state_name,
     q.system_name, q.system_capacity_kw, q.system_category,
-    q.mrp_incl_gst, q.subsidy_amount, q.beneficiary_contribution,
-    q.discount_type, q.discount_amount,
+    qf.mrp_incl_gst, qf.subsidy_amount, qf.beneficiary_contribution,
+    q.discount_type, qf.discount_amount,
     q.panel_brand_model, q.panel_qty,
     q.inverter_brand_model,
     q.created_at, q.updated_at, q.valid_until,
     q.exec_name,
     q.version
   FROM quotes q
+  LEFT JOIN quote_financials qf ON qf.quote_id = q.id
   LEFT JOIN state_rules s ON q.state_id = s.id;
 
 -- 20c. System with computed BOM cost (for system browser comparison)

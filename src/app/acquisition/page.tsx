@@ -2,9 +2,19 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { VendorORM, AcquisitionORM, InventoryORM, type Vendor, type Acquisition, type InventorySummary } from '@/backend/orm/acquisition';
-import { BundlePresetORM } from '@/backend/orm/bundle';
+import { type Vendor, type InventorySummary } from '@/backend/orm/acquisition';
 import type { BundlePreset } from '@/lib/types/bundle';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useInventoryQuery,
+  useAcquisitionsQuery,
+  useVendorsQuery,
+  useBundlePresetsQuery,
+  useMarkAsReceivedMutation,
+  useDeleteVendorMutation,
+  useDeletePresetMutation
+} from '@/lib/hooks/useAcquisitions';
+import { revalidateMasterCache } from '@/app/actions/revalidateMasters';
 import { 
   ShoppingCart, Plus, Package, Users, CheckCircle2, Clock, 
   Trash2, Box, Search, Filter, Mail, Phone, MapPin, 
@@ -20,12 +30,22 @@ import { Select } from '@/components/ui/Select';
 
 export default function AcquisitionPage() {
   const [activeTab, setActiveTab] = useState<'inventory' | 'acquisitions' | 'vendors' | 'presets'>('inventory');
-  const [inventory, setInventory] = useState<InventorySummary[]>([]);
-  const [acquisitions, setAcquisitions] = useState<any[]>([]);
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [presets, setPresets] = useState<BundlePreset[]>([]);
-  const [loading, setLoading] = useState(true);
   const [orgId, setOrgId] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
+
+  // Queries
+  const { data: inventory = [], isLoading: inventoryLoading } = useInventoryQuery(orgId);
+  const { data: acquisitions = [], isLoading: acquisitionsLoading } = useAcquisitionsQuery(orgId);
+  const { data: vendors = [], isLoading: vendorsLoading } = useVendorsQuery(orgId);
+  const { data: presets = [], isLoading: presetsLoading } = useBundlePresetsQuery(orgId);
+
+  const loading = inventoryLoading || acquisitionsLoading || vendorsLoading || presetsLoading;
+
+  // Mutations
+  const markAsReceivedMutation = useMarkAsReceivedMutation();
+  const deleteVendorMutation = useDeleteVendorMutation();
+  const deletePresetMutation = useDeletePresetMutation();
   
   // Search and Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,7 +70,6 @@ export default function AcquisitionPage() {
           .then(({ data }: any) => {
             if (data?.org_id) {
               setOrgId(data.org_id);
-              loadData(data.org_id);
             }
           });
       }
@@ -64,26 +83,17 @@ export default function AcquisitionPage() {
     setStatusFilter('all');
   }, [activeTab]);
 
-  async function loadData(id: string) {
-    setLoading(true);
+  const invalidateAll = async () => {
     try {
-      const [inv, acq, ven, prs] = await Promise.all([
-        InventoryORM.getSummary(id),
-        AcquisitionORM.getAll(id),
-        VendorORM.getAll(id),
-        BundlePresetORM.getAll(id)
-      ]);
-      setInventory(inv);
-      setAcquisitions(acq);
-      setVendors(ven);
-      setPresets(prs);
+      await revalidateMasterCache();
     } catch (err) {
-      console.error('Error loading acquisition data:', err);
-      toast('Failed to load data from database', 'error');
-    } finally {
-      setLoading(false);
+      console.error('Failed to revalidate master cache:', err);
     }
-  }
+    queryClient.invalidateQueries({ queryKey: ['inventory', orgId] });
+    queryClient.invalidateQueries({ queryKey: ['acquisitions', orgId] });
+    queryClient.invalidateQueries({ queryKey: ['vendors', orgId] });
+    queryClient.invalidateQueries({ queryKey: ['bundlePresets', orgId] });
+  };
 
   async function handleMarkAsReceived(acqId: string) {
     if (!orgId) return;
@@ -97,9 +107,8 @@ export default function AcquisitionPage() {
 
     if (confirmed) {
       try {
-        await AcquisitionORM.markAsReceived(acqId, orgId);
+        await markAsReceivedMutation.mutateAsync({ acqId, orgId });
         toast('Inventory updated successfully', 'success');
-        loadData(orgId);
       } catch (err) {
         toast('Failed to update inventory', 'error');
       }
@@ -118,9 +127,9 @@ export default function AcquisitionPage() {
 
     if (confirmed) {
       try {
-        await VendorORM.delete(id);
+        await deleteVendorMutation.mutateAsync({ id });
+        queryClient.invalidateQueries({ queryKey: ['vendors', orgId] });
         toast('Vendor deleted successfully', 'success');
-        loadData(orgId);
       } catch (err) {
         toast('Failed to delete vendor. They might have associated records.', 'error');
       }
@@ -139,9 +148,9 @@ export default function AcquisitionPage() {
 
     if (confirmed) {
       try {
-        await BundlePresetORM.delete(id);
+        await deletePresetMutation.mutateAsync({ id });
+        queryClient.invalidateQueries({ queryKey: ['bundlePresets', orgId] });
         toast('Bundle preset deleted successfully', 'success');
-        loadData(orgId);
       } catch (err) {
         toast('Failed to delete bundle preset', 'error');
       }
@@ -158,7 +167,7 @@ export default function AcquisitionPage() {
   }, [inventory, searchQuery, categoryFilter]);
 
   const filteredAcquisitions = useMemo(() => {
-    return acquisitions.filter(acq => {
+    return acquisitions.filter((acq: any) => {
       const matchesSearch = 
         (acq.invoice_number?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (acq.vendors?.name?.toLowerCase() || '').includes(searchQuery.toLowerCase());
@@ -227,7 +236,7 @@ export default function AcquisitionPage() {
             <div>
               <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Pending Orders</p>
               <h4 className="text-2xl font-black text-text-primary font-mono mt-1">
-                {acquisitions.filter(a => a.status === 'pending').length}
+                {acquisitions.filter((a: any) => a.status === 'pending').length}
               </h4>
             </div>
           </div>
@@ -705,14 +714,14 @@ export default function AcquisitionPage() {
           <VendorModal 
             isOpen={isVendorModalOpen} 
             onClose={() => setIsVendorModalOpen(false)} 
-            onSuccess={() => loadData(orgId)} 
+            onSuccess={invalidateAll} 
             orgId={orgId}
             vendor={selectedVendor}
           />
           <AcquisitionModal
             isOpen={isAcqModalOpen}
             onClose={() => setIsAcqModalOpen(false)}
-            onSuccess={() => loadData(orgId)}
+            onSuccess={invalidateAll}
             orgId={orgId}
             vendors={vendors}
             presets={presets}
@@ -720,7 +729,7 @@ export default function AcquisitionPage() {
           <BundlePresetModal
             isOpen={isBundleModalOpen}
             onClose={() => setIsBundleModalOpen(false)}
-            onSuccess={() => loadData(orgId)}
+            onSuccess={invalidateAll}
             orgId={orgId}
             vendors={vendors}
             preset={selectedPreset}

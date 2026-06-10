@@ -23,7 +23,7 @@ import { getOrgContext } from '@/lib/hooks/useMasters';
 // Master data card specifications
 const CARDS = [
   {
-    href: '/masters/panels',
+    href: '/master/panels',
     label: 'Panels Master',
     desc: 'Manage solar PV panel specifications, wattage values, panel types, and rates.',
     icon: <Sun size={24} className="text-amber-500" />,
@@ -31,7 +31,7 @@ const CARDS = [
     table: 'eq_panels',
   },
   {
-    href: '/masters/inverters',
+    href: '/master/inverters',
     label: 'Inverters Master',
     desc: 'Configure power electronics, inverter capacities, phase types, and purchase costs.',
     icon: <Cpu size={24} className="text-emerald-500" />,
@@ -39,7 +39,7 @@ const CARDS = [
     table: 'eq_inverters',
   },
   {
-    href: '/masters/batteries',
+    href: '/master/batteries',
     label: 'Batteries Master',
     desc: 'Define backup chemistry details, LFP capacity ratings, and unit voltages.',
     icon: <Battery size={24} className="text-purple-500" />,
@@ -47,7 +47,7 @@ const CARDS = [
     table: 'eq_batteries',
   },
   {
-    href: '/masters/structures',
+    href: '/master/structures',
     label: 'Structures Master',
     desc: 'Set mounting structure weight lookup values and metal raw material rates.',
     icon: <Wrench size={24} className="text-indigo-500" />,
@@ -55,7 +55,7 @@ const CARDS = [
     table: 'eq_mounting_structures',
   },
   {
-    href: '/masters/accessories',
+    href: '/master/accessories',
     label: 'Accessories Master',
     desc: 'Standardize ACDB, DCDB boxes, earthing rods, solar cabling, and transport logs.',
     icon: <Package size={24} className="text-sky-500" />,
@@ -63,7 +63,7 @@ const CARDS = [
     table: 'eq_bom_items',
   },
   {
-    href: '/masters/vendors',
+    href: '/master/vendors',
     label: 'Vendors Master',
     desc: 'Directory of approved solar engineering manufacturers, address files, and GSTNs.',
     icon: <Truck size={24} className="text-blue-500" />,
@@ -71,7 +71,7 @@ const CARDS = [
     table: 'vendors',
   },
   {
-    href: '/masters/pricing',
+    href: '/master/pricing',
     label: 'Pricing Master',
     desc: 'View unified equipment catalog rates and set baseline override parameters.',
     icon: <Tag size={24} className="text-rose-500" />,
@@ -79,7 +79,7 @@ const CARDS = [
     table: 'rate_master',
   },
   {
-    href: '/masters/subsidy',
+    href: '/master/subsidy',
     label: 'Subsidy Master',
     desc: 'Maintain PM Surya Ghar slabs, piecewise calculations, and state subsidy values.',
     icon: <Percent size={24} className="text-teal-500" />,

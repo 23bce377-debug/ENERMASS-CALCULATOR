@@ -6,12 +6,9 @@ import { useSettings, type CategoryMargins } from '@/lib/hooks/useSettings';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
-import { Select } from '@/components/ui/Select';
-import { STATE_DATA } from '@/lib/data/masters';
-import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { revalidateMasterCache } from '@/app/actions/revalidateMasters';
 import {
-  Settings as SettingsIcon, MapPin, Percent, Zap, Building2,
+  Settings as SettingsIcon, Percent, Zap, Building2,
   Download, Upload, RotateCcw, Check, ChevronDown, Sun, Moon,
   CloudUpload, CloudDownload, Loader2, Cloud, RefreshCcw
 } from 'lucide-react';
@@ -65,9 +62,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const confirm = useConfirm();
 
-  // ⚠️ Must be called unconditionally — before any early returns
-  const dbStateData = useCalculatorStore((s) => s.dbStateData);
-  const states = Object.keys(dbStateData).length > 0 ? Object.keys(dbStateData) : Object.keys(STATE_DATA);
+
 
   if (!loaded) {
     return (
@@ -152,17 +147,7 @@ export default function SettingsPage() {
         </FieldLabel>
       </Section>
 
-      {/* Default State */}
-      <Section title="Default Location" icon={<MapPin size={18} />}>
-        <FieldLabel label="Default State">
-          <Select
-            value={settings.defaultState}
-            onChange={(v) => { setSettings({ defaultState: v }); flash(); }}
-            options={states.map((s) => ({ value: s, label: s }))}
-            className="max-w-xs"
-          />
-        </FieldLabel>
-      </Section>
+
 
       {/* Category Margins */}
       <Section title="Default Margins by Category" icon={<Percent size={18} />}>
@@ -207,20 +192,7 @@ export default function SettingsPage() {
         </FieldLabel>
       </Section>
 
-      {/* Equipment Rates */}
-      <Section title="Equipment Rates" icon={<Zap size={18} />}>
-        <div className="p-4 rounded-xl border border-dashed border-accent/30 bg-accent/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <h3 className="text-sm font-bold text-accent mb-1">Adjust Equipment Rates</h3>
-            <p className="text-xs text-text-muted">
-              Individual solar panel, inverter, and battery brand rates have migrated to their own dedicated tab inside the Rate Master page.
-            </p>
-          </div>
-          <Link href="/rate-master" className="shrink-0 px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background text-sm font-semibold transition-colors">
-            Go to Rate Master
-          </Link>
-        </div>
-      </Section>
+
 
       {/* Company Info */}
       <Section title="Company Information" icon={<Building2 size={18} />}>

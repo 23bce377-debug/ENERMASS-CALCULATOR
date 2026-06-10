@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server';
  * Invalidates both the Next.js cache and the server-side Redis cache keys.
  * Next request to GET /api/masters will fetch fresh data from Supabase.
  */
-export async function revalidateMasterCache(): Promise<void> {
+export async function revalidateMasterCache(orgId?: string): Promise<void> {
   // Invalidate Next.js cache tag
   revalidateTag(CACHE_TAG, 'default');
   
@@ -22,21 +22,33 @@ export async function revalidateMasterCache(): Promise<void> {
     'subsidy_schemes:active'
   );
 
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = (await supabase
-        .from('profiles')
-        .select('org_id')
-        .eq('id', user.id)
-        .single()) as any;
-      if (profile?.org_id) {
-        await invalidateCacheKeys(`erp:bootstrap:${profile.org_id}`);
+  let targetOrgId = orgId;
+
+  if (!targetOrgId) {
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = (await supabase
+          .from('profiles')
+          .select('org_id')
+          .eq('id', user.id)
+          .single()) as any;
+        if (profile?.org_id) {
+          targetOrgId = profile.org_id;
+        }
       }
+    } catch (err) {
+      console.error('Failed to resolve user org_id for bootstrap invalidation:', err);
     }
-  } catch (err) {
-    console.error('Failed to invalidate user bootstrap cache:', err);
+  }
+
+  if (targetOrgId) {
+    try {
+      await invalidateCacheKeys(`erp:bootstrap:${targetOrgId}`);
+    } catch (err) {
+      console.error(`Failed to invalidate bootstrap cache for org ${targetOrgId}:`, err);
+    }
   }
 }
 

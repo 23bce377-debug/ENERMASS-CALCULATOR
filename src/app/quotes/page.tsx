@@ -60,12 +60,14 @@ function QuoteDetailModal({
   onClose,
   onEdit,
   onDuplicate,
+  onDownloadCloud,
 }: {
   quote: Quote;
   companyName: string;
   onClose: () => void;
   onEdit: (quoteId: string) => void;
   onDuplicate: (quoteId: string) => void;
+  onDownloadCloud: (quote: Quote) => void;
 }) {
   const { settings } = useSettings();
   const system = SYSTEMS.find((s) => s.id === quote.systemId) || settings.customSystems?.find((s) => s.id === quote.systemId);
@@ -130,6 +132,12 @@ function QuoteDetailModal({
               className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-text-primary text-sm font-medium hover:bg-surface-hover transition-colors"
             >
               <MessageCircle size={16} /> WhatsApp
+            </button>
+            <button
+              onClick={() => onDownloadCloud(quote)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-info/10 text-info text-sm font-medium hover:bg-info/20 transition-colors"
+            >
+              <Download size={16} /> Cloud JSON
             </button>
             <button
               onClick={handlePrint}
@@ -283,6 +291,40 @@ export default function QuotesPage() {
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
 
   const companyName = settings.company.name || 'ENERMASS Solar';
+
+  const downloadFromBucket = async (quote: Quote) => {
+    try {
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('Not authenticated. Please log in.');
+
+      const { ProfileORM } = await import('@/backend/orm/profile');
+      const profile = await ProfileORM.getById(session.user.id);
+      const orgId = profile.org_id;
+
+      const filePath = `${orgId}/${quote.quoteId}.json`;
+      const { data, error } = await supabase.storage
+        .from('quotes')
+        .download(filePath);
+
+      if (error) {
+        throw new Error(`File not found in storage bucket. Error: ${error.message}`);
+      }
+
+      // Trigger standard browser download
+      const blobUrl = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `${quote.quoteId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err: any) {
+      console.error('[QuotesPage] Failed to download from bucket:', err);
+      alert(err.message || 'Failed to download from storage bucket.');
+    }
+  };
 
   const goToCalculatorForEdit = (quoteId: string) => {
     loadQuote(quoteId);
@@ -480,7 +522,14 @@ export default function QuotesPage() {
                               setSelectedQuote(quote);
                               setTimeout(() => window.print(), 300);
                             }}
-                            title="Download PDF"
+                            title="Print Quote (PDF)"
+                            className="p-1.5 rounded-md hover:bg-accent/10 text-text-muted hover:text-accent transition-colors"
+                          >
+                            <Printer size={15} />
+                          </button>
+                          <button
+                            onClick={() => downloadFromBucket(quote)}
+                            title="Download JSON (Cloud)"
                             className="p-1.5 rounded-md hover:bg-accent/10 text-text-muted hover:text-accent transition-colors"
                           >
                             <Download size={15} />
@@ -517,6 +566,7 @@ export default function QuotesPage() {
             setSelectedQuote(null);
             cloneQuoteAsTemplate(quoteId);
           }}
+          onDownloadCloud={downloadFromBucket}
         />
       )}
     </>

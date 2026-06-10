@@ -113,6 +113,12 @@ function mapDbQuoteToQuote(q: any): Quote {
     targetMarginPct: Number(q.effective_margin_pct),
     calculations,
     status: (q.status === 'draft' ? 'Draft' : q.status === 'sent' ? 'Sent' : q.status === 'won' ? 'Won' : 'Lost') as any,
+    statusHistory: q.quote_status_history?.length
+      ? q.quote_status_history.map((h: any) => ({
+          status: (h.new_status === 'draft' ? 'Draft' : h.new_status === 'sent' ? 'Sent' : h.new_status === 'won' ? 'Won' : 'Lost') as any,
+          changedAt: h.changed_at,
+        })).sort((a: any, b: any) => new Date(a.changedAt).getTime() - new Date(b.changedAt).getTime())
+      : [{ status: (q.status === 'draft' ? 'Draft' : q.status === 'sent' ? 'Sent' : q.status === 'won' ? 'Won' : 'Lost') as any, changedAt: q.updated_at || q.created_at }],
     createdAt: q.created_at,
     updatedAt: q.updated_at,
     version: q.version,
@@ -145,7 +151,7 @@ export function useQuotesQuery() {
 
       const { data, error } = await supabase
         .from('quotes')
-        .select('*, quote_items(*), quote_additional_costs(*)')
+        .select('*, quote_items(*), quote_additional_costs(*), quote_status_history(*)')
         .eq('org_id', orgId)
         .order('created_at', { ascending: false })
 
@@ -167,11 +173,34 @@ export function useDeleteQuoteMutation() {
 
   return useMutation({
     mutationFn: async (quoteId: string) => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) throw new Error('Unauthorized')
+
+      const { ProfileORM } = await import('../../backend/orm/profile')
+      const profile = await ProfileORM.getById(session.user.id)
+      const orgId = profile.org_id
+
       const { error } = await supabase
         .from('quotes')
         .delete()
         .eq('quote_number', quoteId)
       if (error) throw error
+
+      // Delete JSON from Supabase Storage bucket
+      try {
+        const filePath = `${orgId}/${quoteId}.json`
+        const { error: deleteError } = await supabase.storage
+          .from('quotes')
+          .remove([filePath])
+        if (deleteError) {
+          console.error('[useQuotes] Failed to delete quote JSON from storage bucket:', deleteError.message || deleteError)
+        } else {
+          console.log(`[useQuotes] Successfully deleted quote JSON from storage bucket: ${filePath}`)
+        }
+      } catch (err) {
+        console.error('[useQuotes] Error deleting quote JSON from storage bucket:', err)
+      }
+
       return quoteId
     },
     // Optimistic Update
@@ -186,11 +215,18 @@ export function useDeleteQuoteMutation() {
         )
       }
 
+      // Sync Zustand store
+      const currentStoreQuotes = useCalculatorStore.getState().quotes || []
+      useCalculatorStore.setState({
+        quotes: currentStoreQuotes.filter((q) => q.quoteId !== quoteId)
+      })
+
       return { previousQuotes }
     },
     onError: (err, quoteId, context) => {
       if (context?.previousQuotes) {
         queryClient.setQueryData(['quotes'], context.previousQuotes)
+        useCalculatorStore.setState({ quotes: context.previousQuotes })
       }
     },
     onSettled: () => {
@@ -208,7 +244,7 @@ export function useUpdateQuoteStatusMutation() {
     mutationFn: async ({ quoteId, newStatus }: { quoteId: string; newStatus: Quote['status'] }) => {
       const { data: existingQuote } = await supabase
         .from('quotes')
-        .select('id, version')
+        .select('id, version, status, org_id')
         .eq('quote_number', quoteId)
         .single()
       
@@ -224,6 +260,22 @@ export function useUpdateQuoteStatusMutation() {
         .eq('version', existingQuote.version)
       
       if (error) throw error
+
+      // Write status history log
+      const { error: historyErr } = await (supabase as any)
+        .from('quote_status_history')
+        .insert({
+          org_id: existingQuote.org_id,
+          quote_id: existingQuote.id,
+          old_status: existingQuote.status,
+          new_status: newStatus.toLowerCase() as any,
+          changed_at: new Date().toISOString()
+        })
+
+      if (historyErr) {
+        console.error('Error logging quote status history:', historyErr)
+      }
+
       return { quoteId, newStatus }
     },
     // Optimistic Update
@@ -231,31 +283,47 @@ export function useUpdateQuoteStatusMutation() {
       await queryClient.cancelQueries({ queryKey: ['quotes'] })
       const previousQuotes = queryClient.getQueryData<Quote[]>(['quotes'])
 
+      let nextQuotes: Quote[] = []
+
       if (previousQuotes) {
-        queryClient.setQueryData<Quote[]>(
-          ['quotes'],
-          previousQuotes.map((q) => {
-            if (q.quoteId !== quoteId) return q
-            const changedAt = new Date().toISOString()
-            const existingHistory = q.statusHistory?.length
-              ? q.statusHistory
-              : [{ status: q.status, changedAt: q.createdAt }]
-            return {
-              ...q,
-              status: newStatus,
-              statusHistory: [...existingHistory, { status: newStatus, changedAt }],
-              updatedAt: changedAt,
-              version: (q.version ?? 1) + 1,
-            }
-          })
-        )
+        nextQuotes = previousQuotes.map((q) => {
+          if (q.quoteId !== quoteId) return q
+          const changedAt = new Date().toISOString()
+          const existingHistory = q.statusHistory?.length
+            ? q.statusHistory
+            : [{ status: q.status, changedAt: q.createdAt }]
+          return {
+            ...q,
+            status: newStatus,
+            statusHistory: [...existingHistory, { status: newStatus, changedAt }],
+            updatedAt: changedAt,
+            version: (q.version ?? 1) + 1,
+          }
+        })
+        queryClient.setQueryData<Quote[]>(['quotes'], nextQuotes)
       }
+
+      // Sync Zustand store
+      const currentStoreQuotes = useCalculatorStore.getState().quotes || []
+      useCalculatorStore.setState({
+        quotes: currentStoreQuotes.map((q) => {
+          if (q.quoteId !== quoteId) return q
+          const changedAt = new Date().toISOString()
+          return {
+            ...q,
+            status: newStatus,
+            updatedAt: changedAt,
+            version: (q.version ?? 1) + 1,
+          }
+        })
+      })
 
       return { previousQuotes }
     },
     onError: (err, variables, context) => {
       if (context?.previousQuotes) {
         queryClient.setQueryData(['quotes'], context.previousQuotes)
+        useCalculatorStore.setState({ quotes: context.previousQuotes })
       }
     },
     onSettled: () => {

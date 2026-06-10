@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Zap,
   Building2,
+  Wrench,
 } from 'lucide-react';
 import { useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase/client';
@@ -33,9 +34,10 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/calculator',  label: 'Calculator',  icon: <Calculator  size={18} />, mobileVisible: true  },
   { href: '/systems',     label: 'Systems',     icon: <Cpu         size={18} /> },
   { href: '/quotes',      label: 'Quotes',      icon: <FileText    size={18} />, mobileVisible: true  },
+  { href: '/projects',    label: 'Projects',    icon: <Wrench      size={18} />, mobileVisible: true  },
   { href: '/acquisition', label: 'Acquisition', icon: <ShoppingCart size={18} /> },
   { href: '/earnings',    label: 'Earnings',    icon: <TrendingUp  size={18} /> },
-  { href: '/masters',     label: 'ERP Masters', icon: <Building2   size={18} />, mobileVisible: true  },
+  { href: '/master',      label: 'ERP Masters', icon: <Building2   size={18} />, mobileVisible: true  },
   { href: '/presets',     label: 'Presets',     icon: <Bookmark    size={18} />, mobileVisible: true  },
   { href: '/settings',    label: 'Settings',    icon: <Settings    size={18} />, mobileVisible: true  },
   { href: '/profile',     label: 'Profile',     icon: <User        size={18} /> },

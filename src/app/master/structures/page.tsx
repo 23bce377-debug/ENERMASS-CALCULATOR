@@ -353,7 +353,13 @@ export default function StructuresMasterPage() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      try {
+        const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
+        await revalidateMasterCache();
+      } catch (err) {
+        console.error('Failed to revalidate master cache:', err);
+      }
       refetchLookups();
       toast('Weight lookup range added ✓', 'success');
       setLookupFormOpen(false);
@@ -372,7 +378,13 @@ export default function StructuresMasterPage() {
       if (error) throw error;
       return id;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      try {
+        const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
+        await revalidateMasterCache();
+      } catch (err) {
+        console.error('Failed to revalidate master cache:', err);
+      }
       refetchLookups();
       toast('Weight lookup range deleted', 'success');
     },

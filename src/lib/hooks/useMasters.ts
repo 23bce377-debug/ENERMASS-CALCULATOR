@@ -82,6 +82,7 @@ export function useMasterQuery<T>(entity: string, options?: any) {
       if (error) throw error;
       return (data || []) as T[];
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes cache validity
     ...options
   });
 }
@@ -107,7 +108,13 @@ export function useMasterCreateMutation<T>(entity: string) {
       await logAudit(orgId, userId, 'masters', table, data.id, 'create', null, data);
       return data as T;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      try {
+        const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
+        await revalidateMasterCache();
+      } catch (err) {
+        console.error('Failed to revalidate master cache:', err);
+      }
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
       queryClient.invalidateQueries({ queryKey: ['masters', 'dashboard'] });
     }
@@ -149,7 +156,13 @@ export function useMasterUpdateMutation<T>(entity: string) {
 
       return data as T;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      try {
+        const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
+        await revalidateMasterCache();
+      } catch (err) {
+        console.error('Failed to revalidate master cache:', err);
+      }
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
     }
   });
@@ -195,7 +208,13 @@ export function useMasterDeleteMutation(entity: string) {
 
       return id;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      try {
+        const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
+        await revalidateMasterCache();
+      } catch (err) {
+        console.error('Failed to revalidate master cache:', err);
+      }
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
       queryClient.invalidateQueries({ queryKey: ['masters', 'dashboard'] });
     }
@@ -245,7 +264,13 @@ export function useMasterBulkUpdateMutation(entity: string) {
       const results = await Promise.all(promises);
       return results;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      try {
+        const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
+        await revalidateMasterCache();
+      } catch (err) {
+        console.error('Failed to revalidate master cache:', err);
+      }
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
     }
   });
@@ -313,7 +338,8 @@ export function useSubsidySchemesQuery() {
 
       if (error) throw error;
       return (data as any) || [];
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes cache validity
   });
 }
 
@@ -379,7 +405,13 @@ export function useUpdateSubsidyMutation() {
 
       return afterScheme;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      try {
+        const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
+        await revalidateMasterCache();
+      } catch (err) {
+        console.error('Failed to revalidate master cache:', err);
+      }
       queryClient.invalidateQueries({ queryKey: ['masters', 'subsidy'] });
     }
   });

@@ -174,7 +174,7 @@ interface BOMRowProps {
   onToggleItemSelection: (index: number) => void;
   isPanelInteractive?: boolean;
   panelExpanded?: boolean;
-  onTogglePanelDetails?: () => void;
+  onTogglePanelDetails?: (index: number) => void;
   inventorySummary?: import('@/backend/orm/acquisition').InventorySummary[];
   dbMeters?: any[];
   dbLAs?: any[];
@@ -248,7 +248,7 @@ const BOMRow = memo(function BOMRow({
       <td className={`py-2 px-2 text-xs font-medium whitespace-nowrap ${line.isDisabled ? 'line-through text-text-muted' : 'text-text-primary'}`}>
         {isPanelInteractive ? (
           <button
-            onClick={onTogglePanelDetails}
+            onClick={() => onTogglePanelDetails?.(line.index)}
             className="inline-flex items-center gap-1.5 hover:text-accent transition-colors disabled:pointer-events-none"
             title="Show selected panel details"
             disabled={line.isDisabled}
@@ -891,7 +891,7 @@ export function BOMTable() {
                             isPanelInteractive={isPanelLine}
                             panelExpanded={isPanelExpanded}
                             onTogglePanelDetails={
-                              isPanelLine ? () => togglePanelRow(line.index) : undefined
+                              isPanelLine ? togglePanelRow : undefined
                             }
                             inventorySummary={inventorySummary}
                             dbMeters={dbMeters}

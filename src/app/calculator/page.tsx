@@ -12,6 +12,7 @@ import { EnergyCard } from '@/components/calculator/EnergyCard';
 import { DiscountPanel } from '@/components/calculator/DiscountPanel';
 import { AdditionalCostsPanel } from '@/components/calculator/AdditionalCostsPanel';
 import { QuoteSaveModal } from '@/components/calculator/QuoteSaveModal';
+import { VariantsComparison } from '@/components/calculator/VariantsComparison';
 import { QuotePDF } from '@/components/print/QuotePDF';
 import { STATE_DATA } from '@/lib/data/masters';
 import { formatINR } from '@/lib/engine/calculator';
@@ -381,6 +382,9 @@ export default function CalculatorPage() {
             <SummaryCard />
             <EnergyCard />
           </div>
+
+          {/* Option Variants Comparison */}
+          <VariantsComparison />
 
           {/* Actions */}
           <ActionBar

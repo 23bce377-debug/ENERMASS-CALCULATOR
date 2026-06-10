@@ -127,51 +127,23 @@ export const AcquisitionORM = {
       items: any[];
     }>
   ) {
-    // 1. Insert acquisition
-    const { data: acq, error: acqErr } = await (supabase as any)
-      .from('acquisitions')
-      .insert(acquisition)
-      .select()
-      .single();
-    if (acqErr) throw acqErr;
+    // 1. Process bundle instances if provided to get the full items list
+    const itemsToInsert: any[] = items.map(item => ({ ...item }));
 
-    // 2. Prepare items list
-    const itemsToInsert: any[] = items.map(item => ({
-      ...item,
-      acquisition_id: acq.id
-    }));
-
-    // 3. Process bundle instances if provided
     if (bundles && bundles.length > 0) {
+      // NOTE: In a high-scale architecture, this allocation should ideally move to Postgres.
+      // For now, we perform allocation in TS and send the full list to an atomic RPC.
       for (const bundle of bundles) {
-        // a. Insert acquisition bundle record
-        const { data: acqBundle, error: bundleErr } = await (supabase as any)
-          .from('acquisition_bundles')
-          .insert({
-            acquisition_id: acq.id,
-            bundle_preset_id: bundle.bundle_preset_id,
-            name: bundle.name,
-            qty: bundle.qty,
-            effective_bundle_price: bundle.effective_bundle_price,
-            allocation_strategy: bundle.allocation_strategy,
-            gst_pct: bundle.gst_pct
-          })
-          .select()
-          .single();
-        if (bundleErr) throw bundleErr;
-
-        // b. Run allocation logic for each bundle unit.
+        // Run allocation logic
         const allocatedItems = allocateBundlePrice(
           bundle.effective_bundle_price,
           bundle.items,
           bundle.allocation_strategy
         );
 
-        // d. Map to acquisition_items format and add to insertion list
+        // Map to acquisition_items format
         allocatedItems.forEach(allocated => {
           itemsToInsert.push({
-            acquisition_id: acq.id,
-            acquisition_bundle_id: acqBundle.id,
             item_description: allocated.item_description,
             category: allocated.category,
             qty: bundle.qty * allocated.qty,
@@ -183,15 +155,14 @@ export const AcquisitionORM = {
       }
     }
 
-    // 4. Insert all items
-    if (itemsToInsert.length > 0) {
-      const { error: itemsErr } = await (supabase as any)
-        .from('acquisition_items')
-        .insert(itemsToInsert);
-      if (itemsErr) throw itemsErr;
-    }
+    // 2. Call atomic RPC
+    const { data, error } = await (supabase as any).rpc('create_acquisition_atomic', {
+      p_acquisition: acquisition,
+      p_items: itemsToInsert
+    });
 
-    return acq;
+    if (error) throw error;
+    return data;
   },
 
   async markAsReceived(id: string, orgId: string) {

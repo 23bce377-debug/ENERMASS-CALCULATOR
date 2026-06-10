@@ -22,14 +22,14 @@ interface TabItem {
 }
 
 const TABS: TabItem[] = [
-  { href: '/masters/panels', label: 'Panels', icon: <Sun size={15} /> },
-  { href: '/masters/inverters', label: 'Inverters', icon: <Cpu size={15} /> },
-  { href: '/masters/batteries', label: 'Batteries', icon: <Battery size={15} /> },
-  { href: '/masters/structures', label: 'Structures', icon: <Wrench size={15} /> },
-  { href: '/masters/accessories', label: 'Accessories', icon: <Package size={15} /> },
-  { href: '/masters/vendors', label: 'Vendors', icon: <Truck size={15} /> },
-  { href: '/masters/pricing', label: 'Pricing Master', icon: <Tag size={15} /> },
-  { href: '/masters/subsidy', label: 'Subsidy Master', icon: <Percent size={15} /> },
+  { href: '/master/panels', label: 'Panels', icon: <Sun size={15} /> },
+  { href: '/master/inverters', label: 'Inverters', icon: <Cpu size={15} /> },
+  { href: '/master/batteries', label: 'Batteries', icon: <Battery size={15} /> },
+  { href: '/master/structures', label: 'Structures', icon: <Wrench size={15} /> },
+  { href: '/master/accessories', label: 'Accessories', icon: <Package size={15} /> },
+  { href: '/master/vendors', label: 'Vendors', icon: <Truck size={15} /> },
+  { href: '/master/pricing', label: 'Pricing Master', icon: <Tag size={15} /> },
+  { href: '/master/subsidy', label: 'Subsidy Master', icon: <Percent size={15} /> },
 ];
 
 export default function MastersLayout({ children }: { children: React.ReactNode }) {
@@ -41,9 +41,9 @@ export default function MastersLayout({ children }: { children: React.ReactNode 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-1">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin scrollbar-thumb-border">
           <Link
-            href="/masters"
+            href="/master"
             className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-all rounded-lg
-              ${pathname === '/masters'
+              ${pathname === '/master'
                 ? 'text-accent bg-accent-glow border border-accent/20'
                 : 'text-text-muted hover:text-text-secondary hover:bg-surface-hover border border-transparent'
               }`}

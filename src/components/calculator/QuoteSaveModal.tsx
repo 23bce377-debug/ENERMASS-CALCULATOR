@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { STATE_DATA } from '@/lib/data/masters';
 import { X, CheckCircle2, RotateCcw } from 'lucide-react';
@@ -21,6 +22,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
   const loadQuote = useCalculatorStore((s) => s.loadQuote);
   const activeQuoteId = useCalculatorStore((s) => s.activeQuoteId);
   const dbStateData = useCalculatorStore((s) => s.dbStateData);
+  const queryClient = useQueryClient();
   
   const [step, setStep] = useState(0);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
@@ -61,6 +63,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
     try {
       setFormError(null);
       const quote = await saveQuote({ customer, address, site, sales }, forceOverwrite);
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
       setSavedQuoteId(quote.quoteId);
       setShowConflict(false);
       onSaved(quote);

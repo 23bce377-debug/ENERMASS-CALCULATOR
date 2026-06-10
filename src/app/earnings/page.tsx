@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { useVendorsQuery, useBundlePresetsQuery } from '@/lib/hooks/useAcquisitions';
+import { useSalesStatsQuery, useProcurementAnalyticsQuery } from '@/lib/hooks/useDashboard';
 import { 
   BarChart3, TrendingUp, DollarSign, PieChart, ArrowUpRight, 
   ArrowDownRight, Briefcase, Layers, Users, Calendar, 
@@ -17,23 +19,6 @@ import {
 export default function EarningsPage() {
   const [activeTab, setActiveTab] = useState<'sales' | 'procurement'>('sales');
   const [orgId, setOrgId] = useState<string | null>(null);
-  
-  // Sales State
-  const [stats, setStats] = useState({
-    totalRevenue: 0,
-    totalCost: 0,
-    grossProfit: 0,
-    marginPct: 0,
-    wonQuotes: 0,
-    pendingValue: 0,
-  });
-  const [salesLoading, setSalesLoading] = useState(true);
-
-  // Procurement Analytics State
-  const [procStats, setProcStats] = useState<any>(null);
-  const [procLoading, setProcLoading] = useState(true);
-  const [vendorsList, setVendorsList] = useState<any[]>([]);
-  const [presetsList, setPresetsList] = useState<any[]>([]);
 
   // Procurement Filters
   const [filterStartDate, setFilterStartDate] = useState('');
@@ -48,81 +33,22 @@ export default function EarningsPage() {
           .then(({ data }) => {
             if (data?.org_id) {
               setOrgId(data.org_id);
-              loadEarnings(data.org_id);
-              loadProcurementFilterData(data.org_id);
             }
           });
       }
     });
   }, []);
 
-  useEffect(() => {
-    if (orgId && activeTab === 'procurement') {
-      fetchProcurementAnalytics(orgId);
-    }
-  }, [orgId, activeTab, filterStartDate, filterEndDate, filterVendorId, filterPresetId]);
+  // Queries
+  const { data: stats = { totalRevenue: 0, totalCost: 0, grossProfit: 0, marginPct: 0, wonQuotes: 0, pendingValue: 0 }, isLoading: salesLoading } = useSalesStatsQuery(orgId);
+  
+  const { data: procStats = null, isLoading: procLoading } = useProcurementAnalyticsQuery(
+    { startDate: filterStartDate, endDate: filterEndDate, vendorId: filterVendorId, presetId: filterPresetId },
+    !!orgId && activeTab === 'procurement'
+  );
 
-  async function loadProcurementFilterData(id: string) {
-    try {
-      const [venRes, prsRes] = await Promise.all([
-        (supabase as any).from('vendors').select('id, name').eq('org_id', id).order('name'),
-        (supabase as any).from('bundle_presets').select('id, name').eq('org_id', id).order('name')
-      ]);
-      if (venRes.data) setVendorsList(venRes.data);
-      if (prsRes.data) setPresetsList(prsRes.data);
-    } catch (err) {
-      console.error('Error loading filters data:', err);
-    }
-  }
-
-  async function fetchProcurementAnalytics(id: string) {
-    setProcLoading(true);
-    try {
-      let query = `startDate=${filterStartDate}&endDate=${filterEndDate}&vendorId=${filterVendorId}&presetId=${filterPresetId}`;
-      const res = await fetch(`/api/procurement/analytics?${query}`);
-      if (!res.ok) throw new Error('Failed to fetch analytics');
-      const data = await res.json();
-      setProcStats(data);
-    } catch (err) {
-      console.error('Error fetching procurement analytics:', err);
-    } finally {
-      setProcLoading(false);
-    }
-  }
-
-  async function loadEarnings(id: string) {
-    setSalesLoading(true);
-    try {
-      const { data: wonQuotes, error: wonErr } = await (supabase as any)
-        .from('quotes')
-        .select('final_customer_price, total_incl_gst, status')
-        .eq('org_id', id);
-      
-      if (wonErr) throw wonErr;
-
-      const won = (wonQuotes as any[] || []).filter((q: any) => q.status === 'won');
-      const pending = (wonQuotes as any[] || []).filter((q: any) => q.status === 'sent' || q.status === 'draft');
-
-      const totalRevenue = won.reduce((sum: number, q: any) => sum + Number(q.final_customer_price || 0), 0);
-      const totalCost = won.reduce((sum: number, q: any) => sum + Number(q.total_incl_gst || 0), 0);
-      const grossProfit = totalRevenue - totalCost;
-      const marginPct = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
-      const pendingValue = pending.reduce((sum: number, q: any) => sum + Number(q.final_customer_price || 0), 0);
-
-      setStats({
-        totalRevenue,
-        totalCost,
-        grossProfit,
-        marginPct,
-        wonQuotes: won.length,
-        pendingValue,
-      });
-    } catch (err) {
-      console.error('Error loading earnings:', err);
-    } finally {
-      setSalesLoading(false);
-    }
-  }
+  const { data: vendorsList = [] } = useVendorsQuery(orgId);
+  const { data: presetsList = [] } = useBundlePresetsQuery(orgId);
 
   const chartData = [
     { name: 'Revenue', value: stats.totalRevenue, color: '#C6973F' },
@@ -232,8 +158,9 @@ export default function EarningsPage() {
                 </h3>
                 <div className="flex-1 flex flex-col justify-center space-y-6">
                   <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-32 h-32 rounded-full border-8 border-accent/20 border-t-accent animate-spin-slow">
-                      <span className="text-2xl font-bold text-text-primary rotate-0">{stats.marginPct.toFixed(0)}%</span>
+                    <div className="relative inline-flex items-center justify-center w-32 h-32">
+                      <div className="absolute inset-0 rounded-full border-8 border-accent/20 border-t-accent animate-spin-slow" />
+                      <span className="text-2xl font-bold text-text-primary z-10">{stats.marginPct.toFixed(0)}%</span>
                     </div>
                     <p className="mt-4 text-sm text-text-muted">Average Net Margin</p>
                   </div>

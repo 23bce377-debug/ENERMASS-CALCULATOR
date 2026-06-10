@@ -10,7 +10,7 @@ export const createProjectSlice: StateCreator<
   CalculatorState,
   [],
   [],
-  Pick<CalculatorState, 'variants' | 'activeVariantId' | 'saveVariant' | 'loadVariant'>
+  Pick<CalculatorState, 'variants' | 'activeVariantId' | 'saveVariant' | 'loadVariant' | 'deleteVariant' | 'duplicateVariant'>
 > = (set, get) => ({
   variants: [],
   activeVariantId: null,
@@ -84,5 +84,37 @@ export const createProjectSlice: StateCreator<
       electricityInflationRate: variant.electricityInflationRate ?? 0.04,
     });
     get().recalculate();
+  },
+
+  deleteVariant: (id: string) => {
+    const state = get();
+    const nextVariants = state.variants.filter((v) => v.id !== id);
+    set({
+      variants: nextVariants,
+      activeVariantId: state.activeVariantId === id ? null : state.activeVariantId,
+    });
+  },
+
+  duplicateVariant: (id: string) => {
+    const state = get();
+    const source = state.variants.find((v) => v.id === id);
+    if (!source) return;
+
+    if (state.variants.length >= MAX_VARIANTS) {
+      console.warn(`Maximum variants (${MAX_VARIANTS}) reached.`);
+      return;
+    }
+
+    const copy: Variant = {
+      ...source,
+      id: randomId(),
+      name: `${source.name} (Copy)`,
+      createdAt: new Date().toISOString(),
+    };
+
+    set({
+      variants: [...state.variants, copy],
+      activeVariantId: copy.id,
+    });
   },
 });

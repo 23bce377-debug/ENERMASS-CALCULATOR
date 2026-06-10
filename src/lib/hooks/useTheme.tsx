@@ -28,7 +28,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Load from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    const stored = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) as Theme | null : null;
     if (stored === 'dark' || stored === 'light') {
       setThemeState(stored);
     }
@@ -42,7 +42,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     root.style.colorScheme = theme;
-    localStorage.setItem(STORAGE_KEY, theme);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STORAGE_KEY, theme);
+    }
   }, [theme, mounted]);
 
   const setTheme = useCallback((t: Theme) => {

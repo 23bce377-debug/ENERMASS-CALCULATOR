@@ -4,9 +4,9 @@
  * Central state management with localStorage persistence.
  * Combined slices wrapper for backward compatibility.
  */
-
+import '../mockStorage';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { Variant, CalculatorState } from './calculatorTypes';
 import { createQuoteSlice } from './calculatorStores/quoteStore';
 import { createProjectSlice } from './calculatorStores/projectStore';
@@ -16,6 +16,17 @@ import { createCalculationSlice } from './calculatorStores/calculationStore';
 
 // Re-export types to prevent breaking imports across the application
 export type { Variant, CalculatorState };
+
+const safeStorage = createJSONStorage(() => {
+  if (typeof window !== 'undefined') {
+    return window.localStorage;
+  }
+  return {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+  };
+});
 
 export const useCalculatorStore = create<CalculatorState>()(
   persist(
@@ -28,6 +39,7 @@ export const useCalculatorStore = create<CalculatorState>()(
     }),
     {
       name: 'enermass-calc-state',
+      storage: safeStorage,
       partialize: (state) => ({
         selectedSystemId: state.selectedSystemId,
         selectedState: state.selectedState,
@@ -48,14 +60,6 @@ export const useCalculatorStore = create<CalculatorState>()(
         variants: state.variants,
         activeVariantId: state.activeVariantId,
         activeQuoteId: state.activeQuoteId,
-        quotes: state.quotes,
-        dbSystems: state.dbSystems,
-        dbStateData: state.dbStateData,
-        dbPanels: state.dbPanels,
-        dbInverters: state.dbInverters,
-        dbBatteries: state.dbBatteries,
-        dbSlabs: state.dbSlabs,
-        dbLoaded: state.dbLoaded,
         showInventoryInfo: state.showInventoryInfo,
 
         // Structure & Meter & LA selections
@@ -77,16 +81,6 @@ export const useCalculatorStore = create<CalculatorState>()(
         netMeterQty: state.netMeterQty,
         lightningArresterId: state.lightningArresterId,
         lightningArresterQty: state.lightningArresterQty,
-
-        // Extra database lists
-        dbStructures: state.dbStructures,
-        dbWeightLookups: state.dbWeightLookups,
-        dbMeters: state.dbMeters,
-        dbLAs: state.dbLAs,
-        dbStructureParts: state.dbStructureParts,
-        dbStructureComponents: state.dbStructureComponents,
-        dbStructureBom: state.dbStructureBom,
-        dbStructureAddons: state.dbStructureAddons,
 
         // Pricing overrides (survive page refresh)
         gstOnOutputOverride: state.gstOnOutputOverride,
