@@ -183,9 +183,6 @@ CREATE TABLE eq_panels (
   model            TEXT NOT NULL,
   wattage_w        INTEGER NOT NULL,             -- e.g., 545, 580, 620
   panel_type       TEXT NOT NULL DEFAULT 'Mono PERC',  -- 'Mono PERC', 'TOPCon', 'HJT'
-  rate_per_watt    NUMERIC(8,4) NOT NULL,        -- INR/W
-  -- Generated: rate_per_panel = wattage × rate_per_watt
-  rate_per_panel   NUMERIC(12,2) GENERATED ALWAYS AS (wattage_w * rate_per_watt) STORED,
   gst_pct          NUMERIC(6,5) NOT NULL DEFAULT 0.05000,  -- Always 5% for panels
   description      TEXT,
   is_active        BOOLEAN NOT NULL DEFAULT TRUE,
@@ -193,6 +190,14 @@ CREATE TABLE eq_panels (
   version          INTEGER NOT NULL DEFAULT 1,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  import_batch_id  UUID,
+  source_file      TEXT,
+  sheet_name       TEXT,
+  row_number       INTEGER,
+  imported_at      TIMESTAMPTZ,
+  imported_by      UUID,
+  buy_price        NUMERIC(12,2) NOT NULL DEFAULT 0.00,
+  selling_price    NUMERIC(12,2) NOT NULL DEFAULT 0.00,
   CONSTRAINT uq_panel UNIQUE (brand, model, wattage_w)
 );
 
@@ -208,7 +213,6 @@ CREATE TABLE eq_inverters (
   capacity_kw      NUMERIC(8,3) NOT NULL,
   inverter_type    inverter_type NOT NULL,
   phases           SMALLINT NOT NULL DEFAULT 1 CHECK (phases IN (1, 3)),
-  rate             NUMERIC(12,2) NOT NULL,
   gst_pct          NUMERIC(6,5) NOT NULL DEFAULT 0.12000,  -- Always 12%
   description      TEXT,
   is_active        BOOLEAN NOT NULL DEFAULT TRUE,
@@ -216,6 +220,14 @@ CREATE TABLE eq_inverters (
   version          INTEGER NOT NULL DEFAULT 1,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  import_batch_id  UUID,
+  source_file      TEXT,
+  sheet_name       TEXT,
+  row_number       INTEGER,
+  imported_at      TIMESTAMPTZ,
+  imported_by      UUID,
+  buy_price        NUMERIC(12,2) NOT NULL DEFAULT 0.00,
+  selling_price    NUMERIC(12,2) NOT NULL DEFAULT 0.00,
   CONSTRAINT uq_inverter UNIQUE (brand, model, capacity_kw, inverter_type)
 );
 
@@ -232,7 +244,6 @@ CREATE TABLE eq_batteries (
   voltage_v        INTEGER,
   chemistry        battery_chemistry NOT NULL DEFAULT 'LFP',
   dod_pct          NUMERIC(5,4) NOT NULL DEFAULT 0.80,   -- Depth of discharge
-  rate             NUMERIC(12,2) NOT NULL,
   gst_pct          NUMERIC(6,5) NOT NULL DEFAULT 0.12000,  -- Always 12%
   description      TEXT,
   is_active        BOOLEAN NOT NULL DEFAULT TRUE,
@@ -240,6 +251,14 @@ CREATE TABLE eq_batteries (
   version          INTEGER NOT NULL DEFAULT 1,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  import_batch_id  UUID,
+  source_file      TEXT,
+  sheet_name       TEXT,
+  row_number       INTEGER,
+  imported_at      TIMESTAMPTZ,
+  imported_by      UUID,
+  buy_price        NUMERIC(12,2) NOT NULL DEFAULT 0.00,
+  selling_price    NUMERIC(12,2) NOT NULL DEFAULT 0.00,
   CONSTRAINT uq_battery UNIQUE (brand, model, capacity_kwh)
 );
 
@@ -256,14 +275,20 @@ CREATE TABLE eq_meters (
   model            TEXT NOT NULL,
   phases           SMALLINT NOT NULL DEFAULT 1 CHECK (phases IN (1, 3)),
   is_smart         BOOLEAN NOT NULL DEFAULT FALSE, -- Smart/CT meter for commercial
-  rate             NUMERIC(12,2) NOT NULL,
-  -- Both meter types attract 18% GST
   gst_pct          NUMERIC(6,5) NOT NULL DEFAULT 0.18000,
   description      TEXT,
   is_active        BOOLEAN NOT NULL DEFAULT TRUE,
   version          INTEGER NOT NULL DEFAULT 1,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  import_batch_id  UUID,
+  source_file      TEXT,
+  sheet_name       TEXT,
+  row_number       INTEGER,
+  imported_at      TIMESTAMPTZ,
+  imported_by      UUID,
+  buy_price        NUMERIC(12,2) NOT NULL DEFAULT 0.00,
+  selling_price    NUMERIC(12,2) NOT NULL DEFAULT 0.00
 );
 
 CREATE INDEX idx_eq_meters_type ON eq_meters(meter_type, is_active);
@@ -278,13 +303,20 @@ CREATE TABLE eq_lightning_arresters (
   model            TEXT NOT NULL,
   -- multi-type LA covers more panels / higher capacity systems
   max_capacity_kw  NUMERIC(8,3),                  -- Recommended up to this capacity
-  rate             NUMERIC(12,2) NOT NULL,
   gst_pct          NUMERIC(6,5) NOT NULL DEFAULT 0.18000,
   description      TEXT,
   is_active        BOOLEAN NOT NULL DEFAULT TRUE,
   version          INTEGER NOT NULL DEFAULT 1,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  import_batch_id  UUID,
+  source_file      TEXT,
+  sheet_name       TEXT,
+  row_number       INTEGER,
+  imported_at      TIMESTAMPTZ,
+  imported_by      UUID,
+  buy_price        NUMERIC(12,2) NOT NULL DEFAULT 0.00,
+  selling_price    NUMERIC(12,2) NOT NULL DEFAULT 0.00
 );
 
 -- 5f. MOUNTING STRUCTURES — Weight-based pricing
@@ -318,7 +350,8 @@ CREATE TABLE eq_mounting_structures (
   base_weight_kg      NUMERIC(10,3) NOT NULL DEFAULT 0,
 
   -- Optional flat rate override (ignored when NULL — weight-based used instead)
-  flat_rate           NUMERIC(12,2),
+  selling_price       NUMERIC(12,2),
+  buy_price           NUMERIC(12,2) NOT NULL DEFAULT 0.00,
   
   -- Optional per-watt rate override (ignored when NULL)
   per_watt_rate       NUMERIC(12,2),
@@ -329,7 +362,13 @@ CREATE TABLE eq_mounting_structures (
   is_custom           BOOLEAN NOT NULL DEFAULT FALSE,
   version             INTEGER NOT NULL DEFAULT 1,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  import_batch_id     UUID,
+  source_file         TEXT,
+  sheet_name          TEXT,
+  row_number          INTEGER,
+  imported_at         TIMESTAMPTZ,
+  imported_by         UUID
 );
 
 -- Structure weight lookup by system capacity range
@@ -460,12 +499,19 @@ CREATE TABLE eq_bom_items (
   description      TEXT NOT NULL,           -- Display label: 'ACDB', 'DC CABLE'
   remarks          TEXT,                    -- Spec: '4sqmm Solar', '10swg 1kg'
   unit             TEXT NOT NULL DEFAULT 'Nos',  -- 'Nos', 'Mtr', 'kg', 'Set', 'Lump'
-  rate             NUMERIC(12,4) NOT NULL,
   gst_pct          NUMERIC(6,5) NOT NULL DEFAULT 0.18000,
   is_active        BOOLEAN NOT NULL DEFAULT TRUE,
   version          INTEGER NOT NULL DEFAULT 1,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  import_batch_id  UUID,
+  source_file      TEXT,
+  sheet_name       TEXT,
+  row_number       INTEGER,
+  imported_at      TIMESTAMPTZ,
+  imported_by      UUID,
+  buy_price        NUMERIC(12,4) NOT NULL DEFAULT 0.0000,
+  selling_price    NUMERIC(12,4) NOT NULL DEFAULT 0.0000
 );
 
 CREATE UNIQUE INDEX uq_bom_item ON eq_bom_items (section, sub_type, COALESCE(org_id::TEXT, 'global'));
@@ -480,13 +526,20 @@ CREATE TABLE eq_communication_devices (
   brand                       TEXT NOT NULL,
   model                       TEXT NOT NULL,
   compatible_inverter_brand   TEXT,
-  rate                        NUMERIC(12,2) NOT NULL,
   gst_pct                     NUMERIC(6,5) NOT NULL DEFAULT 0.12000,
   description                 TEXT,
   is_active                   BOOLEAN NOT NULL DEFAULT TRUE,
   version                     INTEGER NOT NULL DEFAULT 1,
   created_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  import_batch_id             UUID,
+  source_file                 TEXT,
+  sheet_name                  TEXT,
+  row_number                  INTEGER,
+  imported_at                 TIMESTAMPTZ,
+  imported_by                 UUID,
+  buy_price                   NUMERIC(12,2) NOT NULL DEFAULT 0.00,
+  selling_price               NUMERIC(12,2) NOT NULL DEFAULT 0.00
 );
 
 -- ============================================================
@@ -689,14 +742,9 @@ CREATE TABLE quotes (
   -- Overrides for full editability
   gst_output_override     NUMERIC(5,4),
   target_mrp_incl_gst     NUMERIC(14,4),
-  target_mrp_per_watt     NUMERIC(14,4)
-);
+  target_mrp_per_watt     NUMERIC(14,4),
 
-CREATE TABLE quote_financials (
-  quote_id                UUID PRIMARY KEY REFERENCES quotes(id) ON DELETE CASCADE,
-  org_id                  UUID NOT NULL REFERENCES organisations(id),
-
-  -- Financial snapshot (computed at quote creation, immutable thereafter)
+  -- Denormalized Financial snapshot
   cost_before_gst         NUMERIC(14,4) NOT NULL DEFAULT 0,
   total_input_gst         NUMERIC(14,4) NOT NULL DEFAULT 0,
   total_incl_gst          NUMERIC(14,4) NOT NULL DEFAULT 0,
@@ -714,15 +762,12 @@ CREATE TABLE quote_financials (
   per_kw_excl_gst         NUMERIC(14,4),
   per_kw_incl_gst         NUMERIC(14,4),
 
-  -- Energy estimates (snapshot)
+  -- Denormalized Energy estimates
   annual_generation_kwh   NUMERIC(12,3),
   annual_savings_inr      NUMERIC(12,2),
   payback_years           NUMERIC(6,2),
   lifetime_savings_inr    NUMERIC(14,2),
-  co2_offset_kg_per_year  NUMERIC(12,2),
-
-  created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  co2_offset_kg_per_year  NUMERIC(12,2)
 );
 
 CREATE INDEX idx_quotes_org_status    ON quotes(org_id, status, created_at DESC);
@@ -1570,15 +1615,14 @@ CREATE VIEW v_quote_summary AS
     q.customer_name, q.customer_phone,
     s.state_name,
     q.system_name, q.system_capacity_kw, q.system_category,
-    qf.mrp_incl_gst, qf.subsidy_amount, qf.beneficiary_contribution,
-    q.discount_type, qf.discount_amount,
+    q.mrp_incl_gst, q.subsidy_amount, q.beneficiary_contribution,
+    q.discount_type, q.discount_amount,
     q.panel_brand_model, q.panel_qty,
     q.inverter_brand_model,
     q.created_at, q.updated_at, q.valid_until,
     q.exec_name,
     q.version
   FROM quotes q
-  LEFT JOIN quote_financials qf ON qf.quote_id = q.id
   LEFT JOIN state_rules s ON q.state_id = s.id;
 
 -- 20c. System with computed BOM cost (for system browser comparison)

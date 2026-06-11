@@ -1,0 +1,524 @@
+[
+  {
+    "sheetName": "2kwp",
+    "capacity": 2.18,
+    "panelInfo": "Generic",
+    "panelQty": 4,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 12800,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "Sheet1",
+    "capacity": 2.48,
+    "panelInfo": "Generic",
+    "panelQty": 4,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 14425,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "1kw admn",
+    "panelInfo": "Generic",
+    "panelQty": 2,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 12000,
+    "rowCount": 31
+  },
+  {
+    "sheetName": "3Kwp",
+    "capacity": 3.1,
+    "panelInfo": "Generic",
+    "panelQty": 5,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 13800,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "3KW MICRO INVERTER",
+    "capacity": 4.96,
+    "panelInfo": "Generic",
+    "panelQty": 8,
+    "inverterInfo": "Generic",
+    "inverterQty": 8,
+    "inverterRate": 8500,
+    "rowCount": 34
+  },
+  {
+    "sheetName": "5kw micro",
+    "capacity": 4.96,
+    "panelInfo": "Generic",
+    "panelQty": 8,
+    "inverterInfo": "Generic",
+    "inverterQty": 8,
+    "inverterRate": 8500,
+    "rowCount": 34
+  },
+  {
+    "sheetName": "2-3upgrade",
+    "capacity": 3.1,
+    "panelInfo": "Generic",
+    "panelQty": 5,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 14800,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "3kw hibrid",
+    "capacity": 3.1,
+    "panelInfo": "Generic",
+    "panelQty": 5,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 75000,
+    "rowCount": 33
+  },
+  {
+    "sheetName": "mat 3 kw",
+    "capacity": 3.48,
+    "panelInfo": "Generic",
+    "panelQty": 6,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 15200,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "UPGRADE 5 KW hybrid",
+    "capacity": 5.22,
+    "panelInfo": "Generic",
+    "panelQty": 9,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 74000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "4KWp",
+    "capacity": 4.96,
+    "panelInfo": "Generic",
+    "panelQty": 8,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 20000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "5Kwp",
+    "capacity": 4.96,
+    "panelInfo": "Generic",
+    "panelQty": 8,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 22500,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "5kw 3 PH",
+    "capacity": 4.96,
+    "panelInfo": "Generic",
+    "panelQty": 8,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 38000,
+    "rowCount": 33
+  },
+  {
+    "sheetName": "Sheet6",
+    "capacity": 2.2,
+    "panelInfo": "Generic",
+    "panelQty": 4,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 48000,
+    "rowCount": 33
+  },
+  {
+    "sheetName": "hoymiles5kw",
+    "capacity": 4.96,
+    "panelInfo": "Generic",
+    "panelQty": 8,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 42000,
+    "rowCount": 33
+  },
+  {
+    "sheetName": "upgrade 5kw ",
+    "capacity": 5.58,
+    "panelInfo": "Generic",
+    "panelQty": 9,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 24000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "6kwp",
+    "capacity": 6.2,
+    "panelInfo": "Generic",
+    "panelQty": 10,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 38000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "8kwp",
+    "capacity": 5.58,
+    "panelInfo": "Generic",
+    "panelQty": 9,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 46000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "10KWp",
+    "capacity": 9.92,
+    "panelInfo": "Generic",
+    "panelQty": 16,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 44000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "15kwHibrid",
+    "capacity": 15.5,
+    "panelInfo": "Generic",
+    "panelQty": 25,
+    "inverterInfo": "hybrid",
+    "inverterQty": 1,
+    "inverterRate": 190000,
+    "rowCount": 34
+  },
+  {
+    "sheetName": "10kw hybrid",
+    "capacity": 4.96,
+    "panelInfo": "Generic",
+    "panelQty": 8,
+    "inverterInfo": "hybrid",
+    "inverterQty": 1,
+    "inverterRate": 155000,
+    "rowCount": 34
+  },
+  {
+    "sheetName": "1.5kw",
+    "capacity": "PRICE",
+    "panelInfo": "3",
+    "panelQty": 11610,
+    "inverterInfo": "1",
+    "inverterQty": 14000,
+    "inverterRate": 14000,
+    "rowCount": 42
+  },
+  {
+    "sheetName": "2kw",
+    "capacity": "PRICE",
+    "panelInfo": "4",
+    "panelQty": 11340,
+    "inverterInfo": "1",
+    "inverterQty": 14000,
+    "inverterRate": 14000,
+    "rowCount": 42
+  },
+  {
+    "sheetName": "Sheet3",
+    "capacity": "PRICE",
+    "panelInfo": "4",
+    "panelQty": 13230,
+    "inverterInfo": "1",
+    "inverterQty": 15000,
+    "inverterRate": 15000,
+    "rowCount": 42
+  },
+  {
+    "sheetName": "6kw",
+    "panelInfo": "WATT:540*             MAKE:ADANI",
+    "panelQty": 11,
+    "inverterInfo": "KW:5    PH:1   MAKE:GROWATT",
+    "inverterQty": 1,
+    "inverterRate": 43000,
+    "rowCount": 38
+  },
+  {
+    "sheetName": "Sheet9",
+    "capacity": 8.19,
+    "panelInfo": "Generic",
+    "panelQty": 14,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 44152,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "pricing",
+    "capacity": "System Price",
+    "panelInfo": null,
+    "panelQty": null,
+    "inverterInfo": null,
+    "inverterQty": null,
+    "inverterRate": null,
+    "rowCount": 20
+  },
+  {
+    "sheetName": "hibrid 5kw",
+    "capacity": 5.58,
+    "panelInfo": "Generic",
+    "panelQty": 9,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 74000,
+    "rowCount": 33
+  },
+  {
+    "sheetName": "hibrid upgrade 5kw",
+    "capacity": 5.4,
+    "panelInfo": "Generic",
+    "panelQty": 10,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 75661,
+    "rowCount": 33
+  },
+  {
+    "sheetName": "hibrid 3 kw",
+    "capacity": "PRICE",
+    "panelInfo": "6",
+    "panelQty": 13500,
+    "inverterInfo": "1",
+    "inverterQty": 16800,
+    "inverterRate": 16800,
+    "rowCount": 42
+  },
+  {
+    "sheetName": "5ke 3P TN",
+    "panelInfo": "WATT:540*             MAKE:ADANI",
+    "panelQty": 9,
+    "inverterInfo": "KW:5    PH:1   MAKE:GROWATT",
+    "inverterQty": 1,
+    "inverterRate": 45000,
+    "rowCount": 38
+  },
+  {
+    "sheetName": "Sheet4",
+    "panelInfo": "WATT:540*             MAKE:ADANI",
+    "panelQty": 18,
+    "inverterInfo": "KW:10    PH:3   MAKE:GROWATT",
+    "inverterRate": 50000,
+    "rowCount": 42
+  },
+  {
+    "sheetName": "Sheet5",
+    "panelInfo": "WATT:540*             MAKE:ADANI",
+    "panelQty": 28,
+    "inverterInfo": "KW:10    PH:3   MAKE:GROWATT",
+    "inverterRate": 63000,
+    "rowCount": 39
+  },
+  {
+    "sheetName": "25kw",
+    "capacity": 29.76,
+    "panelInfo": "Generic",
+    "panelQty": 48,
+    "inverterInfo": "25",
+    "inverterQty": 1,
+    "inverterRate": 72468,
+    "rowCount": 35
+  },
+  {
+    "sheetName": "Sheet11",
+    "capacity": 29.76,
+    "panelInfo": "Generic",
+    "panelQty": 48,
+    "inverterInfo": "25",
+    "inverterQty": 1,
+    "inverterRate": 87000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "15kwp",
+    "capacity": 15.5,
+    "panelInfo": "Generic",
+    "panelQty": 25,
+    "inverterInfo": "15",
+    "inverterQty": 1,
+    "inverterRate": 61187,
+    "rowCount": 34
+  },
+  {
+    "sheetName": "20kwp",
+    "capacity": 20.46,
+    "panelInfo": "Generic",
+    "panelQty": 33,
+    "inverterInfo": "20",
+    "inverterQty": 1,
+    "inverterRate": 68000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "Sheet8",
+    "capacity": 20.46,
+    "panelInfo": "Generic",
+    "panelQty": 33,
+    "inverterInfo": "20",
+    "inverterQty": 1,
+    "inverterRate": 65000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "30KW Hybrid",
+    "capacity": 30.38,
+    "panelInfo": "Generic",
+    "panelQty": 49,
+    "inverterInfo": "91524",
+    "inverterQty": 1,
+    "inverterRate": 1000000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "Sheet7",
+    "panelInfo": "PANEL",
+    "panelQty": "PANEL",
+    "inverterInfo": "INVERTER",
+    "inverterQty": "INVERTER",
+    "inverterRate": "PANEL",
+    "rowCount": 33
+  },
+  {
+    "sheetName": "3 to 3 upgradation",
+    "capacity": 3.54,
+    "panelInfo": "Generic",
+    "panelQty": 6,
+    "inverterInfo": "Generic",
+    "inverterQty": 1,
+    "inverterRate": 15500,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "Inkel250bos",
+    "capacity": 0,
+    "panelInfo": "Generic",
+    "panelQty": 0,
+    "inverterInfo": "250",
+    "inverterQty": 0,
+    "inverterRate": 223000,
+    "rowCount": 37
+  },
+  {
+    "sheetName": "100kw STM",
+    "capacity": 99.2,
+    "panelInfo": "Generic",
+    "panelQty": 160,
+    "inverterInfo": "50",
+    "inverterQty": 2,
+    "inverterRate": 122012,
+    "rowCount": 40
+  },
+  {
+    "sheetName": "inkel aluva",
+    "capacity": 0,
+    "panelInfo": "Generic",
+    "panelQty": 0,
+    "inverterInfo": "250",
+    "inverterQty": 0,
+    "inverterRate": 223000,
+    "rowCount": 37
+  },
+  {
+    "sheetName": "newen",
+    "capacity": 196.56,
+    "panelInfo": "Generic",
+    "panelQty": 336,
+    "inverterInfo": "80",
+    "inverterQty": 0,
+    "inverterRate": 192000,
+    "rowCount": 37
+  },
+  {
+    "sheetName": "mis working",
+    "capacity": 3.54,
+    "panelInfo": "Generic",
+    "panelQty": 6,
+    "inverterInfo": "8kw",
+    "inverterQty": 1,
+    "inverterRate": 44000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "20KW HIBRID",
+    "capacity": 20.06,
+    "panelInfo": "Generic",
+    "panelQty": 34,
+    "inverterInfo": "20",
+    "inverterQty": 1,
+    "inverterRate": 260453,
+    "rowCount": 33
+  },
+  {
+    "sheetName": "20kw30kwhr",
+    "capacity": 25.42,
+    "panelInfo": "Generic",
+    "panelQty": 41,
+    "inverterInfo": "30",
+    "inverterQty": 1,
+    "inverterRate": 350000,
+    "rowCount": 33
+  },
+  {
+    "sheetName": "20kw hibrid solinteg",
+    "capacity": 20.3,
+    "panelInfo": "Generic",
+    "panelQty": 35,
+    "inverterInfo": "25",
+    "inverterQty": 1,
+    "inverterRate": 737934,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "Sheet10",
+    "capacity": 196.56,
+    "panelInfo": "Generic",
+    "panelQty": 336,
+    "inverterInfo": "250",
+    "inverterQty": 0,
+    "inverterRate": 192000,
+    "rowCount": 25
+  },
+  {
+    "sheetName": "Sheet2",
+    "capacity": 20.3,
+    "panelInfo": "Generic",
+    "panelQty": 35,
+    "inverterInfo": "25",
+    "inverterQty": 1,
+    "inverterRate": 267000,
+    "rowCount": 33
+  },
+  {
+    "sheetName": "80kw",
+    "capacity": 80.6,
+    "panelInfo": "Generic",
+    "panelQty": 130,
+    "inverterInfo": "91524",
+    "inverterQty": 2,
+    "inverterRate": 123000,
+    "rowCount": 32
+  },
+  {
+    "sheetName": "80kwenphase",
+    "capacity": 80.6,
+    "panelInfo": "Generic",
+    "panelQty": 130,
+    "inverterInfo": "91524",
+    "inverterQty": 1,
+    "inverterRate": 1340000,
+    "rowCount": 32
+  }
+]

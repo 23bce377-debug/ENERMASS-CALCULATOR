@@ -8,9 +8,13 @@ async function run() {
   console.log("Connected!");
 
   try {
-    const res = await client.query("SELECT * FROM eq_structure_components LIMIT 20");
-    console.log("=== EQ STRUCTURE COMPONENTS ROWS ===");
-    console.log(res.rows);
+    const panels = await client.query("SELECT id, brand, model, wattage_w, buy_price, selling_price FROM eq_panels WHERE is_active = true");
+    console.log("=== PANELS IN DB ===");
+    console.log(panels.rows);
+    
+    const inverters = await client.query("SELECT id, brand, model, capacity_kw, buy_price, selling_price FROM eq_inverters WHERE is_active = true");
+    console.log("=== INVERTERS IN DB ===");
+    console.log(inverters.rows);
   } catch (e) {
     console.error("Error:", e);
   }

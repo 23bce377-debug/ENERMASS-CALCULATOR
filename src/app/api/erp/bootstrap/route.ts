@@ -11,8 +11,15 @@ export const GET = withAuth(async (request, context) => {
     return NextResponse.json({ error: 'Unauthorized: No org_id associated with profile' }, { status: 401 });
   }
 
+  // Parse limit parameters to prevent payload and memory explosion under large scales (P0-7)
+  const { searchParams } = new URL(request.url);
+  const bomLimit = Math.min(10000, Math.max(1, parseInt(searchParams.get('bomLimit') || '1000', 10)));
+  const invLimit = Math.min(10000, Math.max(1, parseInt(searchParams.get('invLimit') || '1000', 10)));
+
   try {
-    const data = await getOrSetCache(`erp:bootstrap:${orgId}`, async () => {
+    // Include limits in the cache key to prevent collision/poisoning (P0-7)
+    const cacheKey = `erp:bootstrap:${orgId}:bomLimit_${bomLimit}:invLimit_${invLimit}`;
+    const data = await getOrSetCache(cacheKey, async () => {
       const supabaseAdmin = createAdminClient() as any;
 
       const [
@@ -49,14 +56,14 @@ export const GET = withAuth(async (request, context) => {
         supabaseAdmin.from('eq_meters').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
         supabaseAdmin.from('eq_lightning_arresters').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
         supabaseAdmin.from('eq_mounting_structures').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('eq_bom_items').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
+        supabaseAdmin.from('eq_bom_items').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true).limit(bomLimit),
         supabaseAdmin.from('eq_communication_devices').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
         supabaseAdmin.from('systems').select('*, system_items(*)').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
         supabaseAdmin.from('structure_weight_lookup').select('*'),
         supabaseAdmin.from('state_rules').select('*').eq('is_active', true),
         supabaseAdmin.from('scheme_slabs').select('*'),
         supabaseAdmin.from('calculation_schemes').select('*').eq('is_active', true),
-        supabaseAdmin.from('inventory_summary').select('*').eq('org_id', orgId),
+        supabaseAdmin.from('inventory_summary').select('*').eq('org_id', orgId).limit(invLimit),
         supabaseAdmin.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true }),
         supabaseAdmin.from('eq_structure_components').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
         supabaseAdmin.from('eq_structure_bom').select('*'),

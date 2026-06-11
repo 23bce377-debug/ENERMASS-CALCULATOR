@@ -165,10 +165,9 @@ export const AcquisitionORM = {
     return data;
   },
 
-  async markAsReceived(id: string, orgId: string) {
+  async markAsReceived(id: string, orgId?: string) {
     const { data, error } = await (supabase as any).rpc('mark_acquisition_as_received', {
-      p_acquisition_id: id,
-      p_org_id: orgId
+      p_acquisition_id: id
     });
     if (error) throw error;
     return data;

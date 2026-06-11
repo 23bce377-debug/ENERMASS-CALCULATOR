@@ -830,7 +830,7 @@ export interface Database {
         }
         Relationships: []
       }
-      engineering_rules_metadata: {
+      engineering_rules_metadata_deprecated: {
         Row: {
           id: string
           rule_name: string
@@ -1982,6 +1982,7 @@ export interface Database {
           arrival_lng: number | null
           created_at: string
           updated_at: string
+          amc_contract_id: string | null
         }
         Insert: {
           id?: string
@@ -1997,6 +1998,7 @@ export interface Database {
           arrival_lng?: number | null
           created_at?: string
           updated_at?: string
+          amc_contract_id?: string | null
         }
         Update: {
           id?: string
@@ -2012,10 +2014,11 @@ export interface Database {
           arrival_lng?: number | null
           created_at?: string
           updated_at?: string
+          amc_contract_id?: string | null
         }
         Relationships: []
       }
-      gst_master: {
+      gst_master_deprecated: {
         Row: {
           id: string
           gst_pct: number
@@ -2537,7 +2540,7 @@ export interface Database {
         }
         Relationships: []
       }
-      pricing_reference: {
+      pricing_reference_deprecated: {
         Row: {
           id: string
           capacity_kw: number
@@ -3395,6 +3398,39 @@ export interface Database {
         }
         Relationships: []
       }
+      rate_master: {
+        Row: {
+          id: string
+          org_id: string
+          bom_item_id: string | null
+          item_name: string
+          override_rate: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          bom_item_id?: string | null
+          item_name: string
+          override_rate: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          bom_item_id?: string | null
+          item_name?: string
+          override_rate?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scheme_slabs: {
         Row: {
           id: string
@@ -3515,6 +3551,45 @@ export interface Database {
         }
         Relationships: []
       }
+      structure_accessory_rates: {
+        Row: {
+          id: string
+          org_id: string | null
+          item_name: string
+          item_aliases: string[]
+          unit: string
+          rate: number
+          gst_pct: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id?: string | null
+          item_name: string
+          item_aliases?: string[]
+          unit?: string
+          rate?: number
+          gst_pct?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string | null
+          item_name?: string
+          item_aliases?: string[]
+          unit?: string
+          rate?: number
+          gst_pct?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       structure_component_master: {
         Row: {
           id: string
@@ -3560,6 +3635,36 @@ export interface Database {
         }
         Relationships: []
       }
+      structure_component_vendor_rates: {
+        Row: {
+          id: string
+          component_id: string
+          vendor_id: string
+          rate_per_unit: number
+          effective_from: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          component_id: string
+          vendor_id: string
+          rate_per_unit?: number
+          effective_from?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          component_id?: string
+          vendor_id?: string
+          rate_per_unit?: number
+          effective_from?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       structure_material_rates: {
         Row: {
           id: string
@@ -3593,6 +3698,7 @@ export interface Database {
           weight: number | null
           vendor_id: string | null
           created_at: string
+          accessory_rate_id: string | null
         }
         Insert: {
           id?: string
@@ -3602,6 +3708,7 @@ export interface Database {
           weight?: number | null
           vendor_id?: string | null
           created_at?: string
+          accessory_rate_id?: string | null
         }
         Update: {
           id?: string
@@ -3611,6 +3718,7 @@ export interface Database {
           weight?: number | null
           vendor_id?: string | null
           created_at?: string
+          accessory_rate_id?: string | null
         }
         Relationships: []
       }
@@ -3638,7 +3746,7 @@ export interface Database {
         }
         Relationships: []
       }
-      structure_vendors: {
+      structure_vendors_deprecated: {
         Row: {
           id: string
           name: string
@@ -4467,6 +4575,7 @@ export interface Database {
           created_at: string
           updated_at: string
           status: Database['public']['Enums']['vendor_status']
+          is_structure_vendor: boolean
         }
         Insert: {
           id?: string
@@ -4480,6 +4589,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           status?: Database['public']['Enums']['vendor_status']
+          is_structure_vendor?: boolean
         }
         Update: {
           id?: string
@@ -4493,6 +4603,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           status?: Database['public']['Enums']['vendor_status']
+          is_structure_vendor?: boolean
         }
         Relationships: []
       }
@@ -4683,6 +4794,39 @@ export interface Database {
           valid_until: string | null
           exec_name: string | null
           version: number | null
+        }
+        Relationships: []
+      }
+      v_rate_master_canonical: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          bom_item_id: string | null
+          item_name: string | null
+          effective_rate: number | null
+          is_active: boolean | null
+          section: Database['public']['Enums']['bom_section'] | null
+          unit: string | null
+          gst_pct: number | null
+        }
+        Relationships: []
+      }
+      v_structure_components_with_rates: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          structure_id: string | null
+          category: string | null
+          name: string | null
+          description: string | null
+          unit: string | null
+          selling_price: number | null
+          buy_price: number | null
+          gst_pct: number | null
+          is_active: boolean | null
+          vendor_name: string | null
+          vendor_id: string | null
+          vendor_rate_per_unit: number | null
         }
         Relationships: []
       }
