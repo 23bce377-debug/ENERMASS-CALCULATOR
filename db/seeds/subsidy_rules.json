@@ -1,0 +1,47 @@
+[
+  {
+    "capacity_kw": 1,
+    "subsidy_amount": 30000,
+    "description": "PM Surya Ghar 1kW"
+  },
+  {
+    "capacity_kw": 1.5,
+    "subsidy_amount": 45000,
+    "description": "PM Surya Ghar 1.5kW"
+  },
+  {
+    "capacity_kw": 2,
+    "subsidy_amount": 60000,
+    "description": "PM Surya Ghar 2kW"
+  },
+  {
+    "capacity_kw": 3,
+    "subsidy_amount": 78000,
+    "description": "PM Surya Ghar 3kW"
+  },
+  {
+    "capacity_kw": 4,
+    "subsidy_amount": 78000,
+    "description": "PM Surya Ghar 4kW"
+  },
+  {
+    "capacity_kw": 5,
+    "subsidy_amount": 78000,
+    "description": "PM Surya Ghar 5kW"
+  },
+  {
+    "capacity_kw": 6,
+    "subsidy_amount": 78000,
+    "description": "PM Surya Ghar 6kW"
+  },
+  {
+    "capacity_kw": 8,
+    "subsidy_amount": 78000,
+    "description": "PM Surya Ghar 8kW"
+  },
+  {
+    "capacity_kw": 10,
+    "subsidy_amount": 78000,
+    "description": "PM Surya Ghar 10kW"
+  }
+]

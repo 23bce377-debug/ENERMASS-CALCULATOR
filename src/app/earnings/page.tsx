@@ -122,7 +122,7 @@ export default function EarningsPage() {
                   Financial Overview
                 </h3>
                 <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart data={chartData}>
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} />
                       <YAxis hide />
@@ -159,7 +159,7 @@ export default function EarningsPage() {
                 <div className="flex-1 flex flex-col justify-center space-y-6">
                   <div className="text-center">
                     <div className="relative inline-flex items-center justify-center w-32 h-32">
-                      <div className="absolute inset-0 rounded-full border-8 border-accent/20 border-t-accent animate-spin-slow" />
+                      <div className="absolute inset-0 rounded-full border-8 border-accent/20 border-t-accent -rotate-90" />
                       <span className="text-2xl font-bold text-text-primary z-10">{stats.marginPct.toFixed(0)}%</span>
                     </div>
                     <p className="mt-4 text-sm text-text-muted">Average Net Margin</p>
@@ -317,7 +317,7 @@ export default function EarningsPage() {
                       <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Last 6 Months (Incl. GST)</span>
                     </h3>
                     <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <AreaChart data={procStats.trend}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#2D333A" opacity={0.1} />
                           <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 11}} />
@@ -356,7 +356,7 @@ export default function EarningsPage() {
                     {procStats.marginTrend && procStats.marginTrend.length > 0 ? (
                       <div className="flex-1 flex flex-col justify-between">
                         <div className="h-[200px] w-full">
-                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <LineChart data={procStats.marginTrend}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#2D333A" opacity={0.1} />
                               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 10}} />

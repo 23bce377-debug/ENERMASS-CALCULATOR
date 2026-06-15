@@ -42,6 +42,8 @@ interface Vendor {
   phone: string | null;
   gst_number: string | null;
   address: string | null;
+  quality_score?: number | null;
+  rates_url?: string | null;
   created_at: string;
 }
 
@@ -73,6 +75,8 @@ export default function VendorsMasterPage() {
     phone: '',
     gst_number: '',
     address: '',
+    quality_score: '',
+    rates_url: '',
   });
 
   // Bulk Edit Fields Schema
@@ -124,6 +128,8 @@ export default function VendorsMasterPage() {
       phone: '',
       gst_number: '',
       address: '',
+      quality_score: '',
+      rates_url: '',
     });
     setEditorOpen(true);
   };
@@ -137,6 +143,8 @@ export default function VendorsMasterPage() {
       phone: v.phone || '',
       gst_number: v.gst_number || '',
       address: v.address || '',
+      quality_score: v.quality_score?.toString() || '',
+      rates_url: v.rates_url || '',
     });
     setEditorOpen(true);
   };
@@ -324,6 +332,8 @@ export default function VendorsMasterPage() {
                 <th>Email Address</th>
                 <th>Phone Number</th>
                 <th>GST Number</th>
+                <th>Quality Score</th>
+                <th>Vendor Rates</th>
                 <th>Billing Address</th>
                 <th className="w-20 text-right">Actions</th>
               </tr>
@@ -376,6 +386,20 @@ export default function VendorsMasterPage() {
                           <FileText size={12} className="text-text-muted" />
                           {v.gst_number}
                         </span>
+                      ) : '—'}
+                    </td>
+                    <td className="text-xs">
+                      {v.quality_score ? (
+                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${Number(v.quality_score) >= 8 ? 'bg-success/10 text-success' : Number(v.quality_score) >= 5 ? 'bg-warning/10 text-warning' : 'bg-error/10 text-error'}`}>
+                          {v.quality_score} / 10
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td className="text-xs">
+                      {v.rates_url ? (
+                        <a href={v.rates_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-info hover:underline">
+                          <FileText size={12} /> View Rates
+                        </a>
                       ) : '—'}
                     </td>
                     <td className="text-xs text-text-secondary max-w-[200px] truncate">
@@ -474,6 +498,26 @@ export default function VendorsMasterPage() {
                     onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
                     placeholder="+91 9988776655"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Quality Score (1-10)</label>
+                  <input
+                    type="number" min="1" max="10"
+                    value={draft.quality_score}
+                    onChange={(e) => setDraft({ ...draft, quality_score: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
+                    placeholder="e.g. 8"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Rates Document URL</label>
+                  <input
+                    type="url"
+                    value={draft.rates_url}
+                    onChange={(e) => setDraft({ ...draft, rates_url: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
+                    placeholder="https://..."
                   />
                 </div>
               </div>

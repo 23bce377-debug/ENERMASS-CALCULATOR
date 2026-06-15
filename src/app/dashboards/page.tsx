@@ -241,7 +241,7 @@ export default function DashboardsPage() {
               </div>
             ) : (
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <AreaChart data={marginChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorMargin" x1="0" y1="0" x2="0" y2="1">
@@ -278,7 +278,7 @@ export default function DashboardsPage() {
                 </div>
               ) : (
                 <div className="h-48 relative">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <PieChart>
                       <Pie
                         data={procurementChartData}
@@ -288,6 +288,7 @@ export default function DashboardsPage() {
                         outerRadius={75}
                         paddingAngle={5}
                         dataKey="value"
+                        isAnimationActive={false}
                       >
                         {procurementChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

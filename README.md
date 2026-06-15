@@ -141,16 +141,16 @@ Different Indian states enforce different peak sun hours (solar irradiance), sys
 
 | Indian State | Peak Sun Hours | Performance Ratio (PR) | Labor Multiplier | Output GST Rate | Surya Ghar Subsidy Eligibility |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Gujarat** | 5.5 | 0.78 | 1.00 | 8.9% | Eligible |
-| **Rajasthan** | 6.0 | 0.80 | 0.95 | 8.9% | Eligible |
-| **Madhya Pradesh** | 5.4 | 0.78 | 0.92 | 8.9% | Eligible |
-| **Uttar Pradesh** | 5.0 | 0.76 | 0.90 | 8.9% | Eligible |
-| **Haryana** | 5.0 | 0.77 | 1.03 | 8.9% | Eligible |
-| **Punjab** | 4.8 | 0.76 | 1.05 | 8.9% | Eligible |
+| **Gujarat** | 5.5 | 0.78 | 1.00 | 13.8% | Eligible |
+| **Rajasthan** | 6.0 | 0.80 | 0.95 | 13.8% | Eligible |
+| **Madhya Pradesh** | 5.4 | 0.78 | 0.92 | 13.8% | Eligible |
+| **Uttar Pradesh** | 5.0 | 0.76 | 0.90 | 13.8% | Eligible |
+| **Haryana** | 5.0 | 0.77 | 1.03 | 13.8% | Eligible |
+| **Punjab** | 4.8 | 0.76 | 1.05 | 13.8% | Eligible |
 | **Maharashtra** | 5.0 | 0.76 | 1.10 | 13.8% | Eligible |
-| **Karnataka** | 5.1 | 0.77 | 1.08 | 8.9% | Eligible |
-| **Andhra Pradesh** | 5.2 | 0.77 | 1.00 | 8.9% | Eligible |
-| **Telangana** | 5.3 | 0.78 | 1.02 | 8.9% | Eligible |
+| **Karnataka** | 5.1 | 0.77 | 1.08 | 13.8% | Eligible |
+| **Andhra Pradesh** | 5.2 | 0.77 | 1.00 | 13.8% | Eligible |
+| **Telangana** | 5.3 | 0.78 | 1.02 | 13.8% | Eligible |
 | **Tamil Nadu** | 5.0 | 0.77 | 1.05 | 13.8% | Eligible |
 | **Kerala** | 4.5 | 0.75 | 1.15 | 13.8% | Not Eligible |
 

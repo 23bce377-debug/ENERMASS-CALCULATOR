@@ -50,6 +50,22 @@ function groupLines(lines: LineResult[]): GroupedLines[] {
   const assigned = new Set<number>();
   const groups: GroupedLines[] = [];
 
+  // 1. Group by dynamic categoryName from DB seeds
+  const dynamicCategories = Array.from(new Set(lines.map(l => (l as any).categoryName).filter(Boolean)));
+  for (const catName of dynamicCategories) {
+    const matching = lines.filter(l => (l as any).categoryName === catName);
+    matching.forEach(l => assigned.add(l.index));
+    if (matching.length > 0) {
+      groups.push({
+        label: String(catName),
+        lines: matching,
+        groupTotal: matching.reduce((s, l) => s + l.lineTotal, 0),
+        groupGST: matching.reduce((s, l) => s + l.lineGST, 0),
+      });
+    }
+  }
+
+  // 2. Fallback to hardcoded ROW_GROUPS
   for (const group of ROW_GROUPS) {
     const matching = lines.filter((l) => {
       if (assigned.has(l.index)) return false;
@@ -153,11 +169,12 @@ function InlineCell({ value, onCommit, format, className = '', isRate }: InlineC
     <button
       onClick={startEdit}
       className={`w-full text-right font-mono text-xs cursor-text
-        hover:bg-accent-glow rounded px-1.5 py-0.5 transition-colors
+        border-b border-dashed border-accent/40 text-accent/90 hover:text-accent
+        hover:bg-accent/10 hover:border-accent rounded-t px-1.5 py-0.5 transition-all
         ${className}`}
       title="Click to edit"
     >
-      {isRate ? `₹${new Intl.NumberFormat('en-IN').format(value)}` : (format ? format(value) : value)}
+      {format ? format(value) : isRate ? `₹${new Intl.NumberFormat('en-IN').format(value)}` : value}
     </button>
   );
 }
@@ -166,6 +183,7 @@ function InlineCell({ value, onCommit, format, className = '', isRate }: InlineC
 
 interface BOMRowProps {
   line: LineResult;
+  displayName?: string;
   onOverrideQty: (index: number, qty: number) => void;
   onOverrideRate: (index: number, rate: number) => void;
   onOverrideGst: (index: number, gst: number) => void;
@@ -187,6 +205,7 @@ interface BOMRowProps {
 
 const BOMRow = memo(function BOMRow({
   line,
+  displayName,
   onOverrideQty,
   onOverrideRate,
   onOverrideGst,
@@ -205,7 +224,7 @@ const BOMRow = memo(function BOMRow({
   onSelectMeter,
   onSelectLA,
 }: BOMRowProps) {
-  const isMandatory = line.description.toUpperCase() === 'PANEL' || line.description.toUpperCase() === 'INVERTER';
+  const isMandatory = false;
   const isDimmed = line.isDisabled;
   const dimClass = isDimmed ? 'opacity-35' : '';
 
@@ -216,10 +235,9 @@ const BOMRow = memo(function BOMRow({
   return (
     <tr className={`border-b border-border/30 group transition-all duration-200 hover:bg-surface-hover/50
       ${line.index % 2 === 1 ? 'bg-surface-hover/20' : 'bg-surface'}
-      ${dimClass}
       ${line.isOverridden ? 'border-l-2 border-l-warning/60' : ''}`}>
       {/* # */}
-      <td className="py-2 px-2 text-center text-text-muted text-xs">
+      <td className={`py-2 px-2 text-center text-text-muted text-xs w-12 ${dimClass}`}>
         <div className="flex items-center justify-center gap-2">
           <input
             type="checkbox"
@@ -245,25 +263,26 @@ const BOMRow = memo(function BOMRow({
       </td>
 
       {/* Description */}
-      <td className={`py-2 px-2 text-xs font-medium whitespace-nowrap ${line.isDisabled ? 'line-through text-text-muted' : 'text-text-primary'}`}>
+      <td className={`py-2 px-2 text-xs font-medium ${line.isDisabled ? 'line-through text-text-muted' : 'text-text-primary'}`}>
         {isPanelInteractive ? (
           <button
             onClick={() => onTogglePanelDetails?.(line.index)}
-            className="inline-flex items-center gap-1.5 hover:text-accent transition-colors disabled:pointer-events-none"
+            className={`inline-flex items-center gap-1.5 hover:text-accent transition-colors disabled:pointer-events-none ${dimClass}`}
             title="Show selected panel details"
             disabled={line.isDisabled}
           >
             {panelExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            <span className={line.isDisabled ? 'line-through' : ''}>{line.description}</span>
+            <span className={line.isDisabled ? 'line-through' : ''}>{displayName || line.description}</span>
           </button>
         ) : line.description.toUpperCase() === 'SOLAR METER' && dbMeters ? (
           <div className="flex flex-col gap-1 w-64">
-            <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">{line.description}</span>
+            <span className={`text-[10px] uppercase font-bold text-text-secondary tracking-wider ${dimClass}`}>{line.description}</span>
             <Select
               size="sm"
               value={solarMeterId || ''}
               onChange={(val) => onSelectMeter?.('solar', val === '' ? null : val)}
               placeholder="None (Unselected)"
+              triggerClassName={isDimmed ? 'opacity-35' : ''}
               options={[
                 { value: '', label: 'None (Unselected)' },
                 ...dbMeters
@@ -279,12 +298,13 @@ const BOMRow = memo(function BOMRow({
           </div>
         ) : line.description.toUpperCase() === 'NET METER' && dbMeters ? (
           <div className="flex flex-col gap-1 w-64">
-            <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">{line.description}</span>
+            <span className={`text-[10px] uppercase font-bold text-text-secondary tracking-wider ${dimClass}`}>{line.description}</span>
             <Select
               size="sm"
               value={netMeterId || ''}
               onChange={(val) => onSelectMeter?.('net', val === '' ? null : val)}
               placeholder="None (Unselected)"
+              triggerClassName={isDimmed ? 'opacity-35' : ''}
               options={[
                 { value: '', label: 'None (Unselected)' },
                 ...dbMeters
@@ -300,12 +320,13 @@ const BOMRow = memo(function BOMRow({
           </div>
         ) : (line.description.toUpperCase() === 'LIGHTNING ARRESTER' || line.description.toUpperCase() === 'L/A') && dbLAs ? (
           <div className="flex flex-col gap-1 w-64">
-            <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">{line.description}</span>
+            <span className={`text-[10px] uppercase font-bold text-text-secondary tracking-wider ${dimClass}`}>{line.description}</span>
             <Select
               size="sm"
               value={lightningArresterId || ''}
               onChange={(val) => onSelectLA?.(val === '' ? null : val)}
               placeholder="None (Unselected)"
+              triggerClassName={isDimmed ? 'opacity-35' : ''}
               options={[
                 { value: '', label: 'None (Unselected)' },
                 ...dbLAs.map((l: any) => ({
@@ -318,9 +339,9 @@ const BOMRow = memo(function BOMRow({
             />
           </div>
         ) : (
-          <div className="flex flex-col">
+          <div className={`flex flex-col ${dimClass}`}>
             <span className={line.isDisabled ? 'line-through text-text-muted' : 'text-text-primary'}>
-              {line.description}
+              {displayName || line.description}
             </span>
             {line.description.toUpperCase() === 'STRUCTURE' && line.unit?.toLowerCase() === 'kg' && (
               <span className="text-[10px] text-accent font-medium mt-0.5">
@@ -332,17 +353,17 @@ const BOMRow = memo(function BOMRow({
       </td>
 
       {/* Remarks */}
-      <td className={`py-2 px-2 text-xs text-text-muted whitespace-nowrap ${line.isDisabled ? 'line-through' : ''}`}>
+      <td className={`py-2 px-2 text-xs text-text-muted w-20 ${line.isDisabled ? 'line-through' : ''} ${dimClass}`}>
         {line.remarks || '–'}
       </td>
 
       {/* Unit */}
-      <td className={`py-2 px-2 text-xs text-text-muted text-center ${line.isDisabled ? 'line-through' : ''}`}>
+      <td className={`py-2 px-2 text-xs text-text-muted text-center w-14 ${line.isDisabled ? 'line-through' : ''} ${dimClass}`}>
         {line.unit || 'Nos'}
       </td>
 
       {/* Qty — editable */}
-      <td className="py-1 px-1 w-18">
+      <td className={`py-1 px-1 w-16 ${dimClass}`}>
         {line.isDisabled ? (
           <div className="w-full text-right font-mono text-xs text-text-muted px-1.5 py-0.5 line-through">
             {line.effectiveQty}
@@ -355,39 +376,26 @@ const BOMRow = memo(function BOMRow({
         )}
       </td>
 
-      {/* Buying Price (WAC) */}
-      <td className="py-2 px-2 text-right">
-        {inventoryItem ? (
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-mono text-success font-bold" title="Weighted Average Purchase Cost">
-              {formatINR(inventoryItem.weighted_avg_cost)}
-            </span>
-            <span className={`text-[9px] font-bold ${inventoryItem.current_qty > 0 ? 'text-success' : 'text-error'}`}>
-              Stock: {inventoryItem.current_qty}
-            </span>
-          </div>
-        ) : (
-          <span className="text-[10px] text-text-muted italic">No Stock</span>
-        )}
-      </td>
-
       {/* Rate/Unit — editable (Selling Price) */}
-      <td className="py-1 px-1 w-22.5">
+      <td className={`py-1 px-1 w-28 ${dimClass}`}>
         {line.isDisabled ? (
           <div className="w-full text-right font-mono text-xs text-text-muted px-1.5 py-0.5 line-through">
-            {`₹${new Intl.NumberFormat('en-IN').format(line.effectiveRate)}`}
+            {line.unitWattage 
+              ? `₹${new Intl.NumberFormat('en-IN').format(line.effectiveRate / line.unitWattage)}/W`
+              : `₹${new Intl.NumberFormat('en-IN').format(line.effectiveRate)}`}
           </div>
         ) : (
           <InlineCell
-            value={line.effectiveRate}
-            onCommit={(v) => onOverrideRate(line.index, v)}
-            isRate
+            value={line.unitWattage ? line.effectiveRate / line.unitWattage : line.effectiveRate}
+            onCommit={(v) => onOverrideRate(line.index, line.unitWattage ? v * line.unitWattage : v)}
+            isRate={!line.unitWattage}
+            format={line.unitWattage ? (v) => `₹${new Intl.NumberFormat('en-IN').format(v)}/W` : undefined}
           />
         )}
       </td>
 
       {/* Total */}
-      <td className={`py-2 px-2 text-xs font-mono text-right ${line.isDisabled ? 'text-text-muted font-normal' : 'text-text-primary'}`}>
+      <td className={`py-2 px-2 text-xs font-mono text-right w-28 ${line.isDisabled ? 'text-text-muted font-normal' : 'text-text-primary'} ${dimClass}`}>
         {line.isDisabled ? (
           <span>
             <span className="line-through text-text-muted mr-1.5 opacity-60">
@@ -401,7 +409,7 @@ const BOMRow = memo(function BOMRow({
       </td>
 
       {/* GST % — editable */}
-      <td className="py-1 px-1 w-15">
+      <td className={`py-1 px-1 w-16 ${dimClass}`}>
         {line.isDisabled ? (
           <div className="w-full text-right font-mono text-xs text-text-muted px-1.5 py-0.5 line-through">
             {`${roundTo5(line.effectiveGstPct * 100)}%`}
@@ -416,7 +424,7 @@ const BOMRow = memo(function BOMRow({
       </td>
 
       {/* GST Amt */}
-      <td className={`py-2 px-2 text-xs font-mono text-right ${line.isDisabled ? 'text-text-muted font-normal' : 'text-text-muted'}`}>
+      <td className={`py-2 px-2 text-xs font-mono text-right w-24 ${line.isDisabled ? 'text-text-muted font-normal' : 'text-text-muted'} ${dimClass}`}>
         {line.isDisabled ? (
           <span>
             <span className="line-through text-text-muted mr-1.5 opacity-60">
@@ -430,7 +438,7 @@ const BOMRow = memo(function BOMRow({
       </td>
 
       {/* SubTotal */}
-      <td className={`py-2 px-2 text-xs font-mono text-right font-semibold ${line.isDisabled ? 'text-text-muted font-normal' : 'text-text-primary'}`}>
+      <td className={`py-2 px-2 text-xs font-mono text-right font-semibold w-28 ${line.isDisabled ? 'text-text-muted font-normal' : 'text-text-primary'} ${dimClass}`}>
         {line.isDisabled ? (
           <span>
             <span className="line-through text-text-muted mr-1.5 opacity-60 font-normal">
@@ -443,7 +451,7 @@ const BOMRow = memo(function BOMRow({
         )}
       </td>
 
-      <td className="py-2 px-2 text-center w-8">
+      <td className={`py-2 px-2 text-center w-10 ${dimClass}`}>
         <div className="flex gap-1 justify-center">
         {line.isOverridden && !line.isCustomItem && (
           <button
@@ -685,6 +693,7 @@ function MarginControl({
 export function BOMTable() {
   const calcResult = useCalculatorStore((s) => s.calcResult);
   const targetMarginPct = useCalculatorStore((s) => s.targetMarginPct);
+  const projectType = useCalculatorStore((s) => s.projectType);
   const panelMix = useCalculatorStore((s) => s.panelMix);
   const selectedPanelId = useCalculatorStore((s) => s.selectedPanelId);
   const setRowOverride = useCalculatorStore((s) => s.setRowOverride);
@@ -737,6 +746,10 @@ export function BOMTable() {
   }, []);
 
   const dbPanels = useCalculatorStore((s) => s.dbPanels);
+  const dbInverters = useCalculatorStore((s) => s.dbInverters);
+  const dbBatteries = useCalculatorStore((s) => s.dbBatteries);
+  const selectedInverterMix = useCalculatorStore((s) => s.selectedInverterMix);
+  const selectedBatteryMix = useCalculatorStore((s) => s.selectedBatteryMix);
   const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
 
   const panelCatalog = useMemo(() => {
@@ -758,6 +771,53 @@ export function BOMTable() {
       ]),
     );
   }, [dbLoaded, dbPanels, settings]);
+
+  const inverterCatalog = useMemo(() => {
+    const base = dbLoaded && dbInverters.length > 0 ? dbInverters : [];
+    return [...base, ...(settings?.customInverters ?? [])];
+  }, [dbLoaded, dbInverters, settings]);
+
+  const batteryCatalog = useMemo(() => {
+    const base = dbLoaded && dbBatteries.length > 0 ? dbBatteries : [];
+    return [...base, ...(settings?.customBatteries ?? [])];
+  }, [dbLoaded, dbBatteries, settings]);
+
+  const panelLabel = useMemo(() => {
+    const mixEntries = Object.entries(panelMix).filter(([, qty]) => Number.isFinite(qty) && qty > 0);
+    if (mixEntries.length > 0) {
+      return mixEntries.map(([id]) => {
+        const p = panelCatalog.get(id);
+        return p ? `${p.brand} ${p.model}` : id;
+      }).join(' + ');
+    }
+    if (selectedPanelId) {
+      const p = panelCatalog.get(selectedPanelId);
+      return p ? `${p.brand} ${p.model}` : selectedPanelId;
+    }
+    return '';
+  }, [panelMix, selectedPanelId, panelCatalog]);
+
+  const inverterLabel = useMemo(() => {
+    const mixEntries = Object.entries(selectedInverterMix).filter(([, qty]) => Number.isFinite(qty) && qty > 0);
+    if (mixEntries.length > 0) {
+      return mixEntries.map(([id]) => {
+        const inv = inverterCatalog.find(i => i.id === id);
+        return inv ? `${inv.brand} ${inv.model}` : id;
+      }).join(' + ');
+    }
+    return '';
+  }, [selectedInverterMix, inverterCatalog]);
+
+  const batteryLabel = useMemo(() => {
+    const mixEntries = Object.entries(selectedBatteryMix).filter(([, qty]) => Number.isFinite(qty) && qty > 0);
+    if (mixEntries.length > 0) {
+      return mixEntries.map(([id]) => {
+        const bat = batteryCatalog.find(b => b.id === id);
+        return bat ? `${bat.brand} ${bat.model}` : id;
+      }).join(' + ');
+    }
+    return '';
+  }, [selectedBatteryMix, batteryCatalog]);
 
   // Group the BOM lines
   const groups = useMemo(
@@ -789,16 +849,6 @@ export function BOMTable() {
     [setRowOverride],
   );
 
-  if (!calcResult) {
-    return (
-      <div className="rounded-xl border border-border bg-surface p-8 text-center" id="bom-table">
-        <div className="text-text-muted text-sm">
-          Select a system to view the Bill of Materials
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden shadow-sm" id="bom-table">
       {/* Header */}
@@ -806,63 +856,73 @@ export function BOMTable() {
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-bold text-text-primary tracking-widest uppercase">Bill of Materials</h3>
           <span className="text-[10px] font-mono font-medium bg-background px-2 py-0.5 rounded text-text-muted">
-            {calcResult.lines.length} items
+            {calcResult ? calcResult.lines.length : 0} items
           </span>
         </div>
         
         {/* Wiring Distances Controls */}
-        <div className="flex items-center gap-4 bg-background px-3 py-1.5 rounded-lg border border-border/60">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase font-semibold tracking-wider text-text-muted">DC Cable (Panel to Inv)</span>
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                min={0}
-                value={dcCableLengthM}
-                onChange={(e) => setCableLengths(parseFloat(e.target.value) || 0, acCableLengthM)}
-                className="w-14 px-1.5 py-0.5 rounded bg-surface border border-border text-xs font-mono text-right text-text-primary focus:outline-none focus:border-accent"
-              />
-              <span className="text-[10px] text-text-muted">m</span>
+        {calcResult && (
+          <div className="flex items-center gap-4 bg-background px-3 py-1.5 rounded-lg border border-border/60">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-semibold tracking-wider text-text-muted">DC Cable (Panel to Inv)</span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={0}
+                  value={dcCableLengthM || ''}
+                  placeholder="0"
+                  onChange={(e) => setCableLengths(parseFloat(e.target.value) || 0, acCableLengthM)}
+                  className="w-14 px-1.5 py-0.5 rounded bg-surface border border-border text-xs font-mono text-right text-text-primary focus:outline-none focus:border-accent"
+                />
+                <span className="text-[10px] text-text-muted">m</span>
+              </div>
+            </div>
+            <div className="w-px h-4 bg-border"></div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-semibold tracking-wider text-text-muted">AC Cable (Inv to Meter)</span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={0}
+                  value={acCableLengthM || ''}
+                  placeholder="0"
+                  onChange={(e) => setCableLengths(dcCableLengthM, parseFloat(e.target.value) || 0)}
+                  className="w-14 px-1.5 py-0.5 rounded bg-surface border border-border text-xs font-mono text-right text-text-primary focus:outline-none focus:border-accent"
+                />
+                <span className="text-[10px] text-text-muted">m</span>
+              </div>
             </div>
           </div>
-          <div className="w-px h-4 bg-border"></div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase font-semibold tracking-wider text-text-muted">AC Cable (Inv to Meter)</span>
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                min={0}
-                value={acCableLengthM}
-                onChange={(e) => setCableLengths(dcCableLengthM, parseFloat(e.target.value) || 0)}
-                className="w-14 px-1.5 py-0.5 rounded bg-surface border border-border text-xs font-mono text-right text-text-primary focus:outline-none focus:border-accent"
-              />
-              <span className="text-[10px] text-text-muted">m</span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-xs min-w-225">
+        <table className="w-full text-xs">
           <thead className="bg-background/60 sticky top-0 z-10">
             <tr className="border-b border-border">
-              <th className="py-2.5 px-2 text-center text-text-muted font-medium w-10">#</th>
+              <th className="py-2.5 px-2 text-center text-text-muted font-medium w-12">#</th>
               <th className="py-2.5 px-2 text-left text-text-muted font-medium">Description</th>
               <th className="py-2.5 px-2 text-left text-text-muted font-medium w-20">Remarks</th>
-              <th className="py-2.5 px-2 text-center text-text-muted font-medium w-12">Unit</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-18">Qty</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-24">Buying Price</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-22.5">Selling Rate</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-24">Line Total</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-15">GST%</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-20">GST Amt</th>
-              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-24">SubTotal</th>
-              <th className="py-2.5 px-2 w-8"></th>
+              <th className="py-2.5 px-2 text-center text-text-muted font-medium w-14">Unit</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-16">Qty</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-28">Rate/Unit</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-28">Total</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-16">GST%</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-24">GST Amt</th>
+              <th className="py-2.5 px-2 text-right text-text-muted font-medium w-28">SubTotal</th>
+              <th className="py-2.5 px-2 w-10"></th>
             </tr>
           </thead>
           <tbody>
-            {groups.map((group) => {
+            {!calcResult && (
+              <tr>
+                <td colSpan={11} className="py-8 text-center text-text-muted">
+                  {dbLoaded ? "Select components to build your quote." : "Loading master data…"}
+                </td>
+              </tr>
+            )}
+            {calcResult && groups.map((group) => {
               const isCollapsed = collapsedGroups.has(group.label);
               return (
                 <React.Fragment key={group.label}>
@@ -878,10 +938,19 @@ export function BOMTable() {
                     group.lines.map((line) => {
                       const isPanelLine = line.description.toUpperCase() === 'PANEL';
                       const isPanelExpanded = expandedPanelRows.has(line.index);
+                      let displayName: string | undefined;
+                      if (isPanelLine) {
+                        displayName = panelLabel ? `PANEL (${panelLabel})` : 'PANEL';
+                      } else if (line.description.toUpperCase() === 'INVERTER') {
+                        displayName = inverterLabel ? `INVERTER (${inverterLabel})` : 'INVERTER';
+                      } else if (line.description.toUpperCase() === 'BATTERY') {
+                        displayName = batteryLabel ? `BATTERY (${batteryLabel})` : 'BATTERY';
+                      }
                       return (
                         <React.Fragment key={line.index}>
                           <BOMRow
                             line={line}
+                            displayName={displayName}
                             onOverrideQty={handleOverrideQty}
                             onOverrideRate={handleOverrideRate}
                             onOverrideGst={handleOverrideGst}
@@ -902,7 +971,7 @@ export function BOMTable() {
                             onSelectMeter={setMeterSelection}
                             onSelectLA={setLASelection}
                           />
-                          {isPanelLine && isPanelExpanded && (
+                          {!isCollapsed && isPanelLine && isPanelExpanded && (
                             <PanelSelectionDetailRow
                               line={line}
                               panelMix={panelMix}
@@ -916,7 +985,7 @@ export function BOMTable() {
                 </React.Fragment>
               );
             })}
-            {isAddingItem ? (
+            {calcResult && (isAddingItem ? (
               <tr className="bg-accent/5 border-b border-accent/20">
                 <td colSpan={11} className="py-3 px-4">
                   <div className="grid grid-cols-2 md:grid-cols-6 gap-2 mb-2">
@@ -1055,15 +1124,16 @@ export function BOMTable() {
                   </button>
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>
 
       {/* ─── Footer: Aggregates ────────────────────────────────────────────── */}
-      <div className="border-t border-border bg-background/40">
-        {/* Cost aggregates */}
-        <div className="px-4 py-3 space-y-2">
+      {calcResult && (
+        <div className="border-t border-border bg-background/40">
+          {/* Cost aggregates */}
+          <div className="px-4 py-3 space-y-2">
           <FooterRow label="Cost Before GST" value={formatINR(calcResult.costBeforeGST)} />
           <FooterRow label="Total Input GST" value={formatINR(calcResult.totalInputGST)} muted />
           <FooterRow label="Total Incl. GST (Selling)" value={formatINR(calcResult.totalIncGST)} bold />
@@ -1098,11 +1168,15 @@ export function BOMTable() {
 
           <FooterRow label="MRP (excl GST)" value={formatINR(calcResult.mrpExclGST)} />
           <FooterRow label="Margin Amount" value={formatINR(calcResult.marginAmount)} accent />
-          <FooterRow
-            label={`Output GST Rate (${(calcResult.gstOutputRate * 100).toFixed(1)}%)`}
-            value={formatINR(calcResult.mrpInclGST - calcResult.mrpExclGST)}
-            muted
-          />
+          <div title="Composite rate applicable under GST Works Contract scheme. Subject to revision. Verify with CA before final invoicing.">
+            <FooterRow
+              label={projectType === 'commercial' 
+                ? `GST @ ${(calcResult.gstOutputRate * 100).toFixed(1)}% (Commercial — ITC Eligible)` 
+                : `GST @ ${(calcResult.gstOutputRate * 100).toFixed(1)}% (Composite Rate)`}
+              value={formatINR(calcResult.mrpInclGST - calcResult.mrpExclGST)}
+              muted
+            />
+          </div>
           <FooterRow label="MRP (incl GST)" value={formatINR(calcResult.mrpInclGST)} gold />
         </div>
 
@@ -1115,6 +1189,7 @@ export function BOMTable() {
           <FooterRow label="Per kW (incl GST)" value={formatINR(calcResult.perKWinclGST)} bold />
         </div>
       </div>
+      )}
     </div>
   );
 }

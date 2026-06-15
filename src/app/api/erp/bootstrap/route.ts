@@ -58,7 +58,7 @@ export const GET = withAuth(async (request, context) => {
         supabaseAdmin.from('eq_mounting_structures').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
         supabaseAdmin.from('eq_bom_items').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true).limit(bomLimit),
         supabaseAdmin.from('eq_communication_devices').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('systems').select('*, system_items(*)').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
+        supabaseAdmin.from('systems').select('*, system_items(*)').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true).order('capacity_kw', { ascending: true }),
         supabaseAdmin.from('structure_weight_lookup').select('*'),
         supabaseAdmin.from('state_rules').select('*').eq('is_active', true),
         supabaseAdmin.from('scheme_slabs').select('*'),

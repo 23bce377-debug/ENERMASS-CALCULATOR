@@ -52,17 +52,17 @@ export const PanelORM = {
     return data;
   },
   async getById(id: string) {
-    const { data, error } = await supabase.from('eq_panels').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('eq_panels').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   },
   async create(item: EqPanelInsert) {
-    const { data, error } = await supabase.from('eq_panels').insert(item).select().single();
+    const { data, error } = await supabase.from('eq_panels').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: EqPanelUpdate) {
-    const { data, error } = await supabase.from('eq_panels').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('eq_panels').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -86,17 +86,17 @@ export const InverterORM = {
     return data;
   },
   async getById(id: string) {
-    const { data, error } = await supabase.from('eq_inverters').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('eq_inverters').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   },
   async create(item: EqInverterInsert) {
-    const { data, error } = await supabase.from('eq_inverters').insert(item).select().single();
+    const { data, error } = await supabase.from('eq_inverters').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: EqInverterUpdate) {
-    const { data, error } = await supabase.from('eq_inverters').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('eq_inverters').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -120,17 +120,17 @@ export const BatteryORM = {
     return data;
   },
   async getById(id: string) {
-    const { data, error } = await supabase.from('eq_batteries').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('eq_batteries').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   },
   async create(item: EqBatteryInsert) {
-    const { data, error } = await supabase.from('eq_batteries').insert(item).select().single();
+    const { data, error } = await supabase.from('eq_batteries').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: EqBatteryUpdate) {
-    const { data, error } = await supabase.from('eq_batteries').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('eq_batteries').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -154,17 +154,17 @@ export const MeterORM = {
     return data;
   },
   async getById(id: string) {
-    const { data, error } = await supabase.from('eq_meters').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('eq_meters').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   },
   async create(item: EqMeterInsert) {
-    const { data, error } = await supabase.from('eq_meters').insert(item).select().single();
+    const { data, error } = await supabase.from('eq_meters').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: EqMeterUpdate) {
-    const { data, error } = await supabase.from('eq_meters').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('eq_meters').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -188,17 +188,17 @@ export const LightningArresterORM = {
     return data;
   },
   async getById(id: string) {
-    const { data, error } = await supabase.from('eq_lightning_arresters').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('eq_lightning_arresters').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   },
   async create(item: EqLightningArresterInsert) {
-    const { data, error } = await supabase.from('eq_lightning_arresters').insert(item).select().single();
+    const { data, error } = await supabase.from('eq_lightning_arresters').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: EqLightningArresterUpdate) {
-    const { data, error } = await supabase.from('eq_lightning_arresters').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('eq_lightning_arresters').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -222,17 +222,17 @@ export const MountingStructureORM = {
     return data;
   },
   async getById(id: string) {
-    const { data, error } = await supabase.from('eq_mounting_structures').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('eq_mounting_structures').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   },
   async create(item: EqMountingStructureInsert) {
-    const { data, error } = await supabase.from('eq_mounting_structures').insert(item).select().single();
+    const { data, error } = await supabase.from('eq_mounting_structures').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: EqMountingStructureUpdate) {
-    const { data, error } = await supabase.from('eq_mounting_structures').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('eq_mounting_structures').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -250,7 +250,7 @@ export const StructureWeightLookupORM = {
     return data;
   },
   async create(item: StructureWeightLookupInsert) {
-    const { data, error } = await supabase.from('structure_weight_lookup').insert(item).select().single();
+    const { data, error } = await supabase.from('structure_weight_lookup').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -274,17 +274,17 @@ export const BomItemORM = {
     return data;
   },
   async getById(id: string) {
-    const { data, error } = await supabase.from('eq_bom_items').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('eq_bom_items').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   },
   async create(item: EqBomItemInsert) {
-    const { data, error } = await supabase.from('eq_bom_items').insert(item).select().single();
+    const { data, error } = await supabase.from('eq_bom_items').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: EqBomItemUpdate) {
-    const { data, error } = await supabase.from('eq_bom_items').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('eq_bom_items').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -308,17 +308,17 @@ export const CommunicationDeviceORM = {
     return data;
   },
   async getById(id: string) {
-    const { data, error } = await supabase.from('eq_communication_devices').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('eq_communication_devices').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   },
   async create(item: EqCommunicationDeviceInsert) {
-    const { data, error } = await supabase.from('eq_communication_devices').insert(item).select().single();
+    const { data, error } = await supabase.from('eq_communication_devices').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: EqCommunicationDeviceUpdate) {
-    const { data, error } = await supabase.from('eq_communication_devices').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('eq_communication_devices').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -365,12 +365,12 @@ export const StructureComponentORM = {
     return data;
   },
   async create(item: EqStructureComponentInsert) {
-    const { data, error } = await supabase.from('eq_structure_components').insert(item).select().single();
+    const { data, error } = await supabase.from('eq_structure_components').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: EqStructureComponentUpdate) {
-    const { data, error } = await supabase.from('eq_structure_components').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('eq_structure_components').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -394,7 +394,7 @@ export const StructureBomORM = {
     return data;
   },
   async create(item: EqStructureBomInsert) {
-    const { data, error } = await supabase.from('eq_structure_bom').insert(item).select().single();
+    const { data, error } = await supabase.from('eq_structure_bom').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -419,12 +419,12 @@ export const StructureAddonORM = {
     return data;
   },
   async create(item: EqStructureAddonInsert) {
-    const { data, error } = await supabase.from('eq_structure_addons').insert(item).select().single();
+    const { data, error } = await supabase.from('eq_structure_addons').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: EqStructureAddonUpdate) {
-    const { data, error } = await supabase.from('eq_structure_addons').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('eq_structure_addons').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -443,17 +443,17 @@ export const CustomPresetORM = {
     return data;
   },
   async getById(id: string) {
-    const { data, error } = await supabase.from('custom_presets').select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('custom_presets').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return data;
   },
   async create(item: CustomPresetInsert) {
-    const { data, error } = await supabase.from('custom_presets').insert(item).select().single();
+    const { data, error } = await supabase.from('custom_presets').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: CustomPresetUpdate) {
-    const { data, error } = await supabase.from('custom_presets').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('custom_presets').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -492,7 +492,7 @@ export const StructureAccessoryRatesORM = {
     return allRates.find(r => r.item_name.toLowerCase() === n || r.item_aliases.some((a: string) => a.toLowerCase() === n)) ?? null;
   },
   async upsert(item: { item_name: string; unit: string; rate: number; org_id?: string | null; item_aliases?: string[] }) {
-    const { data, error } = await (supabase as any).from('structure_accessory_rates').upsert({ ...item, is_active: true }, { onConflict: 'item_name' }).select().single();
+    const { data, error } = await (supabase as any).from('structure_accessory_rates').upsert({ ...item, is_active: true }, { onConflict: 'item_name' }).select().maybeSingle();
     if (error) throw error;
     return data;
   }
@@ -510,7 +510,7 @@ export const StructureComponentVendorRatesORM = {
     return data as Array<{ id: string; component_id: string; vendor_id: string; rate_per_unit: number; effective_from: string | null; created_at: string; updated_at: string; vendors: { name: string }; }>;
   },
   async upsert(componentId: string, vendorId: string, ratePerUnit: number) {
-    const { data, error } = await (supabase as any).from('structure_component_vendor_rates').upsert({ component_id: componentId, vendor_id: vendorId, rate_per_unit: ratePerUnit }, { onConflict: 'component_id,vendor_id' }).select().single();
+    const { data, error } = await (supabase as any).from('structure_component_vendor_rates').upsert({ component_id: componentId, vendor_id: vendorId, rate_per_unit: ratePerUnit }, { onConflict: 'component_id,vendor_id' }).select().maybeSingle();
     if (error) throw error;
     return data;
   }
@@ -532,7 +532,7 @@ export const RateMasterORM = {
     return Object.fromEntries(rows.map(r => [r.item_name, { rate: Number(r.override_rate), active: r.is_active }]));
   },
   async upsert(orgId: string, itemName: string, overrideRate: number, bomItemId?: string) {
-    const { data, error } = await (supabase as any).from('rate_master').upsert({ org_id: orgId, item_name: itemName, override_rate: overrideRate, bom_item_id: bomItemId ?? null, is_active: true }, { onConflict: 'org_id,item_name' }).select().single();
+    const { data, error } = await (supabase as any).from('rate_master').upsert({ org_id: orgId, item_name: itemName, override_rate: overrideRate, bom_item_id: bomItemId ?? null, is_active: true }, { onConflict: 'org_id,item_name' }).select().maybeSingle();
     if (error) throw error;
     return data;
   },

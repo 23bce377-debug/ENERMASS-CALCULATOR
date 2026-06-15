@@ -11,6 +11,7 @@ import '../mockStorage';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase/client';
 import localforage from 'localforage';
+import { TAX_CONSTANTS } from '@/lib/tax-constants';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -53,7 +54,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     'micro-inverter': 0.22,
     hybrid: 0.20,
     upgrade: 0.15,
-    commercial: 0.18,
+    commercial: TAX_CONSTANTS.COMPOSITE_GST_RATE,
   },
   company: {
     name: 'ENERMASS Solar',

@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
+import { ErpStructuresView } from '@/components/master/structures/ErpStructuresView';
 import { HistoryDrawer } from '@/components/master/HistoryDrawer';
 import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditModal';
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
@@ -129,60 +130,12 @@ export default function StructuresMasterPage() {
   const [erpSubTab, setErpSubTab] = useState<'vendors' | 'templates' | 'addons'>('templates');
 
   // Fetch ERP Structure Data
-  const { data: erpVendors } = useQuery<any[]>({
-    queryKey: ['erp-vendors'],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any).from('vendors').select('*').eq('is_structure_vendor', true).order('name');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: erpRates } = useQuery<any[]>({
-    queryKey: ['erp-rates'],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any).from('structure_material_rates').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: erpTemplates } = useQuery<any[]>({
-    queryKey: ['erp-templates'],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any).from('structure_templates').select('*').order('capacity_kw');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: erpTemplateItems } = useQuery<any[]>({
-    queryKey: ['erp-template-items'],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any).from('structure_template_items').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: erpWalkways } = useQuery<any[]>({
-    queryKey: ['erp-walkways'],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any).from('walkway_templates').select('*').order('template');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: erpLadders } = useQuery<any[]>({
-    queryKey: ['erp-ladders'],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any).from('ladder_templates').select('*').order('template');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
+  
+  
+  
+  
+  
+  
   // Structure BOM Components query (fires when a row is expanded)
   const { data: structureComponents } = useQuery<StructureComponent[]>({
     queryKey: ['structure-components', expandedId],
@@ -224,6 +177,30 @@ export default function StructuresMasterPage() {
     weight_per_panel_kg: 5.5,
     bracket_fixed_weight: 12,
     notes: '',
+  });
+
+  // Structure sub-component inline editor state
+  const [editingCompId, setEditingCompId] = useState<string | null>(null);
+  const [compPriceDraft, setCompPriceDraft] = useState<number>(0);
+  const [compGstDraft, setCompGstDraft] = useState<number>(0.18);
+
+  // Mutation to update structure components
+  const updateCompMutation = useMutation({
+    mutationFn: async ({ id, selling_price, gst_pct }: { id: string; selling_price: number; gst_pct: number }) => {
+      const { error } = await supabase
+        .from('eq_structure_components')
+        .update({ selling_price, gst_pct, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['structure-components', expandedId] });
+      setEditingCompId(null);
+      toast('Structure component updated ✓', 'success');
+    },
+    onError: (err: any) => {
+      toast(err.message || 'Failed to update component', 'error');
+    }
   });
 
   // Structure Draft values
@@ -550,265 +527,8 @@ export default function StructuresMasterPage() {
       </div>
 
       {mainTab === 'erp' ? (
-        <div className="space-y-6 animate-fade-in">
-          {/* Sub-tabs for ERP model */}
-          <div className="flex border-b border-border gap-6">
-            <button
-              onClick={() => setErpSubTab('templates')}
-              className={`pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
-                erpSubTab === 'templates'
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-text-muted hover:text-text-primary'
-              }`}
-            >
-              Capacity Templates
-            </button>
-            <button
-              onClick={() => setErpSubTab('vendors')}
-              className={`pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
-                erpSubTab === 'vendors'
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-text-muted hover:text-text-primary'
-              }`}
-            >
-              Vendors & Material Rates
-            </button>
-            <button
-              onClick={() => setErpSubTab('addons')}
-              className={`pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
-                erpSubTab === 'addons'
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-text-muted hover:text-text-primary'
-              }`}
-            >
-              Walkways & Ladders
-            </button>
-          </div>
+        <ErpStructuresView erpSubTab={erpSubTab} setErpSubTab={setErpSubTab} />
 
-          {erpSubTab === 'vendors' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Vendors List */}
-              <div className="bg-surface rounded-xl border border-border overflow-hidden">
-                <div className="px-5 py-4 bg-surface-2 border-b border-border flex items-center gap-2">
-                  <Package2 size={16} className="text-accent" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary">Vendors List</h3>
-                </div>
-                <div className="divide-y divide-border/60">
-                  {erpVendors?.map((v: any) => (
-                    <div key={v.id} className="px-5 py-3.5 flex items-center justify-between text-xs hover:bg-surface-hover/25">
-                      <span className="font-semibold text-text-primary">{v.name}</span>
-                      <span className="text-text-muted font-mono text-[10px]">ID: {v.id.substring(0, 8)}...</span>
-                    </div>
-                  ))}
-                  {(!erpVendors || erpVendors.length === 0) && (
-                    <div className="p-8 text-center text-text-muted italic">No vendors found.</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Material Rates */}
-              <div className="bg-surface rounded-xl border border-border overflow-hidden">
-                <div className="px-5 py-4 bg-surface-2 border-b border-border flex items-center gap-2">
-                  <Scale size={16} className="text-accent" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary">Vendor Material Rates</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs font-mono text-left">
-                    <thead>
-                      <tr className="bg-surface-hover/30 border-b border-border text-[10px] text-text-muted uppercase font-bold">
-                        <th className="py-2.5 px-4">Vendor</th>
-                        <th className="py-2.5 px-4">Material Type</th>
-                        <th className="py-2.5 px-4 text-right">Rate per kg</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {erpRates?.map((rate: any) => {
-                        const vendor = erpVendors?.find((v: any) => v.id === rate.vendor_id);
-                        return (
-                          <tr key={rate.id} className="border-b border-border/40 hover:bg-surface-hover/20">
-                            <td className="py-3 px-4 font-semibold text-text-primary">{vendor?.name || 'Unknown'}</td>
-                            <td className="py-3 px-4">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                rate.material_type === 'GI' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-emerald-500/10 text-emerald-400'
-                              }`}>
-                                {rate.material_type}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-right text-accent font-bold">₹{Number(rate.rate_per_kg).toFixed(2)}</td>
-                          </tr>
-                        );
-                      })}
-                      {(!erpRates || erpRates.length === 0) && (
-                        <tr>
-                          <td colSpan={3} className="p-8 text-center text-text-muted italic font-sans">No material rates found.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {erpSubTab === 'templates' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {erpTemplates?.map((template: any) => {
-                  const items = erpTemplateItems?.filter((i: any) => i.template_id === template.id);
-                  const primaryItems = items?.filter((i: any) => i.item.toLowerCase().includes('rafter') || i.item.toLowerCase().includes('purlin'));
-                  const accessories = items?.filter((i: any) => !i.item.toLowerCase().includes('rafter') && !i.item.toLowerCase().includes('purlin'));
-
-                  return (
-                    <div key={template.id} className="bg-surface rounded-xl border border-border overflow-hidden flex flex-col">
-                      <div className="px-5 py-4 bg-surface-2 border-b border-border flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Layers size={15} className="text-accent" />
-                          <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
-                            {template.capacity_kw}kW Template
-                          </h3>
-                        </div>
-                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          template.structure_type === 'GI' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-emerald-500/10 text-emerald-400'
-                        }`}>
-                          {template.structure_type} ({template.panel_count} Panels)
-                        </span>
-                      </div>
-
-                      <div className="p-5 flex-1 space-y-4">
-                        {/* Primary Steel Members */}
-                        <div className="space-y-2">
-                          <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider block">
-                            Primary Steel Members
-                          </span>
-                          <div className="rounded-lg border border-border bg-background/50 divide-y divide-border/40 overflow-hidden">
-                            {primaryItems?.map((item: any) => {
-                              const itemVendor = erpVendors?.find((v: any) => v.id === item.vendor_id);
-                              return (
-                                <div key={item.id} className="px-4 py-2.5 flex items-center justify-between text-xs font-mono">
-                                  <div className="flex flex-col">
-                                    <span className="font-semibold text-text-primary font-sans">{item.item}</span>
-                                    {itemVendor && (
-                                      <span className="text-[9px] text-accent uppercase font-bold mt-0.5">
-                                        Vendor-specific: {itemVendor.name}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-right">
-                                    <span className="text-text-secondary">{item.qty} Nos</span>
-                                    {item.weight && (
-                                      <span className="text-[10px] text-text-muted block mt-0.5">
-                                        {item.weight} kg/unit
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                            {(!primaryItems || primaryItems.length === 0) && (
-                              <div className="p-4 text-center text-text-muted italic">No primary steel members defined.</div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Accessories */}
-                        <div className="space-y-2">
-                          <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider block">
-                            Accessory Items
-                          </span>
-                          <div className="rounded-lg border border-border bg-background/50 divide-y divide-border/40 overflow-hidden max-h-48 overflow-y-auto">
-                            {accessories?.map((item: any) => (
-                              <div key={item.id} className="px-4 py-2.5 flex items-center justify-between text-xs font-mono">
-                                <span className="text-text-primary font-sans">{item.item}</span>
-                                <span className="text-text-secondary font-bold">{item.qty} Qty</span>
-                              </div>
-                            ))}
-                            {(!accessories || accessories.length === 0) && (
-                              <div className="p-4 text-center text-text-muted italic">No accessories defined.</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {erpSubTab === 'addons' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Walkway Templates */}
-              <div className="bg-surface rounded-xl border border-border overflow-hidden">
-                <div className="px-5 py-4 bg-surface-2 border-b border-border flex items-center gap-2">
-                  <Milestone size={16} className="text-accent" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary">Walkway Templates</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs font-mono text-left">
-                    <thead>
-                      <tr className="bg-surface-hover/30 border-b border-border text-[10px] text-text-muted uppercase font-bold">
-                        <th className="py-2.5 px-4">Template</th>
-                        <th className="py-2.5 px-4 text-right">Length</th>
-                        <th className="py-2.5 px-4 text-right">Total Cost</th>
-                        <th className="py-2.5 px-4 text-right">Per Meter Cost</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {erpWalkways?.map((w: any) => (
-                        <tr key={w.id} className="border-b border-border/40 hover:bg-surface-hover/20">
-                          <td className="py-3.5 px-4 font-semibold text-text-primary font-sans uppercase">{w.template.replace(/_/g, ' ')}</td>
-                          <td className="py-3.5 px-4 text-right">{w.length_m} m</td>
-                          <td className="py-3.5 px-4 text-right text-text-secondary">₹{Number(w.cost).toLocaleString('en-IN')}</td>
-                          <td className="py-3.5 px-4 text-right text-accent font-bold">₹{Number(w.cost_per_meter).toFixed(2)}</td>
-                        </tr>
-                      ))}
-                      {(!erpWalkways || erpWalkways.length === 0) && (
-                        <tr>
-                          <td colSpan={4} className="p-8 text-center text-text-muted italic font-sans">No walkway templates found.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Ladder Templates */}
-              <div className="bg-surface rounded-xl border border-border overflow-hidden">
-                <div className="px-5 py-4 bg-surface-2 border-b border-border flex items-center gap-2">
-                  <Construction size={16} className="text-accent" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary">Ladder Templates</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs font-mono text-left">
-                    <thead>
-                      <tr className="bg-surface-hover/30 border-b border-border text-[10px] text-text-muted uppercase font-bold">
-                        <th className="py-2.5 px-4">Template</th>
-                        <th className="py-2.5 px-4 text-right">Length</th>
-                        <th className="py-2.5 px-4 text-right">Total Cost</th>
-                        <th className="py-2.5 px-4 text-right">Per Meter Cost</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {erpLadders?.map((l: any) => (
-                        <tr key={l.id} className="border-b border-border/40 hover:bg-surface-hover/20">
-                          <td className="py-3.5 px-4 font-semibold text-text-primary font-sans uppercase">{l.template.replace(/_/g, ' ')}</td>
-                          <td className="py-3.5 px-4 text-right">{l.length_m} m</td>
-                          <td className="py-3.5 px-4 text-right text-text-secondary">₹{Number(l.cost).toLocaleString('en-IN')}</td>
-                          <td className="py-3.5 px-4 text-right text-accent font-bold">₹{Number(l.cost_per_meter).toFixed(2)}</td>
-                        </tr>
-                      ))}
-                      {(!erpLadders || erpLadders.length === 0) && (
-                        <tr>
-                          <td colSpan={4} className="p-8 text-center text-text-muted italic font-sans">No ladder templates found.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
       ) : (
         /* LEGACY MODE spec layout starts here */
         <>
@@ -894,6 +614,7 @@ export default function StructuresMasterPage() {
                 <th>Weight Pricing</th>
                 <th>Base Weight</th>
                 <th>Flat Override</th>
+                <th>Per Watt Rate</th>
                 <th>Scope</th>
                 <th className="w-20 text-right">Actions</th>
               </tr>
@@ -934,6 +655,7 @@ export default function StructuresMasterPage() {
                       </td>
                       <td>{s.base_weight_kg} kg</td>
                       <td className="font-mono">{s.flat_rate ? formatINR(s.flat_rate) : '—'}</td>
+                      <td className="font-mono">{s.per_watt_rate ? `${formatINR(s.per_watt_rate)}/W` : '—'}</td>
                       <td>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${s.org_id ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
                           {s.org_id ? 'Org' : 'Global'}
@@ -960,7 +682,7 @@ export default function StructuresMasterPage() {
                     {/* Expandable row: weight lookups + BOM components */}
                     {isExpanded && (
                       <tr>
-                        <td colSpan={11} className="bg-surface-2 p-5 border-y border-border">
+                        <td colSpan={12} className="bg-surface-2 p-5 border-y border-border">
                           <div className="space-y-6">
 
                             {/* ── Weight Lookup Slabs ────────────────── */}
@@ -1075,17 +797,79 @@ export default function StructuresMasterPage() {
                                               <th className="p-2 text-center">Unit</th>
                                               <th className="p-2 text-right font-bold">Selling ₹</th>
                                               <th className="p-2 text-center">GST</th>
+                                              <th className="p-2 text-right w-16">Actions</th>
                                             </tr>
                                           </thead>
                                           <tbody>
-                                            {items.map((comp) => (
-                                              <tr key={comp.id} className="border-b border-border/40 hover:bg-surface-hover/20 transition-colors">
-                                                <td className="p-2 font-medium text-text-primary">{comp.name}</td>
-                                                <td className="p-2 text-center text-text-muted text-[10px]">{comp.unit}</td>
-                                                <td className="p-2 text-right font-mono font-bold text-accent">₹{comp.selling_price}</td>
-                                                <td className="p-2 text-center text-text-muted text-[10px]">{(comp.gst_pct * 100).toFixed(0)}%</td>
-                                              </tr>
-                                            ))}
+                                            {items.map((comp) => {
+                                              const isEditing = editingCompId === comp.id;
+                                              return (
+                                                <tr key={comp.id} className="border-b border-border/40 hover:bg-surface-hover/20 transition-colors">
+                                                  <td className="p-2 font-medium text-text-primary">{comp.name}</td>
+                                                  <td className="p-2 text-center text-text-muted text-[10px]">{comp.unit}</td>
+                                                  <td className="p-2 text-right">
+                                                    {isEditing ? (
+                                                      <input
+                                                        type="number"
+                                                        value={compPriceDraft}
+                                                        onChange={(e) => setCompPriceDraft(parseFloat(e.target.value) || 0)}
+                                                        className="w-20 px-1 py-0.5 border border-border bg-background text-xs font-mono text-right rounded outline-none focus:border-accent/40"
+                                                      />
+                                                    ) : (
+                                                      <span className="font-mono font-bold text-accent">₹{comp.selling_price}</span>
+                                                    )}
+                                                  </td>
+                                                  <td className="p-2 text-center text-text-muted text-[10px]">
+                                                    {isEditing ? (
+                                                      <select
+                                                        value={compGstDraft}
+                                                        onChange={(e) => setCompGstDraft(parseFloat(e.target.value))}
+                                                        className="w-16 px-1 py-0.5 border border-border bg-background text-[10px] rounded outline-none focus:border-accent/40"
+                                                      >
+                                                        <option value={0.05}>5%</option>
+                                                        <option value={0.12}>12%</option>
+                                                        <option value={0.18}>18%</option>
+                                                      </select>
+                                                    ) : (
+                                                      <span>{(comp.gst_pct * 100).toFixed(0)}%</span>
+                                                    )}
+                                                  </td>
+                                                  <td className="p-2 text-right">
+                                                    {isEditing ? (
+                                                      <div className="flex justify-end gap-1">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => updateCompMutation.mutate({ id: comp.id, selling_price: compPriceDraft, gst_pct: compGstDraft })}
+                                                          className="p-0.5 rounded hover:bg-emerald-500/10 border border-border hover:border-emerald-500/30 text-emerald-400 cursor-pointer"
+                                                        >
+                                                          <Check size={11} />
+                                                        </button>
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => setEditingCompId(null)}
+                                                          className="p-0.5 rounded hover:bg-error/10 border border-border hover:border-error/30 text-error cursor-pointer"
+                                                        >
+                                                          <X size={11} />
+                                                        </button>
+                                                      </div>
+                                                    ) : (
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setEditingCompId(comp.id);
+                                                          setCompPriceDraft(Number(comp.selling_price));
+                                                          setCompGstDraft(Number(comp.gst_pct));
+                                                        }}
+                                                        className="p-1 rounded bg-surface border border-border text-text-secondary hover:text-accent hover:border-accent/30 cursor-pointer"
+                                                        title="Edit Rate"
+                                                      >
+                                                        <Edit2 size={11} />
+                                                      </button>
+                                                    )}
+                                                  </td>
+                                                </tr>
+                                              );
+                                            })}
                                           </tbody>
                                         </table>
                                       </div>
@@ -1268,6 +1052,15 @@ export default function StructuresMasterPage() {
                     type="number" min={0}
                     value={draft.flat_rate || ''}
                     onChange={(e) => setDraft({ ...draft, flat_rate: e.target.value ? parseFloat(e.target.value) : null })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Per Watt Rate (₹/W)</label>
+                  <input
+                    type="number" min={0} step={0.01}
+                    value={draft.per_watt_rate || ''}
+                    onChange={(e) => setDraft({ ...draft, per_watt_rate: e.target.value ? parseFloat(e.target.value) : null })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
                   />
                 </div>

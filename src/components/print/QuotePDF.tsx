@@ -224,73 +224,56 @@ export function QuotePDF({
           </div>
         </div>
 
-        {/* System Configuration */}
-        <div className="pdf-section-label" style={{ marginTop: '14px' }}>
-          System Configuration
-        </div>
-        <table className="pdf-table">
-          <thead>
-            <tr>
-              <th>Component</th>
-              <th>Specification</th>
-              <th style={{ textAlign: 'center' }}>Qty</th>
-              <th style={{ textAlign: 'right' }}>Capacity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* Panels */}
-            {panelEntries.map((entry, i) => (
-              <tr key={`panel-${i}`}>
-                <td>{i === 0 ? 'Solar Panels' : ''}</td>
-                <td>{entry.name}</td>
-                <td style={{ textAlign: 'center' }}>{entry.qty}</td>
-                <td style={{ textAlign: 'right' }}>{(entry.wattage * entry.qty / 1000).toFixed(2)} kW</td>
-              </tr>
-            ))}
-            {panelEntries.length === 0 && (
-              <tr>
-                <td>Solar Panels</td>
-                <td>{system?.panelWattage ?? 0}W Panels</td>
-                <td style={{ textAlign: 'center' }}>{system?.panelQty ?? 0}</td>
-                <td style={{ textAlign: 'right' }}>{((system?.panelWattage ?? 0) * (system?.panelQty ?? 0) / 1000).toFixed(2)} kW</td>
-              </tr>
-            )}
 
-            {/* Inverters */}
-            {inverterEntries.map((entry, i) => (
-              <tr key={`inv-${i}`}>
-                <td>{i === 0 ? 'Inverter' : ''}</td>
-                <td>{entry.name}</td>
-                <td style={{ textAlign: 'center' }}>{entry.qty}</td>
-                <td style={{ textAlign: 'right' }}>{(entry.capacityKW * entry.qty).toFixed(1)} kW</td>
-              </tr>
-            ))}
 
-            {/* Batteries */}
-            {batteryEntries.map((entry, i) => (
-              <tr key={`bat-${i}`}>
-                <td>{i === 0 ? 'Battery Storage' : ''}</td>
-                <td>{entry.name}</td>
-                <td style={{ textAlign: 'center' }}>{entry.qty}</td>
-                <td style={{ textAlign: 'right' }}>{(entry.capacityKWh * entry.qty).toFixed(1)} kWh</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Additional Equipment (BOM items) */}
-        {includedItems.length > 0 && (
+        {/* Detailed Itemized Scope */}
+        {calc.lines.filter((l: any) => l.effectiveQty > 0 && !l.isDisabled).length > 0 && (
           <>
-            <div className="pdf-section-label" style={{ marginTop: '14px' }}>
-              Included in Installation
+            <div className="pdf-section-label" style={{ marginTop: '16px', pageBreakBefore: 'auto' }}>
+              Detailed Scope of Supply & Services
             </div>
-            <div className="pdf-included-grid">
-              {includedItems.map((item, i) => (
-                <div key={i} className="pdf-included-item">
-                  <span className="pdf-check">✓</span> {item}
-                </div>
-              ))}
-            </div>
+            <table className="pdf-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '40px', textAlign: 'center' }}>Sr</th>
+                  <th>Item Description</th>
+                  <th style={{ width: '60px', textAlign: 'center' }}>Qty</th>
+                  <th style={{ width: '60px', textAlign: 'center' }}>Unit</th>
+                  <th style={{ width: '100px', textAlign: 'right' }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {calc.lines.filter((l: any) => l.effectiveQty > 0 && !l.isDisabled).map((line: any, i: number) => {
+                  // If it's the panel or inverter, use the resolved name from earlier
+                  let displayName = line.description;
+                  let displayRemarks = line.remarks;
+                  
+                  if (line.description.toUpperCase() === 'PANEL') {
+                    displayName = 'Solar Panels';
+                    displayRemarks = panelEntries.map(p => `${p.name} (${p.wattage}W)`).join(', ');
+                  } else if (line.description.toUpperCase() === 'INVERTER') {
+                    displayName = 'Solar Inverter';
+                    displayRemarks = inverterEntries.map(p => `${p.name} (${p.capacityKW}kW)`).join(', ');
+                  } else if (line.description.toUpperCase() === 'BATTERY') {
+                    displayName = 'Battery Storage';
+                    displayRemarks = batteryEntries.map(p => `${p.name} (${p.capacityKWh}kWh)`).join(', ');
+                  }
+
+                  return (
+                    <tr key={i}>
+                      <td style={{ textAlign: 'center', color: '#6b7280' }}>{i + 1}</td>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{displayName}</div>
+                        {displayRemarks && <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>{displayRemarks}</div>}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>{line.effectiveQty}</td>
+                      <td style={{ textAlign: 'center' }}>{line.unit}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 500 }}>{formatINR(line.lineTotal)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </>
         )}
 
@@ -345,10 +328,50 @@ export function QuotePDF({
 
         {calc.subsidyAmount > 0 && (
           <div className="pdf-subsidy-note">
-            * Government subsidy is subject to approval from the respective state DISCOM / MNRE.
-            The net amount shown above is your estimated out-of-pocket investment after subsidy.
+            * Subsidy disbursed directly by DISCOM post-commissioning and inspection. Not deducted at invoice stage. Customer must apply via National Portal.
           </div>
         )}
+
+        {quote.sales.itcEligible && (() => {
+          const gstAmount = calc.finalCustomerPrice - (calc.finalCustomerPrice / (1 + calc.gstOutputRate));
+          const netCost = calc.finalCustomerPrice - gstAmount;
+          return (
+            <div style={{ marginTop: '20px', border: '1px solid #16a34a', borderRadius: '8px', padding: '12px', backgroundColor: '#f0fdf4' }}>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#16a34a', textTransform: 'uppercase', marginBottom: '8px' }}>
+                Commercial ITC Benefit Analysis
+              </div>
+              <table style={{ width: '100%', fontSize: '12px' }}>
+                <tbody>
+                  <tr>
+                    <td>System Cost (excl. GST)</td>
+                    <td style={{ textAlign: 'right' }}>{formatINR(netCost)}</td>
+                  </tr>
+                  <tr>
+                    <td>GST @18% (Payable)</td>
+                    <td style={{ textAlign: 'right' }}>+{formatINR(gstAmount)}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Total Invoice</strong></td>
+                    <td style={{ textAlign: 'right' }}><strong>{formatINR(calc.finalCustomerPrice)}</strong></td>
+                  </tr>
+                  <tr><td colSpan={2}><hr style={{ borderTop: '1px solid #bbf7d0', margin: '4px 0' }} /></td></tr>
+                  <tr>
+                    <td>ITC Claimable (GSTR-2B)</td>
+                    <td style={{ textAlign: 'right', color: '#dc2626' }}>-{formatINR(gstAmount)}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ color: '#16a34a' }}><strong>Effective Net Cost</strong></td>
+                    <td style={{ textAlign: 'right', color: '#16a34a' }}><strong>{formatINR(netCost)}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '8px', lineHeight: '1.2' }}>
+                ITC effectively reduces your cost by {Math.round((gstAmount / calc.finalCustomerPrice) * 100)}%.<br/>
+                ITC eligibility subject to vendor GST compliance (GSTR-1 filing). Consult your CA. ITC may be reversed if vendor defaults.
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* ─── PAGE 2: Benefits & Terms ─── */}

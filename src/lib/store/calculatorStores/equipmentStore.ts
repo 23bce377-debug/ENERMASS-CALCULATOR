@@ -13,6 +13,7 @@ export const createEquipmentSlice: StateCreator<
     | 'selectedBatteryMix'
     | 'backupLoadW'
     | 'selectedStructureId'
+    | 'structureType'
     | 'structureVendorId'
     | 'structureMaterialType'
     | 'walkwayLengthM'
@@ -28,6 +29,7 @@ export const createEquipmentSlice: StateCreator<
     | 'structureCustomGalvanizingRate'
     | 'structureComponentMix'
     | 'structureAddonMix'
+    | 'setStructureType'
     | 'setStructureTypeAndVendor'
     | 'setWalkwayLength'
     | 'setLadderLength'
@@ -52,6 +54,8 @@ export const createEquipmentSlice: StateCreator<
     | 'clearStructureMix'
     | 'setMeterSelection'
     | 'setLASelection'
+    | 'showInventoryInfo'
+    | 'setShowInventoryInfo'
   >
 > = (set, get) => ({
   selectedPanelId: null,
@@ -60,6 +64,10 @@ export const createEquipmentSlice: StateCreator<
   selectedBatteryMix: {},
   backupLoadW: 0,
 
+  showInventoryInfo: false,
+  setShowInventoryInfo: (val: boolean) => set({ showInventoryInfo: val }),
+
+  structureType: 'rcc_roof_elevated',
   selectedStructureId: null,
   structureVendorId: null,
   structureMaterialType: null,
@@ -226,6 +234,11 @@ export const createEquipmentSlice: StateCreator<
 
   setStructureTypeAndVendor: (materialType: 'GI' | 'GP' | null, vendorId: string | null) => {
     set({ structureMaterialType: materialType, structureVendorId: vendorId });
+    get().recalculate();
+  },
+
+  setStructureType: (type: any) => {
+    set({ structureType: type });
     get().recalculate();
   },
 

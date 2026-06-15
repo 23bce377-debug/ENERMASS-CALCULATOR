@@ -404,6 +404,7 @@ export interface Database {
           notes: string | null
           created_at: string
           updated_at: string
+          grn_processed: boolean
         }
         Insert: {
           id?: string
@@ -416,6 +417,7 @@ export interface Database {
           notes?: string | null
           created_at?: string
           updated_at?: string
+          grn_processed?: boolean
         }
         Update: {
           id?: string
@@ -428,6 +430,7 @@ export interface Database {
           notes?: string | null
           created_at?: string
           updated_at?: string
+          grn_processed?: boolean
         }
         Relationships: []
       }
@@ -464,6 +467,72 @@ export interface Database {
           updated_by?: string | null
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      bom_categories: {
+        Row: {
+          id: string
+          name: string
+          display_order: number
+          is_optional: boolean
+        }
+        Insert: {
+          id?: string
+          name: string
+          display_order: number
+          is_optional?: boolean
+        }
+        Update: {
+          id?: string
+          name?: string
+          display_order?: number
+          is_optional?: boolean
+        }
+        Relationships: []
+      }
+      bom_template_items: {
+        Row: {
+          id: string
+          category_id: string
+          sku_code: string
+          description: string
+          unit: string
+          unit_rate_min: number | null
+          unit_rate_max: number | null
+          default_rate: number | null
+          qty_formula: string | null
+          is_survey_dependent: boolean
+          civil_required_only: boolean
+          notes: string | null
+        }
+        Insert: {
+          id?: string
+          category_id: string
+          sku_code: string
+          description: string
+          unit: string
+          unit_rate_min?: number | null
+          unit_rate_max?: number | null
+          default_rate?: number | null
+          qty_formula?: string | null
+          is_survey_dependent?: boolean
+          civil_required_only?: boolean
+          notes?: string | null
+        }
+        Update: {
+          id?: string
+          category_id?: string
+          sku_code?: string
+          description?: string
+          unit?: string
+          unit_rate_min?: number | null
+          unit_rate_max?: number | null
+          default_rate?: number | null
+          qty_formula?: string | null
+          is_survey_dependent?: boolean
+          civil_required_only?: boolean
+          notes?: string | null
         }
         Relationships: []
       }
@@ -572,6 +641,7 @@ export interface Database {
           version: number
           created_at: string
           updated_at: string
+          snapshot_locked: boolean
         }
         Insert: {
           id?: string
@@ -587,6 +657,7 @@ export interface Database {
           version?: number
           created_at?: string
           updated_at?: string
+          snapshot_locked?: boolean
         }
         Update: {
           id?: string
@@ -602,6 +673,7 @@ export interface Database {
           version?: number
           created_at?: string
           updated_at?: string
+          snapshot_locked?: boolean
         }
         Relationships: []
       }
@@ -764,6 +836,90 @@ export interface Database {
         }
         Relationships: []
       }
+      crm_site_surveys: {
+        Row: {
+          id: string
+          org_id: string
+          lead_id: string
+          quote_id: string | null
+          conducted_by: string | null
+          conducted_at: string | null
+          status: string
+          roof_area_sqft: number | null
+          roof_type: string | null
+          roof_height_ft: number | null
+          shadowing_notes: string | null
+          existing_load_kw: number | null
+          sanctioned_load_kw: number | null
+          meter_phase: string | null
+          distance_inverter_to_meter_m: number | null
+          distance_panel_to_inverter_m: number | null
+          discom_name: string | null
+          consumer_number: string | null
+          net_metering_available: boolean | null
+          photo_urls: Json | null
+          survey_notes: string | null
+          waived_by: string | null
+          waive_reason: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          lead_id: string
+          quote_id?: string | null
+          conducted_by?: string | null
+          conducted_at?: string | null
+          status?: string
+          roof_area_sqft?: number | null
+          roof_type?: string | null
+          roof_height_ft?: number | null
+          shadowing_notes?: string | null
+          existing_load_kw?: number | null
+          sanctioned_load_kw?: number | null
+          meter_phase?: string | null
+          distance_inverter_to_meter_m?: number | null
+          distance_panel_to_inverter_m?: number | null
+          discom_name?: string | null
+          consumer_number?: string | null
+          net_metering_available?: boolean | null
+          photo_urls?: Json | null
+          survey_notes?: string | null
+          waived_by?: string | null
+          waive_reason?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          lead_id?: string
+          quote_id?: string | null
+          conducted_by?: string | null
+          conducted_at?: string | null
+          status?: string
+          roof_area_sqft?: number | null
+          roof_type?: string | null
+          roof_height_ft?: number | null
+          shadowing_notes?: string | null
+          existing_load_kw?: number | null
+          sanctioned_load_kw?: number | null
+          meter_phase?: string | null
+          distance_inverter_to_meter_m?: number | null
+          distance_panel_to_inverter_m?: number | null
+          discom_name?: string | null
+          consumer_number?: string | null
+          net_metering_available?: boolean | null
+          photo_urls?: Json | null
+          survey_notes?: string | null
+          waived_by?: string | null
+          waive_reason?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       crm_timeline: {
         Row: {
           id: string
@@ -826,6 +982,30 @@ export interface Database {
           config_json?: Json | null
           is_active?: boolean
           created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      draft_quotes: {
+        Row: {
+          id: string
+          user_id: string
+          org_id: string
+          state_json: Json
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          org_id: string
+          state_json?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          org_id?: string
+          state_json?: Json
           updated_at?: string
         }
         Relationships: []
@@ -1895,6 +2075,48 @@ export interface Database {
         }
         Relationships: []
       }
+      field_amc_visits: {
+        Row: {
+          id: string
+          org_id: string
+          contract_id: string
+          visit_date: string
+          visit_type: string
+          conducted_by: string | null
+          status: string
+          notes: string | null
+          photos: string[] | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          contract_id: string
+          visit_date: string
+          visit_type?: string
+          conducted_by?: string | null
+          status?: string
+          notes?: string | null
+          photos?: string[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          contract_id?: string
+          visit_date?: string
+          visit_type?: string
+          conducted_by?: string | null
+          status?: string
+          notes?: string | null
+          photos?: string[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       field_checklist_items: {
         Row: {
           id: string
@@ -2321,6 +2543,8 @@ export interface Database {
           rate_at_time: number | null
           created_at: string
           catalog_item_id: string
+          acquisition_item_id: string | null
+          processed_at: string | null
         }
         Insert: {
           id?: string
@@ -2333,6 +2557,8 @@ export interface Database {
           rate_at_time?: number | null
           created_at?: string
           catalog_item_id: string
+          acquisition_item_id?: string | null
+          processed_at?: string | null
         }
         Update: {
           id?: string
@@ -2345,6 +2571,59 @@ export interface Database {
           rate_at_time?: number | null
           created_at?: string
           catalog_item_id?: string
+          acquisition_item_id?: string | null
+          processed_at?: string | null
+        }
+        Relationships: []
+      }
+      inventory_movements: {
+        Row: {
+          id: string
+          item_id: string
+          project_id: string
+          from_state: string | null
+          to_state: string
+          quantity: number
+          moved_by: string | null
+          moved_at: string
+          vehicle_number: string | null
+          driver_contact: string | null
+          site_received_by: string | null
+          site_received_at: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          project_id: string
+          from_state?: string | null
+          to_state: string
+          quantity: number
+          moved_by?: string | null
+          moved_at?: string
+          vehicle_number?: string | null
+          driver_contact?: string | null
+          site_received_by?: string | null
+          site_received_at?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          project_id?: string
+          from_state?: string | null
+          to_state?: string
+          quantity?: number
+          moved_by?: string | null
+          moved_at?: string
+          vehicle_number?: string | null
+          driver_contact?: string | null
+          site_received_by?: string | null
+          site_received_at?: string | null
+          notes?: string | null
+          created_at?: string
         }
         Relationships: []
       }
@@ -2357,6 +2636,7 @@ export interface Database {
           weighted_avg_cost: number
           last_updated: string
           catalog_item_id: string
+          reorder_level: number
         }
         Insert: {
           org_id: string
@@ -2366,6 +2646,7 @@ export interface Database {
           weighted_avg_cost?: number
           last_updated?: string
           catalog_item_id: string
+          reorder_level?: number
         }
         Update: {
           org_id?: string
@@ -2375,6 +2656,7 @@ export interface Database {
           weighted_avg_cost?: number
           last_updated?: string
           catalog_item_id?: string
+          reorder_level?: number
         }
         Relationships: []
       }
@@ -2465,6 +2747,63 @@ export interface Database {
         }
         Relationships: []
       }
+      net_metering_applications: {
+        Row: {
+          id: string
+          project_id: string
+          discom_name: string
+          consumer_number: string
+          current_stage: string
+          application_date: string | null
+          registration_number: string | null
+          inspection_date: string | null
+          net_meter_serial: string | null
+          commissioning_cert_url: string | null
+          document_urls: Json
+          estimated_completion_date: string | null
+          notes: string | null
+          last_updated_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          discom_name: string
+          consumer_number: string
+          current_stage?: string
+          application_date?: string | null
+          registration_number?: string | null
+          inspection_date?: string | null
+          net_meter_serial?: string | null
+          commissioning_cert_url?: string | null
+          document_urls?: Json
+          estimated_completion_date?: string | null
+          notes?: string | null
+          last_updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          discom_name?: string
+          consumer_number?: string
+          current_stage?: string
+          application_date?: string | null
+          registration_number?: string | null
+          inspection_date?: string | null
+          net_meter_serial?: string | null
+          commissioning_cert_url?: string | null
+          document_urls?: Json
+          estimated_completion_date?: string | null
+          notes?: string | null
+          last_updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       organisations: {
         Row: {
           id: string
@@ -2540,6 +2879,183 @@ export interface Database {
         }
         Relationships: []
       }
+      payment_schedules: {
+        Row: {
+          id: string
+          quote_id: string
+          milestone_name: string
+          trigger_event: string
+          percent: number
+          amount: number
+          due_date: string | null
+          paid_at: string | null
+          payment_reference: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          quote_id: string
+          milestone_name: string
+          trigger_event: string
+          percent: number
+          amount: number
+          due_date?: string | null
+          paid_at?: string | null
+          payment_reference?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          quote_id?: string
+          milestone_name?: string
+          trigger_event?: string
+          percent?: number
+          amount?: number
+          due_date?: string | null
+          paid_at?: string | null
+          payment_reference?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      preset_favorites: {
+        Row: {
+          preset_id: string
+          user_id: string
+          created_at: string | null
+        }
+        Insert: {
+          preset_id: string
+          user_id: string
+          created_at?: string | null
+        }
+        Update: {
+          preset_id?: string
+          user_id?: string
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      preset_line_items: {
+        Row: {
+          id: string
+          preset_id: string
+          org_id: string | null
+          category: string
+          catalog_item_id: string | null
+          catalog_type: string | null
+          sku_code: string | null
+          description: string
+          brand: string | null
+          model: string | null
+          unit: string
+          quantity: number
+          unit_rate: number
+          is_included: boolean
+          is_survey_dependent: boolean
+          sort_order: number
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          preset_id: string
+          org_id?: string | null
+          category: string
+          catalog_item_id?: string | null
+          catalog_type?: string | null
+          sku_code?: string | null
+          description: string
+          brand?: string | null
+          model?: string | null
+          unit?: string
+          quantity?: number
+          unit_rate?: number
+          is_included?: boolean
+          is_survey_dependent?: boolean
+          sort_order?: number
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          preset_id?: string
+          org_id?: string | null
+          category?: string
+          catalog_item_id?: string | null
+          catalog_type?: string | null
+          sku_code?: string | null
+          description?: string
+          brand?: string | null
+          model?: string | null
+          unit?: string
+          quantity?: number
+          unit_rate?: number
+          is_included?: boolean
+          is_survey_dependent?: boolean
+          sort_order?: number
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      preset_tag_mappings: {
+        Row: {
+          preset_id: string
+          tag_id: string
+        }
+        Insert: {
+          preset_id: string
+          tag_id: string
+        }
+        Update: {
+          preset_id?: string
+          tag_id?: string
+        }
+        Relationships: []
+      }
+      preset_tags: {
+        Row: {
+          id: string
+          name: string
+          color: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          color?: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          color?: string
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      preset_usage_history: {
+        Row: {
+          id: string
+          preset_id: string | null
+          user_id: string | null
+          used_at: string | null
+        }
+        Insert: {
+          id?: string
+          preset_id?: string | null
+          user_id?: string | null
+          used_at?: string | null
+        }
+        Update: {
+          id?: string
+          preset_id?: string | null
+          user_id?: string | null
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       pricing_reference_deprecated: {
         Row: {
           id: string
@@ -2600,6 +3116,11 @@ export interface Database {
           grn_number: string
           receipt_date: string
           created_at: string
+          status: string
+          is_processed: boolean
+          processed_at: string | null
+          created_by: string | null
+          idempotency_key: string | null
         }
         Insert: {
           id?: string
@@ -2609,6 +3130,11 @@ export interface Database {
           grn_number: string
           receipt_date?: string
           created_at?: string
+          status?: string
+          is_processed?: boolean
+          processed_at?: string | null
+          created_by?: string | null
+          idempotency_key?: string | null
         }
         Update: {
           id?: string
@@ -2618,6 +3144,11 @@ export interface Database {
           grn_number?: string
           receipt_date?: string
           created_at?: string
+          status?: string
+          is_processed?: boolean
+          processed_at?: string | null
+          created_by?: string | null
+          idempotency_key?: string | null
         }
         Relationships: []
       }
@@ -2630,6 +3161,8 @@ export interface Database {
           qty_received: number
           serials: string[] | null
           catalog_item_id: string
+          item_description: string | null
+          unit: string
         }
         Insert: {
           id?: string
@@ -2639,6 +3172,8 @@ export interface Database {
           qty_received: number
           serials?: string[] | null
           catalog_item_id: string
+          item_description?: string | null
+          unit?: string
         }
         Update: {
           id?: string
@@ -2648,6 +3183,8 @@ export interface Database {
           qty_received?: number
           serials?: string[] | null
           catalog_item_id?: string
+          item_description?: string | null
+          unit?: string
         }
         Relationships: []
       }
@@ -2662,6 +3199,11 @@ export interface Database {
           unit_price: number
           gst_pct: number
           catalog_item_id: string
+          item_description: string | null
+          unit: string
+          estimated_rate: number | null
+          category: string | null
+          is_pr_item: boolean
         }
         Insert: {
           id?: string
@@ -2673,6 +3215,11 @@ export interface Database {
           unit_price: number
           gst_pct?: number
           catalog_item_id: string
+          item_description?: string | null
+          unit?: string
+          estimated_rate?: number | null
+          category?: string | null
+          is_pr_item?: boolean
         }
         Update: {
           id?: string
@@ -2684,6 +3231,11 @@ export interface Database {
           unit_price?: number
           gst_pct?: number
           catalog_item_id?: string
+          item_description?: string | null
+          unit?: string
+          estimated_rate?: number | null
+          category?: string | null
+          is_pr_item?: boolean
         }
         Relationships: []
       }
@@ -2703,6 +3255,11 @@ export interface Database {
           created_at: string
           updated_at: string
           version: number
+          project_id: string | null
+          requested_by: string | null
+          pr_status: string
+          notes: string | null
+          items_count: number
         }
         Insert: {
           id?: string
@@ -2719,6 +3276,11 @@ export interface Database {
           created_at?: string
           updated_at?: string
           version?: number
+          project_id?: string | null
+          requested_by?: string | null
+          pr_status?: string
+          notes?: string | null
+          items_count?: number
         }
         Update: {
           id?: string
@@ -2735,6 +3297,11 @@ export interface Database {
           created_at?: string
           updated_at?: string
           version?: number
+          project_id?: string | null
+          requested_by?: string | null
+          pr_status?: string
+          notes?: string | null
+          items_count?: number
         }
         Relationships: []
       }
@@ -3024,6 +3591,7 @@ export interface Database {
           updated_at: string
           is_gst_overridden: boolean
           original_gst: number | null
+          version: number
         }
         Insert: {
           id?: string
@@ -3049,6 +3617,7 @@ export interface Database {
           updated_at?: string
           is_gst_overridden?: boolean
           original_gst?: number | null
+          version?: number
         }
         Update: {
           id?: string
@@ -3074,6 +3643,7 @@ export interface Database {
           updated_at?: string
           is_gst_overridden?: boolean
           original_gst?: number | null
+          version?: number
         }
         Relationships: []
       }
@@ -3241,6 +3811,22 @@ export interface Database {
           net_meter_qty: number | null
           la_id: string | null
           la_qty: number | null
+          lead_id: string | null
+          parent_quote_id: string | null
+          version_reason: string | null
+          survey_id: string | null
+          gst_rate: number
+          structure_type: string
+          validation_acknowledged: Json
+          civil_applicable: boolean
+          logistics_cost_estimated: number | null
+          subsidy_breakdown: string | null
+          subsidy_eligible: boolean
+          margin_alert: boolean
+          margin_alert_threshold: number
+          gst_output_override: number | null
+          target_mrp_incl_gst: number | null
+          target_mrp_per_watt: number | null
         }
         Insert: {
           id?: string
@@ -3318,6 +3904,22 @@ export interface Database {
           net_meter_qty?: number | null
           la_id?: string | null
           la_qty?: number | null
+          lead_id?: string | null
+          parent_quote_id?: string | null
+          version_reason?: string | null
+          survey_id?: string | null
+          gst_rate?: number
+          structure_type?: string
+          validation_acknowledged?: Json
+          civil_applicable?: boolean
+          logistics_cost_estimated?: number | null
+          subsidy_breakdown?: string | null
+          subsidy_eligible?: boolean
+          margin_alert?: boolean
+          margin_alert_threshold?: number
+          gst_output_override?: number | null
+          target_mrp_incl_gst?: number | null
+          target_mrp_per_watt?: number | null
         }
         Update: {
           id?: string
@@ -3395,6 +3997,22 @@ export interface Database {
           net_meter_qty?: number | null
           la_id?: string | null
           la_qty?: number | null
+          lead_id?: string | null
+          parent_quote_id?: string | null
+          version_reason?: string | null
+          survey_id?: string | null
+          gst_rate?: number
+          structure_type?: string
+          validation_acknowledged?: Json
+          civil_applicable?: boolean
+          logistics_cost_estimated?: number | null
+          subsidy_breakdown?: string | null
+          subsidy_eligible?: boolean
+          margin_alert?: boolean
+          margin_alert_threshold?: number
+          gst_output_override?: number | null
+          target_mrp_incl_gst?: number | null
+          target_mrp_per_watt?: number | null
         }
         Relationships: []
       }
@@ -3428,6 +4046,42 @@ export interface Database {
           is_active?: boolean
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      rate_master_audit_log: {
+        Row: {
+          id: string
+          org_id: string
+          rate_master_id: string | null
+          item_name: string
+          old_rate: number | null
+          new_rate: number | null
+          changed_by: string | null
+          changed_at: string
+          reason: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          rate_master_id?: string | null
+          item_name: string
+          old_rate?: number | null
+          new_rate?: number | null
+          changed_by?: string | null
+          changed_at?: string
+          reason?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          rate_master_id?: string | null
+          item_name?: string
+          old_rate?: number | null
+          new_rate?: number | null
+          changed_by?: string | null
+          changed_at?: string
+          reason?: string | null
         }
         Relationships: []
       }
@@ -3465,6 +4119,87 @@ export interface Database {
           rate_per_kw?: number
           is_fixed_amount?: boolean
           fixed_amount?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_surveys: {
+        Row: {
+          id: string
+          lead_id: string
+          quote_id: string | null
+          conducted_by: string | null
+          conducted_at: string | null
+          status: string
+          roof_area_sqft: number | null
+          roof_type: string | null
+          roof_height_ft: number | null
+          shadowing_notes: string | null
+          existing_load_kw: number | null
+          sanctioned_load_kw: number | null
+          meter_phase: string | null
+          distance_inverter_to_meter_m: number | null
+          distance_panel_to_inverter_m: number | null
+          discom_name: string | null
+          consumer_number: string | null
+          net_metering_available: boolean | null
+          photo_urls: Json
+          survey_notes: string | null
+          waived_by: string | null
+          waive_reason: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          lead_id: string
+          quote_id?: string | null
+          conducted_by?: string | null
+          conducted_at?: string | null
+          status?: string
+          roof_area_sqft?: number | null
+          roof_type?: string | null
+          roof_height_ft?: number | null
+          shadowing_notes?: string | null
+          existing_load_kw?: number | null
+          sanctioned_load_kw?: number | null
+          meter_phase?: string | null
+          distance_inverter_to_meter_m?: number | null
+          distance_panel_to_inverter_m?: number | null
+          discom_name?: string | null
+          consumer_number?: string | null
+          net_metering_available?: boolean | null
+          photo_urls?: Json
+          survey_notes?: string | null
+          waived_by?: string | null
+          waive_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          lead_id?: string
+          quote_id?: string | null
+          conducted_by?: string | null
+          conducted_at?: string | null
+          status?: string
+          roof_area_sqft?: number | null
+          roof_type?: string | null
+          roof_height_ft?: number | null
+          shadowing_notes?: string | null
+          existing_load_kw?: number | null
+          sanctioned_load_kw?: number | null
+          meter_phase?: string | null
+          distance_inverter_to_meter_m?: number | null
+          distance_panel_to_inverter_m?: number | null
+          discom_name?: string | null
+          consumer_number?: string | null
+          net_metering_available?: boolean | null
+          photo_urls?: Json
+          survey_notes?: string | null
+          waived_by?: string | null
+          waive_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -3686,6 +4421,33 @@ export interface Database {
           material_type?: string
           rate_per_kg?: number
           created_at?: string
+        }
+        Relationships: []
+      }
+      structure_rates: {
+        Row: {
+          id: string
+          component_id: string | null
+          rate: number | null
+          created_at: string | null
+          updated_at: string | null
+          org_id: string | null
+        }
+        Insert: {
+          id?: string
+          component_id?: string | null
+          rate?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+          org_id?: string | null
+        }
+        Update: {
+          id?: string
+          component_id?: string | null
+          rate?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+          org_id?: string | null
         }
         Relationships: []
       }
@@ -4496,6 +5258,66 @@ export interface Database {
         }
         Relationships: []
       }
+      system_presets: {
+        Row: {
+          id: string
+          name: string
+          capacity_kw: number
+          type: string
+          status: string
+          author_id: string | null
+          is_org_template: boolean
+          calculator_state: Json
+          created_at: string | null
+          updated_at: string | null
+          system_type: string | null
+          system_kw: number | null
+          last_used_at: string | null
+          is_default: boolean | null
+          created_by: string | null
+          org_id: string | null
+          notes: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          capacity_kw: number
+          type: string
+          status?: string
+          author_id?: string | null
+          is_org_template?: boolean
+          calculator_state: Json
+          created_at?: string | null
+          updated_at?: string | null
+          system_type?: string | null
+          system_kw?: number | null
+          last_used_at?: string | null
+          is_default?: boolean | null
+          created_by?: string | null
+          org_id?: string | null
+          notes?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          capacity_kw?: number
+          type?: string
+          status?: string
+          author_id?: string | null
+          is_org_template?: boolean
+          calculator_state?: Json
+          created_at?: string | null
+          updated_at?: string | null
+          system_type?: string | null
+          system_kw?: number | null
+          last_used_at?: string | null
+          is_default?: boolean | null
+          created_by?: string | null
+          org_id?: string | null
+          notes?: string | null
+        }
+        Relationships: []
+      }
       systems: {
         Row: {
           id: string
@@ -4562,6 +5384,72 @@ export interface Database {
         }
         Relationships: []
       }
+      vendor_payments: {
+        Row: {
+          id: string
+          project_id: string
+          vendor_id: string
+          invoice_number: string
+          invoice_amount: number
+          status: string
+          taxable_amount: number | null
+          cgst_amount: number | null
+          sgst_amount: number | null
+          igst_amount: number | null
+          total_gst: number | null
+          created_at: string | null
+          retention_percent: number
+          retention_released_at: string | null
+          retention_release_approved_by: string | null
+          retention_amount: number | null
+          retention_pct: number
+          retention_released: boolean
+          retention_release_notes: string | null
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          vendor_id: string
+          invoice_number: string
+          invoice_amount: number
+          status?: string
+          taxable_amount?: number | null
+          cgst_amount?: number | null
+          sgst_amount?: number | null
+          igst_amount?: number | null
+          total_gst?: number | null
+          created_at?: string | null
+          retention_percent?: number
+          retention_released_at?: string | null
+          retention_release_approved_by?: string | null
+          retention_amount?: number | null
+          retention_pct?: number
+          retention_released?: boolean
+          retention_release_notes?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          vendor_id?: string
+          invoice_number?: string
+          invoice_amount?: number
+          status?: string
+          taxable_amount?: number | null
+          cgst_amount?: number | null
+          sgst_amount?: number | null
+          igst_amount?: number | null
+          total_gst?: number | null
+          created_at?: string | null
+          retention_percent?: number
+          retention_released_at?: string | null
+          retention_release_approved_by?: string | null
+          retention_amount?: number | null
+          retention_pct?: number
+          retention_released?: boolean
+          retention_release_notes?: string | null
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           id: string
@@ -4576,6 +5464,7 @@ export interface Database {
           updated_at: string
           status: Database['public']['Enums']['vendor_status']
           is_structure_vendor: boolean
+          version: number
         }
         Insert: {
           id?: string
@@ -4590,6 +5479,7 @@ export interface Database {
           updated_at?: string
           status?: Database['public']['Enums']['vendor_status']
           is_structure_vendor?: boolean
+          version?: number
         }
         Update: {
           id?: string
@@ -4604,6 +5494,7 @@ export interface Database {
           updated_at?: string
           status?: Database['public']['Enums']['vendor_status']
           is_structure_vendor?: boolean
+          version?: number
         }
         Relationships: []
       }
@@ -4636,6 +5527,17 @@ export interface Database {
       }
     }
     Views: {
+      inventory_positions: {
+        Row: {
+          item_id: string | null
+          project_id: string | null
+          qty_in_warehouse: number | null
+          qty_in_transit: number | null
+          qty_at_site: number | null
+          qty_installed: number | null
+        }
+        Relationships: []
+      }
       v_active_batteries: {
         Row: {
           id: string | null
@@ -4687,6 +5589,21 @@ export interface Database {
           total_invoice: number | null
           status: Database['public']['Enums']['invoice_status'] | null
           days_overdue: number | null
+        }
+        Relationships: []
+      }
+      v_gstr1_export: {
+        Row: {
+          org_id: string | null
+          invoice_number: string | null
+          invoice_date: string | null
+          recipient_name: string | null
+          taxable_value: number | null
+          gst_rate_pct: number | null
+          gst_amount: number | null
+          total_invoice_value: number | null
+          pos_state: string | null
+          item_type: string | null
         }
         Relationships: []
       }

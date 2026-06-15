@@ -27,7 +27,19 @@ AS $$
 DECLARE
   v_acq_id UUID;
   v_result JSONB;
+  v_item JSONB;
 BEGIN
+  -- Validate positive quantities in all items (P0-5)
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) AS item
+  LOOP
+    IF (v_item->>'qty')::NUMERIC <= 0 THEN
+      RAISE EXCEPTION 'Acquisition item quantity must be positive. Found: %', (v_item->>'qty')::NUMERIC;
+    END IF;
+    IF (v_item->>'rate_per_unit')::NUMERIC < 0 THEN
+      RAISE EXCEPTION 'Acquisition item rate cannot be negative. Found: %', (v_item->>'rate_per_unit')::NUMERIC;
+    END IF;
+  END LOOP;
+
   -- Insert the acquisition header
   INSERT INTO acquisitions (
     org_id,
@@ -108,7 +120,19 @@ AS $$
 DECLARE
   v_preset_id UUID;
   v_result    JSONB;
+  v_item JSONB;
 BEGIN
+  -- Validate positive quantities in all items (P0-5)
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) AS item
+  LOOP
+    IF (v_item->>'qty')::NUMERIC <= 0 THEN
+      RAISE EXCEPTION 'Bundle preset item quantity must be positive. Found: %', (v_item->>'qty')::NUMERIC;
+    END IF;
+    IF (v_item->>'base_cost')::NUMERIC < 0 THEN
+      RAISE EXCEPTION 'Bundle preset item base_cost cannot be negative. Found: %', (v_item->>'base_cost')::NUMERIC;
+    END IF;
+  END LOOP;
+
   -- Insert preset header
   INSERT INTO bundle_presets (
     org_id,
@@ -198,7 +222,21 @@ SET search_path = public
 AS $$
 DECLARE
   v_result JSONB;
+  v_item JSONB;
 BEGIN
+  -- Validate positive quantities in items if provided (P0-5)
+  IF p_items IS NOT NULL THEN
+    FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) AS item
+    LOOP
+      IF (v_item->>'qty')::NUMERIC <= 0 THEN
+        RAISE EXCEPTION 'Bundle preset item quantity must be positive. Found: %', (v_item->>'qty')::NUMERIC;
+      END IF;
+      IF (v_item->>'base_cost')::NUMERIC < 0 THEN
+        RAISE EXCEPTION 'Bundle preset item base_cost cannot be negative. Found: %', (v_item->>'base_cost')::NUMERIC;
+      END IF;
+    END LOOP;
+  END IF;
+
   -- Update preset header fields (only fields present in JSONB)
   UPDATE bundle_presets SET
     vendor_id              = CASE WHEN p_updates ? 'vendor_id'              THEN (p_updates->>'vendor_id')::UUID              ELSE vendor_id END,

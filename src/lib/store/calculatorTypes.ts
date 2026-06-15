@@ -23,6 +23,8 @@ import {
   generateQuoteId,
 } from '../types/quote';
 
+import { type StructureType } from '../structures/structureConfig';
+
 export interface Variant {
   id: string;
   name: string;
@@ -57,6 +59,7 @@ export interface CalculatorState {
   projectType: ProjectType;
 
   // Config
+  itcEligible: boolean;
   targetMarginPct: number | null;
   overrides: Record<number, RowOverride>;
   customItems: BomItem[];
@@ -75,6 +78,7 @@ export interface CalculatorState {
 
   // Structure & Meter & LA selections
   selectedStructureId: string | null;
+  structureType: StructureType;
   structureVendorId: string | null;
   structureMaterialType: 'GI' | 'GP' | null;
   walkwayLengthM: number;
@@ -126,6 +130,7 @@ export interface CalculatorState {
   selectSystem: (id: string) => void;
   setState: (state: string) => void;
   setProjectType: (type: ProjectType) => void;
+  setItcEligible: (eligible: boolean) => void;
   setMarginOverride: (pct: number | null) => void;
   setRowOverride: (index: number, override: Partial<RowOverride>) => void;
   clearRowOverride: (index: number) => void;
@@ -145,6 +150,7 @@ export interface CalculatorState {
   clearBatteryMix: () => void;
   setBackupLoadW: (loadW: number) => void;
 
+  setStructureType: (type: StructureType) => void;
   setStructureSelection: (id: string | null, mode?: 'weight' | 'per_watt' | 'flat') => void;
   setStructureTypeAndVendor: (materialType: 'GI' | 'GP' | null, vendorId: string | null) => void;
   setWalkwayLength: (length: number) => void;
@@ -157,6 +163,9 @@ export interface CalculatorState {
   setLASelection: (id: string | null, qty?: number) => void;
   setGSTOnOutputOverride: (val: number | null) => void;
   setTargetMRP: (val: number | null, type?: 'total' | 'per_watt') => void;
+
+  showInventoryInfo: boolean;
+  setShowInventoryInfo: (val: boolean) => void;
 
   setOrientation: (o: 'South' | 'East/West' | 'Flat') => void;
   setCableLengths: (dc: number, ac: number) => void;
@@ -171,6 +180,8 @@ export interface CalculatorState {
     address: AddressInfo;
     site: SiteInfo;
     sales: SalesInfo;
+    validationAcknowledged?: string[];
+    leadId?: string | null;
   }, forceOverwrite?: boolean) => Promise<Quote>;
   loadQuote: (quoteId: string) => void;
   duplicateQuote: (quoteId: string) => void;
@@ -204,19 +215,22 @@ export interface CalculatorState {
   rpcSubsidyAmount: number | null;
   applySubsidy: boolean;
   dbActiveScheme: any | null;
-  showInventoryInfo: boolean;
-  setShowInventoryInfo: (val: boolean) => void;
   setApplySubsidy: (val: boolean) => void;
   fetchRpcSubsidy: () => Promise<void>;
   fetchMasterData: () => Promise<void>;
+
+  selectedGoalWattage: number | null;
+  setSelectedGoalWattage: (w: number | null) => void;
 }
 
 export const INITIAL_STATE = {
-  showInventoryInfo: true,
+  selectedGoalWattage: null as number | null,
   inventorySummary: [] as import('@/backend/orm/acquisition').InventorySummary[],
-  selectedSystemId: null as string | null,
-  selectedState: '' as string,
+  selectedSystemId: '3kw-ongrid' as string | null,
+
+  selectedState: 'Kerala' as string,
   projectType: 'residential' as ProjectType,
+  itcEligible: false as boolean,
 
   targetMarginPct: null as number | null,
   overrides: {} as Record<number, RowOverride>,
@@ -234,6 +248,7 @@ export const INITIAL_STATE = {
   backupLoadW: 0,
 
   selectedStructureId: null as string | null,
+  structureType: 'rcc_roof_elevated' as StructureType,
   structureVendorId: null as string | null,
   structureMaterialType: null as 'GI' | 'GP' | null,
   walkwayLengthM: 0,
@@ -270,6 +285,8 @@ export const INITIAL_STATE = {
 
   calcResult: null as CalcResult | null,
   calcError: null as string | null,
+
+  showInventoryInfo: false,
 
   variants: [] as Variant[],
   activeVariantId: null as string | null,
@@ -339,15 +356,33 @@ export function getEquipmentCatalogsFromSettings(dbLoaded: boolean, dbPanels: an
   inverters: any[];
   batteries: any[];
 } {
-  if (dbLoaded && dbPanels.length > 0) {
-    return {
-      panels: dbPanels,
-      inverters: dbInverters,
-      batteries: dbBatteries,
-    };
+  let customPanels: any[] = [];
+  let customInverters: any[] = [];
+  let customBatteries: any[] = [];
+
+  if (typeof window !== 'undefined') {
+    try {
+      const rawSettings = window.localStorage.getItem('enermass-settings');
+      if (rawSettings) {
+        const settings = JSON.parse(rawSettings);
+        if (Array.isArray(settings.customPanels)) customPanels = settings.customPanels;
+        if (Array.isArray(settings.customInverters)) customInverters = settings.customInverters;
+        if (Array.isArray(settings.customBatteries)) customBatteries = settings.customBatteries;
+      }
+    } catch (e) {}
   }
-  return { panels: [], inverters: [], batteries: [] };
+
+  const basePanels = dbLoaded && dbPanels.length > 0 ? dbPanels : [];
+  const baseInverters = dbLoaded && dbInverters.length > 0 ? dbInverters : [];
+  const baseBatteries = dbLoaded && dbBatteries.length > 0 ? dbBatteries : [];
+
+  return {
+    panels: [...basePanels, ...customPanels],
+    inverters: [...baseInverters, ...customInverters],
+    batteries: [...baseBatteries, ...customBatteries],
+  };
 }
+
 
 export function normalizeMixEntries(selectionMix: Record<string, number>): Array<[string, number]> {
   return Object.entries(selectionMix).filter(([, qty]) => Number.isFinite(qty) && qty > 0);
@@ -385,10 +420,6 @@ export function runCalculation(state: CalculatorState): {
   result: CalcResult | null;
   error: string | null;
 } {
-  if (!state.selectedSystemId) {
-    return { result: null, error: null };
-  }
-
   try {
     const { panels: allPanels, inverters: allInverters, batteries: allBatteries } = getEquipmentCatalogsFromSettings(
       state.dbLoaded,
@@ -410,6 +441,16 @@ export function runCalculation(state: CalculatorState): {
           }
         }
       } catch (e) {}
+    }
+
+    // Resolve systemId: use selected, or fall back to first available system
+    const systems = state.dbLoaded ? state.dbSystems : [...SYSTEMS, ...customSystems];
+    const resolvedSystemId = state.selectedSystemId
+      ?? (systems.length > 0 ? systems[0].id : null);
+
+    // If there are truly no systems available at all, we can't calculate
+    if (!resolvedSystemId) {
+      return { result: null, error: null };
     }
 
     let panelRateOverride: number | undefined;
@@ -457,8 +498,7 @@ export function runCalculation(state: CalculatorState): {
       batteryQtyOverride = batteryMix.totalQty;
     }
 
-    const systems = state.dbLoaded ? state.dbSystems : [...SYSTEMS, ...customSystems];
-    const system = systems.find(s => s.id === state.selectedSystemId);
+    const system = systems.find(s => s.id === resolvedSystemId);
     let panelCapacityKW = system?.capacityKW ?? 0;
     let panelDegradationRate = 0.005;
     if (panelMixEntries.length > 0) {
@@ -496,8 +536,8 @@ export function runCalculation(state: CalculatorState): {
     }
 
 const result = calculateSystem({
-      systemId: state.selectedSystemId,
-      systems: state.dbLoaded ? state.dbSystems : [...SYSTEMS, ...customSystems],
+      systemId: resolvedSystemId,
+      systems,
       state: state.selectedState,
       projectType: state.projectType,
       targetMarginPct: state.targetMarginPct ?? undefined,
@@ -564,6 +604,7 @@ const result = calculateSystem({
       maxSubsidyCapacityKW: state.dbActiveScheme?.max_capacity_kw ? Number(state.dbActiveScheme.max_capacity_kw) : undefined,
       maxAbsoluteSubsidy: state.dbActiveScheme?.max_absolute_subsidy ? Number(state.dbActiveScheme.max_absolute_subsidy) : undefined,
       applySubsidy: state.applySubsidy,
+      structureType: state.structureType,
       structureVendorId: state.structureVendorId ?? undefined,
       structureMaterialType: state.structureMaterialType ?? undefined,
       walkwayLengthM: state.walkwayLengthM,

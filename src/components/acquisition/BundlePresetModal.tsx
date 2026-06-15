@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, Save, Loader2, Info } from 'lucide-react';
+import { X, Plus, Trash2, Save, Loader2, Info, Search } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { Select } from '@/components/ui/Select';
 import { formatINR } from '@/lib/engine/calculator';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { BundlePresetORM } from '@/backend/orm/bundle';
 import type { BundlePreset, BundlePresetItem } from '@/lib/types/bundle';
+import { TAX_CONSTANTS } from '@/lib/tax-constants';
+import CatalogPickerModal from './CatalogPickerModal';
 
 interface BundlePresetModalProps {
   isOpen: boolean;
@@ -46,10 +48,11 @@ export default function BundlePresetModal({
   const [effectivePrice, setEffectivePrice] = useState('0');
   const [allocationStrategy, setAllocationStrategy] = useState<'proportional_cost' | 'proportional_qty' | 'manual'>('proportional_cost');
   const [notes, setNotes] = useState('');
-  const [gstPct, setGstPct] = useState('0.18');
+  const [gstPct, setGstPct] = useState(String(TAX_CONSTANTS.COMMERCIAL_GST_RATE));
   const [items, setItems] = useState<Partial<BundlePresetItem>[]>([
-    { item_description: '', category: 'solar_panels', qty: 1, unit: 'Nos', base_cost: 0, allocated_cost_override: 0, gst_pct: 0.18 }
+    { item_description: '', category: 'solar_panels', qty: 1, unit: 'Nos', base_cost: 0, allocated_cost_override: 0, gst_pct: TAX_CONSTANTS.COMMERCIAL_GST_RATE }
   ]);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -69,7 +72,7 @@ export default function BundlePresetModal({
         name: `${p.brand} ${p.model} ${p.wattage || ''}W Panel`,
         category: 'solar_panels',
         cost: Number(p.ratePerWatt || 0) * Number(p.wattage || 1),
-        gst: Number(p.gst_pct || 0.05),
+        gst: Number(p.gst_pct || TAX_CONSTANTS.RESIDENTIAL_GST_RATE),
         unit: 'Nos'
       });
     });
@@ -99,7 +102,7 @@ export default function BundlePresetModal({
         name: `${m.meter_type === 'solar_meter' ? 'Solar' : 'Net'} Meter ${m.brand || ''} ${m.model || ''}`,
         category: 'metering',
         cost: Number(m.rate || 0),
-        gst: Number(m.gst_pct || 0.18),
+        gst: Number(m.gst_pct || TAX_CONSTANTS.COMMERCIAL_GST_RATE),
         unit: 'Nos'
       });
     });
@@ -109,7 +112,7 @@ export default function BundlePresetModal({
         name: `${st.name} Structure (${st.material || ''})`,
         category: 'mounting_structure',
         cost: Number(st.flat_rate || 0),
-        gst: Number(st.gst_pct || 0.18),
+        gst: Number(st.gst_pct || TAX_CONSTANTS.COMMERCIAL_GST_RATE),
         unit: 'Set'
       });
     });
@@ -125,7 +128,7 @@ export default function BundlePresetModal({
       setEffectivePrice(preset.effective_bundle_price.toString());
       setAllocationStrategy(preset.allocation_strategy);
       setNotes(preset.notes || '');
-      setGstPct(preset.gst_pct?.toString() || '0.18');
+      setGstPct(preset.gst_pct?.toString() || String(TAX_CONSTANTS.COMMERCIAL_GST_RATE));
       
       if (preset.bundle_preset_items) {
         setItems(preset.bundle_preset_items.map(item => ({
@@ -144,7 +147,7 @@ export default function BundlePresetModal({
   if (!isOpen) return null;
 
   const addItem = () => {
-    setItems([...items, { item_description: '', category: 'solar_panels', qty: 1, unit: 'Nos', base_cost: 0, allocated_cost_override: 0, gst_pct: 0.18 }]);
+    setItems([...items, { item_description: '', category: 'solar_panels', qty: 1, unit: 'Nos', base_cost: 0, allocated_cost_override: 0, gst_pct: TAX_CONSTANTS.COMMERCIAL_GST_RATE }]);
   };
 
   const removeItem = (index: number) => {
@@ -166,6 +169,28 @@ export default function BundlePresetModal({
       updateItem(index, 'base_cost', sug.cost);
       updateItem(index, 'gst_pct', sug.gst);
       updateItem(index, 'unit', sug.unit);
+    }
+  };
+
+  const handlePickerSelect = (selectedItem: any) => {
+    // check if there's an empty row we can use
+    const emptyRowIndex = items.findIndex(it => !it.item_description && !it.base_cost);
+    if (emptyRowIndex !== -1) {
+      updateItem(emptyRowIndex, 'item_description', selectedItem.name);
+      updateItem(emptyRowIndex, 'category', selectedItem.category);
+      updateItem(emptyRowIndex, 'base_cost', selectedItem.cost);
+      updateItem(emptyRowIndex, 'gst_pct', selectedItem.gst);
+      updateItem(emptyRowIndex, 'unit', selectedItem.unit);
+    } else {
+      setItems([...items, { 
+        item_description: selectedItem.name, 
+        category: selectedItem.category as any, 
+        qty: 1, 
+        unit: selectedItem.unit, 
+        base_cost: selectedItem.cost, 
+        allocated_cost_override: 0, 
+        gst_pct: selectedItem.gst 
+      }]);
     }
   };
 
@@ -259,9 +284,9 @@ export default function BundlePresetModal({
                 onChange={setGstPct}
                 options={[
                   { value: '0', label: '0%' },
-                  { value: '0.05', label: '5%' },
+                  { value: String(TAX_CONSTANTS.RESIDENTIAL_GST_RATE), label: '5%' },
                   { value: '0.12', label: '12%' },
-                  { value: '0.18', label: '18%' },
+                  { value: String(TAX_CONSTANTS.COMMERCIAL_GST_RATE), label: '18%' },
                   { value: '0.28', label: '28%' },
                 ]}
               />
@@ -332,13 +357,22 @@ export default function BundlePresetModal({
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">Bundle Package Items</h3>
-              <button
-                type="button"
-                onClick={addItem}
-                className="flex items-center gap-1.5 text-xs font-bold text-accent hover:text-accent-hover transition-colors cursor-pointer"
-              >
-                <Plus size={14} /> Add Line Item
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPickerOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-accent hover:text-accent-hover transition-colors cursor-pointer"
+                >
+                  <Search size={14} /> Browse Database
+                </button>
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="flex items-center gap-1.5 text-xs font-bold text-accent hover:text-accent-hover transition-colors cursor-pointer"
+                >
+                  <Plus size={14} /> Add Line Item
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto border border-border rounded-xl">
@@ -445,13 +479,13 @@ export default function BundlePresetModal({
                       <td className="px-2 py-2">
                         <Select
                           size="sm"
-                          value={String(item.gst_pct ?? 0.18)}
+                          value={String(item.gst_pct ?? TAX_CONSTANTS.COMMERCIAL_GST_RATE)}
                           onChange={(v) => updateItem(idx, 'gst_pct', parseFloat(v))}
                           options={[
                             { value: '0', label: '0%' },
-                            { value: '0.05', label: '5%' },
+                            { value: String(TAX_CONSTANTS.RESIDENTIAL_GST_RATE), label: '5%' },
                             { value: '0.12', label: '12%' },
-                            { value: '0.18', label: '18%' },
+                            { value: String(TAX_CONSTANTS.COMMERCIAL_GST_RATE), label: '18%' },
                             { value: '0.28', label: '28%' },
                           ]}
                         />
@@ -494,6 +528,12 @@ export default function BundlePresetModal({
           </button>
         </div>
       </div>
+
+      <CatalogPickerModal
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        onSelect={handlePickerSelect}
+      />
     </div>
   );
 }

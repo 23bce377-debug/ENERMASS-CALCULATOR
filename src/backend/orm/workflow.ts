@@ -77,7 +77,7 @@ export async function createWarrantyClaim(claim: Omit<WarrantyClaim, 'org_id'> &
     .from('profiles')
     .select('org_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError || !profile) {
     throw new Error('User profile or organization not found');
@@ -88,7 +88,7 @@ export async function createWarrantyClaim(claim: Omit<WarrantyClaim, 'org_id'> &
     org_id: profile.org_id
   };
 
-  return (supabase as any).from('proc_warranty_claims').insert(claimWithOrg).select().single();
+  return (supabase as any).from('proc_warranty_claims').insert(claimWithOrg).select().maybeSingle();
 }
 
 export async function getWarrantyClaims(orgId: string) {
@@ -101,7 +101,7 @@ export async function getWarrantyClaims(orgId: string) {
 
 export async function createEscalation(escalation: Escalation) {
   const supabase = await createClient();
-  return (supabase as any).from('sys_escalations').insert(escalation).select().single();
+  return (supabase as any).from('sys_escalations').insert(escalation).select().maybeSingle();
 }
 
 export async function getEscalationsByEntity(entity_type: string, entity_id: string) {
@@ -114,7 +114,7 @@ export async function getEscalationsByEntity(entity_type: string, entity_id: str
 
 export async function addCommissioningReport(report: CommissioningReport) {
   const supabase = await createClient();
-  return (supabase as any).from('epc_commissioning_reports').insert(report).select().single();
+  return (supabase as any).from('epc_commissioning_reports').insert(report).select().maybeSingle();
 }
 
 export async function getDashboardConfig(profile_id: string, dashboard_name: string) {
@@ -123,5 +123,5 @@ export async function getDashboardConfig(profile_id: string, dashboard_name: str
     .select('*')
     .eq('profile_id', profile_id)
     .eq('dashboard_name', dashboard_name)
-    .single();
+    .maybeSingle();
 }

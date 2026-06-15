@@ -138,5 +138,5 @@ export async function queueNotification(notification: SysNotificationQueue) {
 
 export async function submitApprovalRequest(request: Partial<SysApprovalRequest>) {
   const supabase = await createClient();
-  return (supabase as any).from('sys_approval_requests').insert(request).select().single();
+  return (supabase as any).from('sys_approval_requests').insert(request).select().maybeSingle();
 }

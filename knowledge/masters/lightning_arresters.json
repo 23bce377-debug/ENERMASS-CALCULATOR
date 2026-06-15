@@ -8,13 +8,13 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "2kwp",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "2kwp",
         "sourceRow": 11
       }
@@ -29,78 +29,78 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "Sheet1",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet1",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "1kw admn",
         "sourceRow": 10
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "3KW MICRO INVERTER",
         "sourceRow": 13
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "5kw micro",
         "sourceRow": 13
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "2-3upgrade",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "3kw hibrid",
         "sourceRow": 12
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "mat 3 kw",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "4KWp",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "1.5kw",
         "sourceRow": 17
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "2kw",
         "sourceRow": 17
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet3",
         "sourceRow": 17
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "hibrid 3 kw",
         "sourceRow": 17
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "3 to 3 upgradation",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "mis working",
         "sourceRow": 11
       }
@@ -115,38 +115,38 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "3Kwp",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "3Kwp",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "5Kwp",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "5kw 3 PH",
         "sourceRow": 12
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "8kwp",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "10kw hybrid",
         "sourceRow": 12
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet8",
         "sourceRow": 11
       }
@@ -161,23 +161,23 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "UPGRADE 5 KW hybrid",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "UPGRADE 5 KW hybrid",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet6",
         "sourceRow": 12
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "upgrade 5kw ",
         "sourceRow": 11
       }
@@ -192,13 +192,13 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "hoymiles5kw",
       "sourceRow": 12
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "hoymiles5kw",
         "sourceRow": 12
       }
@@ -213,13 +213,13 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "6kwp",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "6kwp",
         "sourceRow": 11
       }
@@ -234,13 +234,13 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "10KWp",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "10KWp",
         "sourceRow": 11
       }
@@ -255,88 +255,88 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "15kwHibrid",
       "sourceRow": 13
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "15kwHibrid",
         "sourceRow": 13
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "6kw",
         "sourceRow": 17
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet9",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "hibrid 5kw",
         "sourceRow": 12
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "hibrid upgrade 5kw",
         "sourceRow": 12
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "5ke 3P TN",
         "sourceRow": 17
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet5",
         "sourceRow": 17
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "25kw",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet11",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "20kwp",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "30KW Hybrid",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet7",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "20kw30kwhr",
         "sourceRow": 12
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet10",
         "sourceRow": 10
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet2",
         "sourceRow": 12
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "80kw",
         "sourceRow": 11
       }
@@ -351,48 +351,48 @@
     "description": "L/A STAND",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "1.5kw",
       "sourceRow": 13
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "1.5kw",
         "sourceRow": 13
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "2kw",
         "sourceRow": 13
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet3",
         "sourceRow": 13
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "6kw",
         "sourceRow": 13
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "hibrid 3 kw",
         "sourceRow": 13
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "5ke 3P TN",
         "sourceRow": 13
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet4",
         "sourceRow": 13
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet5",
         "sourceRow": 13
       }
@@ -407,13 +407,13 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "Sheet4",
       "sourceRow": 17
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet4",
         "sourceRow": 17
       }
@@ -428,13 +428,13 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "15kwp",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "15kwp",
         "sourceRow": 11
       }
@@ -449,18 +449,18 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "Inkel250bos",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Inkel250bos",
         "sourceRow": 11
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "inkel aluva",
         "sourceRow": 11
       }
@@ -475,13 +475,13 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "100kw STM",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "100kw STM",
         "sourceRow": 11
       }
@@ -496,13 +496,13 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "newen",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "newen",
         "sourceRow": 11
       }
@@ -517,13 +517,13 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "20KW HIBRID",
       "sourceRow": 12
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "20KW HIBRID",
         "sourceRow": 12
       }
@@ -538,13 +538,13 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "20kw hibrid solinteg",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "20kw hibrid solinteg",
         "sourceRow": 11
       }
@@ -559,13 +559,13 @@
     "description": "L/A",
     "is_active": true,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "80kwenphase",
       "sourceRow": 11
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "80kwenphase",
         "sourceRow": 11
       }

@@ -23,7 +23,7 @@ export const AmcContractORM = {
       .from('field_amc_contracts')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -40,7 +40,7 @@ export const AmcContractORM = {
       .from('profiles')
       .select('org_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
     if (profileError || !profile) {
       throw new Error('User profile or organization not found');
     }
@@ -54,7 +54,7 @@ export const AmcContractORM = {
       .from('field_amc_contracts')
       .insert(payload)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -66,7 +66,7 @@ export const AmcContractORM = {
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -78,7 +78,7 @@ export const AmcContractORM = {
       .from('field_amc_contracts')
       .select('completed_visits, visits_per_year')
       .eq('id', id)
-      .single();
+      .maybeSingle();
     if (fetchErr) throw fetchErr;
 
     const newCompleted = Math.min((current?.completed_visits || 0) + 1, current?.visits_per_year || 0);
@@ -88,7 +88,7 @@ export const AmcContractORM = {
       .update({ completed_visits: newCompleted })
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   }

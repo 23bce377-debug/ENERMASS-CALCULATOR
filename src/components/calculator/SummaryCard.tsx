@@ -1,4 +1,4 @@
-'use client';
+  'use client';
 
 import React from 'react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
@@ -11,12 +11,19 @@ export function SummaryCard() {
   const selectedSystemId = useCalculatorStore((s) => s.selectedSystemId);
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
   const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
+  const projectType = useCalculatorStore((s) => s.projectType);
+  const itcEligible = useCalculatorStore((s) => s.itcEligible);
+  const selectedGoalWattage = useCalculatorStore((s) => s.selectedGoalWattage);
 
   const { settings } = useSettings();
 
   const setMarginOverride = useCalculatorStore((s) => s.setMarginOverride);
   const setGSTOnOutputOverride = useCalculatorStore((s) => s.setGSTOnOutputOverride);
   const setTargetMRP = useCalculatorStore((s) => s.setTargetMRP);
+
+  const panelMix = useCalculatorStore((s) => s.panelMix);
+  const selectedPanelId = useCalculatorStore((s) => s.selectedPanelId);
+  const dbPanels = useCalculatorStore((s) => s.dbPanels);
 
   if (!calcResult || !selectedSystemId) return null;
 
@@ -25,7 +32,9 @@ export function SummaryCard() {
     : [...SYSTEMS, ...(settings.customSystems ?? [])];
   const system = allSystems.find((s) => s.id === selectedSystemId);
   const systemName = system?.name || '';
-  const capacityKW = system?.capacityKW || 0;
+
+  const capacityKW = calcResult.capacityKW;
+
   const capacityWatts = capacityKW * 1000;
 
   // Subsidy eligibility based on capacity
@@ -44,6 +53,9 @@ export function SummaryCard() {
         {/* Base Costs */}
         <div className="space-y-2">
           <Row label="Cost Before GST" value={formatINR(calcResult.costBeforeGST)} />
+          {calcResult.civilLogisticsCost > 0 && (
+            <Row label="Civil & Logistics (incl. above)" value={formatINR(calcResult.civilLogisticsCost)} muted />
+          )}
           <Row label="Total Input GST" value={formatINR(calcResult.totalInputGST)} muted />
           <Row label="Total (incl. GST)" value={formatINR(calcResult.totalIncGST)} bold />
         </div>
@@ -59,13 +71,17 @@ export function SummaryCard() {
             onCommit={(v) => setMarginOverride(v / 100)} 
           />
           <Row label="MRP (excl. GST)" value={formatINR(calcResult.mrpExclGST)} />
-          <EditableRow 
-            label={`Output GST (${(calcResult.gstOutputRate * 100).toFixed(1)}%)`} 
-            value={calcResult.gstOutputRate * 100} 
-            suffix="%" 
-            muted 
-            onCommit={(v) => setGSTOnOutputOverride(v / 100)} 
-          />
+          <div title="Composite rate applicable under GST Works Contract scheme. Subject to revision. Verify with CA before final invoicing.">
+            <EditableRow 
+              label={projectType === 'commercial' 
+                ? `GST @ ${(calcResult.gstOutputRate * 100).toFixed(1)}% (Commercial — ITC Eligible)` 
+                : `GST @ ${(calcResult.gstOutputRate * 100).toFixed(1)}% (Composite Rate)`} 
+              value={calcResult.gstOutputRate * 100} 
+              suffix="%" 
+              muted 
+              onCommit={(v) => setGSTOnOutputOverride(v / 100)} 
+            />
+          </div>
           
           <div className="space-y-1 mt-2">
             <EditableRow 
@@ -104,17 +120,55 @@ export function SummaryCard() {
 
         {/* Final You Pay */}
         <div className="space-y-4">
-          <Row label={subsidyLabel} value={`-${formatINR(calcResult.subsidyAmount)}`} success={calcResult.subsidyAmount > 0} />
+          <div className="flex flex-col gap-1">
+            <div title={calcResult.subsidyResult?.breakdown}>
+              <Row label={subsidyLabel} value={`-${formatINR(calcResult.subsidyAmount)}`} success={calcResult.subsidyAmount > 0} />
+            </div>
+            {calcResult.subsidyResult?.schemeNote && (
+              <span className="text-[10px] text-text-muted leading-tight">
+                {calcResult.subsidyResult.schemeNote}
+              </span>
+            )}
+          </div>
           
-          <div className="p-4 rounded-xl gold-gradient flex flex-col sm:flex-row items-center justify-between shadow-lg shadow-accent/20">
-            <span className="text-sm font-black text-background uppercase tracking-widest">
-              You Pay
+          <div className="p-4 rounded-xl gold-gradient flex flex-col items-stretch justify-center shadow-lg shadow-accent/20 gap-2">
+            <span className="text-[10px] font-medium text-background/80 uppercase tracking-wider text-center">
+              Net Customer Cost = System Cost − Subsidy
             </span>
-            <span className="text-2xl font-mono font-black text-background">
-              {formatINR(calcResult.beneficiaryContribution)}
-            </span>
+            <div className="flex flex-col sm:flex-row items-center justify-between">
+              <span className="text-sm font-black text-background uppercase tracking-widest">
+                You Pay
+              </span>
+              <span className="text-2xl font-mono font-black text-background">
+                {formatINR(calcResult.beneficiaryContribution)}
+              </span>
+            </div>
           </div>
         </div>
+
+        {/* ITC Benefit Analysis */}
+        {itcEligible && (() => {
+          const gstAmount = calcResult.finalCustomerPrice - (calcResult.finalCustomerPrice / (1 + calcResult.gstOutputRate));
+          const netCost = calcResult.finalCustomerPrice - gstAmount;
+          return (
+            <>
+              <div className="border-t border-border/60" />
+              <div className="p-4 rounded-xl border border-success/30 bg-success/5 space-y-2">
+                <h4 className="text-xs font-bold text-success uppercase tracking-widest mb-3">Commercial ITC Benefit Analysis</h4>
+                <Row label="System Cost (excl. GST)" value={formatINR(netCost)} />
+                <Row label="GST @18% (Payable)" value={`+${formatINR(gstAmount)}`} />
+                <Row label="Total Invoice" value={formatINR(calcResult.finalCustomerPrice)} bold />
+                <div className="border-t border-success/20 my-2" />
+                <Row label="ITC Claimable (GSTR-2B)" value={`-${formatINR(gstAmount)}`} error />
+                <Row label="Effective Net Cost" value={formatINR(netCost)} success bold />
+                <p className="text-[10px] text-text-muted mt-2 leading-tight">
+                  ITC effectively reduces your cost by {Math.round((gstAmount / calcResult.finalCustomerPrice) * 100)}%.<br/>
+                  ITC eligibility subject to vendor GST compliance (GSTR-1 filing). Consult your CA. ITC may be reversed if vendor defaults.
+                </p>
+              </div>
+            </>
+          );
+        })()}
       </div>
     </div>
   );

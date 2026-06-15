@@ -6,12 +6,15 @@ import {
   Users, Plus, Search, Filter, RefreshCw, X, MessageSquare, 
   Phone, Mail, DollarSign, Calendar, Landmark, ClipboardList,
   Activity, CheckCircle2, ChevronRight, MessageCircle, Clock,
-  ArrowRight, FileText
+  ArrowRight, FileText, MapPin, ShieldCheck, CheckCircle, AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { Select } from '@/components/ui/Select';
 import { formatINR } from '@/lib/engine/calculator';
+import { LeadLedger } from '@/components/crm/LeadLedger';
+import { LeadDetailView } from '@/components/crm/LeadDetailView';
+import { OpportunityBoard } from '@/components/crm/OpportunityBoard';
 
 const LEAD_STATUS_LABELS: Record<string, string> = {
   new: 'New Lead',
@@ -55,9 +58,7 @@ export default function CrmPage() {
   const [activeTab, setActiveTab] = useState<'leads' | 'opportunities'>('leads');
 
   // Filters & State
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedLead, setSelectedLead] = useState<any | null>(null);
+      const [selectedLead, setSelectedLead] = useState<any | null>(null);
 
   // Modals
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
@@ -84,6 +85,26 @@ export default function CrmPage() {
   const [probability, setProbability] = useState('50');
   const [closeDate, setCloseDate] = useState('');
   const [oppStage, setOppStage] = useState('Proposal');
+
+  // Survey panel state
+  const [showSurveyPanel, setShowSurveyPanel] = useState(false);
+  const [leadSurvey, setLeadSurvey] = useState<any | null>(null);
+  const [surveyLoading, setSurveyLoading] = useState(false);
+  const [surveyDate, setSurveyDate] = useState('');
+  const [surveyorId, setSurveyorId] = useState('');
+  const [profiles, setProfiles] = useState<any[]>([]);
+  // For mark-complete form
+  const [showCompleteForm, setShowCompleteForm] = useState(false);
+  const [surveyRoofArea, setSurveyRoofArea] = useState('');
+  const [surveyRoofType, setSurveyRoofType] = useState('rcc_roof_elevated');
+  const [surveyMeterPhase, setSurveyMeterPhase] = useState('single');
+  const [surveyDCDist, setSurveyDCDist] = useState('');
+  const [surveyACDist, setSurveyACDist] = useState('');
+  const [surveySanctionedLoad, setSurveySanctionedLoad] = useState('');
+  const [surveyDiscom, setSurveyDiscom] = useState('');
+  const [surveyConsumerNo, setSurveyConsumerNo] = useState('');
+  const [surveyNetMetering, setSurveyNetMetering] = useState(true);
+  const [surveyNotes, setSurveyNotes] = useState('');
 
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -159,10 +180,130 @@ export default function CrmPage() {
   useEffect(() => {
     if (selectedLead) {
       fetchLeadTimeline(selectedLead.id);
+      fetchLeadSurvey(selectedLead.id);
+      setShowSurveyPanel(false);
+      setShowCompleteForm(false);
     } else {
       setTimeline([]);
+      setLeadSurvey(null);
     }
   }, [selectedLead]);
+
+  // Fetch survey for selected lead
+  const fetchLeadSurvey = async (leadId: string) => {
+    setSurveyLoading(true);
+    try {
+      const { data } = await supabase
+        .from('crm_site_surveys')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setLeadSurvey(data || null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSurveyLoading(false);
+    }
+  };
+
+  // Load profiles for surveyor select
+  useEffect(() => {
+    if (!orgId) return;
+    supabase.from('profiles').select('id, full_name').eq('org_id', orgId)
+      .then(({ data }) => setProfiles(data || []));
+  }, [orgId]);
+
+  // Schedule survey
+  const handleScheduleSurvey = async () => {
+    if (!selectedLead || !orgId) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const payload: any = {
+        org_id: orgId,
+        lead_id: selectedLead.id,
+        status: 'scheduled',
+        conducted_by: surveyorId || null,
+        conducted_at: surveyDate ? new Date(surveyDate).toISOString() : null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (leadSurvey) {
+        await supabase.from('crm_site_surveys').update(payload).eq('id', leadSurvey.id);
+      } else {
+        await supabase.from('crm_site_surveys').insert(payload);
+      }
+
+      // Update lead status
+      await supabase.from('crm_leads').update({ status: 'site_survey_requested' as any }).eq('id', selectedLead.id);
+      await supabase.from('crm_timeline').insert({
+        lead_id: selectedLead.id,
+        title: 'Site Survey Scheduled',
+        description: `Site survey scheduled${surveyDate ? ` for ${surveyDate}` : ''}.`,
+        event_type: 'status_changed',
+        logged_by: user.id,
+      });
+
+      toast('Site survey scheduled!', 'success');
+      setShowSurveyPanel(false);
+      setSurveyDate('');
+      setSurveyorId('');
+      fetchLeadSurvey(selectedLead.id);
+      fetchData();
+    } catch (err: any) {
+      toast(err.message || 'Failed to schedule survey', 'error');
+    }
+  };
+
+  // Mark survey complete with measurements
+  const handleCompleteSurvey = async () => {
+    if (!selectedLead || !orgId) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const updates: any = {
+        status: 'completed',
+        conducted_at: surveyDate ? new Date(surveyDate).toISOString() : new Date().toISOString(),
+        roof_area_sqft: parseFloat(surveyRoofArea) || null,
+        roof_type: surveyRoofType || null,
+        meter_phase: surveyMeterPhase,
+        distance_panel_to_inverter_m: parseFloat(surveyDCDist) || null,
+        distance_inverter_to_meter_m: parseFloat(surveyACDist) || null,
+        sanctioned_load_kw: parseFloat(surveySanctionedLoad) || null,
+        discom_name: surveyDiscom || null,
+        consumer_number: surveyConsumerNo || null,
+        net_metering_available: surveyNetMetering,
+        survey_notes: surveyNotes || null,
+        conducted_by: surveyorId || user.id,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (leadSurvey) {
+        await supabase.from('crm_site_surveys').update(updates).eq('id', leadSurvey.id);
+      } else {
+        await supabase.from('crm_site_surveys').insert({ ...updates, org_id: orgId, lead_id: selectedLead.id });
+      }
+
+      await supabase.from('crm_timeline').insert({
+        lead_id: selectedLead.id,
+        title: 'Site Survey Completed',
+        description: 'Site survey measurements recorded. Quote can now be sent.',
+        event_type: 'status_changed',
+        logged_by: user.id,
+      });
+
+      toast('Site survey marked as completed!', 'success');
+      setShowCompleteForm(false);
+      setShowSurveyPanel(false);
+      fetchLeadSurvey(selectedLead.id);
+    } catch (err: any) {
+      toast(err.message || 'Failed to complete survey', 'error');
+    }
+  };
 
   // Create Lead
   const handleCreateLead = async (e: React.FormEvent) => {
@@ -272,7 +413,7 @@ export default function CrmPage() {
           lead_id: selectedLead.id,
           title: eventTitle || `Logged ${eventType.replace('_', ' ')}`,
           description: eventDescription || null,
-          event_type: eventType,
+          event_type: eventType as any,
           logged_by: user.id
         });
 
@@ -324,33 +465,6 @@ export default function CrmPage() {
       toast(err.message || 'Failed to create pipeline opportunity', 'error');
     }
   };
-
-  // Filters leads
-  const filteredLeads = useMemo(() => {
-    return leads.filter(l => {
-      const text = searchQuery.toLowerCase();
-      const matchesSearch = 
-        `${l.first_name} ${l.last_name || ''}`.toLowerCase().includes(text) ||
-        (l.email || '').toLowerCase().includes(text) ||
-        l.phone.toLowerCase().includes(text) ||
-        l.lead_source.toLowerCase().includes(text);
-
-      const matchesStatus = statusFilter === 'all' || l.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [leads, searchQuery, statusFilter]);
-
-  // Filters opportunities
-  const filteredOpps = useMemo(() => {
-    return opportunities.filter(o => {
-      const text = searchQuery.toLowerCase();
-      return (
-        o.title.toLowerCase().includes(text) ||
-        `${o.crm_leads?.first_name} ${o.crm_leads?.last_name || ''}`.toLowerCase().includes(text) ||
-        o.stage.toLowerCase().includes(text)
-      );
-    });
-  }, [opportunities, searchQuery]);
 
   // Statistics
   const crmStats = useMemo(() => {
@@ -451,274 +565,65 @@ export default function CrmPage() {
         {/* Ledger workspace split */}
         {activeTab === 'leads' ? (
           <div className="flex flex-col lg:flex-row gap-6">
-            
-            {/* Leads List (Left) */}
-            <div className="w-full lg:w-96 shrink-0 bg-surface border border-border/40 rounded-2xl p-4 shadow-md space-y-4">
-              <h3 className="font-bold text-text-primary text-sm">Customer Lead Ledger</h3>
-              
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                <input
-                  type="text"
-                  placeholder="Search customer, phone, source..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs border border-border rounded-lg bg-background text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
-                />
-              </div>
-
-              <Select
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={[
-                  { value: 'all', label: 'All Lead Stages' },
-                  { value: 'new', label: 'New Lead' },
-                  { value: 'site_survey_requested', label: 'Site Survey' },
-                  { value: 'qualified', label: 'Qualified' },
-                  { value: 'quote_presented', label: 'Quote Presented' },
-                  { value: 'negotiation', label: 'In Negotiation' },
-                  { value: 'won', label: 'Closed Won' },
-                  { value: 'lost', label: 'Closed Lost' }
-                ]}
-                className="text-xs"
-              />
-
-              <div className="h-px bg-border/40" />
-
-              {/* Scrollable list */}
-              <div className="max-h-[500px] overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-border">
-                {loading ? (
-                  <div className="text-center py-8 text-xs text-text-muted font-mono animate-pulse uppercase tracking-wider">Loading files...</div>
-                ) : filteredLeads.length === 0 ? (
-                  <div className="text-center py-8 text-xs text-text-muted">No leads match filters.</div>
-                ) : (
-                  filteredLeads.map((l) => {
-                    const isSelected = selectedLead?.id === l.id;
-                    return (
-                      <button
-                        key={l.id}
-                        onClick={() => setSelectedLead(l)}
-                        className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer
-                          ${isSelected 
-                            ? 'border-accent bg-accent-glow shadow shadow-accent/5' 
-                            : 'border-border bg-surface hover:border-border-light hover:bg-surface-hover'}`}
-                      >
-                        <div className="min-w-0 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-sans font-bold text-text-primary text-xs truncate">
-                              {l.first_name} {l.last_name || ''}
-                            </span>
-                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-semibold border shrink-0 ${LEAD_STATUS_STYLES[l.status]}`}>
-                              {LEAD_STATUS_LABELS[l.status]}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-text-secondary flex items-center gap-1">
-                            <Phone size={9} /> {l.phone}
-                          </div>
-                          <div className="text-[9px] text-text-muted uppercase">
-                            Source: {l.lead_source} {l.roof_area_estimate ? `· ${l.roof_area_estimate} sqft` : ''}
-                          </div>
-                        </div>
-                        <ChevronRight size={14} className="text-text-muted shrink-0 ml-2" />
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* Lead Workspace Center/Right */}
-            <div className="flex-1 min-w-0 bg-surface border border-border/40 rounded-2xl p-5 shadow-md min-h-[400px]">
-              {selectedLead ? (
-                <div className="space-y-6">
-                  
-                  {/* Lead Info Widget Header */}
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-5">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-lg font-black text-text-primary">
-                          {selectedLead.first_name} {selectedLead.last_name || ''}
-                        </h2>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${LEAD_STATUS_STYLES[selectedLead.status]}`}>
-                          {LEAD_STATUS_LABELS[selectedLead.status]}
-                        </span>
-                      </div>
-                      <div className="text-xs text-text-muted flex flex-wrap gap-x-3 gap-y-1 font-mono">
-                        <span>Source: {selectedLead.lead_source}</span>
-                        <span>•</span>
-                        <span>Logged: {new Date(selectedLead.created_at).toLocaleString('en-IN')}</span>
-                      </div>
-                    </div>
-
-                    {/* Operational controls */}
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button
-                        onClick={() => setIsOppModalOpen(true)}
-                        className="px-3 py-1.5 bg-accent-dim border border-accent/20 text-accent text-xs font-bold rounded-lg cursor-pointer hover:bg-accent/12 active:scale-95 transition-all"
-                      >
-                        Launch Pipeline Opportunity
-                      </button>
-
-                      <select
-                        value={selectedLead.status}
-                        onChange={(e) => handleUpdateStatus(selectedLead.id, e.target.value)}
-                        className="bg-background border border-border text-xs font-semibold text-text-primary rounded-lg px-2.5 py-1.5 outline-none focus:border-accent"
-                      >
-                        <option value="new">New Lead</option>
-                        <option value="site_survey_requested">Site Survey Requested</option>
-                        <option value="qualified">Qualified</option>
-                        <option value="quote_presented">Quote Presented</option>
-                        <option value="negotiation">In Negotiation</option>
-                        <option value="won">Closed Won</option>
-                        <option value="lost">Closed Lost</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Estimation Metrics grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
-                    <div className="p-3 bg-background/50 border border-border/40 rounded-xl">
-                      <span className="text-[10px] text-text-muted font-sans font-bold block uppercase tracking-wider">Estimated Roof Space</span>
-                      <span className="text-text-primary font-bold text-sm mt-0.5 block">
-                        {selectedLead.roof_area_estimate ? `${selectedLead.roof_area_estimate} Sqft` : 'Not Measured'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 bg-background/50 border border-border/40 rounded-xl">
-                      <span className="text-[10px] text-text-muted font-sans font-bold block uppercase tracking-wider">Est. Monthly Power Bill</span>
-                      <span className="text-text-primary font-bold text-sm mt-0.5 block">
-                        {selectedLead.monthly_bill ? formatINR(selectedLead.monthly_bill) : 'Not Estimated'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 bg-background/50 border border-border/40 rounded-xl">
-                      <span className="text-[10px] text-text-muted font-sans font-bold block uppercase tracking-wider">Contact Ledger</span>
-                      <span className="text-text-primary font-bold text-[11px] mt-0.5 block truncate">
-                        {selectedLead.phone} {selectedLead.email ? `· ${selectedLead.email}` : ''}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Timeline Logs Ledger */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-border/30 pb-2">
-                      <h3 className="text-xs font-black uppercase text-text-muted tracking-widest flex items-center gap-1.5">
-                        <Activity size={14} className="text-accent" />
-                        Engagement Timeline Event Logs
-                      </h3>
-                      <button
-                        onClick={() => setIsEventModalOpen(true)}
-                        className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-md border border-border text-text-secondary hover:border-accent hover:text-accent font-bold cursor-pointer transition-colors"
-                      >
-                        <Plus size={12} /> Log Activity
-                      </button>
-                    </div>
-
-                    {/* Timeline logs */}
-                    <div className="relative border-l border-border/60 pl-4 ml-2.5 space-y-4">
-                      {timeline.length === 0 ? (
-                        <div className="text-text-muted text-xs italic py-2">No timeline log files loaded for this lead context.</div>
-                      ) : (
-                        timeline.map((event) => (
-                          <div key={event.id} className="relative space-y-1">
-                            {/* Icon marker */}
-                            <div className="absolute -left-[23px] top-0.5 w-4.5 h-4.5 rounded-full bg-background border border-border flex items-center justify-center shadow-sm">
-                              {EVENT_TYPE_ICONS[event.event_type] || <MessageSquare size={10} className="text-text-muted" />}
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-bold text-text-primary text-xs">{event.title}</h4>
-                              <span className="text-[10px] text-text-muted font-mono">
-                                {new Date(event.created_at).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
-                              </span>
-                            </div>
-                            <p className="text-text-secondary text-xs leading-relaxed">{event.description}</p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center py-20 space-y-3">
-                  <Users className="text-text-muted/30" size={48} />
-                  <div>
-                    <h4 className="font-bold text-text-primary text-sm">Customer Workspace Isolated</h4>
-                    <p className="text-xs text-text-muted mt-1 max-w-sm">Select a client profile file from the left panel to review estimations, log site visits, and coordinate proposal revisions.</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
+            <LeadLedger
+              leads={leads}
+              selectedLeadId={selectedLead?.id}
+              onSelectLead={setSelectedLead}
+              loading={loading}
+            />
+            <LeadDetailView
+              selectedLead={selectedLead}
+              timeline={timeline}
+              leadSurvey={leadSurvey}
+              profiles={profiles}
+              onUpdateStatus={handleUpdateStatus}
+              onLaunchOpportunity={() => setIsOppModalOpen(true)}
+              onLogActivity={() => setIsEventModalOpen(true)}
+              onScheduleSurvey={(data) => {
+                setSurveyDate(data.surveyDate);
+                setSurveyorId(data.surveyorId);
+                setTimeout(handleScheduleSurvey, 0); // Hack to use existing state, ideally would refactor this too
+              }}
+              onCompleteSurvey={(data) => {
+                // Similarly, this is a quick adapter to use existing state
+                setSurveyRoofArea(data.roof_area_sqft);
+                setSurveyRoofType(data.roof_type);
+                setSurveyMeterPhase(data.meter_phase);
+                setSurveySanctionedLoad(data.sanctioned_load_kw);
+                setSurveyDCDist(data.distance_panel_to_inverter_m);
+                setSurveyACDist(data.distance_inverter_to_meter_m);
+                setSurveyDiscom(data.discom_name);
+                setSurveyConsumerNo(data.consumer_number);
+                setSurveyNetMetering(data.net_metering_available);
+                setSurveyNotes(data.notes);
+                setTimeout(handleCompleteSurvey, 0);
+              }}
+              onDeleteLead={async () => {
+                if (!selectedLead) return;
+                const confirmed = await confirm({
+                  title: 'Delete Customer Lead?',
+                  message: `Are you sure you want to permanently delete lead for "${selectedLead.first_name} ${selectedLead.last_name || ''}"? This will also purge all timeline history, survey documents, and open pipeline opportunities.`,
+                  confirmLabel: 'Delete Permanently',
+                  cancelLabel: 'Cancel',
+                  type: 'danger'
+                });
+                if (confirmed) {
+                  try {
+                    const { LeadORM } = await import('@/backend/orm/crm');
+                    await LeadORM.delete(selectedLead.id);
+                    toast('Lead deleted successfully', 'success');
+                    setSelectedLead(null);
+                    fetchData();
+                  } catch (err: any) {
+                    toast(err.message || 'Failed to delete lead', 'error');
+                  }
+                }
+              }}
+            />
           </div>
         ) : (
-          /* Opportunities pipeline view */
-          <div className="bg-surface border border-border/40 rounded-2xl p-4 shadow-md space-y-4">
-            <div className="flex items-center justify-between border-b border-border/30 pb-3">
-              <h3 className="font-bold text-text-primary text-sm">Operational Deal Pipeline</h3>
-              <div className="relative w-64">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                <input
-                  type="text"
-                  placeholder="Search deals, clients..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs border border-border rounded-lg bg-background text-text-primary focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="text-center py-20 text-xs text-text-muted font-mono uppercase tracking-widest animate-pulse">Loading deal sheets...</div>
-            ) : filteredOpps.length === 0 ? (
-              <div className="text-center py-20 text-xs text-text-muted">No active pipeline deals mapped. Select a lead and click "Launch Pipeline Opportunity".</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left">
-                  <thead>
-                    <tr className="bg-background/80 border-b border-border text-[10px] uppercase tracking-wider text-text-muted font-bold">
-                      <th className="px-4 py-3">Project Deal Title</th>
-                      <th className="px-4 py-3">Associated Client</th>
-                      <th className="px-4 py-3 text-right">Deal Value (INR)</th>
-                      <th className="px-4 py-3 text-center">Probability</th>
-                      <th className="px-4 py-3">Closing Target</th>
-                      <th className="px-4 py-3 text-center">Deal Stage</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredOpps.map((opp) => (
-                      <tr key={opp.id} className="border-b border-border/30 hover:bg-surface-hover/20 transition-colors">
-                        <td className="px-4 py-3 font-bold text-text-primary flex items-center gap-1.5">
-                          <DollarSign size={14} className="text-accent" />
-                          {opp.title}
-                        </td>
-                        <td className="px-4 py-3 text-text-secondary">
-                          {opp.crm_leads?.first_name} {opp.crm_leads?.last_name || ''}
-                          <div className="text-[10px] text-text-muted font-mono mt-0.5">{opp.crm_leads?.phone}</div>
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono font-bold text-accent">{formatINR(opp.expected_value)}</td>
-                        <td className="px-4 py-3 text-center font-mono font-bold">
-                          {opp.probability_pct}%
-                          <div className="w-16 h-1 bg-background rounded-full mx-auto mt-1 overflow-hidden">
-                            <div className="h-full bg-accent" style={{ width: `${opp.probability_pct}%` }} />
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-text-secondary font-mono">{opp.close_date || 'TBD'}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-semibold bg-accent-dim border border-accent/20 text-accent">
-                            {opp.stage}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          <OpportunityBoard opportunities={opportunities} loading={loading} />
         )}
-
       </main>
 
       {/* Log Lead Modal */}

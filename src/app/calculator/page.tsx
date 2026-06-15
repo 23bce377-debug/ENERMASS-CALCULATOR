@@ -4,22 +4,27 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { SYSTEMS } from '@/lib/data/bom';
-import { SystemSelector } from '@/components/calculator/SystemSelector';
+import { PresetManagerModal } from '@/components/calculator/PresetManagerModal';
+import { SavePresetModal } from '@/components/calculator/SavePresetModal';
+import { STATE_DATA } from '@/lib/data/masters';
+import { useToast } from '@/components/ui/Toast';
+import { formatINR } from '@/lib/engine/calculator';
+import type { Quote } from '@/lib/types/quote';
+import { useSettings } from '@/lib/hooks/useSettings';
+import { useCalculatorAutoSave } from '@/lib/hooks/useCalculatorAutoSave';
+import { supabase } from '@/lib/supabase/client';
+import { type SystemConfig, validateSystemConfig } from '@/lib/validation/systemValidation';
 import { EquipmentSelector } from '@/components/calculator/EquipmentSelector';
+import { ValidationPanel } from '@/components/calculator/ValidationPanel';
 import { BOMTable } from '@/components/calculator/BOMTable';
-import { SummaryCard } from '@/components/calculator/SummaryCard';
-import { EnergyCard } from '@/components/calculator/EnergyCard';
 import { DiscountPanel } from '@/components/calculator/DiscountPanel';
 import { AdditionalCostsPanel } from '@/components/calculator/AdditionalCostsPanel';
-import { QuoteSaveModal } from '@/components/calculator/QuoteSaveModal';
+import { SummaryCard } from '@/components/calculator/SummaryCard';
+import { EnergyCard } from '@/components/calculator/EnergyCard';
+import { ConnectedROIDisplay } from '@/components/calculator/ROIDisplay';
 import { VariantsComparison } from '@/components/calculator/VariantsComparison';
+import { QuoteSaveModal } from '@/components/calculator/QuoteSaveModal';
 import { QuotePDF } from '@/components/print/QuotePDF';
-import { STATE_DATA } from '@/lib/data/masters';
-import { formatINR } from '@/lib/engine/calculator';
-import { useSettings } from '@/lib/hooks/useSettings';
-import { useToast } from '@/components/ui/Toast';
-import type { Quote } from '@/lib/types/quote';
-import { Download, Share2, Save, ChevronDown, Search, MapPin, Settings, Trash2, Edit3, X } from 'lucide-react';
 
 // ─── Left Panel Components ────────────────────────────────────────────────────────
 
@@ -132,71 +137,13 @@ function StateSelector() {
   );
 }
 
-function PresetManager() {
-  const { settings, setSettings } = useSettings();
-  const { toast } = useToast();
-  const selectedSystemId = useCalculatorStore((s) => s.selectedSystemId);
-  const selectSystem = useCalculatorStore((s) => s.selectSystem);
-  const panelMix = useCalculatorStore((s) => s.panelMix);
-  const selectedInverterMix = useCalculatorStore((s) => s.selectedInverterMix);
-  const selectedBatteryMix = useCalculatorStore((s) => s.selectedBatteryMix);
-
-  const handleSavePreset = () => {
-    if (!selectedSystemId) return;
-    const baseSystem = [...SYSTEMS, ...(settings.customSystems || [])].find(s => s.id === selectedSystemId);
-    if (!baseSystem) return;
-
-    const name = prompt('Enter a name for this preset (e.g. "5kW Deye + TOPCon"):');
-    if (!name?.trim()) return;
-
-    const newPreset = {
-      ...baseSystem,
-      id: `preset_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      name: name.trim(),
-      category: 'custom' as any,
-      defaultEquipment: {
-        panelMix: { ...panelMix },
-        inverterMix: { ...selectedInverterMix },
-        batteryMix: { ...selectedBatteryMix },
-      }
-    };
-
-    setSettings({
-      customSystems: [...(settings.customSystems || []), newPreset]
-    });
-    
-    // Wait for state to settle then select the new preset
-    setTimeout(() => selectSystem(newPreset.id), 100);
-    toast(`Preset "${newPreset.name}" saved!`, 'success');
-  };
-
-  return (
-    <div className="flex flex-col gap-2 mt-4">
-      <button
-        onClick={handleSavePreset}
-        disabled={!selectedSystemId}
-        className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg border border-dashed border-accent/40 text-accent text-xs font-semibold hover:bg-accent/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        title="Save current equipment selection as a quick preset"
-      >
-        <Save size={14} />
-        Save Configuration as Preset
-      </button>
-      <Link
-        href="/presets"
-        className="w-full flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-surface hover:bg-surface-hover border border-border text-text-secondary text-xs font-medium transition-colors"
-      >
-        <Settings size={14} />
-        Manage Presets
-      </Link>
-    </div>
-  );
-}
+import { SystemPresetDropdown } from '@/components/calculator/SystemPresetDropdown';
 
 
-function ActionBar({ onSaveQuote, onCreateQuote }: { onSaveQuote: () => void; onCreateQuote: () => void }) {
+function ActionBar({ onSaveQuote, onCreateQuote, hasBlockingErrors }: { onSaveQuote: () => void; onCreateQuote: () => void; hasBlockingErrors?: boolean }) {
   const selectedSystemId = useCalculatorStore((s) => s.selectedSystemId);
   const result = useCalculatorStore((s) => s.calcResult);
-  const disabled = !selectedSystemId || !result;
+  const disabled = !selectedSystemId || !result || hasBlockingErrors;
   const { toast } = useToast();
 
   const handleShare = async () => {
@@ -251,15 +198,74 @@ function ActionBar({ onSaveQuote, onCreateQuote }: { onSaveQuote: () => void; on
 
 // ─── Main Page ──────────────────────────────────────────────────────────────────
 
+import { Download, Share2, Save, ChevronDown, Search, MapPin, Settings, Trash2, Edit3, X, Loader2, AlertCircle } from 'lucide-react';
+
 export default function CalculatorPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalIntent, setModalIntent] = useState<'print' | 'draft'>('print');
+  const [isPresetManagerOpen, setIsPresetManagerOpen] = useState(false);
+  const [isSavePresetOpen, setIsSavePresetOpen] = useState(false);
+  const [presetPayload, setPresetPayload] = useState<any>(null);
   const [pendingQuote, setPendingQuote] = useState<Quote | null>(null);
   const { settings } = useSettings();
   const { toast } = useToast();
 
+  const [initialDraftId, setInitialDraftId] = useState<string | null>(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [restoredDate, setRestoredDate] = useState<Date | null>(null);
+
+  useEffect(() => {
+    async function loadDraft() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setDraftLoaded(true); return; }
+
+      const { data, error } = await supabase
+        .from('draft_quotes')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(); // Use maybeSingle to prevent PGRST116 single row error if not found
+      
+      if (data && !error && data.state_json) {
+        setInitialDraftId(data.id);
+        setRestoredDate(new Date(data.updated_at));
+        const store = useCalculatorStore as any;
+        store.setState(data.state_json);
+        store.getState().recalculate();
+      }
+      setDraftLoaded(true);
+    }
+    loadDraft();
+  }, []);
+
+  const { syncState, forceSave, draftId } = useCalculatorAutoSave(initialDraftId);
+
+  const handleDismissDraft = () => {
+    setRestoredDate(null);
+    useCalculatorStore.getState().reset();
+    setInitialDraftId(null);
+  };
+
   const selectedSystemId = useCalculatorStore((s) => s.selectedSystemId);
   const selectSystem = useCalculatorStore((s) => s.selectSystem);
+
+  const handleSelectPreset = (stateOrId: any) => {
+    if (typeof stateOrId === 'string') {
+      selectSystem(stateOrId);
+    } else if (stateOrId && typeof stateOrId === 'object') {
+      const store = useCalculatorStore as any;
+      store.setState(stateOrId);
+      store.getState().recalculate();
+    }
+  };
+
+  const handleSaveModalOpen = () => {
+    const store = useCalculatorStore as any;
+    const payload = JSON.parse(JSON.stringify(store.getState()));
+    setPresetPayload(payload);
+    setIsSavePresetOpen(true);
+  };
   
   const selectedPanelId = useCalculatorStore((s) => s.selectedPanelId);
   const panelMix = useCalculatorStore((s) => s.panelMix);
@@ -277,7 +283,23 @@ export default function CalculatorPage() {
   
   const applySubsidy = useCalculatorStore((s) => s.applySubsidy);
   const setApplySubsidy = useCalculatorStore((s) => s.setApplySubsidy);
+  const itcEligible = useCalculatorStore((s) => s.itcEligible);
+  const setItcEligible = useCalculatorStore((s) => s.setItcEligible);
   const projectType = useCalculatorStore((s) => s.projectType);
+  const dbInverters = useCalculatorStore((s) => s.dbInverters);
+  
+  const [acknowledgedGuards, setAcknowledgedGuards] = useState<string[]>([]);
+  const [leadId, setLeadId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const lid = params.get('leadId');
+      if (lid) {
+        setLeadId(lid);
+      }
+    }
+  }, []);
 
   const requiredPanelQty = useMemo(() => {
     if (!selectedSystemId) return null;
@@ -299,6 +321,36 @@ export default function CalculatorPage() {
     return system?.panelWattage ?? null;
   }, [selectedSystemId, settings.customSystems, dbSystems, dbLoaded]);
 
+  const validationConfig = useMemo<SystemConfig>(() => {
+    const currentSystem = dbSystems.find((sys) => sys.id === selectedSystemId);
+    const capacityKW = currentSystem?.capacityKW || 0;
+
+    let inverterPhases = 1;
+    let inverterAcKw = 0;
+    
+    const selectedInverterId = Object.keys(selectedInverterMix)[0];
+    if (selectedInverterId && dbInverters) {
+      const inv = dbInverters.find((i: any) => i.id === selectedInverterId);
+      if (inv) {
+        inverterPhases = inv.phases || 1;
+        inverterAcKw = inv.capacity_kw || 0;
+      }
+    }
+
+    return {
+      systemKw: capacityKW,
+      inverterMaxVdc: 600,
+      inverterPhases,
+      inverterAcKw,
+      dcCapacityKw: capacityKW,
+      panelVoc: 45,
+      leadCategory: projectType,
+    };
+  }, [selectedSystemId, dbSystems, selectedInverterMix, dbInverters, projectType]);
+
+  const validationResults = useMemo(() => validateSystemConfig(validationConfig), [validationConfig]);
+  const hasBlockingErrors = validationResults.some(r => r.severity === 'blocking');
+
   useEffect(() => {
     if (!pendingQuote) return;
 
@@ -317,12 +369,24 @@ export default function CalculatorPage() {
     setIsModalOpen(true);
   };
 
-  const handleQuoteSaved = (quote: Quote) => {
+  const handleQuoteSaved = async (quote: Quote) => {
     setIsModalOpen(false);
     if (modalIntent === 'print') {
       setPendingQuote(quote);
     } else {
       toast(`Quote ${quote.quoteId} saved as draft!`, 'success');
+    }
+
+    if (draftId) {
+      const { data: quoteRow } = await supabase
+        .from('quotes')
+        .select('id')
+        .eq('quote_number', quote.quoteId)
+        .single();
+      
+      if (quoteRow?.id) {
+        await supabase.from('draft_quotes').delete().eq('id', draftId);
+      }
     }
   };
 
@@ -330,17 +394,43 @@ export default function CalculatorPage() {
     <div className="p-4 md:p-6 lg:p-8 max-w-400 mx-auto animate-fade-in pb-32 md:pb-8">
       {/* Title */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text-primary">Calculator</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-text-primary">Calculator</h1>
+          {draftLoaded && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface border border-border text-[10px] font-bold uppercase tracking-wider">
+              {syncState === 'saving' && (
+                <><Loader2 size={12} className="animate-spin text-accent" /> <span className="text-text-muted">Saving...</span></>
+              )}
+              {syncState === 'saved' && (
+                <><div className="w-1.5 h-1.5 rounded-full bg-success" /> <span className="text-text-muted">Saved</span></>
+              )}
+              {syncState === 'error' && (
+                <><AlertCircle size={12} className="text-error" /> <span className="text-error cursor-pointer hover:underline" onClick={() => forceSave()}>Failed — Retry</span></>
+              )}
+            </div>
+          )}
+        </div>
         <p className="text-sm text-text-muted mt-1">Configure system parameters and generate accurate quotes.</p>
       </div>
+
+      {restoredDate && (
+        <div className="mb-6 flex items-center justify-between px-4 py-3 rounded-xl bg-accent/10 border border-accent/20">
+          <span className="text-sm font-medium text-accent">
+            Restored your last session from {restoredDate.toLocaleString()}
+          </span>
+          <button onClick={handleDismissDraft} className="p-1 rounded-md hover:bg-accent/20 text-accent transition-colors cursor-pointer" title="Dismiss and start fresh">
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Main Layout Grid */}
       <div className="flex flex-col lg:flex-row gap-6">
         
         {/* Left Panel (Controls) */}
-        <div className="w-full lg:w-[320px] shrink-0 space-y-6">
+        <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-20 lg:self-start space-y-6">
           <div className="p-5 rounded-xl border border-border bg-surface/50 space-y-6 shadow-sm">
-            <SystemSelector value={selectedSystemId} onChange={selectSystem} />
+            <SystemPresetDropdown onSaveConfig={handleSaveModalOpen} />
             <div className="h-px bg-border/60" />
             <StateSelector />
             {projectType !== 'commercial' && (
@@ -365,9 +455,31 @@ export default function CalculatorPage() {
                     />
                   </button>
                 </div>
+
+                {((projectType as string) === 'commercial' || (projectType as string) === 'industrial') && (
+                  <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-surface hover:border-border-light transition-all duration-200 mt-3">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-semibold text-text-primary">ITC Eligible</span>
+                      <span className="text-[10px] text-text-muted truncate">GST Registered Customer</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setItcEligible(!itcEligible)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        itcEligible ? 'bg-accent' : 'bg-border-light'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out ${
+                          itcEligible ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                )}
               </>
             )}
-            <PresetManager />
+
           </div>
           
           <div className="hidden lg:block text-xs text-text-muted text-center px-4">
@@ -394,6 +506,11 @@ export default function CalculatorPage() {
               onSetBatteryMixQty={setBatteryMixQty}
               onClearBatteryMix={clearBatteryMix}
             />
+            <ValidationPanel 
+              results={validationResults} 
+              acknowledgedGuards={acknowledgedGuards}
+              onAcknowledge={(id) => setAcknowledgedGuards([...acknowledgedGuards, id])}
+            />
           </div>
 
           {/* BOM Table */}
@@ -411,23 +528,34 @@ export default function CalculatorPage() {
             <EnergyCard />
           </div>
 
+          <div className="mt-8">
+            <ConnectedROIDisplay />
+          </div>
+
           {/* Option Variants Comparison */}
           <VariantsComparison />
 
           {/* Actions */}
+          <div className="h-px bg-border/60 my-6" />
           <ActionBar
             onCreateQuote={() => handleOpenModal('print')}
             onSaveQuote={() => handleOpenModal('draft')}
+            hasBlockingErrors={hasBlockingErrors}
           />
         </div>
 
       </div>
 
       {/* Modals */}
+      <PresetManagerModal isOpen={isPresetManagerOpen} onClose={() => setIsPresetManagerOpen(false)} onSelectPreset={handleSelectPreset} />
+      <SavePresetModal isOpen={isSavePresetOpen} onClose={() => setIsSavePresetOpen(false)} statePayload={presetPayload} />
+      
       <QuoteSaveModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSaved={handleQuoteSaved}
+        acknowledgedGuards={acknowledgedGuards}
+        leadId={leadId}
       />
 
       {pendingQuote && (

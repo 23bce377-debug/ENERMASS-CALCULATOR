@@ -10,13 +10,13 @@
     "is_active": true,
     "is_custom": false,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "3kw hibrid",
       "sourceRow": 6
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "3kw hibrid",
         "sourceRow": 6
       }
@@ -33,13 +33,13 @@
     "is_active": true,
     "is_custom": false,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "15kwHibrid",
       "sourceRow": 6
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "15kwHibrid",
         "sourceRow": 6
       }
@@ -56,13 +56,13 @@
     "is_active": true,
     "is_custom": false,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "10kw hybrid",
       "sourceRow": 6
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "10kw hybrid",
         "sourceRow": 6
       }
@@ -79,13 +79,13 @@
     "is_active": true,
     "is_custom": false,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "hibrid 5kw",
       "sourceRow": 6
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "hibrid 5kw",
         "sourceRow": 6
       }
@@ -102,18 +102,18 @@
     "is_active": true,
     "is_custom": false,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "hibrid upgrade 5kw",
       "sourceRow": 6
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "hibrid upgrade 5kw",
         "sourceRow": 6
       },
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "20kw30kwhr",
         "sourceRow": 6
       }
@@ -130,13 +130,13 @@
     "is_active": true,
     "is_custom": false,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "20KW HIBRID",
       "sourceRow": 7
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "20KW HIBRID",
         "sourceRow": 7
       }
@@ -153,13 +153,13 @@
     "is_active": true,
     "is_custom": false,
     "source": {
-      "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+      "sourceWorkbook": "PRICING_13.8%GST.xlsx",
       "sourceSheet": "Sheet2",
       "sourceRow": 6
     },
     "sources": [
       {
-        "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+        "sourceWorkbook": "PRICING_13.8%GST.xlsx",
         "sourceSheet": "Sheet2",
         "sourceRow": 6
       }

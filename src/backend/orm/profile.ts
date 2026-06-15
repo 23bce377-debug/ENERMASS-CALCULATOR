@@ -19,7 +19,7 @@ export const ProfileORM = {
       .from('profiles')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -38,7 +38,7 @@ export const ProfileORM = {
       .from('profiles')
       .insert(profile)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -61,7 +61,7 @@ export const ProfileORM = {
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },

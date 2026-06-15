@@ -112,14 +112,21 @@ $$;
 -- ──────────────────────────────────────────────────────────────
 -- FIX MD-01: Deduplicate structure vendor names (trim whitespace)
 -- ──────────────────────────────────────────────────────────────
-UPDATE structure_vendors SET name = TRIM(name) WHERE name != TRIM(name);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'structure_vendors') THEN
+    UPDATE structure_vendors SET name = TRIM(name) WHERE name != TRIM(name);
 
-DELETE FROM structure_vendors sv
-WHERE sv.id NOT IN (
-  SELECT DISTINCT ON (LOWER(TRIM(name))) id
-  FROM structure_vendors
-  ORDER BY LOWER(TRIM(name)), created_at ASC
-);
+    DELETE FROM structure_vendors sv
+    WHERE sv.id NOT IN (
+      SELECT DISTINCT ON (LOWER(TRIM(name))) id
+      FROM structure_vendors
+      ORDER BY LOWER(TRIM(name)), created_at ASC
+    );
+  ELSIF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'vendors') THEN
+    UPDATE vendors SET name = TRIM(name) WHERE name != TRIM(name) AND is_structure_vendor = TRUE;
+  END IF;
+END $$;
 
 -- ──────────────────────────────────────────────────────────────
 -- FIX MD-02: Enforce canonical units in eq_bom_items
@@ -152,18 +159,20 @@ ALTER TABLE eq_batteries
   );
 
 -- ──────────────────────────────────────────────────────────────
--- FIX MD-03: Document eq_panels rate_per_watt as single source of truth
+-- FIX MD-03 & MD-04: Document pricing columns (safe column comment wrapper)
 -- ──────────────────────────────────────────────────────────────
-COMMENT ON COLUMN eq_panels.rate_per_watt IS
-  'Source of truth: INR per watt. rate_per_panel (GENERATED) = wattage_w × rate_per_watt.';
-COMMENT ON COLUMN eq_panels.rate_per_panel IS
-  'GENERATED ALWAYS AS (wattage_w × rate_per_watt). Never set this directly.';
-
--- ──────────────────────────────────────────────────────────────
--- FIX MD-04: Standardize eq_inverters pricing column
--- ──────────────────────────────────────────────────────────────
-COMMENT ON COLUMN eq_inverters.rate IS
-  'Selling price per inverter unit in INR. This is the ONLY pricing column for inverters.';
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'eq_panels' AND column_name = 'rate_per_watt') THEN
+    EXECUTE 'COMMENT ON COLUMN eq_panels.rate_per_watt IS ''Source of truth: INR per watt. rate_per_panel (GENERATED) = wattage_w × rate_per_watt.''';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'eq_panels' AND column_name = 'rate_per_panel') THEN
+    EXECUTE 'COMMENT ON COLUMN eq_panels.rate_per_panel IS ''GENERATED ALWAYS AS (wattage_w × rate_per_watt). Never set this directly.''';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'eq_inverters' AND column_name = 'rate') THEN
+    EXECUTE 'COMMENT ON COLUMN eq_inverters.rate IS ''Selling price per inverter unit in INR. This is the ONLY pricing column for inverters.''';
+  END IF;
+END $$;
 
 -- ──────────────────────────────────────────────────────────────
 -- FIX CALC-10 (partial): Add snapshot_locked to freeze scheme slabs

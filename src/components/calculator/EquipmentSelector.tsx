@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import type { PanelBrand, InverterBrand, BatteryBrand } from '@/lib/data/masters';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
+import { TAX_CONSTANTS } from '@/lib/tax-constants';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -239,8 +240,8 @@ export function EquipmentSelector({
     }, 0);
   }, [allPanels, panelMix]);
 
-  const showInventoryInfo = useCalculatorStore((s) => s.showInventoryInfo);
-  const setShowInventoryInfo = useCalculatorStore((s) => s.setShowInventoryInfo);
+  const showInventoryInfo = useCalculatorStore((s) => (s as any).showInventoryInfo);
+  const setShowInventoryInfo = useCalculatorStore((s) => (s as any).setShowInventoryInfo);
 
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden" id="equipment-selector">
@@ -474,10 +475,12 @@ function PanelTable({
     [panelById, panelMix],
   );
 
-  const targetWattage =
-    requiredPanelQty !== null && requiredPanelWattage !== null
-      ? requiredPanelQty * requiredPanelWattage
-      : null;
+  const selectedGoalWattage = useCalculatorStore((s) => s.selectedGoalWattage);
+  const setSelectedGoalWattage = useCalculatorStore((s) => s.setSelectedGoalWattage);
+  const [customGoalInput, setCustomGoalInput] = useState<string>('');
+  const [showCustomInput, setShowCustomInput] = useState<boolean>(false);
+
+  const targetWattage = selectedGoalWattage;
 
   const wattageProgressPct =
     targetWattage && targetWattage > 0
@@ -486,7 +489,41 @@ function PanelTable({
 
   const wattageLeft = targetWattage !== null ? targetWattage - currentSelectedWattage : null;
 
-  const panelQtyGap = requiredPanelQty !== null ? requiredPanelQty - selectedPanelQty : null;
+  const activePanel = activePanels[0];
+  const calculatedRequiredQty = useMemo(() => {
+    if (selectedGoalWattage !== null && activePanel) {
+      return Math.ceil(selectedGoalWattage / activePanel.wattage);
+    }
+    return null;
+  }, [selectedGoalWattage, activePanel]);
+
+  const panelQtyGap = calculatedRequiredQty !== null ? calculatedRequiredQty - selectedPanelQty : null;
+
+  const handleSelectGoalPreset = (w: number) => {
+    if (selectedGoalWattage === w) {
+      setSelectedGoalWattage(null);
+    } else {
+      setSelectedGoalWattage(w);
+      setShowCustomInput(false);
+    }
+  };
+
+  const handleCustomClick = () => {
+    if (showCustomInput) {
+      setShowCustomInput(false);
+      setSelectedGoalWattage(null);
+    } else {
+      setShowCustomInput(true);
+      const val = parseFloat(customGoalInput) || 0;
+      setSelectedGoalWattage(val > 0 ? val : null);
+    }
+  };
+
+  const handleCustomInputChange = (valStr: string) => {
+    setCustomGoalInput(valStr);
+    const val = parseFloat(valStr) || 0;
+    setSelectedGoalWattage(val > 0 ? val : null);
+  };
 
   const switchSelectionMode = (mode: 'preset' | 'custom') => {
     setSelectionMode(mode);
@@ -496,17 +533,16 @@ function PanelTable({
     const [panelId] = entries[0];
     const panel = panelById.get(panelId);
     let qtyToSet = entries[0][1];
-    if (requiredPanelQty !== null && requiredPanelWattage !== null && panel) {
-      const targetWattage = requiredPanelQty * requiredPanelWattage;
-      qtyToSet = Math.max(1, Math.ceil(targetWattage / panel.wattage));
+    
+    const activeTargetWattage = selectedGoalWattage !== null ? selectedGoalWattage : (requiredPanelQty !== null && requiredPanelWattage !== null ? requiredPanelQty * requiredPanelWattage : null);
+    if (activeTargetWattage !== null && panel) {
+      qtyToSet = Math.max(1, Math.ceil(activeTargetWattage / panel.wattage));
     } else if (requiredPanelQty !== null) {
       qtyToSet = requiredPanelQty;
     }
     onClearPanelMix();
     onSetPanelMixQty(panelId, qtyToSet);
   };
-
-  // No wattage selection filtering: keep all panels visible and preserve panel mix when switching modes
 
   const updatePanelQty = (panelId: string, qty: number) => {
     onSetPanelMixQty(panelId, Math.max(0, Math.floor(qty)));
@@ -515,9 +551,9 @@ function PanelTable({
   const handlePresetPanelSelect = (panelId: string) => {
     const panel = panelById.get(panelId);
     let qtyToSet = 1;
-    if (requiredPanelQty !== null && requiredPanelWattage !== null && panel) {
-      const targetWattage = requiredPanelQty * requiredPanelWattage;
-      qtyToSet = Math.max(1, Math.ceil(targetWattage / panel.wattage));
+    const activeTargetWattage = selectedGoalWattage !== null ? selectedGoalWattage : (requiredPanelQty !== null && requiredPanelWattage !== null ? requiredPanelQty * requiredPanelWattage : null);
+    if (activeTargetWattage !== null && panel) {
+      qtyToSet = Math.max(1, Math.ceil(activeTargetWattage / panel.wattage));
     } else if (requiredPanelQty !== null) {
       qtyToSet = requiredPanelQty;
     }
@@ -620,55 +656,115 @@ function PanelTable({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[11px] text-text-muted uppercase tracking-wider">
-            Selected Panel Qty
-          </span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-text-primary font-mono">{selectedPanelQty}</span>
-            {requiredPanelQty !== null && (
-              <>
-                <span className="text-text-muted">/</span>
-                <span className="text-sm font-semibold text-text-secondary font-mono">{requiredPanelQty}</span>
-              </>
-            )}
-            {panelQtyGap !== null && (
-              <span
-                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                  panelQtyGap === 0
-                    ? 'bg-success/15 text-success'
-                    : panelQtyGap > 0
-                    ? 'bg-warning/15 text-warning'
-                    : 'bg-error/15 text-error'
+        <div className="h-px bg-border/40" />
+
+        <div className="space-y-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Goal Wattage</p>
+          <div className="flex flex-wrap items-center gap-2">
+            {[3000, 5000, 8000, 10000].map((w) => {
+              const isActive = selectedGoalWattage === w;
+              return (
+                <button
+                  key={w}
+                  type="button"
+                  onClick={() => handleSelectGoalPreset(w)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-all duration-150 cursor-pointer ${
+                    isActive
+                      ? 'bg-accent border-accent text-background'
+                      : 'bg-background border-border text-text-secondary hover:border-border-light hover:text-text-primary'
+                  }`}
+                >
+                  {w / 1000} kW
+                </button>
+              );
+            })}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleCustomClick}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-all duration-150 cursor-pointer shrink-0 ${
+                  showCustomInput
+                    ? 'bg-accent border-accent text-background'
+                    : 'bg-background border-border text-text-secondary hover:border-border-light hover:text-text-primary'
                 }`}
               >
-                {panelQtyGap === 0 ? 'Matched' : panelQtyGap > 0 ? `${panelQtyGap} remaining` : `${Math.abs(panelQtyGap)} extra`}
-              </span>
-            )}
+                Custom
+              </button>
+              
+              {showCustomInput && (
+                <div className="relative flex items-center">
+                  <input
+                    type="number"
+                    value={customGoalInput}
+                    onChange={(e) => handleCustomInputChange(e.target.value)}
+                    placeholder="Enter W (e.g. 5400)"
+                    className="w-32 px-2 py-1 rounded bg-background border border-border text-xs font-mono text-text-primary outline-none focus:border-accent"
+                  />
+                  <span className="absolute right-2 text-[10px] text-text-muted">W</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="text-success">
-              Current Wattage: <span className="font-mono font-semibold">{currentSelectedWattage.toLocaleString('en-IN')} W</span>
-            </span>
-            {wattageLeft !== null && (
-              <span className={wattageLeft >= 0 ? 'text-error' : 'text-warning'}>
-                Wattage Left: <span className="font-mono font-semibold">{Math.max(wattageLeft, 0).toLocaleString('en-IN')} W</span>
-                {wattageLeft < 0 && ` (Over by ${Math.abs(wattageLeft).toLocaleString('en-IN')} W)`}
+        {selectedGoalWattage === null ? (
+          <div className="text-[11px] text-text-muted text-center py-3 bg-background/30 rounded-lg border border-dashed border-border/40">
+            💡 Select a goal wattage above to activate the panel matching indicators.
+          </div>
+        ) : (
+          <>
+            <div className="h-px bg-border/40" />
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[11px] text-text-muted uppercase tracking-wider">
+                Selected Panel Qty
               </span>
-            )}
-          </div>
-          <div className="h-2 rounded-full overflow-hidden border border-border bg-surface-hover">
-            <div
-              className="h-full"
-              style={{
-                background: `linear-gradient(to right, #16a34a 0% ${wattageProgressPct}%, #dc2626 ${wattageProgressPct}% 100%)`,
-              }}
-            />
-          </div>
-        </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-text-primary font-mono">{selectedPanelQty}</span>
+                {calculatedRequiredQty !== null && (
+                  <>
+                    <span className="text-text-muted">/</span>
+                    <span className="text-sm font-semibold text-text-secondary font-mono">{calculatedRequiredQty}</span>
+                  </>
+                )}
+                {panelQtyGap !== null && (
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                      panelQtyGap === 0
+                        ? 'bg-success/15 text-success'
+                        : panelQtyGap > 0
+                        ? 'bg-warning/15 text-warning'
+                        : 'bg-error/15 text-error'
+                    }`}
+                  >
+                    {panelQtyGap === 0 ? 'Matched' : panelQtyGap > 0 ? `${panelQtyGap} remaining` : `${Math.abs(panelQtyGap)} extra`}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-success">
+                  Current Wattage: <span className="font-mono font-semibold">{currentSelectedWattage.toLocaleString('en-IN')} W</span>
+                </span>
+                {wattageLeft !== null && (
+                  <span className={wattageLeft >= 0 ? 'text-error' : 'text-warning'}>
+                    Wattage Left: <span className="font-mono font-semibold">{Math.max(wattageLeft, 0).toLocaleString('en-IN')} W</span>
+                    {wattageLeft < 0 && ` (Over by ${Math.abs(wattageLeft).toLocaleString('en-IN')} W)`}
+                  </span>
+                )}
+              </div>
+              <div className="h-2 rounded-full overflow-hidden border border-border bg-surface-hover">
+                <div
+                  className="h-full"
+                  style={{
+                    background: `linear-gradient(to right, #16a34a 0% ${wattageProgressPct}%, #dc2626 ${wattageProgressPct}% 100%)`,
+                  }}
+                />
+              </div>
+            </div>
+          </>
+        )}
       </div>
       <div className="flex flex-col md:flex-row gap-3 mb-4">
         <div className="flex-1 space-y-1.5">
@@ -919,7 +1015,7 @@ function PanelTable({
                     `Quantity: ${qty} Nos`,
                     `Total Wattage: ${panel.wattage * qty}W`
                   ]}
-                  gstPct={panel.gst_pct || 0.05}
+                  gstPct={panel.gst_pct || TAX_CONSTANTS.RESIDENTIAL_GST_RATE}
                   sellingPrice={panel.ratePerWatt * panel.wattage}
                   itemDescForInventory={`${panel.brand} ${panel.model} ${Number(panel.wattage)}W Panel`}
                 />
@@ -2090,7 +2186,7 @@ function StructureConfigTable() {
       if (struct.id === 'custom') {
         const lookupWeight = structureWeightLookupKg ?? 0;
         const baseWeight = structureBaseWeightOverride ?? 0;
-        const wastage = structureWastageOverride ?? 0.05;
+        const wastage = structureWastageOverride ?? (5 / 100);
         const fasteners = structureFastenerOverride ?? 0.02;
         const rawRate = structureCustomRawRate ?? 0;
         const fabRate = structureCustomFabricationRate ?? 0;
@@ -2147,7 +2243,7 @@ function StructureConfigTable() {
             : Number(struct.base_weight_kg ?? 0);
           const wastage = (isSelected && structureWastageOverride !== null)
             ? structureWastageOverride
-            : Number(struct.wastage_pct ?? 0.05);
+            : Number(struct.wastage_pct ?? (5 / 100));
           const fasteners = (isSelected && structureFastenerOverride !== null)
             ? structureFastenerOverride
             : Number(struct.fastener_weight_pct ?? 0.02);
@@ -2218,10 +2314,10 @@ function StructureConfigTable() {
   }, [selectedStructureId, structureBaseWeightOverride, selectedStructure]);
 
   const wastage = useMemo(() => {
-    if (selectedStructureId === 'custom') return structureWastageOverride ?? 0.05;
+    if (selectedStructureId === 'custom') return structureWastageOverride ?? (5 / 100);
     return structureWastageOverride !== null
       ? structureWastageOverride
-      : (selectedStructure ? Number(selectedStructure.wastage_pct ?? 0.05) : 0.05);
+      : (selectedStructure ? Number(selectedStructure.wastage_pct ?? (5 / 100)) : (5 / 100));
   }, [selectedStructureId, structureWastageOverride, selectedStructure]);
 
   const fasteners = useMemo(() => {
@@ -3008,7 +3104,7 @@ function StructureConfigTable() {
               `Elevation: ${selectedStructure.elevation_height_mm} mm`,
               `Weight rate: ₹${Number(selectedStructure.rate_per_kg).toFixed(2)}/kg`
             ]}
-            gstPct={selectedStructure.gst_pct || 0.18}
+            gstPct={selectedStructure.gst_pct || TAX_CONSTANTS.COMMERCIAL_GST_RATE}
             sellingPrice={totalCost}
             itemDescForInventory={`${selectedStructure.name} Structure (${selectedStructure.material || ''})`}
           />
@@ -3027,7 +3123,7 @@ function StructureConfigTable() {
               `Total Calculated Weight: ${finalWeight.toFixed(1)} kg`,
               `Custom Rate per kg: ₹${ratePerKg.toFixed(2)}/kg`
             ]}
-            gstPct={0.18}
+            gstPct={TAX_CONSTANTS.COMMERCIAL_GST_RATE}
             sellingPrice={totalCost}
             itemDescForInventory="Custom Structure"
           />
@@ -3052,7 +3148,7 @@ function StructureConfigTable() {
               `Total Calculated Weight: ${finalWeight.toFixed(1)} kg`,
               `Custom Rate per kg: ₹${ratePerKg.toFixed(2)}/kg`
             ]}
-            gstPct={0.18}
+            gstPct={TAX_CONSTANTS.COMMERCIAL_GST_RATE}
             sellingPrice={totalCost}
             itemDescForInventory="Custom Structure"
           />
@@ -3086,8 +3182,8 @@ function EquipmentDetailCard({
   description,
   itemDescForInventory
 }: DetailCardProps) {
-  const showInventoryInfo = useCalculatorStore((s) => s.showInventoryInfo);
-  const inventorySummary = useCalculatorStore((s) => s.inventorySummary) || [];
+  const showInventoryInfo = useCalculatorStore((s) => (s as any).showInventoryInfo);
+  const inventorySummary = useCalculatorStore((s) => (s as any).inventorySummary) || [];
   
   const inv = inventorySummary.find((x: any) => x.item_description === itemDescForInventory);
   const currentStock = inv ? Number(inv.current_qty) : 0;

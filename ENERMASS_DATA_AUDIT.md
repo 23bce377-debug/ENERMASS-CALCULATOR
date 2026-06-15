@@ -540,26 +540,26 @@ This report documents all data inconsistencies, duplicate master records, naming
 
 | Idx | Workbook | Sheet | Row | GST Pct | Issue |
 | --- | --- | --- | --- | --- | --- |
-| 6 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 18 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 10 | PRICING_8.9%GST.xlsx | Sheet3 | 30 | 3.0882352941 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 62 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 19 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 148 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 20 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 175 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 22 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 204 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 4 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 205 | PRICING_8.9%GST.xlsx | 1.5kw | 5 | 4 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 206 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 14 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 207 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 17 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 209 | PRICING_8.9%GST.xlsx | Sheet3 | 26 | 3.0909090909 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 211 | PRICING_8.9%GST.xlsx | Sheet3 | 28 | 2.2142857143 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 213 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 31 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 214 | PRICING_8.9%GST.xlsx | Sheet3 | 32 | 7.3076923077 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 217 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 25 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 218 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 26 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 219 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 27 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 221 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 29 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 222 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 30 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 223 | PRICING_8.9%GST.xlsx | hibrid 3 kw | 32 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
-| 259 | PRICING_8.9%GST.xlsx | Sheet5 | 34 | 1.343721 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 6 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 18 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 10 | PRICING_13.8%GST.xlsx | Sheet3 | 30 | 3.0882352941 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 62 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 19 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 148 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 20 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 175 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 22 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 204 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 4 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 205 | PRICING_13.8%GST.xlsx | 1.5kw | 5 | 4 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 206 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 14 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 207 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 17 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 209 | PRICING_13.8%GST.xlsx | Sheet3 | 26 | 3.0909090909 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 211 | PRICING_13.8%GST.xlsx | Sheet3 | 28 | 2.2142857143 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 213 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 31 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 214 | PRICING_13.8%GST.xlsx | Sheet3 | 32 | 7.3076923077 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 217 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 25 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 218 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 26 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 219 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 27 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 221 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 29 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 222 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 30 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 223 | PRICING_13.8%GST.xlsx | hibrid 3 kw | 32 | 1 | GST percentage is >50% (potential amount or percentage scaling error) |
+| 259 | PRICING_13.8%GST.xlsx | Sheet5 | 34 | 1.343721 | GST percentage is >50% (potential amount or percentage scaling error) |
 
 ### Pricing Rules (52 records)
 

@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { formatINR } from '@/lib/engine/calculator';
 import { allocateBundlePrice, type BundleAllocationItem } from '@/lib/engine/bundleAllocation';
 import type { BundlePreset } from '@/lib/types/bundle';
+import { TAX_CONSTANTS } from '@/lib/tax-constants';
 
 interface AcquisitionModalProps {
   isOpen: boolean;
@@ -50,7 +51,7 @@ export default function AcquisitionModal({ isOpen, onClose, onSuccess, orgId, ve
   
   // Standard items state
   const [items, setItems] = useState<Partial<AcquisitionItem>[]>([
-    { item_description: '', qty: 0, rate_per_unit: 0, gst_pct: 0.18, unit: 'Nos', category: 'solar_panels' }
+    { item_description: '', qty: 0, rate_per_unit: 0, gst_pct: TAX_CONSTANTS.COMMERCIAL_GST_RATE, unit: 'Nos', category: 'solar_panels' }
   ]);
 
   // Applied bundles state
@@ -67,7 +68,7 @@ export default function AcquisitionModal({ isOpen, onClose, onSuccess, orgId, ve
 
   // Standard items actions
   const addItem = () => {
-    setItems([...items, { item_description: '', qty: 0, rate_per_unit: 0, gst_pct: 0.18, unit: 'Nos', category: 'solar_panels' }]);
+    setItems([...items, { item_description: '', qty: 0, rate_per_unit: 0, gst_pct: TAX_CONSTANTS.COMMERCIAL_GST_RATE, unit: 'Nos', category: 'solar_panels' }]);
   };
 
   const removeItem = (index: number) => {
@@ -90,7 +91,7 @@ export default function AcquisitionModal({ isOpen, onClose, onSuccess, orgId, ve
         qty: 1,
         effective_bundle_price: 0,
         allocation_strategy: 'proportional_cost',
-        gst_pct: 0.18,
+        gst_pct: TAX_CONSTANTS.COMMERCIAL_GST_RATE,
         items: [],
         isOpen: true
       }
@@ -112,7 +113,7 @@ export default function AcquisitionModal({ isOpen, onClose, onSuccess, orgId, ve
       name: selectedPreset.name,
       effective_bundle_price: selectedPreset.effective_bundle_price,
       allocation_strategy: selectedPreset.allocation_strategy,
-      gst_pct: selectedPreset.gst_pct || 0.18,
+      gst_pct: selectedPreset.gst_pct || TAX_CONSTANTS.COMMERCIAL_GST_RATE,
       items: (selectedPreset.bundle_preset_items || []).map(item => ({
         item_description: item.item_description,
         category: item.category,
@@ -387,13 +388,13 @@ export default function AcquisitionModal({ isOpen, onClose, onSuccess, orgId, ve
                           <td className="px-3 py-2">
                             <Select
                               size="sm"
-                              value={String(item.gst_pct ?? 0.18)}
+                              value={String(item.gst_pct ?? TAX_CONSTANTS.COMMERCIAL_GST_RATE)}
                               onChange={(v) => updateItem(idx, 'gst_pct', parseFloat(v))}
                               options={[
                                 { value: '0', label: '0%' },
-                                { value: '0.05', label: '5%' },
+                                { value: String(TAX_CONSTANTS.RESIDENTIAL_GST_RATE), label: '5%' },
                                 { value: '0.12', label: '12%' },
-                                { value: '0.18', label: '18%' },
+                                { value: String(TAX_CONSTANTS.COMMERCIAL_GST_RATE), label: '18%' },
                                 { value: '0.28', label: '28%' },
                               ]}
                             />
@@ -638,13 +639,13 @@ export default function AcquisitionModal({ isOpen, onClose, onSuccess, orgId, ve
                                           <td className="px-3 py-1.5 text-right font-mono text-text-secondary">
                                             <Select
                                               size="sm"
-                                              value={String(it.gst_pct ?? 0.18)}
+                                              value={String(it.gst_pct ?? TAX_CONSTANTS.ITC_ELIGIBLE_RATE)}
                                               onChange={(v) => updateBundleItem(bIdx, itIdx, 'gst_pct', parseFloat(v))}
                                               options={[
                                                 { value: '0', label: '0%' },
-                                                { value: '0.05', label: '5%' },
+                                                { value: String(TAX_CONSTANTS.RESIDENTIAL_GST_RATE), label: '5%' },
                                                 { value: '0.12', label: '12%' },
-                                                { value: '0.18', label: '18%' },
+                                                { value: String(TAX_CONSTANTS.COMMERCIAL_GST_RATE), label: '18%' },
                                                 { value: '0.28', label: '28%' },
                                               ]}
                                             />

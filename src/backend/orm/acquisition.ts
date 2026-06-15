@@ -68,7 +68,7 @@ export const VendorORM = {
       .from('vendors')
       .insert(vendor)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data as Vendor;
   },
@@ -79,7 +79,7 @@ export const VendorORM = {
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data as Vendor;
   },
@@ -109,7 +109,7 @@ export const AcquisitionORM = {
       .from('acquisitions')
       .select('*, acquisition_items(*), acquisition_bundles(*), vendors(*)')
       .eq('id', id)
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },

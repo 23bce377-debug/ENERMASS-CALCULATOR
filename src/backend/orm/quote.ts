@@ -32,7 +32,7 @@ export const QuoteORM = {
       .from('quotes')
       .select('*, quote_items(*), quote_additional_costs(*), quote_variants(*)')
       .eq('id', id)
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data as any;
   },
@@ -157,7 +157,7 @@ export const QuoteORM = {
       .from('quotes')
       .insert(dbQuote)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -174,7 +174,7 @@ export const QuoteORM = {
 
     const { data, error } = await query
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -224,7 +224,7 @@ export const QuoteItemORM = {
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -255,7 +255,7 @@ export const QuoteAdditionalCostORM = {
       .from('quote_additional_costs')
       .insert(cost)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -286,7 +286,7 @@ export const QuoteStatusHistoryORM = {
       .from('quote_status_history')
       .insert(log)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   }
@@ -307,7 +307,7 @@ export const QuoteVariantORM = {
       .from('quote_variants')
       .insert(variant)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -318,7 +318,7 @@ export const QuoteVariantORM = {
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },

@@ -423,8 +423,8 @@ BEGIN
   IF OLD.status IS DISTINCT FROM NEW.status THEN
     INSERT INTO quote_status_history (
       quote_id,
-      from_status,
-      to_status,
+      old_status,
+      new_status,
       changed_by,
       changed_at,
       notes

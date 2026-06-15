@@ -149,7 +149,7 @@ export function useMasterCreateMutation<T>(entity: string) {
         .from(table as any)
         .insert(payload)
         .select()
-        .single() as any);
+        .maybeSingle() as any);
 
       if (error) throw error;
 
@@ -179,7 +179,7 @@ export function useMasterUpdateMutation<T>(entity: string) {
       const table = getEntityTable(entity);
 
       // 1. Fetch current values for audit comparison
-      const { data: beforeState } = await (supabase.from(table as any).select('*').eq('id', id).single() as any);
+      const { data: beforeState } = await (supabase.from(table as any).select('*').eq('id', id).maybeSingle() as any);
 
       // 2. Perform update
       const { data, error } = await (supabase
@@ -187,9 +187,10 @@ export function useMasterUpdateMutation<T>(entity: string) {
         .update({ ...transformToDb(entity, updates, beforeState), updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
-        .single() as any);
+        .maybeSingle() as any);
 
       if (error) throw error;
+      if (!data) throw new Error('Update failed. You may not have permission to edit this record (it might be a global system template).');
 
       // Log Audit Event
       await logAudit(orgId, userId, 'masters', table, id, 'update', beforeState, data);
@@ -226,7 +227,7 @@ export function useMasterDeleteMutation(entity: string) {
       const table = getEntityTable(entity);
 
       // Fetch before deleting
-      const { data: beforeState } = await (supabase.from(table as any).select('*').eq('id', id).single() as any);
+      const { data: beforeState } = await (supabase.from(table as any).select('*').eq('id', id).maybeSingle() as any);
 
       // Perform soft delete by default or hard delete for rate overrides / connections
       let error;
@@ -293,7 +294,7 @@ export function useMasterBulkUpdateMutation(entity: string) {
           .update({ ...transformToDb(entity, updates, before), updated_at: new Date().toISOString() })
           .eq('id', id)
           .select()
-          .single() as any);
+          .maybeSingle() as any);
         if (error) throw error;
 
         // Log Audit Event for each
@@ -417,7 +418,7 @@ export function useUpdateSubsidyMutation() {
         .from('calculation_schemes')
         .select('*, scheme_slabs(*)')
         .eq('id', schemeId)
-        .single() as any);
+        .maybeSingle() as any);
 
       // 2. Update scheme
       const { data: scheme, error: schemeErr } = await (supabase
@@ -425,7 +426,7 @@ export function useUpdateSubsidyMutation() {
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', schemeId)
         .select()
-        .single() as any);
+        .maybeSingle() as any);
 
       if (schemeErr) throw schemeErr;
 
@@ -453,7 +454,7 @@ export function useUpdateSubsidyMutation() {
         .from('calculation_schemes')
         .select('*, scheme_slabs(*)')
         .eq('id', schemeId)
-        .single() as any);
+        .maybeSingle() as any);
 
       await logAudit(orgId, userId, 'masters', 'calculation_schemes', schemeId, 'update', beforeScheme, afterScheme);
       

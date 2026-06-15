@@ -19,7 +19,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For full-text search on customer na
 -- ============================================================
 
 CREATE TYPE system_category      AS ENUM ('on_grid', '3_phase', 'micro_inverter', 'hybrid', 'upgrade', 'commercial');
-CREATE TYPE quote_status         AS ENUM ('draft', 'sent', 'won', 'lost');
+CREATE TYPE quote_status         AS ENUM ('draft', 'survey', 'revised', 'won', 'lost');
 CREATE TYPE project_type         AS ENUM ('residential', 'commercial');
 CREATE TYPE discount_type        AS ENUM ('none', 'flat', 'percent');
 CREATE TYPE sale_type            AS ENUM ('new', 'upgrade', 'referral');
@@ -29,6 +29,19 @@ CREATE TYPE la_type              AS ENUM ('single', 'multi');
 CREATE TYPE meter_type           AS ENUM ('solar_meter', 'net_meter');
 CREATE TYPE structure_material   AS ENUM ('gi_galvanized', 'hot_dip_galvanized', 'aluminum', 'stainless_steel', 'custom');
 CREATE TYPE roof_mount_type      AS ENUM ('rcc_flat', 'rcc_sloped', 'tin_shed', 'metal_sheet', 'ground_mount', 'elevated', 'custom');
+CREATE TYPE milestone_type AS ENUM (
+  'survey_approved',
+  'structural_design_freeze',
+  'civil_foundation_done',
+  'concrete_curing',
+  'civil_curing',
+  'panel_installation_done',
+  'inverter_wiring_done',
+  'net_metering_stages',
+  'net_metering_approved',
+  'discom_charging',
+  'handover'
+);
 CREATE TYPE bom_section          AS ENUM (
   'solar_panels', 'power_electronics', 'metering',
   'mounting_structure', 'electrical_protection',
@@ -95,8 +108,8 @@ CREATE TABLE state_rules (
   sun_hours_per_day  NUMERIC(4,2) NOT NULL,
   performance_ratio  NUMERIC(4,3) NOT NULL DEFAULT 0.780,
   labour_multiplier  NUMERIC(4,3) NOT NULL DEFAULT 1.000,
-  -- Output GST: 8.9% for most states, 13.8% for Kerala/TN/MH
-  gst_on_output      NUMERIC(6,5) NOT NULL DEFAULT 0.08900,
+  -- Output GST: 13.8% for most states, 13.8% for Kerala/TN/MH
+  gst_on_output      NUMERIC(6,5) NOT NULL DEFAULT 0.13800,
   grid_tariff_inr    NUMERIC(6,4) NOT NULL DEFAULT 8.0000, -- ₹/kWh, state-specific default
   is_active          BOOLEAN NOT NULL DEFAULT TRUE,
   version            INTEGER NOT NULL DEFAULT 1,
@@ -431,6 +444,27 @@ CREATE TABLE structure_template_items (
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE bom_categories (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name                TEXT NOT NULL,
+  display_order       INTEGER NOT NULL,
+  is_optional         BOOLEAN DEFAULT false
+);
+
+CREATE TABLE bom_template_items (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category_id         UUID NOT NULL REFERENCES bom_categories(id) ON DELETE CASCADE,
+  sku_code            TEXT NOT NULL,
+  description         TEXT NOT NULL,
+  unit                TEXT NOT NULL,
+  unit_rate_min       NUMERIC(10,2),
+  unit_rate_max       NUMERIC(10,2),
+  default_rate        NUMERIC(10,2),
+  qty_formula         TEXT,
+  is_system_survey_dependent BOOLEAN DEFAULT false,
+  notes               TEXT
+);
+
 -- Structure Component Master ( Rajasthan Templates Integration )
 CREATE TABLE structure_component_master (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -681,7 +715,7 @@ CREATE TABLE quotes (
   state_id                UUID REFERENCES state_rules(id),
   state_name              TEXT,                   -- Denormalized snapshot
   pincode                 TEXT,
-
+  structure_type          TEXT DEFAULT 'rcc_roof_elevated',
   -- Site
   meter_number            TEXT,
   sanctioned_load_kw      NUMERIC(8,3),           -- NUMERIC, not text (per requirement)  
@@ -698,9 +732,9 @@ CREATE TABLE quotes (
 
   -- System selection (snapshot)
   system_id               UUID REFERENCES systems(id),
-  system_name             TEXT,
+  system_name             VARCHAR(255),
   system_category         system_category,
-  system_capacity_kw      NUMERIC(10,3),
+  system_capacity_kw      NUMERIC(10,2),
 
   -- Equipment snapshots (brand + model text, not FK, to survive catalog deletions)       
   panel_brand_model       TEXT,                   -- e.g., 'Adani 620W Mono PERC'
@@ -715,7 +749,7 @@ CREATE TABLE quotes (
   battery_total_kwh       NUMERIC(8,3),
 
   -- Discount
-  discount_type           discount_type NOT NULL DEFAULT 'none',
+  discount_type           discount_type DEFAULT 'none',
   discount_val            NUMERIC(12,4) NOT NULL DEFAULT 0,
 
   -- Quote validity (30 days from creation)
@@ -750,14 +784,18 @@ CREATE TABLE quotes (
   total_incl_gst          NUMERIC(14,4) NOT NULL DEFAULT 0,
   effective_margin_pct    NUMERIC(6,5) NOT NULL DEFAULT 0,
   mrp_excl_gst            NUMERIC(14,4) NOT NULL DEFAULT 0,
-  gst_output_rate         NUMERIC(6,5) NOT NULL DEFAULT 0.08900,
+  gst_output_rate         NUMERIC(6,5) NOT NULL DEFAULT 0.13800,
   output_gst_amount       NUMERIC(14,4) NOT NULL DEFAULT 0,
   mrp_incl_gst            NUMERIC(14,4) NOT NULL DEFAULT 0,
-  discount_amount         NUMERIC(14,4) NOT NULL DEFAULT 0,
+  discount_amount         NUMERIC(10,2) DEFAULT 0,
   additional_costs_total  NUMERIC(14,4) NOT NULL DEFAULT 0,
-  final_customer_price    NUMERIC(14,4) NOT NULL DEFAULT 0,
+  final_customer_price    NUMERIC(10,2),
+  civil_applicable        BOOLEAN DEFAULT false,
+  logistics_cost_estimated NUMERIC(10,2) DEFAULT 0,
   subsidy_scheme_id       UUID REFERENCES calculation_schemes(id),
   subsidy_amount          NUMERIC(14,4) NOT NULL DEFAULT 0,
+  subsidy_breakdown       TEXT,
+  subsidy_eligible        BOOLEAN DEFAULT false,
   beneficiary_contribution NUMERIC(14,4) NOT NULL DEFAULT 0,
   per_kw_excl_gst         NUMERIC(14,4),
   per_kw_incl_gst         NUMERIC(14,4),
@@ -847,6 +885,7 @@ CREATE INDEX idx_additional_costs_quote ON quote_additional_costs(quote_id);
 
 CREATE TABLE quote_status_history (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id      UUID NOT NULL REFERENCES organisations(id),
   quote_id    UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
   old_status  quote_status,
   new_status  quote_status NOT NULL,
@@ -1295,8 +1334,18 @@ CREATE POLICY "system_items_visibility" ON system_items
   ));
 
 -- Rate master, margins, settings: org-scoped
-CREATE POLICY "rate_master_org" ON rate_master
-  USING (org_id = auth_org_id());
+CREATE POLICY "rate_master_select" ON rate_master
+  FOR SELECT USING (org_id = auth_org_id());
+
+CREATE POLICY "rate_master_insert" ON rate_master
+  FOR INSERT WITH CHECK (org_id = auth_org_id() AND auth_role() IN ('owner', 'admin'));
+
+CREATE POLICY "rate_master_update" ON rate_master
+  FOR UPDATE USING (org_id = auth_org_id() AND auth_role() IN ('owner', 'admin'))
+  WITH CHECK (org_id = auth_org_id() AND auth_role() IN ('owner', 'admin'));
+
+CREATE POLICY "rate_master_delete" ON rate_master
+  FOR DELETE USING (org_id = auth_org_id() AND auth_role() IN ('owner', 'admin'));
 
 CREATE POLICY "category_margins_org" ON category_margins
   USING (org_id = auth_org_id());
@@ -1324,16 +1373,16 @@ VALUES (
 
 -- 19b. State rules
 INSERT INTO state_rules (state_code, state_name, sun_hours_per_day, performance_ratio, labour_multiplier, gst_on_output, grid_tariff_inr) VALUES
-  ('GJ', 'Gujarat',          5.50, 0.780, 1.000, 0.08900, 7.00),
-  ('RJ', 'Rajasthan',        6.00, 0.800, 0.950, 0.08900, 7.50),
-  ('MP', 'Madhya Pradesh',   5.40, 0.780, 0.920, 0.08900, 7.00),
-  ('UP', 'Uttar Pradesh',    5.00, 0.760, 0.900, 0.08900, 6.50),
-  ('HR', 'Haryana',          5.00, 0.770, 1.030, 0.08900, 7.50),
-  ('PB', 'Punjab',           4.80, 0.760, 1.050, 0.08900, 7.50),
+  ('GJ', 'Gujarat',          5.50, 0.780, 1.000, 0.13800, 7.00),
+  ('RJ', 'Rajasthan',        6.00, 0.800, 0.950, 0.13800, 7.50),
+  ('MP', 'Madhya Pradesh',   5.40, 0.780, 0.920, 0.13800, 7.00),
+  ('UP', 'Uttar Pradesh',    5.00, 0.760, 0.900, 0.13800, 6.50),
+  ('HR', 'Haryana',          5.00, 0.770, 1.030, 0.13800, 7.50),
+  ('PB', 'Punjab',           4.80, 0.760, 1.050, 0.13800, 7.50),
   ('MH', 'Maharashtra',      5.00, 0.760, 1.100, 0.13800, 9.00),
-  ('KA', 'Karnataka',        5.10, 0.770, 1.080, 0.08900, 8.00),
-  ('AP', 'Andhra Pradesh',   5.20, 0.770, 1.000, 0.08900, 7.00),
-  ('TS', 'Telangana',        5.30, 0.780, 1.020, 0.08900, 7.00),
+  ('KA', 'Karnataka',        5.10, 0.770, 1.080, 0.13800, 8.00),
+  ('AP', 'Andhra Pradesh',   5.20, 0.770, 1.000, 0.13800, 7.00),
+  ('TS', 'Telangana',        5.30, 0.780, 1.020, 0.13800, 7.00),
   ('TN', 'Tamil Nadu',       5.00, 0.770, 1.050, 0.13800, 8.50),
   ('KL', 'Kerala',           4.50, 0.750, 1.150, 0.13800, 7.50);
 
@@ -1621,7 +1670,8 @@ CREATE VIEW v_quote_summary AS
     q.inverter_brand_model,
     q.created_at, q.updated_at, q.valid_until,
     q.exec_name,
-    q.version
+    q.version,
+    CASE WHEN q.project_type = 'commercial' THEN q.total_input_gst ELSE 0 END AS itc_eligible_amount
   FROM quotes q
   LEFT JOIN state_rules s ON q.state_id = s.id;
 
@@ -1640,14 +1690,16 @@ CREATE VIEW v_system_bom_totals AS
 -- 20d. Quote items with section subtotals
 CREATE VIEW v_quote_section_totals AS
   SELECT
-    quote_id,
-    section,
-    SUM(line_total) AS section_cost,
-    SUM(line_gst) AS section_gst,
-    SUM(line_subtotal) AS section_subtotal,
-    COUNT(*) FILTER (WHERE is_included) AS included_items
-  FROM quote_items
-  GROUP BY quote_id, section;
+    qi.quote_id,
+    qi.section,
+    SUM(qi.line_total) AS section_cost,
+    SUM(qi.line_gst) AS section_gst,
+    SUM(qi.line_subtotal) AS section_subtotal,
+    CASE WHEN q.project_type = 'commercial' THEN SUM(qi.line_gst) ELSE 0 END AS section_itc,
+    COUNT(*) FILTER (WHERE qi.is_included) AS included_items
+  FROM quote_items qi
+  JOIN quotes q ON q.id = qi.quote_id
+  GROUP BY qi.quote_id, qi.section, q.project_type;
 
 -- 20e. Dynamic subsidy verification (useful for admin audit)
 CREATE  VIEW v_subsidy_slabs AS
@@ -1670,3 +1722,446 @@ ALTER TABLE quotes
   ADD COLUMN IF NOT EXISTS net_meter_qty INTEGER DEFAULT 1,
   ADD COLUMN IF NOT EXISTS la_id UUID REFERENCES eq_lightning_arresters(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS la_qty INTEGER DEFAULT 1;
+
+-- ============================================================
+-- PHASE 2: OPERATIONS & SUPPLY CHAIN
+-- ============================================================
+
+-- 1. Site Inventory System
+CREATE TABLE site_inventory (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID NOT NULL REFERENCES organisations(id),
+  project_id          UUID,
+  item_name           TEXT NOT NULL,
+  serial_number       TEXT,
+  status              TEXT DEFAULT 'dispatch', -- 'dispatch', 'in-transit', 'on-site', 'consumed'
+  qty                 NUMERIC(14,4) NOT NULL DEFAULT 0,
+  weighted_avg_cost   NUMERIC(14,4) DEFAULT 0,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_site_inventory_project ON site_inventory(project_id);
+CREATE INDEX idx_site_inventory_status ON site_inventory(status);
+
+-- 2. Project Ledger for unseen execution costs
+CREATE TABLE project_ledger (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID NOT NULL REFERENCES organisations(id),
+  project_id          UUID NOT NULL,
+  transaction_date    DATE NOT NULL DEFAULT CURRENT_DATE,
+  description         TEXT NOT NULL,
+  cost_category       TEXT DEFAULT 'material', -- 'material', 'freight', 'transportation', 'crane_hire', 'civil', 'labor'
+  amount              NUMERIC(14,4) NOT NULL,
+  freight_amount      NUMERIC(14,4) DEFAULT 0,
+  transportation_cost NUMERIC(14,4) DEFAULT 0,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_project_ledger_project ON project_ledger(project_id);
+
+-- 3. Procurement Automation (Purchase Requests)
+CREATE TABLE purchase_requests (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID NOT NULL REFERENCES organisations(id),
+  project_id          UUID NOT NULL,
+  pr_number           TEXT UNIQUE NOT NULL,
+  status              TEXT DEFAULT 'draft',
+  total_amount        NUMERIC(14,4) DEFAULT 0,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE purchase_request_items (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pr_id               UUID NOT NULL REFERENCES purchase_requests(id) ON DELETE CASCADE,
+  item_name           TEXT NOT NULL,
+  qty                 NUMERIC(14,4) NOT NULL,
+  estimated_rate      NUMERIC(14,4) DEFAULT 0,
+  serial_number_req   BOOLEAN DEFAULT false,
+  serial_number_val   TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Trigger: Generate PR automatically when a project BOM is finalized (status 'won')
+CREATE OR REPLACE FUNCTION fn_generate_pr_on_bom_finalize()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.status = 'won' AND OLD.status != 'won' THEN
+    -- Create the Purchase Request
+    INSERT INTO purchase_requests (org_id, project_id, pr_number, status)
+    VALUES (NEW.org_id, NEW.id, 'PR-' || NEW.quote_number, 'draft');
+    
+    -- Clone items from Quote (BOM) into PR items
+    INSERT INTO purchase_request_items (pr_id, item_name, qty, estimated_rate)
+    SELECT 
+      (SELECT id FROM purchase_requests WHERE pr_number = 'PR-' || NEW.quote_number),
+      qi.description,
+      qi.qty,
+      qi.rate_per_unit
+    FROM quote_items qi
+    WHERE qi.quote_id = NEW.id AND qi.is_included = TRUE;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_generate_pr_on_quote_won
+  AFTER UPDATE OF status ON quotes
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_generate_pr_on_bom_finalize();
+
+-- ============================================================
+-- PHASE 3: SUBCONTRACTORS & WORK ORDERS
+-- ============================================================
+
+CREATE TABLE subcontractors (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID NOT NULL REFERENCES organisations(id),
+  name                TEXT NOT NULL,
+  phone               TEXT,
+  email               TEXT,
+  gstin               TEXT,
+  address             TEXT,
+  specialization      TEXT, -- 'civil', 'electrical', 'installation', 'all'
+  is_active           BOOLEAN DEFAULT true,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE work_orders (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID NOT NULL REFERENCES organisations(id),
+  project_id          UUID NOT NULL REFERENCES quotes(id),
+  subcontractor_id    UUID NOT NULL REFERENCES subcontractors(id),
+  wo_number           TEXT UNIQUE NOT NULL,
+  description         TEXT,
+  total_amount        NUMERIC(14,4) NOT NULL,
+  status              TEXT DEFAULT 'draft', -- 'draft', 'assigned', 'in_progress', 'completed', 'cancelled'
+  start_date          DATE,
+  end_date            DATE,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE subcontractor_payments (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID NOT NULL REFERENCES organisations(id),
+  work_order_id       UUID NOT NULL REFERENCES work_orders(id),
+  amount              NUMERIC(14,4) NOT NULL,
+  payment_date        DATE NOT NULL,
+  reference_number    TEXT,
+  notes               TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
+-- PHASE 4: AMC & WARRANTY CLAIMS
+-- ============================================================
+
+CREATE TABLE field_amc_contracts (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID NOT NULL REFERENCES organisations(id),
+  project_id          UUID NOT NULL REFERENCES quotes(id),
+  contract_number     TEXT UNIQUE NOT NULL,
+  start_date          DATE NOT NULL,
+  end_date            DATE NOT NULL,
+  visits_per_year     INTEGER NOT NULL DEFAULT 2,
+  status              TEXT DEFAULT 'active', -- 'active', 'expired', 'cancelled'
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE amc_visits (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID NOT NULL REFERENCES organisations(id),
+  amc_contract_id     UUID NOT NULL REFERENCES field_amc_contracts(id),
+  scheduled_date      DATE NOT NULL,
+  completed_date      DATE,
+  technician_id       UUID REFERENCES profiles(id),
+  status              TEXT DEFAULT 'scheduled', -- 'scheduled', 'completed', 'cancelled'
+  notes               TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE proc_warranty_claims (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID NOT NULL REFERENCES organisations(id),
+  project_id          UUID NOT NULL REFERENCES quotes(id),
+  equipment_type      TEXT NOT NULL, -- 'panel', 'inverter', 'battery'
+  serial_number       TEXT,
+  issue_description   TEXT NOT NULL,
+  status              TEXT DEFAULT 'raised', -- 'raised', 'in_review', 'approved', 'rejected', 'resolved'
+  claim_date          DATE NOT NULL DEFAULT CURRENT_DATE,
+  resolution_date     DATE,
+  notes               TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Trigger to auto-schedule AMC visits
+CREATE OR REPLACE FUNCTION fn_auto_schedule_amc_visits()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_visit_interval INTERVAL;
+  v_scheduled_date DATE;
+  i INTEGER;
+BEGIN
+  IF NEW.status = 'active' THEN
+    -- Calculate interval between visits
+    v_visit_interval := '1 year'::INTERVAL / NEW.visits_per_year;
+    v_scheduled_date := NEW.start_date;
+    
+    FOR i IN 1..(NEW.visits_per_year * (EXTRACT(YEAR FROM NEW.end_date) - EXTRACT(YEAR FROM NEW.start_date) + 1)) LOOP
+      v_scheduled_date := v_scheduled_date + v_visit_interval;
+      IF v_scheduled_date <= NEW.end_date THEN
+        INSERT INTO amc_visits (org_id, amc_contract_id, scheduled_date, status)
+        VALUES (NEW.org_id, NEW.id, v_scheduled_date, 'scheduled');
+      END IF;
+    END LOOP;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_auto_schedule_amc_visits
+  AFTER INSERT ON field_amc_contracts
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_auto_schedule_amc_visits();
+
+-- ============================================================
+-- PHASE 5: RPCs & AUDIT LOGS
+-- ============================================================
+
+CREATE TABLE rate_master_audit_logs (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id              UUID NOT NULL REFERENCES organisations(id),
+  rate_master_id      UUID NOT NULL,
+  old_rate            NUMERIC(12,4),
+  new_rate            NUMERIC(12,4),
+  changed_by          UUID REFERENCES profiles(id),
+  changed_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE OR REPLACE FUNCTION fn_audit_rate_master_changes()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (TG_OP = 'UPDATE' AND OLD.override_rate IS DISTINCT FROM NEW.override_rate) THEN
+    INSERT INTO rate_master_audit_logs (org_id, rate_master_id, old_rate, new_rate, changed_by)
+    VALUES (NEW.org_id, NEW.id, OLD.override_rate, NEW.override_rate, auth.uid());
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_audit_rate_master_changes
+  AFTER UPDATE ON rate_master
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_audit_rate_master_changes();
+
+-- Multi-currency support fields
+ALTER TABLE organisations 
+  ADD COLUMN IF NOT EXISTS currency_code TEXT DEFAULT 'INR',
+  ADD COLUMN IF NOT EXISTS exchange_rate NUMERIC(10,4) DEFAULT 1.0000;
+
+ALTER TABLE quotes
+  ADD COLUMN IF NOT EXISTS currency_code TEXT DEFAULT 'INR',
+  ADD COLUMN IF NOT EXISTS exchange_rate NUMERIC(10,4) DEFAULT 1.0000;
+
+-- RPC for Acquisitions
+CREATE OR REPLACE FUNCTION fn_acquire_lead(p_org_id UUID, p_customer_name TEXT, p_phone TEXT)
+RETURNS UUID AS $$
+DECLARE
+  v_quote_id UUID;
+  v_quote_number TEXT;
+BEGIN
+  v_quote_number := fn_generate_quote_number(p_org_id);
+  INSERT INTO quotes (org_id, quote_number, customer_name, customer_phone, status)
+  VALUES (p_org_id, v_quote_number, p_customer_name, p_phone, 'draft')
+  RETURNING id INTO v_quote_id;
+  RETURN v_quote_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- RPC for Bundle Presets
+CREATE OR REPLACE FUNCTION fn_create_bundle_preset(p_org_id UUID, p_name TEXT, p_capacity_kw NUMERIC, p_category system_category)
+RETURNS UUID AS $$
+DECLARE
+  v_system_id UUID;
+BEGIN
+  INSERT INTO systems (org_id, name, capacity_kw, category, is_custom)
+  VALUES (p_org_id, p_name, p_capacity_kw, p_category, TRUE)
+  RETURNING id INTO v_system_id;
+  RETURN v_system_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- RLS for New Tables
+ALTER TABLE subcontractors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE work_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subcontractor_payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE field_amc_contracts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE amc_visits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE proc_warranty_claims ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rate_master_audit_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "subcontractors_org" ON subcontractors FOR ALL USING (org_id = auth_org_id());
+CREATE POLICY "work_orders_org" ON work_orders FOR ALL USING (org_id = auth_org_id());
+CREATE POLICY "subcontractor_payments_org" ON subcontractor_payments FOR ALL USING (org_id = auth_org_id());
+CREATE POLICY "field_amc_contracts_org" ON field_amc_contracts FOR ALL USING (org_id = auth_org_id());
+CREATE POLICY "amc_visits_org" ON amc_visits FOR ALL USING (org_id = auth_org_id());
+CREATE POLICY "proc_warranty_claims_org" ON proc_warranty_claims FOR ALL USING (org_id = auth_org_id());
+CREATE POLICY "rate_master_audit_logs_org" ON rate_master_audit_logs FOR ALL USING (org_id = auth_org_id());
+
+-- ============================================================
+-- GSTR-1 and GSTR-3B Exports
+-- ============================================================
+
+CREATE OR REPLACE VIEW v_gstr1_export AS
+-- Goods Portion (70% value @ 12% GST)
+SELECT
+  q.org_id,
+  q.quote_number AS invoice_number,
+  q.updated_at::DATE AS invoice_date,
+  q.customer_name AS recipient_name,
+  (q.mrp_excl_gst * 0.70) AS taxable_value,
+  12.0 AS gst_rate_pct,
+  (q.mrp_excl_gst * 0.70 * 0.12) AS gst_amount,
+  (q.mrp_excl_gst * 0.70 * 1.12) AS total_invoice_value,
+  q.state_name AS pos_state,
+  'Goods' AS item_type
+FROM quotes q
+WHERE q.status = 'won'
+UNION ALL
+-- Services Portion (30% value @ 18% GST)
+SELECT
+  q.org_id,
+  q.quote_number AS invoice_number,
+  q.updated_at::DATE AS invoice_date,
+  q.customer_name AS recipient_name,
+  (q.mrp_excl_gst * 0.30) AS taxable_value,
+  18.0 AS gst_rate_pct,
+  (q.mrp_excl_gst * 0.30 * 0.18) AS gst_amount,
+  (q.mrp_excl_gst * 0.30 * 1.18) AS total_invoice_value,
+  q.state_name AS pos_state,
+  'Services' AS item_type
+FROM quotes q
+WHERE q.status = 'won';
+
+CREATE OR REPLACE VIEW v_gstr3b_export AS
+SELECT
+  q.org_id,
+  DATE_TRUNC('month', q.updated_at) AS month,
+  SUM(q.mrp_excl_gst) AS total_taxable_value,
+  SUM(q.output_gst_amount) AS total_tax_liability,
+  SUM(q.total_input_gst) AS total_itc
+FROM quotes q
+WHERE q.status = 'won'
+GROUP BY q.org_id, DATE_TRUNC('month', q.updated_at);
+
+-- ============================================================
+-- AUDIT ITEMS UPDATES
+-- ============================================================
+
+-- 1 & 2: Milestone payment aging and Retention Money
+ALTER TABLE subcontractor_payments 
+  ADD COLUMN IF NOT EXISTS aging_days INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS retention_amount NUMERIC(14,4) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS retention_release_date DATE;
+
+-- 3: Fix quote_history trigger to write to quote_status_history
+CREATE OR REPLACE FUNCTION fn_log_quote_history()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.status IS DISTINCT FROM OLD.status THEN
+    INSERT INTO quote_status_history (org_id, quote_id, old_status, new_status, changed_by, notes)
+    VALUES (NEW.org_id, NEW.id, OLD.status, NEW.status, current_setting('request.jwt.claim.sub', true)::uuid, 'Status updated');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_log_quote_history ON quotes;
+CREATE TRIGGER trg_log_quote_history
+  AFTER UPDATE OF status ON quotes
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_log_quote_history();
+
+-- 4: Commercial Client site grouping
+ALTER TABLE quotes 
+  ADD COLUMN IF NOT EXISTS parent_client_id UUID REFERENCES quotes(id) ON DELETE SET NULL;
+
+-- 5: DISCOM stages
+DO $$ BEGIN
+    CREATE TYPE discom_stage_enum AS ENUM (
+        'not_started',
+        'application_submitted',
+        'document_verification',
+        'feasibility_approved',
+        'work_execution',
+        'ceig_approval',
+        'meter_installation',
+        'commissioned'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+ALTER TABLE quotes 
+  ADD COLUMN IF NOT EXISTS discom_stage discom_stage_enum DEFAULT 'not_started';
+
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'epc_projects') THEN
+    EXECUTE 'ALTER TABLE epc_projects ADD COLUMN IF NOT EXISTS discom_stage discom_stage_enum DEFAULT ''not_started''';
+  END IF;
+END $$;
+
+-- 6: Civil curing time gap (7-days)
+CREATE TABLE IF NOT EXISTS epc_project_milestones (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL,
+  milestone milestone_type NOT NULL,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE OR REPLACE FUNCTION fn_check_civil_curing_time()
+RETURNS trigger AS $$
+DECLARE
+  foundation_time TIMESTAMPTZ;
+BEGIN
+  IF NEW.milestone = 'panel_installation_done' AND NEW.completed_at IS NOT NULL THEN
+    -- Check if there is a foundation done milestone
+    SELECT completed_at INTO foundation_time
+    FROM epc_project_milestones
+    WHERE project_id = NEW.project_id AND milestone = 'civil_foundation_done';
+
+    IF foundation_time IS NOT NULL AND NEW.completed_at < foundation_time + INTERVAL '7 days' THEN
+      RAISE EXCEPTION 'Panel installation must happen at least 7 days after civil foundation for curing';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_check_curing ON epc_project_milestones;
+CREATE TRIGGER trg_check_curing
+  BEFORE INSERT OR UPDATE ON epc_project_milestones
+  FOR EACH ROW EXECUTE FUNCTION fn_check_civil_curing_time();
+
+-- 7: Vendor delivery lead times
+ALTER TABLE purchase_requests 
+  ADD COLUMN IF NOT EXISTS lead_time_days INTEGER;
+
+-- 8: Change Order system
+CREATE TABLE IF NOT EXISTS change_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organisations(id),
+  project_id UUID NOT NULL,
+  description TEXT NOT NULL,
+  amount NUMERIC(14,4) NOT NULL DEFAULT 0,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

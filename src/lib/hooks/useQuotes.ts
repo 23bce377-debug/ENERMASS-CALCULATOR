@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../supabase/client'
 import type { Quote } from '../types/quote'
 import { useCalculatorStore } from '../store/calculatorStore'
+import { SurveyORM } from '../../backend/orm/survey'
+import { reviseQuote } from '../quotes/reviseQuote'
 
 // Map a DB quote row to the frontend Quote type
 function mapDbQuoteToQuote(q: any): Quote {
@@ -244,11 +246,47 @@ export function useUpdateQuoteStatusMutation() {
     mutationFn: async ({ quoteId, newStatus }: { quoteId: string; newStatus: Quote['status'] }) => {
       const { data: existingQuote } = await supabase
         .from('quotes')
-        .select('id, version, status, org_id')
+        .select('id, version, status, org_id, survey_id, lead_id, final_customer_price')
         .eq('quote_number', quoteId)
         .single()
       
       if (!existingQuote) throw new Error('Quote not found')
+      
+      // ── Survey Gate: Draft → Sent requires completed/waived survey ──
+      if (newStatus === 'Sent' && existingQuote.status === 'draft') {
+        const gate = await SurveyORM.checkGate(quoteId)
+        if (gate.blocked) {
+          // Fetch lead_id to pass to the modal
+          const { data: qWithLead } = await supabase
+            .from('quotes')
+            .select('lead_id')
+            .eq('quote_number', quoteId)
+            .maybeSingle()
+          const err = new Error('Site survey required before sending this quote to the customer.')
+          ;(err as any).code = 'SURVEY_GATE_BLOCKED'
+          ;(err as any).leadId = qWithLead?.lead_id ?? null
+          ;(err as any).orgId = existingQuote.org_id
+          throw err
+        }
+      }
+
+      // ── Survey Gate: Sent → Won requires survey_id on quote OR waived survey ──
+      if (newStatus === 'Won') {
+        let isWaived = false;
+        if (existingQuote.lead_id) {
+          const { data: leadSurvey } = await supabase
+            .from('crm_site_surveys')
+            .select('status')
+            .eq('lead_id', existingQuote.lead_id)
+            .eq('status', 'waived')
+            .maybeSingle();
+          if (leadSurvey) isWaived = true;
+        }
+
+        if (!isWaived && !existingQuote.survey_id) {
+          throw new Error('BOM not verified against site survey. Revision required.');
+        }
+      }
       
       const { error } = await supabase
         .from('quotes')
@@ -260,6 +298,48 @@ export function useUpdateQuoteStatusMutation() {
         .eq('version', existingQuote.version)
       
       if (error) throw error
+
+      if (newStatus === 'Won') {
+        const total = existingQuote.final_customer_price || 0;
+        const milestones = [
+          {
+            quote_id: existingQuote.id,
+            milestone_name: 'Order Confirmation',
+            trigger_event: 'order_confirmed',
+            percent: 50,
+            amount: Math.round(total * 0.50)
+          },
+          {
+            quote_id: existingQuote.id,
+            milestone_name: 'Material Delivery to Site',
+            trigger_event: 'site_delivery',
+            percent: 30,
+            amount: Math.round(total * 0.30)
+          },
+          {
+            quote_id: existingQuote.id,
+            milestone_name: 'Installation Complete',
+            trigger_event: 'installation',
+            percent: 15,
+            amount: Math.round(total * 0.15)
+          },
+          {
+            quote_id: existingQuote.id,
+            milestone_name: 'DISCOM Commissioning',
+            trigger_event: 'commissioning',
+            percent: 5,
+            amount: Math.round(total * 0.05)
+          }
+        ];
+        
+        const { error: msError } = await supabase
+          .from('payment_schedules')
+          .insert(milestones);
+          
+        if (msError) {
+          console.error('Error generating payment schedules:', msError);
+        }
+      }
 
       // Write status history log
       const { error: historyErr } = await (supabase as any)
@@ -331,3 +411,16 @@ export function useUpdateQuoteStatusMutation() {
     },
   })
 }
+
+export function useReviseQuoteMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ originalQuoteId, revisionReason, surveyId }: { originalQuoteId: string, revisionReason: string, surveyId?: string }) => {
+      return await reviseQuote(originalQuoteId, revisionReason, surveyId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotes'] })
+    }
+  })
+}
+

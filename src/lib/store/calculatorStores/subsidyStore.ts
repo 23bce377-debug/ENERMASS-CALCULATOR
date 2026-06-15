@@ -13,8 +13,16 @@ export const createSubsidySlice: StateCreator<
   rpcSubsidyAmount: null,
 
   fetchRpcSubsidy: async () => {
-    const state = get();
-    if (!state.dbLoaded || !state.selectedSystemId || state.projectType === 'commercial') {
+    let state = get();
+
+    // Auto-assign first system if none selected but master data is loaded
+    // Use soft-set to preserve current equipment selections
+    if (!state.selectedSystemId && state.dbLoaded && state.dbSystems.length > 0) {
+      set({ selectedSystemId: state.dbSystems[0].id });
+      state = get(); // Re-read after soft-set
+    }
+
+    if (!state.dbLoaded || state.projectType === 'commercial') {
       set({ rpcSubsidyAmount: 0 });
       const { result, error } = runCalculation(get());
       set({ calcResult: result, calcError: error });
@@ -26,7 +34,9 @@ export const createSubsidySlice: StateCreator<
 
     // Calculate eligible capacity
     const systems = state.dbSystems;
-    const system = systems.find(s => s.id === state.selectedSystemId);
+    const system = (state.selectedSystemId
+      ? systems.find(s => s.id === state.selectedSystemId)
+      : systems[0]) ?? systems[0];
     let panelCapacityKW = system?.capacityKW ?? 0;
     
     // Calculate custom panel capacity if panelMix is used

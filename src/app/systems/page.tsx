@@ -1,31 +1,73 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSettings } from '@/lib/hooks/useSettings';
 import { SYSTEMS, type SolarSystem } from '@/lib/data/bom';
+import { SystemORM } from '@/backend/orm/system';
 import { calculateSystem, formatINR } from '@/lib/engine/calculator';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import {
   Cpu, Zap, ArrowRight, GitCompare, X, Search,
-  ChevronDown, Sun, Battery,
+  Plus, Upload, CheckCircle2, AlertCircle, Loader2,
+  Trash2, Edit3, Sun
 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
+import { PresetEditorDialog } from '@/components/presets/PresetEditorDialog';
 
-// ─── Category Badge ─────────────────────────────────────────────────────────────
+// ─── Category Config ──────────────────────────────────────────────────────────
 
-const CATEGORY_LABELS: Record<string, string> = {
-  'on-grid': 'On-Grid',
-  '3-phase': '3-Phase',
-  'micro-inverter': 'Micro',
-  hybrid: 'Hybrid',
-  upgrade: 'Upgrade',
-  commercial: 'Commercial',
+const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  custom:           { label: 'Custom',        color: '#C6973F', bg: 'rgba(198,151,63,0.12)' },
+  'on-grid':        { label: 'On-Grid',       color: '#22c55e', bg: 'rgba(34,197,94,0.12)'  },
+  '3-phase':        { label: '3-Phase',       color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
+  'micro-inverter': { label: 'Micro-Inverter',color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)' },
+  hybrid:           { label: 'Hybrid',        color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
+  upgrade:          { label: 'Upgrade',       color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
+  commercial:       { label: 'Commercial',    color: '#14b8a6', bg: 'rgba(20,184,166,0.12)' },
 };
 
 function CategoryBadge({ category }: { category: string }) {
+  const cfg = CATEGORY_CONFIG[category] ?? { label: category, color: '#888', bg: 'rgba(128,128,128,0.12)' };
   return (
-    <span className={`badge-${category} inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider`}>
-      {CATEGORY_LABELS[category] ?? category}
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0"
+      style={{ color: cfg.color, background: cfg.bg }}
+    >
+      {cfg.label}
     </span>
+  );
+}
+
+// ─── Inline Rename Input ──────────────────────────────────────────────────────
+
+function InlineRename({ value, onSave, onCancel }: {
+  value: string; onSave: (v: string) => void; onCancel: () => void
+}) {
+  const [v, setV] = useState(value);
+  const ref = useRef<HTMLInputElement>(null);
+
+  return (
+    <form
+      onSubmit={(e) => { e.preventDefault(); if (v.trim()) onSave(v.trim()); }}
+      className="flex items-center gap-1.5 flex-1 min-w-0"
+    >
+      <input
+        ref={ref}
+        autoFocus
+        value={v}
+        onChange={(e) => setV(e.target.value)}
+        className="flex-1 min-w-0 px-2 py-1 rounded bg-background border border-accent/50 text-sm font-semibold
+          text-text-primary outline-none focus:ring-1 focus:ring-accent/30"
+      />
+      <button type="submit" className="shrink-0 text-success hover:text-success/80 cursor-pointer">
+        <CheckCircle2 size={15} />
+      </button>
+      <button type="button" onClick={onCancel} className="shrink-0 text-text-muted hover:text-error cursor-pointer">
+        <X size={15} />
+      </button>
+    </form>
   );
 }
 
@@ -35,17 +77,22 @@ interface SystemCardProps {
   system: SolarSystem;
   selected: boolean;
   compareMode: boolean;
+  isCustom: boolean;
   onToggleCompare: () => void;
   onQuickCalc: () => void;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-function SystemCard({ system, selected, compareMode, onToggleCompare, onQuickCalc }: SystemCardProps) {
+function SystemCard({ system, selected, compareMode, isCustom, onToggleCompare, onQuickCalc, onEdit, onDelete }: SystemCardProps) {
   return (
     <div
-      className={`group relative bg-surface rounded-xl border transition-all duration-300 overflow-hidden
+      className={`group relative flex flex-col bg-surface rounded-xl border transition-all duration-300 overflow-hidden
         ${selected
           ? 'border-accent shadow-lg shadow-accent/10 ring-1 ring-accent/20'
-          : 'border-border hover:border-border-light hover:shadow-lg hover:shadow-black/20'
+          : isCustom
+            ? 'border-accent/30 hover:border-accent/60 hover:shadow-lg hover:shadow-black/20'
+            : 'border-border hover:border-border-light hover:shadow-lg hover:shadow-black/20'
         }`}
     >
       {/* Compare checkbox */}
@@ -62,12 +109,16 @@ function SystemCard({ system, selected, compareMode, onToggleCompare, onQuickCal
         </button>
       )}
 
-      <div className="p-5">
-        {/* Header */}
+      {/* Gold left accent for custom */}
+      {isCustom && (
+        <div className="absolute left-0 top-4 bottom-4 w-0.5 rounded-r-full bg-accent" />
+      )}
+
+      <div className="p-5 flex-1">
         <div className="flex items-start justify-between mb-4">
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 pr-8">
             <CategoryBadge category={system.category} />
-            <h3 className="text-sm font-bold text-text-primary mt-2 truncate">{system.name}</h3>
+            <h3 className="text-sm font-bold text-text-primary mt-2 truncate" title={system.name}>{system.name}</h3>
           </div>
         </div>
 
@@ -90,18 +141,37 @@ function SystemCard({ system, selected, compareMode, onToggleCompare, onQuickCal
             <p className="text-sm font-bold text-text-primary mt-0.5">{system.items.length}</p>
           </div>
         </div>
+      </div>
 
-        {/* Quick Calculate */}
+      {/* Actions */}
+      <div className="px-5 pb-4 flex items-center justify-between gap-2 mt-auto">
         <button
           onClick={onQuickCalc}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
-            bg-accent/10 text-accent text-sm font-semibold
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg
+            bg-accent/10 text-accent text-xs font-semibold
             hover:bg-accent/20 transition-all group/btn"
         >
           <Zap size={14} />
           Quick Calculate
           <ArrowRight size={14} className="transition-transform group-hover/btn:translate-x-0.5" />
         </button>
+
+        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          {!isCustom && onEdit && (
+            <button
+              onClick={() => onEdit(system.id)}
+              className="p-2 rounded-lg bg-surface hover:bg-surface-hover border border-border text-text-secondary hover:text-text-primary transition-all cursor-pointer"
+            >
+              <Edit3 size={14} />
+            </button>
+          )}
+          <button
+            onClick={() => onDelete?.(system.id)}
+            className="p-2 rounded-lg bg-surface hover:bg-error/10 border border-border hover:border-error/30 text-text-secondary hover:text-error transition-all cursor-pointer"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -115,10 +185,20 @@ function ComparisonPanel({ systemIds, onClose }: { systemIds: string[]; onClose:
   const dbStateData = useCalculatorStore((s) => s.dbStateData);
   const dbSlabs = useCalculatorStore((s) => s.dbSlabs);
   const dbStructureAccessoryRates = useCalculatorStore((s) => s.dbStructureAccessoryRates);
+  const dbPanels = useCalculatorStore((s) => s.dbPanels);
+  const dbInverters = useCalculatorStore((s) => s.dbInverters);
+  const dbBatteries = useCalculatorStore((s) => s.dbBatteries);
+  const dbMeters = useCalculatorStore((s) => s.dbMeters);
+  const dbLAs = useCalculatorStore((s) => s.dbLAs);
+  const dbStructures = useCalculatorStore((s) => s.dbStructures);
+  const dbWeightLookups = useCalculatorStore((s) => s.dbWeightLookups);
+  const dbOrientationMultipliers = useCalculatorStore((s) => s.dbOrientationMultipliers);
+  const { settings } = useSettings();
 
   const results = useMemo(() => {
     return systemIds.map((id) => {
-      const systems = dbLoaded && dbSystems.length > 0 ? dbSystems : SYSTEMS;
+      const builtIn = dbLoaded && dbSystems.length > 0 ? dbSystems : SYSTEMS;
+      const systems = [...(settings.customSystems ?? []), ...builtIn];
       const system = systems.find((s) => s.id === id)!;
       try {
         const calc = calculateSystem({
@@ -129,13 +209,21 @@ function ComparisonPanel({ systemIds, onClose }: { systemIds: string[]; onClose:
           stateData: dbLoaded ? dbStateData : undefined,
           slabs: dbLoaded ? dbSlabs : undefined,
           dbStructureAccessoryRates: dbLoaded ? dbStructureAccessoryRates : undefined,
+          dbPanels: dbLoaded ? dbPanels : undefined,
+          dbInverters: dbLoaded ? dbInverters : undefined,
+          dbBatteries: dbLoaded ? dbBatteries : undefined,
+          dbMeters: dbLoaded ? dbMeters : undefined,
+          dbLAs: dbLoaded ? dbLAs : undefined,
+          dbStructures: dbLoaded ? dbStructures : undefined,
+          dbWeightLookups: dbLoaded ? dbWeightLookups : undefined,
+          dbOrientationMultipliers: dbLoaded ? dbOrientationMultipliers : undefined,
         });
         return { system, calc, error: null };
       } catch (err) {
         return { system, calc: null, error: (err as Error).message };
       }
     });
-  }, [systemIds, dbLoaded, dbSystems, dbStateData, dbSlabs]);
+  }, [systemIds, dbLoaded, dbSystems, dbStateData, dbSlabs, settings.customSystems, dbStructureAccessoryRates, dbPanels, dbInverters, dbBatteries, dbMeters, dbLAs, dbStructures, dbWeightLookups, dbOrientationMultipliers]);
 
   return (
     <div className="bg-surface border border-border rounded-2xl p-6 animate-fade-in">
@@ -196,23 +284,40 @@ export default function SystemsPage() {
   const selectSystem = useCalculatorStore((s) => s.selectSystem);
   const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
+  const { settings, setSettings, commitToDb, isSyncing } = useSettings();
+  const confirm = useConfirm();
+  const { toast } = useToast();
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [compareMode, setCompareMode] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [composerSystemId, setComposerSystemId] = useState<string | null>(null);
+  
+  // Custom Preset State
+  const [formOpen, setFormOpen] = useState(false);
+  const [customSystemError, setCustomSystemError] = useState<string | null>(null);
+  const [customSystemDraft, setCustomSystemDraft] = useState({
+    name: '', capacityKW: '', panelWattage: '', panelQty: '', targetMarginPct: '20',
+  });
+  const [commitStatus, setCommitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [commitMsg, setCommitMsg] = useState('');
 
-  const systems = useMemo(() => {
-    return dbLoaded && dbSystems.length > 0 ? dbSystems : SYSTEMS;
-  }, [dbLoaded, dbSystems]);
+  const customSystems = settings.customSystems ?? [];
+
+  const allSystems = useMemo(() => {
+    const builtIn = dbLoaded && dbSystems.length > 0 ? dbSystems : SYSTEMS;
+    return [...customSystems, ...builtIn];
+  }, [customSystems, dbLoaded, dbSystems]);
 
   const categories = useMemo(() => {
-    const cats = new Set(systems.map((s) => s.category));
+    const cats = new Set(allSystems.map((s) => s.category));
     return ['all', ...Array.from(cats)];
-  }, [systems]);
+  }, [allSystems]);
 
   const filtered = useMemo(() => {
-    let result = systems;
+    let result = allSystems;
     if (categoryFilter !== 'all') {
       result = result.filter((s) => s.category === categoryFilter);
     }
@@ -224,7 +329,7 @@ export default function SystemsPage() {
       );
     }
     return result;
-  }, [systems, search, categoryFilter]);
+  }, [allSystems, search, categoryFilter]);
 
   const handleQuickCalc = (systemId: string) => {
     selectSystem(systemId);
@@ -239,29 +344,207 @@ export default function SystemsPage() {
     });
   };
 
+  // Preset Management Methods
+  const handleAddCustomSystem = () => {
+    const name = customSystemDraft.name.trim();
+    const capacityKW = parseFloat(customSystemDraft.capacityKW);
+    const panelQty = parseInt(customSystemDraft.panelQty, 10);
+    const panelWattage = parseInt(customSystemDraft.panelWattage, 10);
+    const targetMarginPct = parseFloat(customSystemDraft.targetMarginPct);
+    
+    const template = dbSystems[0] || SYSTEMS[0] || {
+      id: 'default_template', name: 'Default Template', category: 'on-grid',
+      capacityKW: 5, panelWattage: 550, panelQty: 10, targetMarginPct: 0.2,
+      items: [
+        { description: 'Panel', qty: 10, ratePerUnit: 0, gstPct: 0.12 as any },
+        { description: 'Inverter', qty: 1, ratePerUnit: 0, gstPct: 0.18 as any },
+        { description: 'Structure', qty: 1, ratePerUnit: 0, gstPct: 0.18 as any },
+        { description: 'BOS / Cable / ACDB / DCDB', qty: 1, ratePerUnit: 0, gstPct: 0.18 as any },
+      ]
+    };
+
+    if (!name) return setCustomSystemError('System name is required.');
+    if (!Number.isFinite(capacityKW) || capacityKW <= 0) return setCustomSystemError('Capacity must be > 0.');
+    if (!Number.isFinite(panelQty) || panelQty <= 0) return setCustomSystemError('Panel quantity must be > 0.');
+    if (!Number.isFinite(panelWattage) || panelWattage <= 0) return setCustomSystemError('Panel wattage must be > 0.');
+    if (!Number.isFinite(targetMarginPct) || targetMarginPct < 0) return setCustomSystemError('Target margin must be ≥ 0.');
+
+    const items = template.items.map((item) =>
+      item.description.toUpperCase() === 'PANEL' ? { ...item, qty: panelQty } : { ...item }
+    );
+
+    const customSystem: SolarSystem = {
+      id: `custom_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      name, category: 'custom', capacityKW, panelWattage, panelQty, targetMarginPct: targetMarginPct / 100, items,
+    };
+
+    setSettings({ customSystems: [...customSystems, customSystem] });
+    setCustomSystemError(null);
+    setCustomSystemDraft({ name: '', capacityKW: '', panelWattage: '', panelQty: '', targetMarginPct: '20' });
+    setFormOpen(false);
+    toast(`Preset "${name}" added locally. Press Commit to sync.`, 'success');
+  };
+
+  const fetchMasterData = useCalculatorStore((s) => s.fetchMasterData);
+
+  const removeCustomSystem = async (id: string) => {
+    const isCustom = id.startsWith('custom_');
+    const confirmed = await confirm({
+      title: isCustom ? 'Delete Local Preset?' : 'Delete Master DB Preset?',
+      message: isCustom ? 'This removes it from local storage. Press Commit to sync deletion to DB.' : 'WARNING: This will permanently delete this master preset from the database for all users.',
+      confirmLabel: 'Delete', cancelLabel: 'Keep', type: 'danger',
+    });
+    if (!confirmed) return;
+
+    if (isCustom) {
+      setSettings({ customSystems: customSystems.filter((s) => s.id !== id) });
+      toast('Preset deleted locally. Commit to sync.', 'success');
+    } else {
+      try {
+        await SystemORM.delete(id);
+        toast('Master preset deleted from database.', 'success');
+        fetchMasterData(); // Refresh store
+      } catch (err) {
+        toast('Failed to delete master preset', 'error');
+        console.error(err);
+      }
+    }
+  };
+
+  const renamePreset = async (id: string, newName: string) => {
+    const isCustom = id.startsWith('custom_');
+    if (isCustom) {
+      setSettings({ customSystems: customSystems.map((s) => s.id === id ? { ...s, name: newName } : s) });
+    } else {
+      try {
+        await SystemORM.update(id, { name: newName });
+        toast('Master preset renamed in database.', 'success');
+        fetchMasterData(); // Refresh store
+      } catch (err) {
+        toast('Failed to rename master preset', 'error');
+        console.error(err);
+      }
+    }
+  };
+
+  const handleCommit = async () => {
+    setCommitStatus('idle');
+    const err = await commitToDb();
+    if (err) {
+      setCommitStatus('error');
+      setCommitMsg(err);
+      toast(`Commit failed: ${err}`, 'error');
+    } else {
+      setCommitStatus('success');
+      setCommitMsg(`${customSystems.length} preset(s) synced to DB`);
+      toast(`Committed — custom presets synced to DB ✓`, 'success');
+      setTimeout(() => setCommitStatus('idle'), 4000);
+    }
+  };
+
   return (
-    <div className="p-4 md:p-6 space-y-6 animate-fade-in">
+    <div className="p-4 md:p-6 space-y-6 animate-fade-in max-w-7xl mx-auto">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text-primary flex items-center gap-3">
             <Cpu size={24} className="text-accent" />
-            System Browser
+            System Presets
           </h1>
-          <p className="text-sm text-text-muted mt-1">{systems.length} solar systems available</p>
+          <p className="text-sm text-text-muted mt-1">{customSystems.length} custom · {allSystems.length - customSystems.length} built-in</p>
         </div>
-        <button
-          onClick={() => { setCompareMode(!compareMode); setCompareIds([]); }}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
-            ${compareMode
-              ? 'bg-accent text-background'
-              : 'bg-surface border border-border text-text-secondary hover:text-text-primary hover:border-border-light'
-            }`}
-        >
-          <GitCompare size={16} />
-          {compareMode ? `Comparing (${compareIds.length}/3)` : 'Compare Mode'}
-        </button>
+        
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setFormOpen(!formOpen)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-surface text-sm font-semibold text-text-secondary hover:text-text-primary hover:border-border-light transition-all cursor-pointer"
+          >
+            <Plus size={14} /> New Preset
+          </button>
+          
+          <button
+            onClick={handleCommit}
+            disabled={isSyncing || customSystems.length === 0}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent text-background text-sm font-semibold hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSyncing ? <><Loader2 size={14} className="animate-spin" /> Committing...</>
+              : commitStatus === 'success' ? <><CheckCircle2 size={14} /> Committed!</>
+              : commitStatus === 'error' ? <><AlertCircle size={14} /> Failed</>
+              : <><Upload size={14} /> Commit to DB</>}
+          </button>
+
+          <button
+            onClick={() => { setCompareMode(!compareMode); setCompareIds([]); }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all
+              ${compareMode ? 'bg-accent text-background' : 'bg-surface border border-border text-text-secondary hover:text-text-primary hover:border-border-light'}`}
+          >
+            <GitCompare size={16} />
+            {compareMode ? `Comparing (${compareIds.length}/3)` : 'Compare Mode'}
+          </button>
+        </div>
       </div>
+
+      {commitStatus === 'error' && commitMsg && (
+        <div className="px-4 py-3 rounded-lg bg-error/10 border border-error/30 text-xs text-error flex items-center gap-2">
+          <AlertCircle size={13} /> {commitMsg}
+        </div>
+      )}
+
+      {/* New Preset Form */}
+      {formOpen && (
+        <div className="rounded-2xl border border-accent/30 bg-surface p-6 animate-fade-in shadow-lg">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+              <Plus size={16} className="text-accent" />
+              Create Custom System Preset
+            </h2>
+            <button onClick={() => { setFormOpen(false); setCustomSystemError(null); }}
+              className="p-1.5 rounded bg-surface hover:bg-surface-hover text-text-muted hover:text-text-primary cursor-pointer transition-colors">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="col-span-2 space-y-1.5">
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Preset Name *</label>
+              <input type="text" value={customSystemDraft.name} onChange={(e) => setCustomSystemDraft({ ...customSystemDraft, name: e.target.value })}
+                className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50" placeholder="e.g. 7.5 KWp Rooftop" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Capacity (kW) *</label>
+              <input type="number" min={0} step={0.01} value={customSystemDraft.capacityKW} onChange={(e) => setCustomSystemDraft({ ...customSystemDraft, capacityKW: e.target.value })}
+                className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50 font-mono" placeholder="7.50" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Panel Wattage *</label>
+              <input type="number" min={0} step={1} value={customSystemDraft.panelWattage} onChange={(e) => setCustomSystemDraft({ ...customSystemDraft, panelWattage: e.target.value })}
+                className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50 font-mono" placeholder="620" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Panel Qty *</label>
+              <input type="number" min={1} step={1} value={customSystemDraft.panelQty} onChange={(e) => setCustomSystemDraft({ ...customSystemDraft, panelQty: e.target.value })}
+                className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50 font-mono" placeholder="12" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Target Margin %</label>
+              <input type="number" min={0} step={0.5} value={customSystemDraft.targetMarginPct} onChange={(e) => setCustomSystemDraft({ ...customSystemDraft, targetMarginPct: e.target.value })}
+                className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50 font-mono" placeholder="20" />
+            </div>
+          </div>
+          {customSystemError && (
+            <p className="text-xs font-semibold text-error mt-4 flex items-center gap-1.5">
+              <AlertCircle size={14} /> {customSystemError}
+            </p>
+          )}
+          <div className="mt-5 flex items-center gap-3 pt-5 border-t border-border/40">
+            <button onClick={handleAddCustomSystem} className="px-5 py-2.5 rounded-xl bg-accent text-background text-sm font-bold hover:bg-accent-hover transition-colors cursor-pointer">
+              Save Custom Preset
+            </button>
+            <p className="text-xs text-text-muted">
+              Stays local until you press <strong className="text-accent">Commit to DB</strong>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
@@ -280,13 +563,13 @@ export default function SystemsPage() {
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all
+              className={`px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all
                 ${categoryFilter === cat
                   ? 'bg-accent text-background'
                   : 'bg-surface border border-border text-text-secondary hover:text-text-primary hover:border-border-light'
                 }`}
             >
-              {cat === 'all' ? 'All' : CATEGORY_LABELS[cat] ?? cat}
+              {cat === 'all' ? 'All' : CATEGORY_CONFIG[cat]?.label ?? cat}
             </button>
           ))}
         </div>
@@ -308,8 +591,15 @@ export default function SystemsPage() {
             system={system}
             selected={compareIds.includes(system.id)}
             compareMode={compareMode}
+            isCustom={system.category === 'custom'}
             onToggleCompare={() => handleToggleCompare(system.id)}
             onQuickCalc={() => handleQuickCalc(system.id)}
+            onEdit={(id) => {
+              console.log('onEdit triggered for ID:', id);
+              setComposerSystemId(id);
+              setComposerOpen(true);
+            }}
+            onDelete={removeCustomSystem}
           />
         ))}
       </div>
@@ -319,6 +609,23 @@ export default function SystemsPage() {
           <Sun size={48} className="text-text-muted/30 mb-4" />
           <p className="text-text-muted text-lg">No systems match your filter</p>
         </div>
+      )}
+
+      {composerOpen && (
+        <PresetEditorDialog
+          open={composerOpen}
+          presetId={composerSystemId || ''}
+          onClose={() => {
+            console.log('Composer Dialog onClose called');
+            setComposerOpen(false);
+            setComposerSystemId(null);
+          }}
+          onSaved={(id, name) => {
+            console.log('Composer Dialog onSaved called for preset:', name);
+            fetchMasterData();
+            toast(`Preset "${name}" saved to database`, 'success');
+          }}
+        />
       )}
     </div>
   );

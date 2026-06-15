@@ -36,6 +36,8 @@ export interface SelectProps {
   id?: string;
   /** Render a custom node inside the trigger alongside the label */
   renderTrigger?: (selected: SelectOption | undefined) => ReactNode;
+  /** Extra classes on the trigger button specifically */
+  triggerClassName?: string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -50,6 +52,7 @@ export function Select({
   className = '',
   id,
   renderTrigger,
+  triggerClassName = '',
 }: SelectProps) {
   const uid = useId();
   const triggerId = id ?? uid;
@@ -193,6 +196,7 @@ export function Select({
           'rounded-lg border transition-all duration-150 outline-none',
           'font-sans',
           triggerSizeClass,
+          triggerClassName,
           disabled
             ? 'opacity-40 cursor-not-allowed bg-surface-2 border-border text-text-muted'
             : [

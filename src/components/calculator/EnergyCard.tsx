@@ -70,7 +70,23 @@ export function EnergyCard() {
   const dbStateData = useCalculatorStore((s) => s.dbStateData);
   const stateData = dbStateData[selectedState];
 
-  if (!calcResult || !stateData) return null;
+  if (!calcResult) return null;
+
+  if (!stateData) {
+    return (
+      <div className="rounded-xl border border-border bg-surface overflow-hidden shadow-lg shadow-black/20 flex flex-col items-center justify-center p-8 text-center h-[300px]" id="energy-card">
+        <div className="w-12 h-12 rounded-full bg-surface-hover flex items-center justify-center mb-4">
+          <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-bold text-text-primary mb-2">Energy & Returns</h3>
+        <p className="text-text-muted text-sm max-w-[250px]">Select an installation state to view generation metrics and ROI projections.</p>
+      </div>
+    );
+  }
+
   const lifetimeSavings = calcResult.lifetimeSavingsINR;
 
   // Monthly breakdown for chart
@@ -193,15 +209,6 @@ export function EnergyCard() {
           <MetricBox label="Annual Gen." value={`${Math.round(calcResult.annualGenerationKWh).toLocaleString()} kWh`} />
           <MetricBox label="Monthly Savings" value={formatINR(calcResult.monthlySavingsINR)} success />
           <MetricBox label="Annual Savings" value={formatINR(calcResult.annualSavingsINR)} success />
-          <MetricBox 
-            label="Simple Payback" 
-            value={calcResult.paybackYears === Infinity ? 'N/A' : `${calcResult.paybackYears.toFixed(1)} years`} 
-          />
-          <MetricBox 
-            label="Levelized Cost" 
-            value={`₹${calcResult.lcoe.toFixed(2)} / kWh`} 
-            accent 
-          />
           <MetricBox
             label="Backup Time"
             value={activeLoadW > 0 && totalBatteryCapacityKWh > 0 ? `${backupHours.toFixed(1)} hrs` : '—'}
@@ -230,34 +237,7 @@ export function EnergyCard() {
           </div>
         </div>
 
-        {/* Generation Chart — full month labels + kWh values visible */}
-        <div className="space-y-3 pt-2 border-t border-border/60">
-          <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Monthly Generation Estimate</h4>
-          <div className="flex items-end justify-between gap-1" style={{ height: '180px' }}>
-            {chartData.map((d) => {
-              const heightPct = maxGen > 0 ? (d.gen / maxGen) * 100 : 0;
-              return (
-                <div key={d.month} className="flex flex-col items-center flex-1 gap-1 group" style={{ height: '100%' }}>
-                  {/* kWh value above bar */}
-                  <div className="text-[9px] font-mono font-semibold text-text-muted group-hover:text-accent transition-colors shrink-0 tabular-nums">
-                    {d.gen}
-                  </div>
-                  {/* Bar container */}
-                  <div className="w-full flex-1 relative flex items-end justify-center rounded-md bg-surface-hover overflow-hidden">
-                    <div 
-                      className="w-full bg-accent/70 transition-all duration-500 group-hover:bg-accent rounded-t-md"
-                      style={{ height: `${heightPct}%` }}
-                    />
-                  </div>
-                  {/* Month label */}
-                  <span className="text-[10px] font-medium text-text-muted group-hover:text-text-primary transition-colors shrink-0">
-                    {d.month}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+
       </div>
     </div>
   );

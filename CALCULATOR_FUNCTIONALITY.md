@@ -85,7 +85,7 @@ Configures installation geography. This selection directly adjusts:
 - **Irradiance & Peak Sun Hours**: Affects energy generation projections.
 - **Performance Ratios**: Factors local ambient losses.
 - **Labour Costs**: Multiplies service-related rates.
-- **Output GST**: Adjusts tax between 8.9% and 13.8%.
+- **Output GST**: Adjusts tax between 13.8% and 13.8%.
 - **State Subsidy Rules**: Sets limits and brackets for central government incentives.
 
 #### 3. Residential vs. Commercial Toggle
@@ -273,7 +273,7 @@ interface StateData {
   sunHoursPerDay: number;      // Average peak sun hours
   performanceRatio: number;    // System efficiency multiplier
   labourMultiplier: number;    // Labor cost factor
-  gstOnOutput: number;         // Output GST tax rate (e.g., 0.089 or 0.138)
+  gstOnOutput: number;         // Output GST tax rate (e.g., 0.138 or 0.138)
   subsidyRules: SubsidyRule[]; // Government subsidy brackets
 }
 ```
@@ -319,16 +319,16 @@ The following table shows the baseline parameters utilized by the engine when a 
 
 | Indian State | Peak Sun Hours | Performance Ratio (PR) | Labor Cost Multiplier | Output GST Rate | Surya Ghar Subsidy |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Gujarat** | 5.5 hrs | 0.78 | 1.00 | 8.9% | Eligible |
-| **Rajasthan** | 6.0 hrs | 0.80 | 0.95 | 8.9% | Eligible |
-| **Madhya Pradesh** | 5.4 hrs | 0.78 | 0.92 | 8.9% | Eligible |
-| **Uttar Pradesh** | 5.0 hrs | 0.76 | 0.90 | 8.9% | Eligible |
-| **Haryana** | 5.0 hrs | 0.77 | 1.03 | 8.9% | Eligible |
-| **Punjab** | 4.8 hrs | 0.76 | 1.05 | 8.9% | Eligible |
+| **Gujarat** | 5.5 hrs | 0.78 | 1.00 | 13.8% | Eligible |
+| **Rajasthan** | 6.0 hrs | 0.80 | 0.95 | 13.8% | Eligible |
+| **Madhya Pradesh** | 5.4 hrs | 0.78 | 0.92 | 13.8% | Eligible |
+| **Uttar Pradesh** | 5.0 hrs | 0.76 | 0.90 | 13.8% | Eligible |
+| **Haryana** | 5.0 hrs | 0.77 | 1.03 | 13.8% | Eligible |
+| **Punjab** | 4.8 hrs | 0.76 | 1.05 | 13.8% | Eligible |
 | **Maharashtra** | 5.0 hrs | 0.76 | 1.10 | 13.8% | Eligible |
-| **Karnataka** | 5.1 hrs | 0.77 | 1.08 | 8.9% | Eligible |
-| **Andhra Pradesh** | 5.2 hrs | 0.77 | 1.00 | 8.9% | Eligible |
-| **Telangana** | 5.3 hrs | 0.78 | 1.02 | 8.9% | Eligible |
+| **Karnataka** | 5.1 hrs | 0.77 | 1.08 | 13.8% | Eligible |
+| **Andhra Pradesh** | 5.2 hrs | 0.77 | 1.00 | 13.8% | Eligible |
+| **Telangana** | 5.3 hrs | 0.78 | 1.02 | 13.8% | Eligible |
 | **Tamil Nadu** | 5.0 hrs | 0.77 | 1.05 | 13.8% | Eligible |
 | **Kerala** | 4.5 hrs | 0.75 | 1.15 | 13.8% | Not Eligible |
 

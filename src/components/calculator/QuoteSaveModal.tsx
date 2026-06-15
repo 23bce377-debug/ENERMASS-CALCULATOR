@@ -7,20 +7,24 @@ import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { STATE_DATA } from '@/lib/data/masters';
 import { X, CheckCircle2, RotateCcw } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
+import { supabase } from '@/lib/supabase/client';
 import type { CustomerInfo, AddressInfo, SiteInfo, SalesInfo, Quote } from '@/lib/types/quote';
 
 interface QuoteSaveModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaved: (quote: Quote) => void;
+  acknowledgedGuards?: string[];
+  leadId?: string | null;
 }
 
 const STEPS = ['Project', 'Address', 'Site', 'Sales'];
 
-export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps) {
+export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = [], leadId = null }: QuoteSaveModalProps) {
   const saveQuote = useCalculatorStore((s) => s.saveQuote);
   const loadQuote = useCalculatorStore((s) => s.loadQuote);
   const activeQuoteId = useCalculatorStore((s) => s.activeQuoteId);
+  const itcEligible = useCalculatorStore((s) => s.itcEligible);
   const dbStateData = useCalculatorStore((s) => s.dbStateData);
   const queryClient = useQueryClient();
   
@@ -30,8 +34,13 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
   const [showConflict, setShowConflict] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Project select states
+  const [projects, setProjects] = useState<any[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+
   // Form states
-  const [customer, setCustomer] = useState<CustomerInfo>({ name: '', phone: '', whatsapp: '', email: '' });
+  const [customer, setCustomer] = useState<CustomerInfo>({ name: '', phone: '', whatsapp: '', email: '', isGstRegistered: false });
   const [address, setAddress] = useState<AddressInfo>({ line1: '', line2: '', city: '', state: 'Gujarat', pin: '' });
   const [site, setSite] = useState<SiteInfo>({ meterNo: '', sanctionedLoad: '', monthlyBill: 0, roofType: 'RCC', roofArea: 0 });
   const [sales, setSales] = useState<SalesInfo>({ projectTitle: '', execName: '', notes: '', saleType: 'New' });
@@ -39,6 +48,132 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
   // Client-side mounting for portal
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  // Fetch projects when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const fetchProjects = async () => {
+      setLoadingProjects(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('org_id')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.org_id) {
+          const { data: projs, error } = await supabase
+            .from('epc_projects')
+            .select(`
+              id,
+              project_number,
+              quote_id,
+              quotes (
+                customer_name,
+                customer_phone,
+                customer_whatsapp,
+                customer_email,
+                address_line1,
+                address_line2,
+                city,
+                state_name,
+                pincode,
+                meter_number,
+                sanctioned_load_kw,
+                monthly_bill_inr,
+                roof_type,
+                roof_area_sqft,
+                exec_name,
+                sale_type,
+                project_title,
+                notes
+              )
+            `)
+            .eq('org_id', profile.org_id)
+            .order('created_at', { ascending: false });
+
+          if (!error && projs) {
+            setProjects(projs);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load projects for dropdown:', err);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+
+    fetchProjects();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !leadId) return;
+
+    const fetchLeadInfo = async () => {
+      try {
+        const { data: lead, error } = await supabase
+          .from('crm_leads')
+          .select('*')
+          .eq('id', leadId)
+          .single();
+
+        if (error) throw error;
+        if (lead) {
+          setCustomer({
+            name: `${lead.first_name} ${lead.last_name || ''}`.trim(),
+            phone: lead.phone,
+            whatsapp: lead.phone,
+            email: lead.email || '',
+            isGstRegistered: false
+          });
+
+          setSite((prev: any) => ({
+            ...prev,
+            monthlyBill: lead.monthly_bill || 0,
+            roofArea: lead.roof_area_estimate || 0
+          }));
+
+          setSales((prev: any) => ({
+            ...prev,
+            notes: `Converted from Lead ID: ${leadId}`
+          }));
+
+          const { data: survey } = await supabase
+            .from('crm_site_surveys')
+            .select('*')
+            .eq('lead_id', leadId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (survey) {
+            setAddress({
+              line1: survey.address_line1 || '',
+              line2: survey.address_line2 || '',
+              city: survey.city || '',
+              state: survey.state_name || 'Gujarat',
+              pin: survey.pincode || ''
+            });
+
+            setSite((prev: any) => ({
+              ...prev,
+              meterNo: survey.meter_number || '',
+              sanctionedLoad: survey.sanctioned_load_kw ? String(survey.sanctioned_load_kw) : '',
+              roofType: survey.roof_type || 'RCC'
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to prefill lead info:', err);
+      }
+    };
+
+    fetchLeadInfo();
+  }, [isOpen, leadId]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -62,7 +197,32 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
     setSaving(true);
     try {
       setFormError(null);
-      const quote = await saveQuote({ customer, address, site, sales }, forceOverwrite);
+      const salesWithItc = { ...sales, itcEligible };
+      const quote = await saveQuote({ customer, address, site, sales: salesWithItc, validationAcknowledged: acknowledgedGuards, leadId }, forceOverwrite);
+
+      // Link quote to project if selected
+      if (selectedProjectId) {
+        // Query the quote's DB UUID from the quotes table using its quote_number
+        const { data: qData, error: qErr } = await supabase
+          .from('quotes')
+          .select('id')
+          .eq('quote_number', quote.quoteId)
+          .single();
+        if (qErr) {
+          console.error('[QuoteSaveModal] Error retrieving quote UUID:', qErr);
+        } else if (qData?.id) {
+          const { error: projErr } = await supabase
+            .from('epc_projects')
+            .update({ quote_id: qData.id })
+            .eq('id', selectedProjectId);
+          if (projErr) {
+            console.error('[QuoteSaveModal] Error linking project to quote:', projErr);
+          } else {
+            console.log(`[QuoteSaveModal] Linked project ${selectedProjectId} to quote UUID ${qData.id}`);
+          }
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
       setSavedQuoteId(quote.quoteId);
       setShowConflict(false);
@@ -84,6 +244,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
     setFormError(null);
     setShowConflict(false);
     setStep(0);
+    setSelectedProjectId(null); // Clear selected project
     onClose();
   };
 
@@ -163,11 +324,99 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved }: QuoteSaveModalProps
 
               {step === 0 && (
                 <div className="space-y-4 animate-fade-in">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-text-secondary">Link to Existing ERP Project</label>
+                    <Select
+                      value={selectedProjectId || ''}
+                      onChange={(val) => {
+                        const projId = val === '' ? null : val;
+                        setSelectedProjectId(projId);
+                        if (projId) {
+                          const proj = projects.find((p) => p.id === projId);
+                          if (proj) {
+                            if (proj.quotes) {
+                              const q = proj.quotes;
+                              setSales({
+                                projectTitle: q.project_title || proj.project_number || '',
+                                execName: q.exec_name || '',
+                                notes: q.notes || '',
+                                saleType: q.sale_type ? (q.sale_type.charAt(0).toUpperCase() + q.sale_type.slice(1)) as any : 'New',
+                              });
+                              setCustomer({
+                                name: q.customer_name || '',
+                                phone: q.customer_phone || '',
+                                whatsapp: q.customer_whatsapp || '',
+                                email: q.customer_email || '',
+                                isGstRegistered: q.customer_is_gst_registered || false,
+                              });
+                              setAddress({
+                                line1: q.address_line1 || '',
+                                line2: q.address_line2 || '',
+                                city: q.city || '',
+                                state: q.state_name || 'Gujarat',
+                                pin: q.pincode || '',
+                              });
+                              setSite({
+                                meterNo: q.meter_number || '',
+                                sanctionedLoad: q.sanctioned_load_kw ? String(q.sanctioned_load_kw) : '',
+                                monthlyBill: q.monthly_bill_inr || 0,
+                                roofType: (q.roof_type || 'RCC') as any,
+                                roofArea: q.roof_area_sqft || 0,
+                              });
+                            } else {
+                              // If project exists but no quote is linked yet
+                              setSales({
+                                projectTitle: proj.project_number || '',
+                                execName: '',
+                                notes: '',
+                                saleType: 'New',
+                              });
+                              setCustomer({ name: '', phone: '', whatsapp: '', email: '', isGstRegistered: false });
+                              setAddress({ line1: '', line2: '', city: '', state: 'Gujarat', pin: '' });
+                              setSite({ meterNo: '', sanctionedLoad: '', monthlyBill: 0, roofType: 'RCC', roofArea: 0 });
+                            }
+                          }
+                        } else {
+                          // Clear all inputs when choosing "None"
+                          setCustomer({ name: '', phone: '', whatsapp: '', email: '', isGstRegistered: false });
+                          setAddress({ line1: '', line2: '', city: '', state: 'Gujarat', pin: '' });
+                          setSite({ meterNo: '', sanctionedLoad: '', monthlyBill: 0, roofType: 'RCC', roofArea: 0 });
+                          setSales({ projectTitle: '', execName: '', notes: '', saleType: 'New' });
+                        }
+                      }}
+                      options={[
+                        { value: '', label: 'None (Create New Project)' },
+                        ...projects.map((p) => ({
+                          value: p.id,
+                          label: `${p.project_number} — ${p.quotes?.customer_name || 'No Client'}`
+                        }))
+                      ]}
+                    />
+                  </div>
+
                   <Input label="Project Title" value={sales.projectTitle} onChange={(v) => setSales({...sales, projectTitle: v})} required />
                   <Input label="Customer Name" value={customer.name} onChange={(v) => setCustomer({...customer, name: v})} required />
                   <Input label="Phone Number" value={customer.phone} onChange={(v) => setCustomer({...customer, phone: v})} required />
                   <Input label="WhatsApp Number" value={customer.whatsapp} onChange={(v) => setCustomer({...customer, whatsapp: v})} />
                   <Input label="Email Address" value={customer.email} onChange={(v) => setCustomer({...customer, email: v})} type="email" />
+
+                  {itcEligible && (
+                    <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-hover mt-2">
+                      <div>
+                        <p className="text-sm font-medium text-text-primary">Customer is GST Registered</p>
+                        <p className="text-xs text-text-muted">Required to claim ITC benefits.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={!!customer.isGstRegistered}
+                          onChange={(e) => setCustomer({ ...customer, isGstRegistered: e.target.checked })}
+                        />
+                        <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+                      </label>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -2,7 +2,7 @@
   {
     "capacityKW": 1.5,
     "priceType": "premium",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       2
@@ -11,7 +11,7 @@
   {
     "capacityKW": 1.5,
     "priceType": "standard",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       3
@@ -20,7 +20,7 @@
   {
     "capacityKW": 2,
     "priceType": "premium",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       4
@@ -29,7 +29,7 @@
   {
     "capacityKW": 2,
     "priceType": "standard",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       5
@@ -38,7 +38,7 @@
   {
     "capacityKW": 3,
     "priceType": "premium",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       6
@@ -47,7 +47,7 @@
   {
     "capacityKW": 3,
     "priceType": "standard",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       7
@@ -56,7 +56,7 @@
   {
     "capacityKW": 4,
     "priceType": "premium",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       8
@@ -65,7 +65,7 @@
   {
     "capacityKW": 4,
     "priceType": "standard",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       9
@@ -74,7 +74,7 @@
   {
     "capacityKW": 5,
     "priceType": "premium",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       10,
@@ -84,7 +84,7 @@
   {
     "capacityKW": 5,
     "priceType": "standard",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       11,
@@ -94,7 +94,7 @@
   {
     "capacityKW": 6,
     "priceType": "premium",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       14
@@ -103,7 +103,7 @@
   {
     "capacityKW": 6,
     "priceType": "standard",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       15
@@ -112,7 +112,7 @@
   {
     "capacityKW": 8,
     "priceType": "premium",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       16
@@ -121,7 +121,7 @@
   {
     "capacityKW": 8,
     "priceType": "standard",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       17
@@ -130,7 +130,7 @@
   {
     "capacityKW": 10,
     "priceType": "premium",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       18
@@ -139,7 +139,7 @@
   {
     "capacityKW": 10,
     "priceType": "standard",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRows": [
       19

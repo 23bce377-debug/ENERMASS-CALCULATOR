@@ -13,7 +13,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 2,
     "classification": "Subsidy Rule"
@@ -32,7 +32,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 3,
     "classification": "Subsidy Rule"
@@ -51,7 +51,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 4,
     "classification": "Subsidy Rule"
@@ -70,7 +70,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 5,
     "classification": "Subsidy Rule"
@@ -89,7 +89,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 6,
     "classification": "Subsidy Rule"
@@ -108,7 +108,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 7,
     "classification": "Subsidy Rule"
@@ -127,7 +127,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 8,
     "classification": "Subsidy Rule"
@@ -146,7 +146,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 9,
     "classification": "Subsidy Rule"
@@ -165,7 +165,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 10,
     "classification": "Subsidy Rule"
@@ -184,7 +184,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 11,
     "classification": "Subsidy Rule"
@@ -203,7 +203,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 12,
     "classification": "Subsidy Rule"
@@ -222,7 +222,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 13,
     "classification": "Subsidy Rule"
@@ -241,7 +241,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 14,
     "classification": "Subsidy Rule"
@@ -260,7 +260,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 15,
     "classification": "Subsidy Rule"
@@ -279,7 +279,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 16,
     "classification": "Subsidy Rule"
@@ -298,7 +298,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 17,
     "classification": "Subsidy Rule"
@@ -317,7 +317,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 18,
     "classification": "Subsidy Rule"
@@ -336,7 +336,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 19,
     "classification": "Subsidy Rule"
@@ -353,7 +353,7 @@
       "subsidy"
     ],
     "output": "system_price",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 2,
     "capacityKw": 1.5,
@@ -376,7 +376,7 @@
       "subsidy"
     ],
     "output": "system_price",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 4,
     "capacityKw": 2,
@@ -399,7 +399,7 @@
       "subsidy"
     ],
     "output": "system_price",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 6,
     "capacityKw": 3,
@@ -422,7 +422,7 @@
       "subsidy"
     ],
     "output": "system_price",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 8,
     "capacityKw": 4,
@@ -445,7 +445,7 @@
       "subsidy"
     ],
     "output": "system_price",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 10,
     "capacityKw": 5,
@@ -468,7 +468,7 @@
       "subsidy"
     ],
     "output": "system_price",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 14,
     "capacityKw": 6,
@@ -491,7 +491,7 @@
       "subsidy"
     ],
     "output": "system_price",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 16,
     "capacityKw": 8,
@@ -514,7 +514,7 @@
       "subsidy"
     ],
     "output": "system_price",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 18,
     "capacityKw": 10,
@@ -539,7 +539,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 2,
     "classification": "Subsidy Rule",
@@ -559,7 +559,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 3,
     "classification": "Subsidy Rule",
@@ -579,7 +579,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 4,
     "classification": "Subsidy Rule",
@@ -599,7 +599,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 5,
     "classification": "Subsidy Rule",
@@ -619,7 +619,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 6,
     "classification": "Subsidy Rule",
@@ -639,7 +639,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 7,
     "classification": "Subsidy Rule",
@@ -659,7 +659,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 8,
     "classification": "Subsidy Rule",
@@ -679,7 +679,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 9,
     "classification": "Subsidy Rule",
@@ -699,7 +699,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 10,
     "classification": "Subsidy Rule",
@@ -719,7 +719,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 11,
     "classification": "Subsidy Rule",
@@ -739,7 +739,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 12,
     "classification": "Subsidy Rule",
@@ -759,7 +759,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 13,
     "classification": "Subsidy Rule",
@@ -779,7 +779,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 14,
     "classification": "Subsidy Rule",
@@ -799,7 +799,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 15,
     "classification": "Subsidy Rule",
@@ -819,7 +819,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 16,
     "classification": "Subsidy Rule",
@@ -839,7 +839,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 17,
     "classification": "Subsidy Rule",
@@ -859,7 +859,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 18,
     "classification": "Subsidy Rule",
@@ -879,7 +879,7 @@
       "beneficiary_contribution",
       "subsidy"
     ],
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 19,
     "classification": "Subsidy Rule",
@@ -893,7 +893,7 @@
       "beneficiary_contribution"
     ],
     "output": "subsidy",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 2,
     "capacityKw": 1.5,
@@ -912,7 +912,7 @@
       "beneficiary_contribution"
     ],
     "output": "subsidy",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 4,
     "capacityKw": 2,
@@ -931,7 +931,7 @@
       "beneficiary_contribution"
     ],
     "output": "subsidy",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 6,
     "capacityKw": 3,
@@ -950,7 +950,7 @@
       "beneficiary_contribution"
     ],
     "output": "subsidy",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 8,
     "capacityKw": 4,
@@ -969,7 +969,7 @@
       "beneficiary_contribution"
     ],
     "output": "subsidy",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 10,
     "capacityKw": 5,
@@ -988,7 +988,7 @@
       "beneficiary_contribution"
     ],
     "output": "subsidy",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 14,
     "capacityKw": 6,
@@ -1007,7 +1007,7 @@
       "beneficiary_contribution"
     ],
     "output": "subsidy",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 16,
     "capacityKw": 8,
@@ -1026,7 +1026,7 @@
       "beneficiary_contribution"
     ],
     "output": "subsidy",
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "sourceRow": 18,
     "capacityKw": 10,
@@ -1036,5 +1036,16 @@
     "beneficiaryContribution": 430000,
     "subsidy": 0,
     "systemPrice": 430000
+  },
+  {
+    "classification": "Costing Rule",
+    "ruleName": "structure_costing",
+    "formula": "structure_cost = capacity_kw * 4500",
+    "inputs": [
+      "capacity_kw"
+    ],
+    "output": "structure_cost",
+    "ratePerKw": 4500,
+    "assumedRate": 4500
   }
 ]

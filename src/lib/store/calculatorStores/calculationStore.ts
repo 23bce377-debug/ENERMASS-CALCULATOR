@@ -8,6 +8,7 @@ import {
 } from '../calculatorTypes';
 import { SYSTEMS, type SolarSystem, type BomItem } from '../../data/bom';
 import { type ProjectType, type RowOverride, type DiscountType } from '../../engine/calculator';
+import { TAX_CONSTANTS } from '@/lib/tax-constants';
 
 export const createCalculationSlice: StateCreator<
   CalculatorState,
@@ -18,6 +19,7 @@ export const createCalculationSlice: StateCreator<
     | 'selectedSystemId'
     | 'selectedState'
     | 'projectType'
+    | 'itcEligible'
     | 'applySubsidy'
     | 'dbActiveScheme'
     | 'setApplySubsidy'
@@ -62,11 +64,10 @@ export const createCalculationSlice: StateCreator<
     | 'inventorySummary'
     | 'dbOrientationMultipliers'
     | 'dbLoaded'
-    | 'showInventoryInfo'
-    | 'setShowInventoryInfo'
     | 'selectSystem'
     | 'setState'
     | 'setProjectType'
+    | 'setItcEligible'
     | 'setMarginOverride'
     | 'setRowOverride'
     | 'clearRowOverride'
@@ -85,12 +86,15 @@ export const createCalculationSlice: StateCreator<
     | 'recalculate'
     | 'reset'
     | 'fetchMasterData'
+    | 'selectedGoalWattage'
+    | 'setSelectedGoalWattage'
   >
 > = (set, get) => ({
-  showInventoryInfo: true,
   selectedSystemId: null,
+  selectedGoalWattage: null,
   selectedState: '',
   projectType: 'residential',
+  itcEligible: false,
   applySubsidy: true,
   dbActiveScheme: null,
   targetMarginPct: null,
@@ -136,10 +140,6 @@ export const createCalculationSlice: StateCreator<
   inventorySummary: [],
   dbLoaded: false,
 
-  setShowInventoryInfo: (val: boolean) => {
-    set({ showInventoryInfo: val });
-  },
-
   selectSystem: (id: string) => {
     const state = get();
     const { panels: allPanels, inverters: allInverters, batteries: allBatteries } = getEquipmentCatalogsFromSettings(
@@ -167,6 +167,7 @@ export const createCalculationSlice: StateCreator<
       set({
         selectedSystemId: id,
         selectedPanelId: null,
+        selectedGoalWattage: null,
         panelMix: system.defaultEquipment.panelMix ?? {},
         selectedInverterMix: system.defaultEquipment.inverterMix ?? {},
         selectedBatteryMix: system.defaultEquipment.batteryMix ?? {},
@@ -230,6 +231,7 @@ export const createCalculationSlice: StateCreator<
     const isCommercial = system?.category === 'commercial';
     set({
       selectedSystemId: id,
+      selectedGoalWattage: null,
       projectType: isCommercial ? 'commercial' : 'residential',
       overrides: {},
       disabledItemIndices: {},
@@ -247,9 +249,18 @@ export const createCalculationSlice: StateCreator<
     get().fetchRpcSubsidy();
   },
 
+  setSelectedGoalWattage: (w: number | null) => {
+    set({ selectedGoalWattage: w });
+    get().recalculate();
+  },
+
   setProjectType: (type: ProjectType) => {
     set({ projectType: type });
     get().fetchRpcSubsidy();
+  },
+
+  setItcEligible: (eligible: boolean) => {
+    set({ itcEligible: eligible });
   },
 
   setApplySubsidy: (val: boolean) => {
@@ -367,15 +378,24 @@ export const createCalculationSlice: StateCreator<
 
   recalculate: () => {
     const state = get();
-    const { result, error } = runCalculation(state);
+    // Auto-assign first system if none selected but master data is loaded
+    // Use soft-set to preserve current equipment selections
+    if (!state.selectedSystemId && state.dbLoaded && state.dbSystems.length > 0) {
+      set({ selectedSystemId: state.dbSystems[0].id });
+    }
+    const { result, error } = runCalculation(get());
     set({ calcResult: result, calcError: error });
   },
 
   reset: () => {
-    const { quotes } = get();
+    const { quotes, dbSystems } = get();
     const cleanState: any = { ...INITIAL_STATE, quotes };
     set(cleanState);
-    set({ calcResult: null, calcError: null });
+    if (dbSystems && dbSystems.length > 0) {
+      get().selectSystem(dbSystems[0].id);
+    } else {
+      get().recalculate();
+    }
   },
 
   fetchMasterData: async () => {
@@ -385,24 +405,18 @@ export const createCalculationSlice: StateCreator<
       const bootstrap = await bootstrapRes.json() as any;
 
       const mappedPanels = bootstrap.panels.map((p: any) => {
-        const description = `${p.brand} ${p.model} ${Number(p.wattage_w)}W Panel`;
-        const invMatch = bootstrap.inventorySummary.find((item: any) => item.item_description === description);
-        const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           id: p.id,
           brand: p.brand,
           model: p.model,
           wattage: Number(p.wattage_w),
           type: p.panel_type,
-          ratePerWatt: wac !== null ? wac / Number(p.wattage_w) : (Number(p.wattage_w) > 0 ? Number(p.selling_price) / Number(p.wattage_w) : 0),
+          ratePerWatt: Number(p.wattage_w) > 0 ? Number(p.selling_price) / Number(p.wattage_w) : 0,
           gst_pct: Number(p.gst_pct),
         };
       });
 
       const mappedInverters = bootstrap.inverters.map((i: any) => {
-        const description = `${i.brand} ${i.model} ${Number(i.capacity_kw)}kW Inverter`;
-        const invMatch = bootstrap.inventorySummary.find((item: any) => item.item_description === description);
-        const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           id: i.id,
           brand: i.brand,
@@ -410,15 +424,12 @@ export const createCalculationSlice: StateCreator<
           capacityKW: Number(i.capacity_kw),
           type: i.inverter_type === 'on_grid' ? 'on-grid' : (i.inverter_type === 'micro' ? 'micro' : 'hybrid'),
           phases: Number(i.phases),
-          rate: wac !== null ? wac : Number(i.selling_price),
+          rate: Number(i.selling_price),
           gst_pct: Number(i.gst_pct),
         };
       });
 
       const mappedBatteries = bootstrap.batteries.map((b: any) => {
-        const description = `${b.brand} ${b.model} ${Number(b.capacity_kwh)}kWh Battery`;
-        const invMatch = bootstrap.inventorySummary.find((item: any) => item.item_description === description);
-        const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           id: b.id,
           brand: b.brand,
@@ -426,15 +437,12 @@ export const createCalculationSlice: StateCreator<
           capacityKWh: Number(b.capacity_kwh),
           chemistry: b.chemistry,
           dodPct: Number(b.dod_pct),
-          rate: wac !== null ? wac : Number(b.selling_price),
+          rate: Number(b.selling_price),
           gst_pct: Number(b.gst_pct),
         };
       });
 
       const mappedStructures = bootstrap.structures.map((st: any) => {
-        const description = `${st.name} Structure (${st.material || ''})`;
-        const invMatch = bootstrap.inventorySummary.find((item: any) => item.item_description === description);
-        const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           ...st,
           raw_material_rate: Number(st.raw_material_rate),
@@ -444,64 +452,50 @@ export const createCalculationSlice: StateCreator<
           wastage_pct: Number(st.wastage_pct),
           fastener_weight_pct: Number(st.fastener_weight_pct),
           base_weight_kg: Number(st.base_weight_kg),
-          flat_rate: wac !== null ? wac : (st.flat_rate !== null ? Number(st.flat_rate) : null),
-          per_watt_rate: st.per_watt_rate !== null ? Number(st.per_watt_rate) : null,
+          flat_rate: st.selling_price != null ? Number(st.selling_price) : (st.flat_rate != null ? Number(st.flat_rate) : null),
+          per_watt_rate: st.per_watt_rate != null ? Number(st.per_watt_rate) : null,
           gst_pct: Number(st.gst_pct),
         };
       });
 
       const mappedMeters = bootstrap.meters.map((m: any) => {
-        const description = `${m.meter_type === 'solar_meter' ? 'Solar' : 'Net'} Meter ${m.brand || ''} ${m.model || ''}`;
-        const invMatch = bootstrap.inventorySummary.find((item: any) => item.item_description === description);
-        const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           ...m,
           phases: Number(m.phases),
-          rate: wac !== null ? wac : Number(m.selling_price),
+          rate: Number(m.selling_price),
           gst_pct: Number(m.gst_pct),
         };
       });
 
       const mappedLAs = bootstrap.lightningArresters.map((l: any) => {
-        const description = l.description || l.model;
-        const invMatch = bootstrap.inventorySummary.find((item: any) => item.item_description === description);
-        const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           ...l,
-          rate: wac !== null ? wac : Number(l.selling_price),
+          rate: Number(l.selling_price),
           gst_pct: Number(l.gst_pct),
         };
       });
 
       const mappedBomItems = bootstrap.bomItems.map((b: any) => {
-        const invMatch = bootstrap.inventorySummary.find((item: any) => item.item_description === b.description);
-        const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           ...b,
-          rate: wac !== null ? wac : Number(b.selling_price),
+          rate: Number(b.selling_price),
           gst_pct: Number(b.gst_pct),
         };
       });
 
       const mappedCommDevices = bootstrap.commDevices.map((c: any) => {
-        const description = `${c.brand || ''} ${c.model || ''}`;
-        const invMatch = bootstrap.inventorySummary.find((item: any) => item.item_description === description);
-        const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           ...c,
-          rate: wac !== null ? wac : Number(c.selling_price),
+          rate: Number(c.selling_price),
           gst_pct: Number(c.gst_pct),
         };
       });
 
       const mappedStructureComponentMasters = (bootstrap.structureComponentMasters || []).map((scm: any) => {
-        const description = scm.name;
-        const invMatch = bootstrap.inventorySummary.find((item: any) => item.item_description === description);
-        const wac = invMatch && Number(invMatch.weighted_avg_cost) > 0 ? Number(invMatch.weighted_avg_cost) : null;
         return {
           id: scm.id,
           name: scm.name,
-          rate: wac !== null ? wac : Number(scm.selling_price),
+          rate: Number(scm.selling_price),
           gst_pct: Number(scm.gst_pct)
         };
       });
@@ -545,15 +539,15 @@ export const createCalculationSlice: StateCreator<
       const mappedSystems: SolarSystem[] = bootstrap.systems.map((sys: any) => {
         const items = (sys.system_items || []).map((item: any) => {
           let rate = 0;
-          let gstPct = 0.18;
+          let gstPct: any = TAX_CONSTANTS.COMMERCIAL_GST_RATE;
           if (item.panel_id) {
             const panel = mappedPanels.find((p: any) => p.id === item.panel_id);
             rate = panel ? Number(panel.ratePerWatt) * Number(panel.wattage) : 0;
-            gstPct = panel ? Number(panel.gst_pct) : 0.05;
+            gstPct = panel ? Number(panel.gst_pct) : TAX_CONSTANTS.RESIDENTIAL_GST_RATE;
           } else if (item.inverter_id) {
             const inverter = mappedInverters.find((i: any) => i.id === item.inverter_id);
             rate = inverter ? Number(inverter.rate) : 0;
-            gstPct = inverter ? Number(inverter.gst_pct) : 0.18;
+            gstPct = inverter ? Number(inverter.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
           } else if (item.battery_id) {
             const battery = mappedBatteries.find((b: any) => b.id === item.battery_id);
             rate = battery ? Number(battery.rate) : 0;
@@ -561,23 +555,23 @@ export const createCalculationSlice: StateCreator<
           } else if (item.solar_meter_id) {
             const meter = mappedMeters.find((m: any) => m.id === item.solar_meter_id);
             rate = meter ? Number(meter.rate) : 0;
-            gstPct = meter ? Number(meter.gst_pct) : 0.18;
+            gstPct = meter ? Number(meter.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
           } else if (item.net_meter_id) {
             const meter = mappedMeters.find((m: any) => m.id === item.net_meter_id);
             rate = meter ? Number(meter.rate) : 0;
-            gstPct = meter ? Number(meter.gst_pct) : 0.18;
+            gstPct = meter ? Number(meter.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
           } else if (item.la_id) {
             const la = mappedLAs.find((l: any) => l.id === item.la_id);
             rate = la ? Number(la.rate) : 0;
-            gstPct = la ? Number(la.gst_pct) : 0.18;
+            gstPct = la ? Number(la.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
           } else if (item.structure_id) {
             const structure = mappedStructures.find((s: any) => s.id === item.structure_id);
             rate = structure ? Number(structure.flat_rate ?? 0) : 0;
-            gstPct = structure ? Number(structure.gst_pct) : 0.18;
+            gstPct = structure ? Number(structure.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
           } else if (item.bom_item_id) {
             const bom = mappedBomItems.find((b: any) => b.id === item.bom_item_id);
             rate = bom ? Number(bom.rate) : 0;
-            gstPct = bom ? Number(bom.gst_pct) : 0.18;
+            gstPct = bom ? Number(bom.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
           } else if (item.comm_device_id) {
             const comm = mappedCommDevices.find((c: any) => c.id === item.comm_device_id);
             rate = comm ? Number(comm.rate) : 0;
@@ -585,7 +579,7 @@ export const createCalculationSlice: StateCreator<
           } else if (item.structure_component_id) {
             const comp = mappedStructureComponentMasters.find((c: any) => c.id === item.structure_component_id);
             rate = comp ? Number(comp.rate) : 0;
-            gstPct = comp ? Number(comp.gst_pct) : 0.18;
+            gstPct = comp ? Number(comp.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
           }
 
           return {
@@ -638,9 +632,24 @@ export const createCalculationSlice: StateCreator<
         dbLoaded: true
       });
 
-      get().recalculate();
+      const currentSystemId = get().selectedSystemId;
+      const systemExists = mappedSystems.some(s => s.id === currentSystemId);
+      if ((!currentSystemId || !systemExists) && mappedSystems.length > 0) {
+        get().selectSystem(mappedSystems[0].id);
+      } else {
+        get().recalculate();
+      }
     } catch (err) {
       console.error("Failed to fetch database master data:", err);
+      // Fallback: select first static system if none selected or invalid
+      const currentSystemId = get().selectedSystemId;
+      const systems = SYSTEMS;
+      const systemExists = systems.some((s) => s.id === currentSystemId);
+      if ((!currentSystemId || !systemExists) && systems.length > 0) {
+        get().selectSystem(systems[0].id);
+      } else {
+        get().recalculate();
+      }
     }
   },
 });

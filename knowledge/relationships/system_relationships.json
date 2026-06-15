@@ -4,7 +4,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 2.18,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "2kwp",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -183,7 +183,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": 2.48,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Sheet1",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -362,7 +362,7 @@
     "systemName": "1kw admn",
     "systemType": "ongrid",
     "capacityKW": 1.1,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "1kw admn",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -541,7 +541,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 3.1,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "3Kwp",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -720,7 +720,7 @@
     "systemName": "Solar Plant",
     "systemType": "micro_inverter",
     "capacityKW": 4.96,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "3KW MICRO INVERTER",
     "targetCollection": "micro_inverter",
     "dependencies": [
@@ -911,7 +911,7 @@
     "systemName": "Solar Plant",
     "systemType": "micro_inverter",
     "capacityKW": 4.96,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "5kw micro",
     "targetCollection": "micro_inverter",
     "dependencies": [
@@ -1102,7 +1102,7 @@
     "systemName": "Solar Plant",
     "systemType": "upgrade",
     "capacityKW": 3.1,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "2-3upgrade",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -1281,7 +1281,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 3.1,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "3kw hibrid",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -1466,7 +1466,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 3.48,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "mat 3 kw",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -1645,7 +1645,7 @@
     "systemName": "Solar Plant",
     "systemType": "hybrid",
     "capacityKW": 5.22,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "UPGRADE 5 KW hybrid",
     "targetCollection": "hybrid",
     "dependencies": [
@@ -1818,7 +1818,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 4.96,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "4KWp",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -1997,7 +1997,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 4.96,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "5Kwp",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -2176,7 +2176,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 4.96,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "5kw 3 PH",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -2361,7 +2361,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": 2.2,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Sheet6",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -2546,7 +2546,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 4.96,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "hoymiles5kw",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -2731,7 +2731,7 @@
     "systemName": "Solar Plant",
     "systemType": "upgrade",
     "capacityKW": 5.58,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "upgrade 5kw ",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -2910,7 +2910,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 6.2,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "6kwp",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -3089,7 +3089,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 5.58,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "8kwp",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -3268,7 +3268,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 9.92,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "10KWp",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -3447,7 +3447,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 15.5,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "15kwHibrid",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -3638,7 +3638,7 @@
     "systemName": "Solar Plant",
     "systemType": "hybrid",
     "capacityKW": 4.96,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "10kw hybrid",
     "targetCollection": "hybrid",
     "dependencies": [
@@ -3829,7 +3829,7 @@
     "systemName": "1.5kw",
     "systemType": "ongrid",
     "capacityKW": 21.5,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "1.5kw",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -4068,7 +4068,7 @@
     "systemName": "2kw",
     "systemType": "ongrid",
     "capacityKW": 21,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "2kw",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -4307,7 +4307,7 @@
     "systemName": "Sheet3",
     "systemType": "reference",
     "capacityKW": 24.5,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Sheet3",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -4546,7 +4546,7 @@
     "systemName": "KW:5 PH:1 MAKE:GROWATT",
     "systemType": "ongrid",
     "capacityKW": 6,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "6kw",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -4767,7 +4767,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": 8.19,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Sheet9",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -4946,7 +4946,7 @@
     "systemName": "Plant Capacity in KW",
     "systemType": "ongrid",
     "capacityKW": 130600,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "pricing",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -5005,7 +5005,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 5.58,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "hibrid 5kw",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -5190,7 +5190,7 @@
     "systemName": "Solar Plant",
     "systemType": "upgrade",
     "capacityKW": 5.4,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "hibrid upgrade 5kw",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -5375,7 +5375,7 @@
     "systemName": "hibrid 3 kw",
     "systemType": "ongrid",
     "capacityKW": 25,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "hibrid 3 kw",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -5614,7 +5614,7 @@
     "systemName": "KW:5 PH:1 MAKE:GROWATT",
     "systemType": "ongrid",
     "capacityKW": null,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "5ke 3P TN",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -5835,7 +5835,7 @@
     "systemName": "KW:10 PH:3 MAKE:GROWATT",
     "systemType": "ongrid",
     "capacityKW": 4,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Sheet4",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -6062,7 +6062,7 @@
     "systemName": "KW:10 PH:3 MAKE:GROWATT",
     "systemType": "ongrid",
     "capacityKW": 5,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Sheet5",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -6283,7 +6283,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 29.76,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "25kw",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -6456,7 +6456,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": 29.76,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Sheet11",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -6629,7 +6629,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 15.5,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "15kwp",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -6802,7 +6802,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 20.46,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "20kwp",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -6975,7 +6975,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": 20.46,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Sheet8",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -7148,7 +7148,7 @@
     "systemName": "Solar Plant",
     "systemType": "hybrid",
     "capacityKW": 30.38,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "30KW Hybrid",
     "targetCollection": "hybrid",
     "dependencies": [
@@ -7321,7 +7321,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": null,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Sheet7",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -7494,7 +7494,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 3.54,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "3 to 3 upgradation",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -7673,7 +7673,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": 0,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Inkel250bos",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -7876,7 +7876,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 99.2,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "100kw STM",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -8079,7 +8079,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": 0,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "inkel aluva",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -8282,7 +8282,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": 196.56,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "newen",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -8485,7 +8485,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": 3.54,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "mis working",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -8664,7 +8664,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 20.06,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "20KW HIBRID",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -8837,7 +8837,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 25.42,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "20kw30kwhr",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -9016,7 +9016,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 20.3,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "20kw hibrid solinteg",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -9189,7 +9189,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": 196.56,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Sheet10",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -9320,7 +9320,7 @@
     "systemName": "Solar Plant",
     "systemType": "reference",
     "capacityKW": 20.3,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "Sheet2",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -9499,7 +9499,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 80.6,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "80kw",
     "targetCollection": "ongrid",
     "dependencies": [
@@ -9672,7 +9672,7 @@
     "systemName": "Solar Plant",
     "systemType": "ongrid",
     "capacityKW": 80.6,
-    "sourceWorkbook": "PRICING_8.9%GST.xlsx",
+    "sourceWorkbook": "PRICING_13.8%GST.xlsx",
     "sourceSheet": "80kwenphase",
     "targetCollection": "ongrid",
     "dependencies": [

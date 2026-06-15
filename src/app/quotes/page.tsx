@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { formatINR } from '@/lib/engine/calculator';
 import { SYSTEMS } from '@/lib/data/bom';
@@ -10,12 +11,18 @@ import type { Quote } from '@/lib/types/quote';
 import {
   Search, Filter, FileText, Download, Trash2, Eye, X,
   ChevronDown, ArrowUpDown, Printer, PenSquare, Copy,
-  Mail, MessageCircle,
+  Mail, MessageCircle, GitPullRequest, History, Paperclip, UploadCloud
 } from 'lucide-react';
 import { QuotePDF } from '@/components/print/QuotePDF';
 import { useConfirm } from '@/components/ui/Confirm';
 import { Select } from '@/components/ui/Select';
 import { useQuotesQuery, useDeleteQuoteMutation, useUpdateQuoteStatusMutation } from '@/lib/hooks/useQuotes';
+import { SurveyGateModal } from '@/components/quotes/SurveyGateModal';
+import { SurveySummaryCard } from '@/components/quotes/SurveySummaryCard';
+import { QuoteVersionHistory } from '@/components/quotes/QuoteVersionHistory';
+import { QuoteReviseModal } from '@/components/quotes/QuoteReviseModal';
+import { StaleRateWarning } from '@/components/quotes/StaleRateWarning';
+import { ITCSummary } from '@/components/quotes/ITCSummary';
 
 // ─── Status Config ──────────────────────────────────────────────────────────────
 
@@ -72,6 +79,9 @@ function QuoteDetailModal({
   const { settings } = useSettings();
   const system = SYSTEMS.find((s) => s.id === quote.systemId) || settings.customSystems?.find((s) => s.id === quote.systemId);
   const calc = quote.calculations;
+  
+  const [showHistory, setShowHistory] = useState(false);
+  const [showRevise, setShowRevise] = useState(false);
 
   const statusHistory = quote.statusHistory?.length
     ? quote.statusHistory
@@ -111,9 +121,25 @@ function QuoteDetailModal({
           <div className="flex items-center gap-2 print:hidden flex-wrap justify-end">
             <button
               onClick={() => onEdit(quote.quoteId)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-text-primary text-sm font-medium hover:bg-surface-hover transition-colors"
+              disabled={quote.version === 1 && !quote.parentQuoteId}
+              title={quote.version === 1 && !quote.parentQuoteId ? "Original quote is read-only. Use 'Revise Quote' to create a new version." : undefined}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-text-primary text-sm font-medium hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <PenSquare size={16} /> Edit
+            </button>
+            {quote.status === 'Sent' && (
+              <button
+                onClick={() => setShowRevise(true)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-light transition-colors"
+              >
+                <GitPullRequest size={16} /> Revise Quote
+              </button>
+            )}
+            <button
+              onClick={() => setShowHistory(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-text-primary text-sm font-medium hover:bg-surface-hover transition-colors"
+            >
+              <History size={16} /> History
             </button>
             <button
               onClick={() => onDuplicate(quote.quoteId)}
@@ -152,6 +178,10 @@ function QuoteDetailModal({
               <X size={20} />
             </button>
           </div>
+        </div>
+
+        <div className="mx-6 mt-4 print:hidden">
+          <StaleRateWarning gstRate={calc.gstOutputRate} quoteId={quote.quoteId} />
         </div>
 
         <div className="p-6 space-y-6">
@@ -212,6 +242,11 @@ function QuoteDetailModal({
               <StatBox label="Customer Pays" value={formatINR(calc.beneficiaryContribution)} highlight />
               <StatBox label="₹/kW" value={formatINR(calc.perKWinclGST)} />
             </div>
+            <ITCSummary 
+              systemCostExclGst={calc.costBeforeGST} 
+              isCommercial={quote.category === 'commercial' || quote.category.includes('commercial')} 
+              isGstRegistered={!!quote.customer.isGstRegistered} 
+            />
           </InfoSection>
 
           {/* Energy Estimates */}
@@ -236,8 +271,55 @@ function QuoteDetailModal({
               ))}
             </div>
           </InfoSection>
+
+          {/* File Attachments */}
+          <InfoSection title="File Attachments">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-background/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-accent/10 text-accent rounded-lg">
+                    <FileText size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-text-primary">Site_Survey_Report.pdf</p>
+                    <p className="text-[10px] text-text-muted">2.4 MB • Uploaded on {quote.date}</p>
+                  </div>
+                </div>
+                <button className="p-1.5 text-text-muted hover:text-text-primary">
+                  <Download size={14} />
+                </button>
+              </div>
+              <button className="flex items-center justify-center gap-2 w-full py-3 border border-dashed border-border rounded-lg text-sm text-text-secondary hover:text-accent hover:border-accent hover:bg-accent/5 transition-all">
+                <UploadCloud size={16} />
+                <span>Upload New Attachment</span>
+              </button>
+            </div>
+          </InfoSection>
+
+          {/* Site Survey Summary */}
+          <SurveySummaryCard quoteNumber={quote.quoteId} />
         </div>
       </div>
+      
+      {showHistory && (
+        <QuoteVersionHistory
+          baseQuoteNumber={quote.quoteId}
+          onCompare={(v1, v2) => {}}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
+      
+      {showRevise && (
+        <QuoteReviseModal
+          quoteId={quote.quoteId}
+          leadId={(quote as any).lead_id || quote.customer.phone}
+          onClose={() => setShowRevise(false)}
+          onSuccess={(newId) => {
+            setShowRevise(false);
+            onClose(); 
+          }}
+        />
+      )}
       </div>
       <QuotePDF quote={quote} companyName={companyName} />
     </>
@@ -289,6 +371,14 @@ export default function QuotesPage() {
   const [statusFilter, setStatusFilter] = useState<Quote['status'] | 'All'>('All');
   const [sortAsc, setSortAsc] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [quoteMode, setQuoteMode] = useState<'system' | 'generic'>('system');
+
+  // Survey gate state
+  const [surveyGate, setSurveyGate] = useState<{
+    quoteId: string;
+    leadId: string | null;
+    orgId: string;
+  } | null>(null);
 
   const companyName = settings.company.name || 'ENERMASS Solar';
 
@@ -343,9 +433,37 @@ export default function QuotesPage() {
     const nextOptions = STATUS_CYCLE[quote.status];
     const next = nextOptions[0];
 
+    // UI-level Survey Gate validation
+    if (next === 'Sent') {
+      try {
+        const { data: quoteData } = await supabase.from('quotes').select('lead_id, org_id').eq('quote_number', quoteId).single();
+        if (quoteData?.lead_id) {
+          const { data: survey } = await supabase
+            .from('crm_site_surveys')
+            .select('id, status')
+            .eq('lead_id', quoteData.lead_id)
+            .in('status', ['completed', 'waived'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!survey) {
+            setSurveyGate({ quoteId, leadId: quoteData.lead_id, orgId: quoteData.org_id || '' });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Pre-flight survey check failed:', err);
+      }
+    }
+
     try {
       await updateStatusMutation.mutateAsync({ quoteId, newStatus: next });
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.code === 'SURVEY_GATE_BLOCKED') {
+        setSurveyGate({ quoteId, leadId: err.leadId ?? null, orgId: err.orgId ?? '' });
+        return;
+      }
       console.error(err);
       alert(err instanceof Error ? err.message : 'Failed to update quote status in database.');
     }
@@ -415,6 +533,20 @@ export default function QuotesPage() {
             <h1 className="text-2xl font-bold text-text-primary">Quote Management</h1>
             <p className="text-sm text-text-muted mt-1">{quotes.length} total quotes</p>
           </div>
+          <div className="flex bg-surface border border-border rounded-lg p-1 self-start">
+            <button
+              onClick={() => setQuoteMode('system')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${quoteMode === 'system' ? 'bg-accent text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
+            >
+              System Quotes
+            </button>
+            <button
+              onClick={() => setQuoteMode('generic')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${quoteMode === 'generic' ? 'bg-accent text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
+            >
+              Generic Quotes
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -449,8 +581,19 @@ export default function QuotesPage() {
           </button>
         </div>
 
-        {/* Table */}
-        {isLoading ? (
+        {/* Table / Generic View */}
+        {quoteMode === 'generic' ? (
+          <div className="bg-surface border border-border rounded-xl p-12 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-accent/10 text-accent rounded-full flex items-center justify-center mb-4">
+              <FileText size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-text-primary mb-2">Generic Quoting Mode</h2>
+            <p className="text-text-muted max-w-md mx-auto mb-6">Create quotes for individual items, spare parts, or services without requiring a full solar system configuration.</p>
+            <button className="px-6 py-2.5 bg-accent text-white font-medium rounded-lg hover:bg-accent-light transition-colors">
+              Create Generic Quote
+            </button>
+          </div>
+        ) : isLoading ? (
           <div className="flex justify-center items-center py-20 text-text-muted">
             <span className="text-sm font-semibold animate-pulse font-mono uppercase tracking-wider">Loading quotes...</span>
           </div>
@@ -567,6 +710,20 @@ export default function QuotesPage() {
             cloneQuoteAsTemplate(quoteId);
           }}
           onDownloadCloud={downloadFromBucket}
+        />
+      )}
+      {/* Survey Gate Modal */}
+      {surveyGate && (
+        <SurveyGateModal
+          quoteNumber={surveyGate.quoteId}
+          leadId={surveyGate.leadId}
+          orgId={surveyGate.orgId}
+          onClose={() => setSurveyGate(null)}
+          onWaived={async () => {
+            setSurveyGate(null);
+            // Retry the status transition now that survey is waived
+            await cycleStatus(surveyGate.quoteId);
+          }}
         />
       )}
     </>

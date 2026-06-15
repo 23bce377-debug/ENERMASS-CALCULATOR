@@ -17,7 +17,7 @@ export const BundlePresetORM = {
       .from('bundle_presets')
       .select('*, bundle_preset_items(*), vendors(*)')
       .eq('id', id)
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data as BundlePreset;
   },

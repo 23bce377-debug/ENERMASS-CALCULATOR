@@ -22,6 +22,7 @@ export interface CustomerInfo {
   phone: string;
   whatsapp: string;
   email: string;
+  isGstRegistered?: boolean;
 }
 
 export interface AddressInfo {
@@ -45,6 +46,7 @@ export interface SalesInfo {
   execName: string;
   notes: string;
   saleType: 'New' | 'Upgrade' | 'Referral';
+  itcEligible?: boolean;
 }
 
 export interface QuoteStatusEntry {
@@ -116,6 +118,7 @@ export interface Quote {
   createdAt: string;
   updatedAt: string;
   version?: number;
+  parentQuoteId?: string;
 }
 
 // ─── Quote ID Generator ─────────────────────────────────────────────────────────

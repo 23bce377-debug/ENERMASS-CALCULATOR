@@ -1,7 +1,7 @@
 export type DiscountType = 'none' | 'flat' | 'percent';
 
 export interface PricingMarginInput {
-  costBeforeGST: number;
+  baseCost: number;
   targetMarginPct?: number;
   targetMRPInclGST?: number;
   targetMRPPerWatt?: number;
@@ -17,10 +17,16 @@ export interface PricingMarginInput {
  */
 export function calculatePricingAndMargins(input: PricingMarginInput) {
   // FIX CALC-07: Conflict detection
-  if (input.targetMRPPerWatt !== undefined && input.targetMarginPct !== undefined) {
-    throw new Error(
-      'Pricing conflict: both targetMRPPerWatt and targetMarginPct are set. ' +
-      'Provide only one. Priority chain: targetMRPInclGST > targetMRPPerWatt > targetMarginPct.'
+  const setPricingOptions = [
+    input.targetMRPInclGST !== undefined,
+    input.targetMRPPerWatt !== undefined,
+    input.targetMarginPct !== undefined
+  ].filter(Boolean).length;
+  
+  if (setPricingOptions > 1) {
+    console.warn(
+      'Pricing conflict: Only one of targetMRPInclGST, targetMRPPerWatt, or targetMarginPct can be set. ' +
+      'Priority chain: targetMRPInclGST > targetMRPPerWatt > targetMarginPct.'
     );
   }
 
@@ -32,20 +38,20 @@ export function calculatePricingAndMargins(input: PricingMarginInput) {
   if (input.targetMRPInclGST !== undefined) {
     mrpInclGST = input.targetMRPInclGST;
     mrpExclGST = mrpInclGST / (1 + input.gstOutputRate);
-    marginAmount = mrpExclGST - input.costBeforeGST;
-    effectiveMarginPct = input.costBeforeGST > 0 ? marginAmount / input.costBeforeGST : 0;
+    marginAmount = mrpExclGST - input.baseCost;
+    effectiveMarginPct = mrpExclGST > 0 ? marginAmount / mrpExclGST : 0;
   } else if (input.targetMRPPerWatt !== undefined) {
     mrpInclGST = input.targetMRPPerWatt * input.capacityWatts;
     mrpExclGST = mrpInclGST / (1 + input.gstOutputRate);
-    marginAmount = mrpExclGST - input.costBeforeGST;
-    effectiveMarginPct = input.costBeforeGST > 0 ? marginAmount / input.costBeforeGST : 0;
+    marginAmount = mrpExclGST - input.baseCost;
+    effectiveMarginPct = mrpExclGST > 0 ? marginAmount / mrpExclGST : 0;
   } else {
     effectiveMarginPct = input.targetMarginPct !== undefined
       ? input.targetMarginPct
       : input.defaultMarginPct;
-    effectiveMarginPct = Math.max(effectiveMarginPct, 0);
-    marginAmount = input.costBeforeGST * effectiveMarginPct;
-    mrpExclGST = input.costBeforeGST + marginAmount;
+    effectiveMarginPct = Math.max(Math.min(effectiveMarginPct, 0.99), 0); // Cap at 99%
+    mrpExclGST = input.baseCost / (1 - effectiveMarginPct);
+    marginAmount = mrpExclGST - input.baseCost;
     mrpInclGST = mrpExclGST * (1 + input.gstOutputRate);
   }
 

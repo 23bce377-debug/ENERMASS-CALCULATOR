@@ -6,10 +6,15 @@
  */
 
 import { SYSTEMS, type SolarSystem, type BomItem } from '../data/bom';
+import { STATE_DATA } from '@/lib/data/masters';
+import { TAX_CONSTANTS } from '@/lib/tax-constants';
+import { STRUCTURE_CONFIGS, type StructureType } from '../structures/structureConfig';
+import { SEED_BOM_TEMPLATE_ITEMS, SEED_BOM_CATEGORIES } from '../../../db/seeds/bom_templates';
 import { type StateData } from '../data/masters';
 import { calculateEnergyProjections } from './energy';
 import { calculatePricingAndMargins, calculateDiscountAmount } from './margin';
 import { calculateFinancialProjections } from './financials';
+import { calculatePMSuryaGharSubsidy, type SubsidyResult } from '../subsidy';
 
 export function roundTo5(num: number | null | undefined): number {
   if (num === null || num === undefined || isNaN(num)) return 0;
@@ -81,6 +86,7 @@ export interface CalcInput {
   electricityInflationRate?: number;
   panelCapacityKW?: number;
   inverterCapacityKW?: number;
+  totalInverterCapacityKW?: number;
   panelDegradationRate?: number;
   stateData?: Record<string, StateData>;
   slabs?: Array<{
@@ -93,6 +99,7 @@ export interface CalcInput {
 
   // Structure selections
   structureId?: string;
+  structureType?: StructureType;
   structureVendorId?: string;
   structureMaterialType?: string;
   walkwayLengthM?: number;
@@ -150,6 +157,7 @@ export interface CalcInput {
   // FIX CALC-02: Additional state subsidy from state_scheme_overrides
   additionalStateSubsidy?: number;
   applySubsidy?: boolean;
+  dbLoaded?: boolean;
 }
 
 export interface LineResult {
@@ -167,9 +175,16 @@ export interface LineResult {
   isCustomItem?: boolean;
   customItemIndex?: number;
   isDisabled?: boolean;
+  unitWattage?: number;
+  categoryId?: string;
+  categoryName?: string;
+  unitRateMin?: number;
+  unitRateMax?: number;
+  isSurveyDependent?: boolean;
 }
 
 export interface CalcResult {
+  capacityKW: number;
   // BOM breakdown
   lines: LineResult[];
 
@@ -194,11 +209,13 @@ export interface CalcResult {
   finalCustomerPrice: number;
 
   // Subsidy
+  subsidyResult: SubsidyResult;
   subsidyAmount: number;
   beneficiaryContribution: number;
 
   // Additional costs
   additionalCostTotal: number;
+  civilLogisticsCost: number;
 
   // Energy generation
   dailyGenerationKWh: number;
@@ -209,6 +226,8 @@ export interface CalcResult {
   paybackYears: number;
   lcoe: number;
   lifetimeSavingsINR: number;
+  npv: number;
+  irr: number;
 }
 
 // Equipment descriptions that are resolved from the DB model selection,
@@ -257,11 +276,23 @@ export function resolveRate(
     return rowOverride.ratePerUnit;
   }
 
-  // 2. Rate master — only for non-equipment BOM items
+  // 2. Equipment override
   const descUpper = item.description.toUpperCase();
   const isEquipment = ['PANEL', 'INVERTER', 'BATTERY'].some(prefix =>
     descUpper === prefix || descUpper.startsWith(prefix + ' ') || descUpper.startsWith(prefix + ':')
   );
+
+  if (descUpper.startsWith('PANEL') && _equipmentOverrides?.panelRateOverride !== undefined) {
+    return _equipmentOverrides.panelRateOverride;
+  }
+  if (descUpper.startsWith('INVERTER') && _equipmentOverrides?.inverterRateOverride !== undefined) {
+    return _equipmentOverrides.inverterRateOverride;
+  }
+  if (descUpper.startsWith('BATTERY') && _equipmentOverrides?.batteryRateOverride !== undefined) {
+    return _equipmentOverrides.batteryRateOverride;
+  }
+
+  // 3. Rate master — only for non-equipment BOM items
   if (!isEquipment) {
     const masterEntry = getMasterEntry(item.description, rateMaster);
     if (masterEntry && masterEntry.active && masterEntry.rate > 0) {
@@ -327,7 +358,7 @@ export function getSubsidyAmount(
   let total = 0;
   for (const slab of slabs) {
     const start = Number(slab.start_kw);
-    if (eligibleCapacityKW <= start) {
+    if (eligibleCapacityKW < start) {
       break;
     }
     if (slab.is_fixed_amount) {
@@ -341,14 +372,15 @@ export function getSubsidyAmount(
     }
   }
 
+  if (maxAbsoluteSubsidy !== undefined && maxAbsoluteSubsidy > 0) {
+    total = Math.min(total, maxAbsoluteSubsidy);
+  }
+
   // FIX CALC-02: Add state-specific additional subsidy (e.g. Gujarat top-up)
   if (additionalStateSubsidy !== undefined && additionalStateSubsidy > 0) {
     total += additionalStateSubsidy;
   }
 
-  if (maxAbsoluteSubsidy !== undefined && maxAbsoluteSubsidy > 0) {
-    return Math.min(total, maxAbsoluteSubsidy);
-  }
   return total;
 }
 
@@ -434,12 +466,7 @@ export function resolveStructureItems(
             ratePerUnit = Number(accessoryRow.rate ?? accessoryRow.override_rate ?? 0);
             unit = accessoryRow.unit ?? 'Nos';
           } else {
-            // Log missing accessory rate — do NOT silently use 0 in production
-            console.warn(
-              `[CALC-01] No DB rate found for structure accessory: "${item.item}" ` +
-              `(template: ${template.capacity_kw}kW ${template.structure_type}). ` +
-              `Add to structure_accessory_rates table.`
-            );
+            console.error(`Missing accessory rate for "${item.item}" in structure_accessory_rates. Configure before quoting.`);
             ratePerUnit = 0;
             unit = 'Nos';
           }
@@ -452,7 +479,7 @@ export function resolveStructureItems(
           ratePerUnit: ratePerUnit,
           unit: unit,
           remarks: remarks,
-          gstPct: 0.18 as any, // Default 18% for structure components
+          gstPct: TAX_CONSTANTS.BOS_GST_RATE as any, // Default 18% for structure components
         });
       });
     }
@@ -464,15 +491,18 @@ export function resolveStructureItems(
       if (!walkwayTemplate && (input.dbWalkwayTemplates ?? []).length > 0) {
         walkwayTemplate = input.dbWalkwayTemplates?.[0];
       }
+      if (!walkwayTemplate) {
+        console.warn(`Missing walkway template for ${input.structureMaterialType}. Configure before quoting.`);
+      }
       
-      const costPerMeter = walkwayTemplate ? Number(walkwayTemplate.cost_per_meter) : 837.33;
+      const costPerMeter = walkwayTemplate ? Number(walkwayTemplate.cost_per_meter) : 0;
       items.push({
         description: `Walkway (${input.structureMaterialType})`,
         qty: input.walkwayLengthM,
         ratePerUnit: costPerMeter,
         unit: 'Meter',
         remarks: walkwayTemplate ? `Walkway template: ${walkwayTemplate.template}` : 'Walkway',
-        gstPct: 0.18 as any,
+        gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
       });
     }
     
@@ -483,25 +513,58 @@ export function resolveStructureItems(
       if (!ladderTemplate && (input.dbLadderTemplates ?? []).length > 0) {
         ladderTemplate = input.dbLadderTemplates?.[0];
       }
+      if (!ladderTemplate) {
+        console.error(`Missing ladder template for ${input.structureMaterialType}. Configure before quoting.`);
+      }
       
-      const costPerMeter = ladderTemplate ? Number(ladderTemplate.cost_per_meter) : 898.33;
+      const costPerMeter = ladderTemplate ? Number(ladderTemplate.cost_per_meter) : 0;
       items.push({
         description: `Ladder (${input.structureMaterialType})`,
         qty: input.ladderLengthM,
         ratePerUnit: costPerMeter,
         unit: 'Meter',
         remarks: ladderTemplate ? `Ladder template: ${ladderTemplate.template}` : 'Ladder',
-        gstPct: 0.18 as any,
+        gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
       });
     }
 
     return { items, removeGenericStructure };
   }
 
-  // OLD FALLBACK LOGIC
+
+  // 3. NEW FALLBACK: Use new config-driven structures
   if (!input.structureId) {
+    if (input.structureType) {
+      const spec = STRUCTURE_CONFIGS[input.structureType];
+      if (spec) {
+        const totalWeight = capacityKW * spec.weightPerKwKg;
+        items.push({
+          description: 'STRUCTURE',
+          qty: capacityKW,
+          ratePerUnit: spec.ratePerKwDefault,
+          unit: 'kW',
+          remarks: `Approx. ${totalWeight.toFixed(1)}kg HDG steel (${spec.displayName})`,
+          gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
+        });
+
+        if (spec.elevationSurcharge) {
+          const surchargeItem = {
+            description: 'STRUCTURE ELEVATION SURCHARGE',
+            qty: capacityKW,
+            ratePerUnit: 500,
+            unit: 'kW',
+            remarks: `Confirm after site survey (${spec.notes})`,
+            gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
+          };
+          (surchargeItem as any).isSurveyDependent = true;
+          items.push(surchargeItem);
+        }
+        removeGenericStructure = true;
+      }
+    }
     return { items, removeGenericStructure };
   }
+
 
   if (input.structureId === 'custom') {
     const mode = input.structurePricingMode ?? 'weight';
@@ -530,7 +593,7 @@ export function resolveStructureItems(
           ratePerUnit: Number(part.rate ?? 0),
           unit: part.unit ?? 'Nos',
           remarks: part.remarks ?? '',
-          gstPct: Number(part.gst_pct ?? 0.18) as any,
+          gstPct: Number(part.gst_pct ?? TAX_CONSTANTS.BOS_GST_RATE) as any,
         });
       });
     } else if (mode === 'per_watt') {
@@ -540,7 +603,7 @@ export function resolveStructureItems(
         ratePerUnit: capacityWatts * (input.structureRateOverride ?? 0),
         unit: 'Set',
         remarks: 'Custom Structure (Per watt)',
-        gstPct: 0.18 as any,
+        gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
       });
     } else {
       items.push({
@@ -549,7 +612,7 @@ export function resolveStructureItems(
         ratePerUnit: input.structureRateOverride ?? 0,
         unit: 'Set',
         remarks: 'Custom Structure (Flat rate)',
-        gstPct: 0.18 as any,
+        gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
       });
     }
   } else {
@@ -608,9 +671,13 @@ export function resolveStructureItems(
           const baseWeight = Number(struct.base_weight_kg ?? 0);
           const wastage = Number(struct.wastage_pct ?? 0.05);
           const fasteners = Number(struct.fastener_weight_pct ?? 0.02);
-          const ratePerKg = Number(struct.rate_per_kg ?? (Number(struct.raw_material_rate ?? 0) + Number(struct.fabrication_rate ?? 0) + Number(struct.galvanizing_rate ?? 0)));
+          let ratePerKg = Number(struct.rate_per_kg ?? (Number(struct.raw_material_rate ?? 0) + Number(struct.fabrication_rate ?? 0) + Number(struct.galvanizing_rate ?? 0)));
           
           structureQty = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
+          if (ratePerKg === 0 && structureQty > 0) {
+              // Enforce 5000/kW default if DB rates are missing
+              ratePerKg = (5000 * capacityKW) / structureQty;
+          }
           structureRate = ratePerKg;
           structureUnit = 'kg';
           structureRemarks = `${struct.name} (${lookupWeight}kg lookup)`;
@@ -649,7 +716,7 @@ export function resolveStructureItems(
           ratePerUnit: Number(addon.rate_per_unit),
           unit: addon.unit || 'Meter',
           remarks: addon.notes || 'Structure addon',
-          gstPct: Number(addon.gst_pct ?? 0.18) as any,
+          gstPct: Number(addon.gst_pct ?? TAX_CONSTANTS.BOS_GST_RATE) as any,
         });
       }
     });
@@ -667,14 +734,20 @@ export function resolveStructureItems(
 export function calculateSystem(input: CalcInput): CalcResult {
   const systems = input.systems ?? SYSTEMS;
   // ── Step 1: Lookup system ──
-  const system = systems.find((s) => s.id === input.systemId);
+  let system = systems.find((s) => s.id === input.systemId);
+  if (!system && systems.length > 0) {
+    system = systems[0];
+  }
   if (!system) {
     throw new Error(`System not found: "${input.systemId}"`);
   }
 
   // ── Step 2: Lookup state ──
   const stateDataResolved = input.stateData ?? {};
-  const stateData = stateDataResolved[input.state];
+  let stateData = stateDataResolved[input.state];
+  if (!stateData) {
+    stateData = stateDataResolved['Kerala'] || Object.values(stateDataResolved)[0];
+  }
   if (!stateData) {
     throw new Error(`State not found: "${input.state}"`);
   }
@@ -689,62 +762,74 @@ export function calculateSystem(input: CalcInput): CalcResult {
     batteryQtyOverride: input.batteryQtyOverride,
   };
 
-  const capacityKW = system.capacityKW || 0.001;
+  const capacityKW = input.panelCapacityKW || system.capacityKW || (system as any).capacity_kw || 1.0;
   const capacityWatts = capacityKW * 1000;
 
   // Clone system items and expand generic placeholders to specific selected models
   let resolvedItems: import('../data/bom').BomItem[] = [];
 
+  let processedPanels = false;
+  let processedInverters = false;
+  let processedBatteries = false;
+
   for (const item of system.items) {
     const descUpper = item.description.toUpperCase();
 
     if (descUpper === 'PANEL') {
+      processedPanels = true;
       const panelMixEntries = Object.entries(input.panelMix ?? {}).filter(
         ([, qty]) => Number.isFinite(qty) && qty > 0
       );
-      if (panelMixEntries.length > 0 && input.dbPanels && input.dbPanels.length > 0) {
-        for (const [panelId, qty] of panelMixEntries) {
-          const p = input.dbPanels.find(x => x.id === panelId);
+      const hasPanelSelection = panelMixEntries.length > 0 || !!input.selectedPanelId;
+      if (hasPanelSelection && input.dbPanels && input.dbPanels.length > 0) {
+        if (panelMixEntries.length > 0) {
+          for (const [panelId, qty] of panelMixEntries) {
+            const p = input.dbPanels.find(x => x.id === panelId);
+            if (p) {
+              resolvedItems.push({
+                description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
+                qty: qty,
+                ratePerUnit: p.ratePerWatt * p.wattage,
+                gstPct: p.gst_pct ?? TAX_CONSTANTS.RESIDENTIAL_GST_RATE,
+                unit: 'Nos',
+                remarks: item.remarks ?? '',
+                unitWattage: p.wattage,
+              });
+            }
+          }
+        } else if (input.selectedPanelId) {
+          const p = input.dbPanels.find(x => x.id === input.selectedPanelId);
           if (p) {
+            const qty = input.panelQtyOverride !== undefined ? input.panelQtyOverride : (system.panelQty ?? item.qty);
             resolvedItems.push({
               description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
               qty: qty,
               ratePerUnit: p.ratePerWatt * p.wattage,
-              gstPct: p.gst_pct ?? 0.05,
+              gstPct: p.gst_pct ?? TAX_CONSTANTS.RESIDENTIAL_GST_RATE,
               unit: 'Nos',
               remarks: item.remarks ?? '',
+              unitWattage: p.wattage,
             });
           }
         }
-      } else if (input.selectedPanelId && input.dbPanels && input.dbPanels.length > 0) {
-        const p = input.dbPanels.find(x => x.id === input.selectedPanelId);
-        if (p) {
-          const qty = input.panelQtyOverride !== undefined ? input.panelQtyOverride : (system.panelQty ?? item.qty);
-          resolvedItems.push({
-            description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
-            qty: qty,
-            ratePerUnit: p.ratePerWatt * p.wattage,
-            gstPct: p.gst_pct ?? 0.05,
-            unit: 'Nos',
-            remarks: item.remarks ?? '',
-          });
-        }
       } else {
-        // Fallback to generic row if no db information is loaded
+        // Fallback or unselected
         const rate = input.panelRateOverride !== undefined ? input.panelRateOverride : item.ratePerUnit;
-        const qty = input.panelQtyOverride !== undefined ? input.panelQtyOverride : item.qty;
+        const qty = (input.dbLoaded && !hasPanelSelection) ? 0 : (input.panelQtyOverride !== undefined ? input.panelQtyOverride : item.qty);
         resolvedItems.push({
           ...item,
-          ratePerUnit: rate,
+          ratePerUnit: (qty === 0) ? 0 : rate,
           qty: qty
         });
       }
     }
     else if (descUpper === 'INVERTER') {
+      processedInverters = true;
       const inverterMixEntries = Object.entries(input.selectedInverterMix ?? {}).filter(
         ([, qty]) => Number.isFinite(qty) && qty > 0
       );
-      if (inverterMixEntries.length > 0 && input.dbInverters && input.dbInverters.length > 0) {
+      const hasInverterSelection = inverterMixEntries.length > 0;
+      if (hasInverterSelection && input.dbInverters && input.dbInverters.length > 0) {
         for (const [invId, qty] of inverterMixEntries) {
           const inv = input.dbInverters.find(x => x.id === invId);
           if (inv) {
@@ -752,28 +837,30 @@ export function calculateSystem(input: CalcInput): CalcResult {
               description: `INVERTER ${inv.brand} ${inv.model}`,
               qty: qty,
               ratePerUnit: inv.rate,
-              gstPct: inv.gst_pct ?? 0.12,
+              gstPct: inv.gst_pct ?? TAX_CONSTANTS.INVERTER_GST_RATE,
               unit: 'Nos',
               remarks: item.remarks ?? '',
             });
           }
         }
       } else {
-        // Fallback to generic row if no db information is loaded
+        // Fallback or unselected
         const rate = input.inverterRateOverride !== undefined ? input.inverterRateOverride : item.ratePerUnit;
-        const qty = input.inverterQtyOverride !== undefined ? input.inverterQtyOverride : item.qty;
+        const qty = (input.dbLoaded && !hasInverterSelection) ? 0 : (input.inverterQtyOverride !== undefined ? input.inverterQtyOverride : item.qty);
         resolvedItems.push({
           ...item,
-          ratePerUnit: rate,
+          ratePerUnit: (qty === 0) ? 0 : rate,
           qty: qty
         });
       }
     }
     else if (descUpper === 'BATTERY') {
+      processedBatteries = true;
       const batteryMixEntries = Object.entries(input.selectedBatteryMix ?? {}).filter(
         ([, qty]) => Number.isFinite(qty) && qty > 0
       );
-      if (batteryMixEntries.length > 0 && input.dbBatteries && input.dbBatteries.length > 0) {
+      const hasBatterySelection = batteryMixEntries.length > 0;
+      if (hasBatterySelection && input.dbBatteries && input.dbBatteries.length > 0) {
         for (const [batId, qty] of batteryMixEntries) {
           const bat = input.dbBatteries.find(x => x.id === batId);
           if (bat) {
@@ -783,27 +870,140 @@ export function calculateSystem(input: CalcInput): CalcResult {
               ratePerUnit: bat.rate,
               // FIX CALC-08: Battery GST is 12% by default (not 18%).
               // Use the value from DB. Default 0.12 if DB column is NULL/zero.
-              gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : 0.12) as any,
+              gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : TAX_CONSTANTS.INVERTER_GST_RATE) as any,
               unit: 'Nos',
               remarks: item.remarks ?? '',
             });
           }
         }
       } else {
-        // Fallback to generic row if no db information is loaded
+        // Fallback or unselected
         const rate = input.batteryRateOverride !== undefined ? input.batteryRateOverride : item.ratePerUnit;
-        const qty = input.batteryQtyOverride !== undefined ? input.batteryQtyOverride : item.qty;
+        const qty = (input.dbLoaded && !hasBatterySelection) ? 0 : (input.batteryQtyOverride !== undefined ? input.batteryQtyOverride : item.qty);
         resolvedItems.push({
           ...item,
-          ratePerUnit: rate,
+          ratePerUnit: (qty === 0) ? 0 : rate,
           qty: qty
         });
       }
+    }
+    else if (descUpper === 'STRUCTURE') {
+      const isStructureSelected = (input.structureVendorId && input.structureMaterialType) || !!input.structureId;
+      const qty = (input.dbLoaded && !isStructureSelected) ? 0 : item.qty;
+      resolvedItems.push({
+        ...item,
+        qty,
+        ratePerUnit: (qty === 0) ? 0 : item.ratePerUnit,
+      });
     }
     else {
       resolvedItems.push({ ...item });
     }
   }
+
+  // Ensure PANEL, INVERTER, and BATTERY are included even if missing from system.items
+  if (!processedPanels) {
+    const panelMixEntries = Object.entries(input.panelMix ?? {}).filter(([, qty]) => Number.isFinite(qty) && qty > 0);
+    const hasPanelSelection = panelMixEntries.length > 0 || !!input.selectedPanelId;
+    if (hasPanelSelection && input.dbPanels && input.dbPanels.length > 0) {
+      if (panelMixEntries.length > 0) {
+        for (const [panelId, qty] of panelMixEntries) {
+          const p = input.dbPanels.find(x => x.id === panelId);
+          if (p) {
+            resolvedItems.push({
+              description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
+              qty: qty,
+              ratePerUnit: p.ratePerWatt * p.wattage,
+              gstPct: p.gst_pct ?? TAX_CONSTANTS.RESIDENTIAL_GST_RATE,
+              unit: 'Nos',
+              remarks: '',
+              unitWattage: p.wattage,
+            });
+          }
+        }
+      } else if (input.selectedPanelId) {
+        const p = input.dbPanels.find(x => x.id === input.selectedPanelId);
+        if (p) {
+          const qty = input.panelQtyOverride !== undefined ? input.panelQtyOverride : 0;
+          resolvedItems.push({
+            description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
+            qty: qty,
+            ratePerUnit: p.ratePerWatt * p.wattage,
+            gstPct: p.gst_pct ?? TAX_CONSTANTS.RESIDENTIAL_GST_RATE,
+            unit: 'Nos',
+            remarks: '',
+            unitWattage: p.wattage,
+          });
+        }
+      }
+    } else {
+      resolvedItems.push({
+        description: 'PANEL',
+        qty: input.panelQtyOverride !== undefined ? input.panelQtyOverride : 0,
+        ratePerUnit: input.panelRateOverride !== undefined ? input.panelRateOverride : 0,
+        gstPct: TAX_CONSTANTS.RESIDENTIAL_GST_RATE,
+        unit: 'Nos',
+        remarks: 'None (Unselected)',
+      });
+    }
+  }
+
+  if (!processedInverters) {
+    const inverterMixEntries = Object.entries(input.selectedInverterMix ?? {}).filter(([, qty]) => Number.isFinite(qty) && qty > 0);
+    if (inverterMixEntries.length > 0 && input.dbInverters && input.dbInverters.length > 0) {
+      for (const [invId, qty] of inverterMixEntries) {
+        const inv = input.dbInverters.find(x => x.id === invId);
+        if (inv) {
+          resolvedItems.push({
+            description: `INVERTER ${inv.brand} ${inv.model}`,
+            qty: qty,
+            ratePerUnit: inv.rate,
+            gstPct: inv.gst_pct ?? TAX_CONSTANTS.INVERTER_GST_RATE,
+            unit: 'Nos',
+            remarks: '',
+          });
+        }
+      }
+    } else {
+      resolvedItems.push({
+        description: 'INVERTER',
+        qty: input.inverterQtyOverride !== undefined ? input.inverterQtyOverride : 0,
+        ratePerUnit: input.inverterRateOverride !== undefined ? input.inverterRateOverride : 0,
+        gstPct: TAX_CONSTANTS.INVERTER_GST_RATE,
+        unit: 'Nos',
+        remarks: 'None (Unselected)',
+      });
+    }
+  }
+
+  if (!processedBatteries) {
+    const batteryMixEntries = Object.entries(input.selectedBatteryMix ?? {}).filter(([, qty]) => Number.isFinite(qty) && qty > 0);
+    if (batteryMixEntries.length > 0 && input.dbBatteries && input.dbBatteries.length > 0) {
+      for (const [batId, qty] of batteryMixEntries) {
+        const bat = input.dbBatteries.find(x => x.id === batId);
+        if (bat) {
+          resolvedItems.push({
+            description: `BATTERY ${bat.brand} ${bat.model}`,
+            qty: qty,
+            ratePerUnit: bat.rate,
+            gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : TAX_CONSTANTS.INVERTER_GST_RATE) as any,
+            unit: 'Nos',
+            remarks: '',
+          });
+        }
+      }
+    } else {
+      resolvedItems.push({
+        description: 'BATTERY',
+        qty: input.batteryQtyOverride !== undefined ? input.batteryQtyOverride : 0,
+        ratePerUnit: input.batteryRateOverride !== undefined ? input.batteryRateOverride : 0,
+        gstPct: TAX_CONSTANTS.INVERTER_GST_RATE,
+        unit: 'Nos',
+        remarks: 'None (Unselected)',
+      });
+    }
+  }
+
 
   // Helper to find or update/create an item in BOM
   const upsertItem = (description: string, itemData: Partial<import('../data/bom').BomItem>, forceAdd = false) => {
@@ -815,7 +1015,12 @@ export function calculateSystem(input: CalcInput): CalcResult {
         description,
         qty: itemData.qty ?? 0,
         ratePerUnit: itemData.ratePerUnit ?? 0,
-        gstPct: (itemData.gstPct ?? 0.18) as any,
+        gstPct: (itemData.gstPct ?? (
+          description.toUpperCase().startsWith('PANEL') ? TAX_CONSTANTS.RESIDENTIAL_GST_RATE :
+          description.toUpperCase().startsWith('INVERTER') ? TAX_CONSTANTS.INVERTER_GST_RATE :
+          description.toUpperCase().startsWith('BATTERY') ? TAX_CONSTANTS.INVERTER_GST_RATE :
+          TAX_CONSTANTS.BOS_GST_RATE
+        )) as any,
         unit: itemData.unit ?? 'Nos',
         remarks: itemData.remarks ?? '',
       });
@@ -839,25 +1044,37 @@ export function calculateSystem(input: CalcInput): CalcResult {
     upsertItem('SOLAR METER', {
       qty: input.solarMeterQty ?? 1,
       ratePerUnit: 0,
-      gstPct: 0.18 as any,
+      gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
       unit: 'Nos',
       remarks: 'Custom Solar Meter',
     }, true);
-  } else {
+  } else if (input.solarMeterId) {
     const solarMeterMeter = (input.dbMeters ?? []).find(m => m.id === input.solarMeterId);
-    if (!solarMeterMeter) {
-      throw new Error(`Solar meter not found: ${input.solarMeterId}`);
+    if (solarMeterMeter) {
+      const gst = Number(solarMeterMeter.gst_pct) || TAX_CONSTANTS.BOS_GST_RATE;
+      upsertItem('SOLAR METER', {
+        qty: input.solarMeterQty ?? 1,
+        ratePerUnit: Number(solarMeterMeter.rate),
+        gstPct: gst as any,
+        unit: 'Nos',
+        remarks: solarMeterMeter.description ?? `${solarMeterMeter.brand} ${solarMeterMeter.model}`,
+      }, true);
+    } else {
+      upsertItem('SOLAR METER', {
+        qty: 0,
+        ratePerUnit: 0,
+        gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
+        unit: 'Nos',
+        remarks: 'None (Unselected)',
+      }, true);
     }
-    const gst = Number(solarMeterMeter.gst_pct);
-    if (isNaN(gst) || gst <= 0) {
-      throw new Error(`Solar meter GST not configured for ${solarMeterMeter.id}`);
-    }
+  } else {
     upsertItem('SOLAR METER', {
-      qty: input.solarMeterQty ?? 1,
-      ratePerUnit: Number(solarMeterMeter.rate),
-      gstPct: gst as any,
+      qty: 0,
+      ratePerUnit: 0,
+      gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
       unit: 'Nos',
-      remarks: solarMeterMeter.description ?? `${solarMeterMeter.brand} ${solarMeterMeter.model}`,
+      remarks: 'None (Unselected)',
     }, true);
   }
 
@@ -866,61 +1083,171 @@ export function calculateSystem(input: CalcInput): CalcResult {
     upsertItem('NET METER', {
       qty: input.netMeterQty ?? 1,
       ratePerUnit: 0,
-      gstPct: 0.18 as any,
+      gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
       unit: 'Nos',
       remarks: 'Custom Net Meter',
     }, true);
-  } else {
+  } else if (input.netMeterId) {
     const netMeterMeter = (input.dbMeters ?? []).find(m => m.id === input.netMeterId);
-    if (!netMeterMeter) {
-      throw new Error(`Net meter not found: ${input.netMeterId}`);
+    if (netMeterMeter) {
+      const gst = Number(netMeterMeter.gst_pct) || TAX_CONSTANTS.BOS_GST_RATE;
+      upsertItem('NET METER', {
+        qty: input.netMeterQty ?? 1,
+        ratePerUnit: Number(netMeterMeter.rate),
+        gstPct: gst as any,
+        unit: 'Nos',
+        remarks: netMeterMeter.description ?? `${netMeterMeter.brand} ${netMeterMeter.model}`,
+      }, true);
+    } else {
+      upsertItem('NET METER', {
+        qty: 0,
+        ratePerUnit: 0,
+        gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
+        unit: 'Nos',
+        remarks: 'None (Unselected)',
+      }, true);
     }
-    const gst = Number(netMeterMeter.gst_pct);
-    if (isNaN(gst) || gst <= 0) {
-      throw new Error(`Net meter GST not configured for ${netMeterMeter.id}`);
-    }
+  } else {
     upsertItem('NET METER', {
-      qty: input.netMeterQty ?? 1,
-      ratePerUnit: Number(netMeterMeter.rate),
-      gstPct: gst as any,
+      qty: 0,
+      ratePerUnit: 0,
+      gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
       unit: 'Nos',
-      remarks: netMeterMeter.description ?? `${netMeterMeter.brand} ${netMeterMeter.model}`,
+      remarks: 'None (Unselected)',
     }, true);
   }
 
   // 4. Resolve LIGHTNING ARRESTER
-  if (input.lightningArresterId) {
-    if (input.lightningArresterId === 'custom') {
-      const laKey = resolvedItems.some(item => item.description.toUpperCase() === 'L/A') ? 'L/A' : 'LIGHTNING ARRESTER';
-      upsertItem(laKey, {
-        qty: input.lightningArresterQty ?? 1,
-        ratePerUnit: 0,
-        gstPct: 0.18 as any,
-        unit: 'Nos',
-        remarks: 'Custom Lightning Arrester',
-      });
-    } else {
-      const la = (input.dbLAs ?? []).find(l => l.id === input.lightningArresterId);
-      if (!la) {
-        throw new Error(`Lightning arrester not found: ${input.lightningArresterId}`);
-      }
-      const gst = Number(la.gst_pct);
-      if (isNaN(gst) || gst <= 0) {
-        throw new Error(`Lightning arrester GST not configured for ${la.id}`);
-      }
-      const laKey = resolvedItems.some(item => item.description.toUpperCase() === 'L/A') ? 'L/A' : 'LIGHTNING ARRESTER';
+  const laKey = resolvedItems.some(item => item.description.toUpperCase() === 'L/A') ? 'L/A' : 'LIGHTNING ARRESTER';
+  if (input.lightningArresterId === 'custom') {
+    upsertItem(laKey, {
+      qty: input.lightningArresterQty ?? 1,
+      ratePerUnit: 0,
+      gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
+      unit: 'Nos',
+      remarks: 'Custom Lightning Arrester',
+    }, true);
+  } else if (input.lightningArresterId) {
+    const la = (input.dbLAs ?? []).find(l => l.id === input.lightningArresterId);
+    if (la) {
+      const gst = Number(la.gst_pct) || TAX_CONSTANTS.BOS_GST_RATE;
       upsertItem(laKey, {
         qty: input.lightningArresterQty ?? 1,
         ratePerUnit: Number(la.rate),
         gstPct: gst as any,
         unit: 'Nos',
         remarks: la.description ?? la.model,
-      });
+      }, true);
+    } else {
+      upsertItem(laKey, {
+        qty: 0,
+        ratePerUnit: 0,
+        gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
+        unit: 'Nos',
+        remarks: 'None (Unselected)',
+      }, true);
+    }
+  } else {
+    upsertItem(laKey, {
+      qty: 0,
+      ratePerUnit: 0,
+      gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
+      unit: 'Nos',
+      remarks: 'None (Unselected)',
+    }, true);
+  }
+
+  // customItems
+  if (input.customItems) {
+    resolvedItems.push(...input.customItems);
+  }
+
+  // Inject standard product categories if they are missing so they aren't "left to rot"
+  const STANDARD_CATEGORIES = [
+    { desc: 'ISOLATOR', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'METER BOX', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'CHAMBER BOX', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'EARTH BENCH', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'ALUM CABLE 50 SQMM', unit: 'Meter', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'ALUM CABLE 10 SQMM', unit: 'Meter', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'COPPER', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'MC4(ADDITIONAL)', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'WIRING ACCESSORIES', unit: 'Lot', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'TRANSPORTATION', unit: 'Lot', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'COMMISSION', unit: 'Lot', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'SITE VISIT', unit: 'Lot', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
+    { desc: 'INSTALLATION', unit: 'Lot', gstPct: TAX_CONSTANTS.INSTALLATION_SERVICE_GST },
+  ];
+
+  for (const cat of STANDARD_CATEGORIES) {
+    const exists = resolvedItems.some(i => i.description.toUpperCase().startsWith(cat.desc.toUpperCase()));
+    if (!exists) {
+      upsertItem(cat.desc, {
+        qty: 0,
+        ratePerUnit: 0,
+        gstPct: cat.gstPct as any,
+        unit: cat.unit,
+        remarks: 'Standard item',
+      }, true);
     }
   }
 
-  // ── Step 3-4: Process each BOM item ──
-  const allItems = [...resolvedItems, ...(input.customItems || [])];
+  
+  // ── Step 3.5: Inject DB Seeded BOS Components ──
+  const systemKw = input.panelCapacityKW ?? system.capacityKW ?? 0;
+  const panelCount = equipmentOverrides.panelQtyOverride ?? system.panelQty ?? 0;
+  const roofAreaSqft = systemKw * 100; // rough estimate if not provided
+
+  for (const item of SEED_BOM_TEMPLATE_ITEMS) {
+    if (item.categoryId === 'cat-civil') {
+      const spec = input.structureType ? STRUCTURE_CONFIGS[input.structureType] : null;
+      const isCivilRequired = spec ? spec.civilRequired : false;
+      if (!isCivilRequired) continue;
+    }
+
+    let calculatedQty = 0;
+    
+    if (!item.isSystemSurveyDependent && item.qtyFormula && item.qtyFormula !== 'null') {
+      let formula = item.qtyFormula
+        .replace(/system_kw/g, systemKw.toString())
+        .replace(/panel_count/g, panelCount.toString())
+        .replace(/roof_area_sqft/g, roofAreaSqft.toString());
+        
+      // Safely evaluate basic math
+      try {
+        const cleanFormula = formula
+          .replace(/CEIL/g, 'Math.ceil')
+          .replace(/MAX/g, 'Math.max');
+        calculatedQty = eval(cleanFormula);
+      } catch (e) {
+        console.warn('Failed to parse formula:', item.qtyFormula, e);
+        calculatedQty = 1;
+      }
+    }
+
+    const category = SEED_BOM_CATEGORIES.find(c => c.id === item.categoryId);
+
+    upsertItem(item.description, {
+      qty: calculatedQty,
+      ratePerUnit: item.defaultRate,
+      gstPct: TAX_CONSTANTS.BOS_GST_RATE,
+      unit: item.unit,
+      remarks: item.isSystemSurveyDependent ? 'Pending Site Survey' : 'Calculated BOM',
+    }, false);
+    
+    // Attach metadata for the UI to use later
+    const idx = resolvedItems.findIndex(i => i.description === item.description);
+    if (idx !== -1) {
+      (resolvedItems[idx] as any).categoryId = item.categoryId;
+      (resolvedItems[idx] as any).categoryName = category?.name;
+      (resolvedItems[idx] as any).unitRateMin = item.unitRateMin;
+      (resolvedItems[idx] as any).unitRateMax = item.unitRateMax;
+      (resolvedItems[idx] as any).isSurveyDependent = item.isSystemSurveyDependent;
+    }
+  }
+
+  // ── Step 4: Apply Overrides, Rate Master, and Calculate Totals ──
+  const allItems = [...resolvedItems];
   const lines: LineResult[] = allItems.map((item, index) => {
     const rowOverride = input.overrides?.[index];
     const isDisabled = input.disabledItemIndices?.[index] === true;
@@ -957,10 +1284,10 @@ export function calculateSystem(input: CalcInput): CalcResult {
       rowOverride?.gstPct !== undefined ? rowOverride.gstPct : item.gstPct
     );
 
-    // Compute line totals — rounded to 5 decimal places (set to 0 if item is unchecked/disabled)
-    const lineTotal = isDisabled ? 0 : roundTo5(effectiveQty * effectiveRate);
-    const lineGST = isDisabled ? 0 : roundTo5(lineTotal * effectiveGstPct);
-    const lineSubTotal = roundTo5(lineTotal + lineGST);
+    // Compute line totals — rounded to 2 decimal places (set to 0 if item is unchecked/disabled)
+    const lineTotal = isDisabled ? 0 : roundToINR(effectiveQty * effectiveRate);
+    const lineGST = isDisabled ? 0 : roundToINR(lineTotal * effectiveGstPct);
+    const lineSubTotal = roundToINR(lineTotal + lineGST);
 
     const descUpper = item.description.toUpperCase();
     const isEquipment = ['PANEL', 'INVERTER', 'BATTERY'].some(prefix =>
@@ -1005,14 +1332,15 @@ export function calculateSystem(input: CalcInput): CalcResult {
   });
 
   // ── Step 5: Cost aggregates ──
-  const costBeforeGST = roundToINR(lines.reduce((sum, l) => sum + l.lineTotal, 0));
-  const totalInputGST = roundToINR(lines.reduce((sum, l) => sum + l.lineGST, 0));
+  const activeLines = lines.filter(l => !l.isDisabled);
+  const costBeforeGST = roundToINR(activeLines.reduce((sum, l) => sum + l.lineTotal, 0));
+  const totalInputGST = roundToINR(activeLines.reduce((sum, l) => sum + l.lineGST, 0));
   const totalIncGST = roundToINR(costBeforeGST + totalInputGST);
 
   // ── Step 7: Resolve output GST ──
   // FIX CALC-03: Validate GST override against legal Indian GST slabs.
-  // Valid slabs: 0%, 5%, 12%, 18%, 28% (plus composite 8.9% / 13.8% for solar output)
-  const VALID_OUTPUT_GST_SLABS = new Set([0, 0.05, 0.089, 0.12, 0.138, 0.18, 0.28]);
+  // Valid slabs: 0%, 5%, 12%, 18%, 28% (plus composite 13.8% for solar output)
+  const VALID_OUTPUT_GST_SLABS = new Set([0, TAX_CONSTANTS.RESIDENTIAL_GST_RATE, TAX_CONSTANTS.INVERTER_GST_RATE, TAX_CONSTANTS.COMPOSITE_GST_RATE, TAX_CONSTANTS.BOS_GST_RATE, 0.28]);
   const rawGstOverride = input.gstOnOutputOverride;
   const resolvedGstOverride = (() => {
     if (rawGstOverride === undefined || input.allowGstOverride !== true) return undefined;
@@ -1032,12 +1360,17 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const gstOutputRate = roundTo5(
     resolvedGstOverride !== undefined
       ? resolvedGstOverride
-      : (input.gstOnOutput !== undefined ? input.gstOnOutput : stateData.gstOnOutput)
+      : (input.gstOnOutput !== undefined 
+          ? input.gstOnOutput 
+          : (input.projectType === 'commercial' ? TAX_CONSTANTS.COMMERCIAL_GST_RATE : stateData.gstOnOutput))
   );
 
   // ── Step 8 & 6: Resolve MRP & Margin ──
+  // ITC Handling: Commercial projects use costBeforeGST (can claim ITC), Residential use totalIncGST (absorb input GST as cost)
+  const baseCostForMargin = input.projectType === 'commercial' ? costBeforeGST : totalIncGST;
+
   const marginResults = calculatePricingAndMargins({
-    costBeforeGST,
+    baseCost: baseCostForMargin,
     targetMarginPct: input.targetMarginPct,
     targetMRPInclGST: input.targetMRPInclGST,
     targetMRPPerWatt: input.targetMRPPerWatt,
@@ -1051,7 +1384,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const effectiveMarginPct = roundTo5(marginResults.effectiveMarginPct);
 
   // ── Per-kW analysis ──
-  const capKW = system.capacityKW || 0.001; // Avoid div by zero
+  const capKW = capacityKW;
   const perKWexclGST = roundToINR(mrpExclGST / capKW);
   const perKWinclGST = roundToINR(mrpInclGST / capKW);
 
@@ -1072,30 +1405,57 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const finalCustomerPrice = roundToINR(Math.max(0, mrpInclGST - discountAmount + additionalCostTotal));
 
   // ── Step 13: Subsidy ──
-  const subsidyAmount = input.applySubsidy !== false
-    ? roundToINR(input.rpcSubsidyAmount !== undefined
-        ? input.rpcSubsidyAmount
-        : getSubsidyAmount(
-            input.panelCapacityKW ?? system.capacityKW,
-            input.inverterCapacityKW,
-            input.state,
-            input.projectType,
-            input.stateData,
-            input.slabs,
-            input.maxSubsidyCapacityKW,
-            input.maxAbsoluteSubsidy,
-            // FIX CALC-02: Pass additional state subsidy
-            input.additionalStateSubsidy,
-          ))
-    : 0;
+  let subsidyResult: SubsidyResult = {
+    amount: 0,
+    breakdown: '',
+    isEligible: false,
+    schemeNote: ''
+  };
+
+  if (input.applySubsidy !== false) {
+    if (input.rpcSubsidyAmount !== undefined) {
+      subsidyResult = {
+        amount: input.rpcSubsidyAmount,
+        breakdown: 'Custom overridden subsidy',
+        isEligible: true,
+        schemeNote: 'Custom overridden subsidy'
+      };
+    } else {
+      const computedSubsidy = getSubsidyAmount(
+        input.panelCapacityKW ?? system.capacityKW ?? 0,
+        input.inverterCapacityKW,
+        input.state,
+        input.projectType,
+        stateDataResolved,
+        input.slabs,
+        input.maxSubsidyCapacityKW,
+        input.maxAbsoluteSubsidy,
+        input.additionalStateSubsidy
+      );
+      subsidyResult = {
+        amount: computedSubsidy,
+        breakdown: 'Calculated from DB scheme slabs',
+        isEligible: computedSubsidy > 0,
+        schemeNote: 'Subsidy calculated based on state rules'
+      };
+    }
+  }
+
+  const subsidyAmount = roundToINR(subsidyResult.amount);
 
   // ── Step 14: Beneficiary contribution ──
-  const beneficiaryContribution = roundToINR(Math.max(0, finalCustomerPrice - subsidyAmount));
+  // Commercial customers can claim GST Input Tax Credit on the system price
+  let itcAmount = 0;
+  if (input.projectType === 'commercial') {
+    itcAmount = mrpInclGST - mrpExclGST;
+  }
+  const beneficiaryContribution = roundToINR(Math.max(0, finalCustomerPrice - subsidyAmount - itcAmount));
 
   // ── Step 15: Energy generation ──
   const energyProjections = calculateEnergyProjections({
-    panelCapacityKW: input.panelCapacityKW ?? system.capacityKW,
+    panelCapacityKW: capacityKW,
     inverterCapacityKW: input.inverterCapacityKW,
+    totalInverterCapacityKW: input.totalInverterCapacityKW,
     sunHoursPerDay: stateData.sunHoursPerDay,
     performanceRatio: stateData.performanceRatio,
     orientation: input.orientation,
@@ -1121,6 +1481,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
   // ── Step 17: Payback & LCOE ──
   const financialProjections = calculateFinancialProjections({
     beneficiaryContribution,
+    totalSystemCost: finalCustomerPrice,
     annualGenerationKWh,
     annualSavingsINR,
     panelDegradationRate: input.panelDegradationRate,
@@ -1130,12 +1491,20 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const paybackYears = roundTo5(financialProjections.paybackYears);
   const lcoe = roundToINR(financialProjections.lcoe);
   const lifetimeSavingsINR = roundToINR(financialProjections.lifetimeSavingsINR);
+  const npv = roundToINR(financialProjections.npv);
+  const irr = roundTo5(financialProjections.irr);
+
+  const civilLogisticsCost = lines
+    .filter(l => l.categoryId === 'cat-civil' || l.categoryId === 'cat-logistics')
+    .filter(l => !l.isDisabled)
+    .reduce((sum, l) => sum + l.lineSubTotal, 0);
 
   // ── Return complete result ──
   return {
+    capacityKW,
     lines,
-
     costBeforeGST,
+    civilLogisticsCost,
     totalInputGST,
     totalIncGST,
 
@@ -1151,6 +1520,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
     discountAmount,
     finalCustomerPrice,
 
+    subsidyResult,
     subsidyAmount,
     beneficiaryContribution,
 
@@ -1164,6 +1534,8 @@ export function calculateSystem(input: CalcInput): CalcResult {
     paybackYears,
     lcoe,
     lifetimeSavingsINR,
+    npv,
+    irr,
   };
 }
 

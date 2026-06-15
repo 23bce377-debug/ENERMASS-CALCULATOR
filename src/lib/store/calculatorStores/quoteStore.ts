@@ -29,6 +29,8 @@ export const createQuoteSlice: StateCreator<
       address: AddressInfo;
       site: SiteInfo;
       sales: SalesInfo;
+      validationAcknowledged?: string[];
+      leadId?: string | null;
     },
     forceOverwrite?: boolean
   ): Promise<Quote> => {
@@ -199,6 +201,7 @@ export const createQuoteSlice: StateCreator<
       co2_offset_kg_per_year: quote.calculations.annualGenerationKWh * 0.82,
       created_by: session.user.id,
       updated_at: now,
+      lead_id: info.leadId || null,
 
       structure_id: (quote as any).structureId || null,
       structure_pricing_mode: (quote as any).structurePricingMode || 'weight',
@@ -211,6 +214,7 @@ export const createQuoteSlice: StateCreator<
       gst_output_override: state.gstOnOutputOverride,
       target_mrp_incl_gst: state.targetMRPInclGST,
       target_mrp_per_watt: state.targetMRPPerWatt,
+      validation_acknowledged: info.validationAcknowledged ?? [],
     };
 
     if (existingDbId) {
@@ -221,7 +225,7 @@ export const createQuoteSlice: StateCreator<
         .eq('id', existingDbId)
         .eq('version', versionToUse)
         .select();
-      if (updateError) throw updateError;
+      if (updateError) throw new Error(updateError.message || JSON.stringify(updateError));
       if (!updatedRows || updatedRows.length === 0) {
         throw new Error('CONCURRENCY_CONFLICT');
       }
@@ -232,7 +236,7 @@ export const createQuoteSlice: StateCreator<
         .insert(dbQuoteData)
         .select('id')
         .single();
-      if (insertError) throw insertError;
+      if (insertError) throw new Error(insertError.message || JSON.stringify(insertError));
       existingDbId = newQuote.id;
     }
 
@@ -267,7 +271,7 @@ export const createQuoteSlice: StateCreator<
       is_rate_overridden: state.overrides[line.index]?.ratePerUnit !== undefined,
       is_gst_overridden: state.overrides[line.index]?.gstPct !== undefined,
       is_included: !line.isDisabled,
-      is_mandatory: line.description === 'PANEL' || line.description === 'INVERTER',
+      is_mandatory: false,
       line_total: line.lineTotal,
       line_gst: line.lineGST,
       line_subtotal: line.lineSubTotal,
@@ -275,7 +279,7 @@ export const createQuoteSlice: StateCreator<
 
     if (dbItems.length > 0) {
       const { error: itemsError } = await supabase.from('quote_items').insert(dbItems);
-      if (itemsError) throw itemsError;
+      if (itemsError) throw new Error(itemsError.message || JSON.stringify(itemsError));
     }
 
     // Insert new costs
@@ -288,7 +292,7 @@ export const createQuoteSlice: StateCreator<
 
     if (dbCosts.length > 0) {
       const { error: costsError } = await supabase.from('quote_additional_costs').insert(dbCosts);
-      if (costsError) throw costsError;
+      if (costsError) throw new Error(costsError.message || JSON.stringify(costsError));
     }
 
     // Update local store quotes

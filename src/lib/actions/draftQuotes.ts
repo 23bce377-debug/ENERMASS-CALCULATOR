@@ -1,0 +1,47 @@
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
+import { getCurrentOrgId } from '@/lib/db/orgContext';
+
+export async function saveDraftQuote(params: {
+  draftId: string | null;
+  calculatorState: string;
+  systemName: string;
+  systemKw: number;
+  estimatedTotal: number;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthenticated");
+
+  const orgId = await getCurrentOrgId();
+
+  if (params.draftId) {
+    const { error } = await supabase
+      .from('draft_quotes' as any)
+      .update({
+        state_json: JSON.parse(params.calculatorState),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', params.draftId)
+      .eq('user_id', user.id);
+
+    if (error) throw new Error(`Failed to update draft: ${error.message}`);
+    return { draftId: params.draftId };
+  } else {
+    const { data, error } = await supabase
+      .from('draft_quotes' as any)
+      .insert({
+        org_id: orgId,
+        user_id: user.id,
+        state_json: JSON.parse(params.calculatorState),
+        updated_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+
+    if (error) throw new Error(`Failed to insert draft: ${error.message}`);
+    if (!data) throw new Error('Failed to insert draft: no data returned');
+    return { draftId: (data as any).id };
+  }
+}

@@ -11,7 +11,7 @@ export const OrganisationORM = {
       .from('organisations')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -29,7 +29,7 @@ export const OrganisationORM = {
       .from('organisations')
       .insert(org)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -40,7 +40,7 @@ export const OrganisationORM = {
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },

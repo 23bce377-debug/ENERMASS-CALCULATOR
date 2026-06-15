@@ -38,17 +38,17 @@ export const StateRuleORM = {
     return data;
   },
   async getByCode(code: string) {
-    const { data, error } = await supabase.from('state_rules').select('*').eq('state_code', code).single();
+    const { data, error } = await supabase.from('state_rules').select('*').eq('state_code', code).maybeSingle();
     if (error) throw error;
     return data;
   },
   async create(item: StateRuleInsert) {
-    const { data, error } = await supabase.from('state_rules').insert(item).select().single();
+    const { data, error } = await supabase.from('state_rules').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: StateRuleUpdate) {
-    const { data, error } = await supabase.from('state_rules').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('state_rules').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   }
@@ -61,17 +61,17 @@ export const CalculationSchemeORM = {
     return data as any;
   },
   async getById(id: string) {
-    const { data, error } = await supabase.from('calculation_schemes').select('*, scheme_slabs(*)').eq('id', id).single();
+    const { data, error } = await supabase.from('calculation_schemes').select('*, scheme_slabs(*)').eq('id', id).maybeSingle();
     if (error) throw error;
     return data as any;
   },
   async create(item: CalculationSchemeInsert) {
-    const { data, error } = await supabase.from('calculation_schemes').insert(item).select().single();
+    const { data, error } = await supabase.from('calculation_schemes').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: CalculationSchemeUpdate) {
-    const { data, error } = await supabase.from('calculation_schemes').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('calculation_schemes').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   }
@@ -84,7 +84,7 @@ export const SchemeSlabORM = {
     return data;
   },
   async create(item: SchemeSlabInsert) {
-    const { data, error } = await supabase.from('scheme_slabs').insert(item).select().single();
+    const { data, error } = await supabase.from('scheme_slabs').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   }
@@ -97,7 +97,7 @@ export const StateSchemeOverrideORM = {
     return data;
   },
   async create(item: StateSchemeOverrideInsert) {
-    const { data, error } = await supabase.from('state_scheme_overrides').insert(item).select().single();
+    const { data, error } = await supabase.from('state_scheme_overrides').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   }
@@ -110,12 +110,12 @@ export const CategoryMarginORM = {
     return data;
   },
   async create(item: CategoryMarginInsert) {
-    const { data, error } = await supabase.from('category_margins').insert(item).select().single();
+    const { data, error } = await supabase.from('category_margins').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: CategoryMarginUpdate) {
-    const { data, error } = await supabase.from('category_margins').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('category_margins').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   }
@@ -134,12 +134,12 @@ export const QuoteFormatTemplateORM = {
     return data;
   },
   async create(item: QuoteFormatTemplateInsert) {
-    const { data, error } = await supabase.from('quote_format_templates').insert(item).select().single();
+    const { data, error } = await supabase.from('quote_format_templates').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(id: string, updates: QuoteFormatTemplateUpdate) {
-    const { data, error } = await supabase.from('quote_format_templates').update(updates).eq('id', id).select().single();
+    const { data, error } = await supabase.from('quote_format_templates').update(updates).eq('id', id).select().maybeSingle();
     if (error) throw error;
     return data;
   }
@@ -147,17 +147,17 @@ export const QuoteFormatTemplateORM = {
 
 export const AppSettingORM = {
   async getByOrgId(orgId: string) {
-    const { data, error } = await supabase.from('app_settings').select('*').eq('org_id', orgId).single();
+    const { data, error } = await supabase.from('app_settings').select('*').eq('org_id', orgId).maybeSingle();
     if (error) throw error;
     return data;
   },
   async create(item: AppSettingInsert) {
-    const { data, error } = await supabase.from('app_settings').insert(item).select().single();
+    const { data, error } = await supabase.from('app_settings').insert(item).select().maybeSingle();
     if (error) throw error;
     return data;
   },
   async update(orgId: string, updates: AppSettingUpdate) {
-    const { data, error } = await supabase.from('app_settings').update(updates).eq('org_id', orgId).select().single();
+    const { data, error } = await supabase.from('app_settings').update(updates).eq('org_id', orgId).select().maybeSingle();
     if (error) throw error;
     return data;
   }

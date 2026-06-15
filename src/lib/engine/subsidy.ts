@@ -33,7 +33,7 @@ export function calculateSubsidyAmount(input: SubsidyInput): number {
   let total = 0;
   for (const slab of input.slabs) {
     const start = Number(slab.start_kw);
-    if (capacityForSubsidy <= start) {
+    if (capacityForSubsidy < start) {
       break;
     }
     if (slab.is_fixed_amount) {

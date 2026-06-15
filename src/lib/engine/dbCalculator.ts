@@ -1,6 +1,7 @@
 import { Client } from 'pg';
 import * as crypto from 'crypto';
 import { calculateSystem, type CalcInput, type CalcResult } from './calculator';
+import { TAX_CONSTANTS } from '@/lib/tax-constants';
 
 function getUuid(namespace: string, key: string): string {
   const hash = crypto.createHash('sha1').update(`${namespace}:${key}`).digest('hex');
@@ -332,17 +333,17 @@ export async function calculateSystemFromDb(
   const systemItems = itemsRes.rows.map(item => {
     const descUpper = item.description.toUpperCase();
     let rate = 0;
-    let gstPct = 0.18;
+    let gstPct: any = TAX_CONSTANTS.COMMERCIAL_GST_RATE;
     
     if (item.bom_item_id) {
       rate = Number(item.bom_rate || 0);
-      gstPct = Number(item.bom_gst_pct || 0.18);
+      gstPct = Number(item.bom_gst_pct || TAX_CONSTANTS.COMMERCIAL_GST_RATE);
     } else if (item.comm_device_id) {
       rate = Number(item.comm_rate || 0);
       gstPct = Number(item.comm_gst_pct || 0.12);
     } else if (item.structure_component_id) {
       rate = Number(item.structure_component_rate || 0);
-      gstPct = Number(item.structure_component_gst_pct || 0.18);
+      gstPct = Number(item.structure_component_gst_pct || TAX_CONSTANTS.COMMERCIAL_GST_RATE);
     }
     
     return {

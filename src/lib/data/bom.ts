@@ -7,6 +7,7 @@ export interface BomItem {
   qty: number;
   ratePerUnit: number;
   gstPct: GstPct;
+  unitWattage?: number;
 }
 
 export interface SolarSystem {

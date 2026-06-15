@@ -1,5 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/types/schema.types';
+
+const createClient = async () => supabase;
 
 export type LeadRow = Database['public']['Tables']['crm_leads']['Row'];
 export type LeadInsert = Database['public']['Tables']['crm_leads']['Insert'];
@@ -36,7 +38,7 @@ export const LeadORM = {
       .from('profiles')
       .select('org_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
     if (profileError || !profile) {
       throw new Error('User profile or organization not found');
     }
@@ -50,8 +52,9 @@ export const LeadORM = {
       .from('crm_leads')
       .insert(payload)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    if (!data) throw new Error('Failed to create lead');
 
     // Log timeline event
     await TimelineORM.createEvent({
@@ -72,7 +75,7 @@ export const LeadORM = {
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -89,7 +92,7 @@ export const LeadORM = {
       .from('crm_leads')
       .select('status')
       .eq('id', id)
-      .single();
+      .maybeSingle();
     if (oldLeadError) throw oldLeadError;
 
     const { data, error } = await supabase
@@ -97,19 +100,33 @@ export const LeadORM = {
       .update({ status })
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
 
     // Log status changed event
     await TimelineORM.createEvent({
       lead_id: id,
       title: 'Status Changed',
-      description: `Lead status updated from ${oldLead.status} to ${status}.`,
+      description: `Lead status updated from ${oldLead?.status || 'Unknown'} to ${status}.`,
       event_type: 'status_changed',
       logged_by: user.id
     });
 
     return data;
+  },
+
+  async delete(id: string) {
+    const supabase = await createClient();
+    // 1. Delete timeline events
+    await supabase.from('crm_timeline' as any).delete().eq('lead_id', id);
+    // 2. Delete site surveys
+    await supabase.from('crm_site_surveys' as any).delete().eq('lead_id', id);
+    // 3. Delete opportunities
+    await supabase.from('crm_opportunities').delete().eq('lead_id', id);
+    // 4. Delete the lead itself
+    const { error } = await supabase.from('crm_leads').delete().eq('id', id);
+    if (error) throw error;
+    return true;
   }
 };
 
@@ -137,7 +154,7 @@ export const OpportunityORM = {
       .from('profiles')
       .select('org_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
     if (profileError || !profile) {
       throw new Error('User profile or organization not found');
     }
@@ -151,7 +168,7 @@ export const OpportunityORM = {
       .from('crm_opportunities')
       .insert(payload)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   },
@@ -163,7 +180,7 @@ export const OpportunityORM = {
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   }
@@ -187,7 +204,7 @@ export const TimelineORM = {
       .from('crm_timeline')
       .insert(event)
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   }
