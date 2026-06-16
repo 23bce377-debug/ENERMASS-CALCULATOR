@@ -22,19 +22,16 @@ export function PresetEditorDialog({
   const [addPickerCategory, setAddPickerCategory] = useState('');
   const [mounted, setMounted] = useState(false);
 
-  console.log('PresetEditorDialog initialized: open =', open, 'presetId =', presetId, 'mounted =', mounted);
+
 
   useEffect(() => {
-    console.log('PresetEditorDialog useEffect: setting mounted to true');
+
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    console.log('PresetEditorDialog useEffect: checking open & presetId. open =', open, 'presetId =', presetId);
     if (!open || !presetId) return;
-    console.log('PresetEditorDialog calling getPresetWithComponents for presetId:', presetId);
     getPresetWithComponents(presetId).then((data: any) => {
-      console.log('getPresetWithComponents resolved successfully. data =', data);
       if (!data) {
         console.warn('getPresetWithComponents returned null/undefined for presetId:', presetId);
         return;

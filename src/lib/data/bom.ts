@@ -1,12 +1,14 @@
 export type GstPct = 0 | 0.05 | 0.12 | 0.18;
 
 export interface BomItem {
+  id?: string;
   description: string;
   remarks?: string;
   unit?: string;
   qty: number;
   ratePerUnit: number;
-  gstPct: GstPct;
+  gstPct?: number; // Kept for temporary backward compat
+  hsn_sac_id?: string | null;
   unitWattage?: number;
 }
 

@@ -55,7 +55,6 @@ ALTER TABLE calculation_schemes      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scheme_slabs             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE state_scheme_overrides   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE state_rules              ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quote_financials         ENABLE ROW LEVEL SECURITY;
 
 -- eq_meters: global rows (org_id IS NULL) visible to all orgs
 DROP POLICY IF EXISTS "eq_meters_visibility" ON eq_meters;
@@ -201,13 +200,7 @@ CREATE POLICY "system_items_write" ON system_items
     system_id IN (SELECT id FROM systems WHERE org_id = auth_org_id())
   );
 
--- quote_financials: follows parent quote
-CREATE POLICY "quote_financials_org_read" ON quote_financials
-  FOR SELECT USING (org_id = auth_org_id());
-CREATE POLICY "quote_financials_org_write" ON quote_financials
-  FOR ALL TO authenticated
-  USING    (org_id = auth_org_id())
-  WITH CHECK (org_id = auth_org_id());
+
 
 -- Reinforce existing quote write policy to cover ALL DML
 DROP POLICY IF EXISTS "quotes_org_write" ON quotes;
@@ -216,16 +209,15 @@ CREATE POLICY "quotes_org_write" ON quotes
   USING    (org_id = auth_org_id())
   WITH CHECK (org_id = auth_org_id());
 
--- quote_items: separate read + write
-DROP POLICY IF EXISTS "quote_items_org_isolation" ON quote_items;
-DROP POLICY IF EXISTS "quote_items_org_read"      ON quote_items;
-DROP POLICY IF EXISTS "quote_items_org_write"     ON quote_items;
+-- quote_items: follows parent quote
+DROP POLICY IF EXISTS "quote_items_org_read"  ON quote_items;
+DROP POLICY IF EXISTS "quote_items_org_write" ON quote_items;
 CREATE POLICY "quote_items_org_read" ON quote_items
-  FOR SELECT USING (org_id = auth_org_id());
+  FOR SELECT USING (quote_id IN (SELECT id FROM quotes WHERE org_id = auth_org_id()));
 CREATE POLICY "quote_items_org_write" ON quote_items
   FOR ALL TO authenticated
-  USING    (org_id = auth_org_id())
-  WITH CHECK (org_id = auth_org_id());
+  USING    (quote_id IN (SELECT id FROM quotes WHERE org_id = auth_org_id()))
+  WITH CHECK (quote_id IN (SELECT id FROM quotes WHERE org_id = auth_org_id()));
 
 -- ──────────────────────────────────────────────────────────────
 -- FIX SEC-09: Validate overrides_json is always a JSON object

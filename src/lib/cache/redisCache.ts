@@ -42,3 +42,14 @@ export async function invalidateCacheKeys(...keys: string[]): Promise<void> {
     console.error(`[RedisCache] Error invalidating keys ${JSON.stringify(keys)}:`, err)
   }
 }
+
+/**
+ * Directly set a value in Redis (Write-Through Caching).
+ */
+export async function setCacheKey<T>(key: string, data: T, ttlSeconds: number): Promise<void> {
+  try {
+    await redis.set(key, data, { ex: ttlSeconds })
+  } catch (err) {
+    console.error(`[RedisCache] Error writing key "${key}":`, err)
+  }
+}

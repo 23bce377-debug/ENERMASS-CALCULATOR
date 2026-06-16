@@ -860,40 +860,6 @@ export function BOMTable() {
           </span>
         </div>
         
-        {/* Wiring Distances Controls */}
-        {calcResult && (
-          <div className="flex items-center gap-4 bg-background px-3 py-1.5 rounded-lg border border-border/60">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-text-muted">DC Cable (Panel to Inv)</span>
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  min={0}
-                  value={dcCableLengthM || ''}
-                  placeholder="0"
-                  onChange={(e) => setCableLengths(parseFloat(e.target.value) || 0, acCableLengthM)}
-                  className="w-14 px-1.5 py-0.5 rounded bg-surface border border-border text-xs font-mono text-right text-text-primary focus:outline-none focus:border-accent"
-                />
-                <span className="text-[10px] text-text-muted">m</span>
-              </div>
-            </div>
-            <div className="w-px h-4 bg-border"></div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-text-muted">AC Cable (Inv to Meter)</span>
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  min={0}
-                  value={acCableLengthM || ''}
-                  placeholder="0"
-                  onChange={(e) => setCableLengths(dcCableLengthM, parseFloat(e.target.value) || 0)}
-                  className="w-14 px-1.5 py-0.5 rounded bg-surface border border-border text-xs font-mono text-right text-text-primary focus:outline-none focus:border-accent"
-                />
-                <span className="text-[10px] text-text-muted">m</span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Table */}

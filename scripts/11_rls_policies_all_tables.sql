@@ -270,8 +270,8 @@ CREATE POLICY rate_master_select ON rate_master
   USING (org_id = auth_org_id());
 CREATE POLICY rate_master_write ON rate_master
   FOR ALL TO authenticated
-  USING (org_id = auth_org_id())
-  WITH CHECK (org_id = auth_org_id());
+  USING (org_id = auth_org_id() AND auth_role() IN ('owner', 'admin'))
+  WITH CHECK (org_id = auth_org_id() AND auth_role() IN ('owner', 'admin'));
 
 -- structure_accessory_rates
 DROP POLICY IF EXISTS struct_acc_rates_select ON structure_accessory_rates;

@@ -42,6 +42,8 @@ export default function AmcPage() {
   const [visits, setVisits] = useState<any[]>([]);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [technicians, setTechnicians] = useState<any[]>([]);
+  const [technicians, setTechnicians] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'contracts' | 'visits' | 'alerts'>('contracts');
 
@@ -82,15 +84,17 @@ export default function AmcPage() {
     if (!orgId) return;
     setLoading(true);
     try {
-      const [amcRes, assetsRes, visitsRes] = await Promise.all([
+      const [amcRes, assetsRes, visitsRes, profilesRes] = await Promise.all([
         supabase.from('field_amc_contracts').select('*, asset:field_customer_assets(brand, model, item_type, serial_number)').eq('org_id', orgId).order('created_at', { ascending: false }),
         supabase.from('field_customer_assets').select('*').eq('org_id', orgId),
-        (supabase as any).from('field_amc_visits').select('*, contract:field_amc_contracts(contract_number, customer_name)').eq('org_id', orgId).order('created_at', { ascending: false }),
+        (supabase as any).from('field_amc_visits').select('*, contract:field_amc_contracts(contract_number, customer_name)').eq('org_id', orgId).order('visit_date', { ascending: true }),
+        supabase.from('profiles').select('id, full_name, role').eq('org_id', orgId),
       ]);
       if (amcRes.error) throw amcRes.error;
       setContracts(amcRes.data || []);
       setAssets(assetsRes.data || []);
       setVisits(visitsRes.data || []);
+      setTechnicians(profilesRes?.data || []);
     } catch (err: any) {
       // If visits table doesn't exist yet, still show contracts
       setContracts(contracts);
@@ -192,6 +196,26 @@ export default function AmcPage() {
       fetchData();
     } catch (err: any) {
       toast(err.message || 'Failed to schedule visit', 'error');
+    }
+  };
+
+  const handleAssignTechnician = async (visitId: string, technicianId: string) => {
+    try {
+      await (supabase as any).from('field_amc_visits').update({ conducted_by: technicianId || null, updated_at: new Date().toISOString() }).eq('id', visitId);
+      toast('Technician assigned successfully', 'success');
+      fetchData();
+    } catch (err: any) {
+      toast(err.message || 'Failed to assign technician', 'error');
+    }
+  };
+
+  const handleAssignTechnician = async (visitId: string, technicianId: string) => {
+    try {
+      await (supabase as any).from('field_amc_visits').update({ conducted_by: technicianId || null, updated_at: new Date().toISOString() }).eq('id', visitId);
+      toast('Technician assigned successfully', 'success');
+      fetchData();
+    } catch (err: any) {
+      toast(err.message || 'Failed to assign technician', 'error');
     }
   };
 
@@ -449,25 +473,38 @@ export default function AmcPage() {
                       <th className="px-4 py-3">Customer</th>
                       <th className="px-4 py-3">Visit Date</th>
                       <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3 text-center">Status</th>
+                      <th className="px-4 py-3">Technician</th>
+                      <th className="px-4 py-3 text-center">Status / SLA</th>
                       <th className="px-4 py-3">Notes</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {visits.map((v: any) => (
+                    {visits.map((v: any) => {
+                      const isOverdue = v.status === 'scheduled' && daysUntil(v.visit_date) < 0;
+                      return (
                       <tr key={v.id} className="border-b border-border/30 hover:bg-surface-hover/30 transition-colors">
                         <td className="px-4 py-3 font-mono font-bold text-accent">{v.contract?.contract_number || '—'}</td>
                         <td className="px-4 py-3 font-bold text-text-primary">{v.contract?.customer_name || '—'}</td>
                         <td className="px-4 py-3 text-text-secondary">{v.visit_date}</td>
                         <td className="px-4 py-3 capitalize text-text-secondary">{v.visit_type}</td>
+                        <td className="px-4 py-3">
+                          <select 
+                            value={v.conducted_by || ''} 
+                            onChange={(e) => handleAssignTechnician(v.id, e.target.value)}
+                            className="bg-background border border-border text-[10px] rounded px-1.5 py-1 outline-none text-text-secondary max-w-[120px]"
+                          >
+                            <option value="">Unassigned</option>
+                            {technicians.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+                          </select>
+                        </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-semibold border ${v.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
-                            {v.status}
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-semibold border ${v.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : isOverdue ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
+                            {isOverdue ? 'SLA OVERDUE' : v.status}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-text-muted max-w-xs truncate">{v.notes || '—'}</td>
                       </tr>
-                    ))}
+                    );})}
                   </tbody>
                 </table>
               </div>

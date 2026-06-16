@@ -1,18 +1,32 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { withAuth } from '@/lib/api/wrappers';
+import { z } from 'zod';
+
+const profileQuerySchema = z.object({
+  id: z.string().optional().nullable(),
+});
+
+const profileUpdateSchema = z.object({
+  full_name: z.string().min(1, 'Full name is required').optional(),
+  phone: z.string().optional(),
+});
 
 export const dynamic = 'force-dynamic';
 
 export const GET = withAuth(async (request, context) => {
   const { searchParams } = new URL(request.url);
-  const targetId = searchParams.get('id');
-  const { orgId, userId } = context.auth;
+  const parseResult = profileQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
+  if (!parseResult.success) {
+    return NextResponse.json({ error: 'Invalid query parameters' }, { status: 400 });
+  }
+  const targetId = parseResult.data.id;
+  const { userId } = context.auth;
 
   const fetchId = targetId || userId;
 
-  const supabaseAdmin = createAdminClient();
-  const { data: profile, error: profileError } = await supabaseAdmin
+  const supabase = await createClient();
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', fetchId)
@@ -23,21 +37,22 @@ export const GET = withAuth(async (request, context) => {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
   }
 
-  // Tenant isolation verification
-  if (profile.org_id !== orgId) {
-    console.error(`[GET /api/profile] Tenant mismatch: requester org ${orgId} vs target org ${profile.org_id}`);
-    return NextResponse.json({ error: 'Forbidden: Access denied' }, { status: 403 });
-  }
+  // RLS ensures the fetched profile is within the user's tenant if they don't have global permissions
 
   return NextResponse.json(profile);
 });
 
 export const PUT = withAuth(async (request, context) => {
   const { userId } = context.auth;
-  const updates = await request.json();
+  const body = await request.json();
+  const parseResult = profileUpdateSchema.safeParse(body);
+  if (!parseResult.success) {
+    return NextResponse.json({ error: 'Invalid payload', details: parseResult.error.format() }, { status: 400 });
+  }
+  const updates = parseResult.data;
 
-  const supabaseAdmin = createAdminClient();
-  const { data: profile, error: profileError } = await supabaseAdmin
+  const supabase = await createClient();
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .update({
       full_name: updates.full_name,

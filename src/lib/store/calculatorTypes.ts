@@ -52,15 +52,26 @@ export interface Variant {
   applySubsidy?: boolean;
 }
 
-export interface CalculatorState {
+// ─── Domain Sub-Interfaces ─────────────────────────────────────────────────────
+// Each slice file (calculationStore, equipmentStore, etc.) should only read/write
+// fields from its own domain interface. CalculatorState is the composed union
+// that Zustand sees — consumers remain fully backward-compatible.
+
+/** Owned by calculationStore.ts */
+export interface CalcSliceState {
   // Selection
   selectedSystemId: string | null;
   selectedState: string;
   projectType: ProjectType;
 
-  // Config
+  // Pricing overrides
   itcEligible: boolean;
   targetMarginPct: number | null;
+  gstOnOutputOverride: number | null;
+  targetMRPInclGST: number | null;
+  targetMRPPerWatt: number | null;
+
+  // BOM overrides
   overrides: Record<number, RowOverride>;
   customItems: BomItem[];
   rateMaster: RateMaster;
@@ -69,62 +80,15 @@ export interface CalculatorState {
   discountType: DiscountType;
   discountVal: number;
 
-  // Equipment selections
-  selectedPanelId: string | null;
-  panelMix: Record<string, number>;
-  selectedInverterMix: Record<string, number>;
-  selectedBatteryMix: Record<string, number>;
-  backupLoadW: number;
-
-  // Structure & Meter & LA selections
-  selectedStructureId: string | null;
-  structureType: StructureType;
-  structureVendorId: string | null;
-  structureMaterialType: 'GI' | 'GP' | null;
-  walkwayLengthM: number;
-  ladderLengthM: number;
-  structurePricingMode: 'weight' | 'per_watt' | 'flat';
-  structureRateOverride: number | null;
-  structureWastageOverride: number | null;
-  structureFastenerOverride: number | null;
-  structureBaseWeightOverride: number | null;
-  structureWeightLookupKg: number | null;
-  structureCustomRawRate: number | null;
-  structureCustomFabricationRate: number | null;
-  structureCustomGalvanizingRate: number | null;
-
-  solarMeterId: string | null;
-  solarMeterQty: number;
-  netMeterId: string | null;
-  netMeterQty: number;
-
-  lightningArresterId: string | null;
-  lightningArresterQty: number;
-
-  gstOnOutputOverride: number | null;
-  targetMRPInclGST: number | null;
-  targetMRPPerWatt: number | null;
-
-  structureComponentMix: Record<string, number>;
-  structureAddonMix: Record<string, number>;
-
-  // Engineering configs
+  // Engineering
   orientation: 'South' | 'East/West' | 'Flat';
   dcCableLengthM: number;
   acCableLengthM: number;
   electricityInflationRate: number;
 
-  // Live result (recomputed on every state mutation)
+  // Live result
   calcResult: CalcResult | null;
   calcError: string | null;
-
-  // Variants
-  variants: Variant[];
-  activeVariantId: string | null;
-
-  // Quotes
-  quotes: Quote[];
-  activeQuoteId: string | null;
 
   // Actions
   selectSystem: (id: string) => void;
@@ -141,6 +105,53 @@ export interface CalculatorState {
   addAdditionalCost: (cost: Omit<AdditionalCost, 'id'>) => void;
   removeAdditionalCost: (id: string) => void;
   setDiscount: (type: DiscountType, val: number) => void;
+  setGSTOnOutputOverride: (val: number | null) => void;
+  setTargetMRP: (val: number | null, type?: 'total' | 'per_watt') => void;
+  setOrientation: (o: 'South' | 'East/West' | 'Flat') => void;
+  setCableLengths: (dc: number, ac: number) => void;
+  setElectricityInflationRate: (rate: number) => void;
+  recalculate: () => void;
+  reset: () => void;
+}
+
+/** Owned by equipmentStore.ts */
+export interface EquipmentSliceState {
+  // Equipment selections
+  selectedPanelId: string | null;
+  panelMix: Record<string, number>;
+  selectedInverterMix: Record<string, number>;
+  selectedBatteryMix: Record<string, number>;
+  backupLoadW: number;
+
+  // Structure
+  selectedStructureId: string | null;
+  structureType: StructureType;
+  structureVendorId: string | null;
+  structureMaterialType: 'GI' | 'GP' | null;
+  walkwayLengthM: number;
+  ladderLengthM: number;
+  structurePricingMode: 'weight' | 'per_watt' | 'flat';
+  structureRateOverride: number | null;
+  structureWastageOverride: number | null;
+  structureFastenerOverride: number | null;
+  structureBaseWeightOverride: number | null;
+  structureElevationOverride: number | null;
+  structureWeightLookupKg: number | null;
+  structureCustomRawRate: number | null;
+  structureCustomFabricationRate: number | null;
+  structureCustomGalvanizingRate: number | null;
+  structureComponentMix: Record<string, number>;
+  structureAddonMix: Record<string, number>;
+
+  // Accessories
+  solarMeterId: string | null;
+  solarMeterQty: number;
+  netMeterId: string | null;
+  netMeterQty: number;
+  lightningArresterId: string | null;
+  lightningArresterQty: number;
+
+  // Actions
   selectPanel: (id: string | null) => void;
   setPanelMixQty: (panelId: string, qty: number) => void;
   clearPanelMix: () => void;
@@ -149,7 +160,6 @@ export interface CalculatorState {
   setBatteryMixQty: (batteryId: string, qty: number) => void;
   clearBatteryMix: () => void;
   setBackupLoadW: (loadW: number) => void;
-
   setStructureType: (type: StructureType) => void;
   setStructureSelection: (id: string | null, mode?: 'weight' | 'per_watt' | 'flat') => void;
   setStructureTypeAndVendor: (materialType: 'GI' | 'GP' | null, vendorId: string | null) => void;
@@ -161,33 +171,10 @@ export interface CalculatorState {
   clearStructureMix: () => void;
   setMeterSelection: (type: 'solar' | 'net', id: string | null, qty?: number) => void;
   setLASelection: (id: string | null, qty?: number) => void;
-  setGSTOnOutputOverride: (val: number | null) => void;
-  setTargetMRP: (val: number | null, type?: 'total' | 'per_watt') => void;
+}
 
-  showInventoryInfo: boolean;
-  setShowInventoryInfo: (val: boolean) => void;
-
-  setOrientation: (o: 'South' | 'East/West' | 'Flat') => void;
-  setCableLengths: (dc: number, ac: number) => void;
-  setElectricityInflationRate: (rate: number) => void;
-  recalculate: () => void;
-  saveVariant: (name: string) => void;
-  loadVariant: (id: string) => void;
-  deleteVariant: (id: string) => void;
-  duplicateVariant: (id: string) => void;
-  saveQuote: (info: {
-    customer: CustomerInfo;
-    address: AddressInfo;
-    site: SiteInfo;
-    sales: SalesInfo;
-    validationAcknowledged?: string[];
-    leadId?: string | null;
-  }, forceOverwrite?: boolean) => Promise<Quote>;
-  loadQuote: (quoteId: string) => void;
-  duplicateQuote: (quoteId: string) => void;
-  reset: () => void;
-
-  // Database integrations
+/** Owned by projectStore.ts / calculationStore.ts — DB cache */
+export interface DbCacheSliceState {
   dbSystems: SolarSystem[];
   dbStateData: Record<string, any>;
   dbPanels: any[];
@@ -207,21 +194,72 @@ export interface CalculatorState {
   dbLAs: any[];
   dbStructureParts: any[];
   dbStructureComponents: any[];
+  dbStructureComponentMasters: any[];
   dbStructureBom: any[];
   dbStructureAddons: any[];
   dbOrientationMultipliers: Record<string, number>;
+  dbTaxHsnCodes: any[];
+  dbTaxGstRates: any[];
   inventorySummary: import('@/backend/orm/acquisition').InventorySummary[];
   dbLoaded: boolean;
+  setOfflineData: (data: Partial<CalculatorState>) => void;
+  fetchMasterData: () => Promise<void>;
+}
+
+/** Owned by subsidyStore.ts */
+export interface SubsidySliceState {
   rpcSubsidyAmount: number | null;
   applySubsidy: boolean;
+  selectedScheme: 'none' | 'pm_suryaghar' | 'state';
   dbActiveScheme: any | null;
   setApplySubsidy: (val: boolean) => void;
+  setSelectedScheme: (val: 'none' | 'pm_suryaghar' | 'state') => void;
   fetchRpcSubsidy: () => Promise<void>;
-  fetchMasterData: () => Promise<void>;
+}
 
+/** Owned by quoteStore.ts */
+export interface QuoteSliceState {
+  quotes: Quote[];
+  activeQuoteId: string | null;
+  saveQuote: (info: {
+    customer: CustomerInfo;
+    address: AddressInfo;
+    site: SiteInfo;
+    sales: SalesInfo;
+    validationAcknowledged?: string[];
+    leadId?: string | null;
+  }, forceOverwrite?: boolean) => Promise<Quote>;
+  loadQuote: (quoteId: string) => void;
+  duplicateQuote: (quoteId: string) => void;
+}
+
+/** UI & variant state */
+export interface UISliceState {
+  showInventoryInfo: boolean;
+  setShowInventoryInfo: (val: boolean) => void;
   selectedGoalWattage: number | null;
   setSelectedGoalWattage: (w: number | null) => void;
+
+  // Variants
+  variants: Variant[];
+  activeVariantId: string | null;
+  saveVariant: (name: string) => void;
+  loadVariant: (id: string) => void;
+  deleteVariant: (id: string) => void;
+  duplicateVariant: (id: string) => void;
 }
+
+// ─── Composed State ────────────────────────────────────────────────────────────
+// CalculatorState is the union of all domain slices. Zustand's `create<CalculatorState>()`
+// sees a single flat object while each slice file enforces its own boundary.
+export interface CalculatorState
+  extends CalcSliceState,
+    EquipmentSliceState,
+    DbCacheSliceState,
+    SubsidySliceState,
+    QuoteSliceState,
+    UISliceState {}
+
 
 export const INITIAL_STATE = {
   selectedGoalWattage: null as number | null,
@@ -258,6 +296,7 @@ export const INITIAL_STATE = {
   structureWastageOverride: null as number | null,
   structureFastenerOverride: null as number | null,
   structureBaseWeightOverride: null as number | null,
+  structureElevationOverride: null as number | null,
   structureWeightLookupKg: null as number | null,
   structureCustomRawRate: null as number | null,
   structureCustomFabricationRate: null as number | null,
@@ -314,12 +353,16 @@ export const INITIAL_STATE = {
   dbLAs: [] as any[],
   dbStructureParts: [] as any[],
   dbStructureComponents: [] as any[],
+  dbStructureComponentMasters: [] as any[],
   dbStructureBom: [] as any[],
   dbStructureAddons: [] as any[],
   dbOrientationMultipliers: { South: 1.0, 'East/West': 0.85, Flat: 0.90 } as Record<string, number>,
+  dbTaxHsnCodes: [] as any[],
+  dbTaxGstRates: [] as any[],
   dbLoaded: false,
   rpcSubsidyAmount: null as number | null,
   applySubsidy: true,
+  selectedScheme: 'pm_suryaghar',
   dbActiveScheme: null as any | null,
 };
 
@@ -569,6 +612,7 @@ const result = calculateSystem({
       structureWastageOverride: state.structureWastageOverride ?? undefined,
       structureFastenerOverride: state.structureFastenerOverride ?? undefined,
       structureBaseWeightOverride: state.structureBaseWeightOverride ?? undefined,
+      structureElevationOverride: state.structureElevationOverride ?? undefined,
       structureWeightLookupKg: state.structureWeightLookupKg ?? undefined,
       structureCustomRawRate: state.structureCustomRawRate ?? undefined,
       structureCustomFabricationRate: state.structureCustomFabricationRate ?? undefined,
@@ -604,6 +648,7 @@ const result = calculateSystem({
       maxSubsidyCapacityKW: state.dbActiveScheme?.max_capacity_kw ? Number(state.dbActiveScheme.max_capacity_kw) : undefined,
       maxAbsoluteSubsidy: state.dbActiveScheme?.max_absolute_subsidy ? Number(state.dbActiveScheme.max_absolute_subsidy) : undefined,
       applySubsidy: state.applySubsidy,
+      selectedScheme: state.selectedScheme,
       structureType: state.structureType,
       structureVendorId: state.structureVendorId ?? undefined,
       structureMaterialType: state.structureMaterialType ?? undefined,

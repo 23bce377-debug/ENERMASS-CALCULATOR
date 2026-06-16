@@ -24,6 +24,11 @@ export function SummaryCard() {
   const panelMix = useCalculatorStore((s) => s.panelMix);
   const selectedPanelId = useCalculatorStore((s) => s.selectedPanelId);
   const dbPanels = useCalculatorStore((s) => s.dbPanels);
+  
+  const selectedInverterMix = useCalculatorStore((s) => s.selectedInverterMix);
+  const dbInverters = useCalculatorStore((s) => s.dbInverters);
+  const selectedBatteryMix = useCalculatorStore((s) => s.selectedBatteryMix);
+  const dbBatteries = useCalculatorStore((s) => s.dbBatteries);
 
   if (!calcResult || !selectedSystemId) return null;
 
@@ -37,6 +42,31 @@ export function SummaryCard() {
 
   const capacityWatts = capacityKW * 1000;
 
+  // Compute active components
+  const activeComponents = [];
+  Object.entries(panelMix).forEach(([id, qty]) => {
+    if (qty > 0) {
+      const p = dbPanels.find(x => x.id === id);
+      if (p) activeComponents.push(`${qty}x ${p.brand} ${p.wattage}W Panel`);
+    }
+  });
+  if (Object.keys(panelMix).length === 0 && selectedPanelId) {
+    const p = dbPanels.find(x => x.id === selectedPanelId);
+    if (p) activeComponents.push(`Panels: ${p.brand} ${p.wattage}W`);
+  }
+  Object.entries(selectedInverterMix).forEach(([id, qty]) => {
+    if (qty > 0) {
+      const inv = dbInverters.find(x => x.id === id);
+      if (inv) activeComponents.push(`${qty}x ${inv.brand} ${inv.capacityKW}kW Inverter`);
+    }
+  });
+  Object.entries(selectedBatteryMix).forEach(([id, qty]) => {
+    if (qty > 0) {
+      const bat = dbBatteries.find(x => x.id === id);
+      if (bat) activeComponents.push(`${qty}x ${bat.brand} ${bat.capacityAh}Ah Battery`);
+    }
+  });
+
   // Subsidy eligibility based on capacity
   const showNoSubsidy = capacityKW > 10;
   const subsidyLabel = showNoSubsidy ? 'No Subsidy (>10 kW)' : 'PM Surya Ghar Subsidy';
@@ -44,9 +74,20 @@ export function SummaryCard() {
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden shadow-lg shadow-black/20" id="summary-card">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border bg-surface-active flex items-center justify-between">
-        <h3 className="text-xs font-bold text-text-primary tracking-widest uppercase">Pricing Summary</h3>
-        <span className="text-xs font-semibold text-accent">{systemName}</span>
+      <div className="px-5 py-4 border-b border-border bg-surface-active flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold text-text-primary tracking-widest uppercase">Pricing Summary</h3>
+          <span className="text-xs font-semibold text-accent">{systemName}</span>
+        </div>
+        {activeComponents.length > 0 && (
+          <div className="flex flex-col gap-1 mt-1">
+            {activeComponents.map((c, i) => (
+              <span key={i} className="text-[10px] font-medium text-text-secondary bg-background/50 px-2 py-0.5 rounded-sm border border-border/40 inline-block w-fit">
+                {c}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="p-5 space-y-4">
@@ -121,13 +162,30 @@ export function SummaryCard() {
         {/* Final You Pay */}
         <div className="space-y-4">
           <div className="flex flex-col gap-1">
-            <div title={calcResult.subsidyResult?.breakdown}>
-              <Row label={subsidyLabel} value={`-${formatINR(calcResult.subsidyAmount)}`} success={calcResult.subsidyAmount > 0} />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-secondary">Subsidy Scheme</span>
+              <select
+                value={useCalculatorStore((s) => s.selectedScheme)}
+                onChange={(e) => useCalculatorStore.getState().setSelectedScheme(e.target.value as any)}
+                className="bg-background border border-border rounded text-xs px-2 py-1 text-text-primary outline-none focus:border-accent/50"
+              >
+                <option value="none">No Subsidy</option>
+                <option value="pm_suryaghar">PM Surya Ghar</option>
+                <option value="state">State Scheme</option>
+              </select>
             </div>
-            {calcResult.subsidyResult?.schemeNote && (
-              <span className="text-[10px] text-text-muted leading-tight">
-                {calcResult.subsidyResult.schemeNote}
-              </span>
+            
+            {useCalculatorStore((s) => s.selectedScheme) !== 'none' && (
+              <>
+                <div title={calcResult.subsidyResult?.breakdown} className="mt-2">
+                  <Row label={subsidyLabel} value={`-${formatINR(calcResult.subsidyAmount)}`} success={calcResult.subsidyAmount > 0} />
+                </div>
+                {calcResult.subsidyResult?.schemeNote && (
+                  <span className="text-[10px] text-text-muted leading-tight">
+                    {calcResult.subsidyResult.schemeNote}
+                  </span>
+                )}
+              </>
             )}
           </div>
           

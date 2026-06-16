@@ -78,6 +78,10 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
       <div ref={containerRef} className="relative">
         {/* Trigger Button */}
         <button
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-controls="preset-listbox"
+          aria-haspopup="listbox"
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center justify-between gap-2 px-3 py-2
             rounded-lg border transition-all duration-200 text-left w-full
@@ -101,7 +105,10 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
 
         {/* Dropdown Content */}
         {isOpen && (
-          <div className="absolute z-50 mt-2 w-[320px] lg:w-[400px] left-0 rounded-xl border border-border
+          <div 
+            id="preset-listbox"
+            role="listbox"
+            className="absolute z-50 mt-2 w-[320px] lg:w-[400px] left-0 rounded-xl border border-border
             bg-surface shadow-2xl shadow-black/40 overflow-hidden flex flex-col max-h-[80vh]">
             
             {/* Search */}
@@ -147,6 +154,8 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
                   {recentSystems.map(sys => (
                     <div
                       key={`recent-${sys.id}`}
+                      role="option"
+                      aria-selected={selectedSystemId === sys.id}
                       onClick={() => { selectSystem(sys.id); setIsOpen(false); }}
                       className="group w-full flex items-center justify-between px-4 py-2 hover:bg-surface-hover cursor-pointer"
                     >
@@ -174,6 +183,8 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
                   filteredSystems.map(sys => (
                     <div
                       key={sys.id}
+                      role="option"
+                      aria-selected={selectedSystemId === sys.id}
                       onClick={() => { selectSystem(sys.id); setIsOpen(false); }}
                       className={`group w-full flex items-center justify-between px-4 py-2 hover:bg-surface-hover cursor-pointer ${selectedSystemId === sys.id ? 'bg-accent/5' : ''}`}
                     >

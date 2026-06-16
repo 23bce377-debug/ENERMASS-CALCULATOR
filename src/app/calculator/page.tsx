@@ -62,6 +62,10 @@ function StateSelector() {
       
       <button
         type="button"
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-controls="state-listbox"
+        aria-haspopup="listbox"
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center justify-between gap-2 px-3.5 py-3
           rounded-xl border transition-all duration-200 text-left
@@ -84,7 +88,10 @@ function StateSelector() {
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 left-0 right-0 mt-2 rounded-xl border border-border
+        <div 
+          id="state-listbox"
+          role="listbox"
+          className="absolute z-50 left-0 right-0 mt-2 rounded-xl border border-border
           bg-surface shadow-2xl shadow-black/40 overflow-hidden animate-fade-in">
           
           <div className="p-2 border-b border-border">
@@ -114,6 +121,8 @@ function StateSelector() {
                 return (
                   <button
                     key={st}
+                    role="option"
+                    aria-selected={isSelected}
                     onClick={() => {
                       setState(st);
                       setIsOpen(false);

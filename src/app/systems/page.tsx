@@ -595,7 +595,6 @@ export default function SystemsPage() {
             onToggleCompare={() => handleToggleCompare(system.id)}
             onQuickCalc={() => handleQuickCalc(system.id)}
             onEdit={(id) => {
-              console.log('onEdit triggered for ID:', id);
               setComposerSystemId(id);
               setComposerOpen(true);
             }}
@@ -616,12 +615,10 @@ export default function SystemsPage() {
           open={composerOpen}
           presetId={composerSystemId || ''}
           onClose={() => {
-            console.log('Composer Dialog onClose called');
             setComposerOpen(false);
             setComposerSystemId(null);
           }}
           onSaved={(id, name) => {
-            console.log('Composer Dialog onSaved called for preset:', name);
             fetchMasterData();
             toast(`Preset "${name}" saved to database`, 'success');
           }}

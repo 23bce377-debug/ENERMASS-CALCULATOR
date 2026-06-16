@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { withAuth } from '@/lib/api/wrappers';
+import { z } from 'zod';
+
+const analyticsQuerySchema = z.object({
+  presetId: z.string().optional().nullable(),
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -8,31 +13,42 @@ export const GET = withAuth(async (request, context) => {
   try {
     const { orgId } = context.auth;
     const { searchParams } = new URL(request.url);
-    const presetId = searchParams.get('presetId');
+    const parseResult = analyticsQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
+    if (!parseResult.success) {
+      return NextResponse.json({ error: 'Invalid query parameters' }, { status: 400 });
+    }
+    const { presetId } = parseResult.data;
 
-    const supabaseAdmin = createAdminClient();
+    const supabase = await createClient();
 
     // 1. Fetch procurement spend from mv_procurement_spend
-    const { data: spends, error: spendError } = await supabaseAdmin
+    const { data: spends, error: spendError } = await supabase
       .from('mv_procurement_spend' as any)
       .select('*')
       .eq('org_id', orgId);
     if (spendError) throw spendError;
 
     // 2. Fetch inventory valuation from mv_inventory_valuation
-    const { data: valuations, error: valError } = await supabaseAdmin
+    const { data: valuations, error: valError } = await supabase
       .from('mv_inventory_valuation' as any)
       .select('*')
       .eq('org_id', orgId);
     if (valError) throw valError;
 
     // 3. Fetch margin trends from mv_margin_trends
-    const { data: margins, error: marginError } = await supabaseAdmin
+    const { data: margins, error: marginError } = await supabase
       .from('mv_margin_trends' as any)
       .select('*')
       .eq('org_id', orgId);
     if (marginError) throw marginError;
 
+    // 4. Fetch real purchase_requests for adoptionRate
+    const { data: prs, error: prError } = await supabase
+      .from('purchase_requests' as any)
+      .select('status')
+      .eq('org_id', orgId);
+    if (prError) console.warn('Missing purchase_requests table or error:', prError);
+    
     // Map spend metrics
     const totalBundleSpend = spends?.reduce((sum: number, s: any) => sum + Number(s.total_spend), 0) || 0;
     const spendByVendor = spends?.map((s: any) => ({ name: s.vendor_name, value: Number(s.total_spend) })) || [];
@@ -45,9 +61,9 @@ export const GET = withAuth(async (request, context) => {
 
     const trend = margins?.map((m: any) => ({
       month: m.month_label,
-      total: Number(m.won_quotes_count) * 150000, // project estimation
-      standard: Number(m.won_quotes_count) * 100000,
-      bundle: Number(m.won_quotes_count) * 50000
+      total: Number(m.won_quotes_count),
+      standard: Number(m.won_quotes_count),
+      bundle: 0
     })) || [];
 
     const marginTrend = margins?.map((m: any) => ({
@@ -55,17 +71,22 @@ export const GET = withAuth(async (request, context) => {
       margin: Math.round(Number(m.avg_margin_pct) * 100)
     })) || [];
 
-    const totalProcurementSpend = totalBundleSpend * 1.25;
+    const totalProcurementSpend = totalBundleSpend;
     const totalBundleProcureVal = totalBundleSpend;
-    const totalSavings = totalBundleSpend * 0.12; // estimated savings percentage
-    const adoptionRate = spends && spends.length > 0 ? 0.85 : 0;
+    
+    // Compute adoptionRate from real PR data
+    let adoptionRate = 0;
+    if (prs && prs.length > 0) {
+      const adoptedCount = prs.filter((pr: any) => pr.status === 'approved' || pr.status === 'completed').length;
+      adoptionRate = adoptedCount / prs.length;
+    }
+    
     const inventoryMovement = valuations?.reduce((sum: number, v: any) => sum + Number(v.total_valuation), 0) || 0;
 
     return NextResponse.json({
       totalBundleSpend,
       totalProcurementSpend,
       totalBundleProcureVal,
-      totalSavings,
       adoptionRate,
       avgWonMargin,
       inventoryMovement,

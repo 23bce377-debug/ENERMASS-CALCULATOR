@@ -1350,8 +1350,18 @@ CREATE POLICY "rate_master_delete" ON rate_master
 CREATE POLICY "category_margins_org" ON category_margins
   USING (org_id = auth_org_id());
 
-CREATE POLICY "app_settings_org" ON app_settings
-  USING (org_id = auth_org_id());
+CREATE POLICY "app_settings_select" ON app_settings
+  FOR SELECT USING (org_id = auth_org_id());
+
+CREATE POLICY "app_settings_insert" ON app_settings
+  FOR INSERT WITH CHECK (org_id = auth_org_id() AND auth_role() IN ('owner', 'admin'));
+
+CREATE POLICY "app_settings_update" ON app_settings
+  FOR UPDATE USING (org_id = auth_org_id() AND auth_role() IN ('owner', 'admin'))
+  WITH CHECK (org_id = auth_org_id() AND auth_role() IN ('owner', 'admin'));
+
+CREATE POLICY "app_settings_delete" ON app_settings
+  FOR DELETE USING (org_id = auth_org_id() AND auth_role() IN ('owner', 'admin'));
 
 CREATE POLICY "quote_templates_org" ON quote_format_templates
   USING (org_id = auth_org_id());

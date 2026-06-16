@@ -16,19 +16,19 @@ import { calculatePricingAndMargins, calculateDiscountAmount } from './margin';
 import { calculateFinancialProjections } from './financials';
 import { calculatePMSuryaGharSubsidy, type SubsidyResult } from '../subsidy';
 
+import { safeEvalFormula, FormulaParseError } from './formulaParser';
+
 export function roundTo5(num: number | null | undefined): number {
   if (num === null || num === undefined || isNaN(num)) return 0;
-  return Math.round((num + Number.EPSILON) * 100000) / 100000;
+  return Number(Math.round(Number(num + 'e5')) + 'e-5');
 }
 
 /**
- * FIX CALC-09: Financial amounts in INR must be rounded to 2 decimal places.
- * Use this for all customer-facing monetary values (MRP, cost, subsidy, etc.).
- * roundTo5 is retained for intermediate computation only.
+ * Rounds a number to exactly two decimal places (currency).
  */
 export function roundToINR(num: number | null | undefined): number {
   if (num === null || num === undefined || isNaN(num)) return 0;
-  return Math.round((num + Number.EPSILON) * 100) / 100;
+  return Number(Math.round(Number(num + 'e2')) + 'e-2');
 }
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -105,11 +105,12 @@ export interface CalcInput {
   walkwayLengthM?: number;
   ladderLengthM?: number;
   structurePricingMode?: 'weight' | 'per_watt' | 'flat';
+  structureBaseWeightOverride?: number;
+  structureElevationOverride?: number;
+  structureWeightLookupKg?: number;
   structureRateOverride?: number;
   structureWastageOverride?: number;
   structureFastenerOverride?: number;
-  structureBaseWeightOverride?: number;
-  structureWeightLookupKg?: number;
   
   structureCustomRawRate?: number;
   structureCustomFabricationRate?: number;
@@ -157,6 +158,7 @@ export interface CalcInput {
   // FIX CALC-02: Additional state subsidy from state_scheme_overrides
   additionalStateSubsidy?: number;
   applySubsidy?: boolean;
+  selectedScheme?: 'none' | 'pm_suryaghar' | 'state';
   dbLoaded?: boolean;
 }
 
@@ -1284,10 +1286,13 @@ export function calculateSystem(input: CalcInput): CalcResult {
       rowOverride?.gstPct !== undefined ? rowOverride.gstPct : item.gstPct
     );
 
-    // Compute line totals — rounded to 2 decimal places (set to 0 if item is unchecked/disabled)
-    const lineTotal = isDisabled ? 0 : roundToINR(effectiveQty * effectiveRate);
-    const lineGST = isDisabled ? 0 : roundToINR(lineTotal * effectiveGstPct);
-    const lineSubTotal = roundToINR(lineTotal + lineGST);
+    const lineTotalPaise = isDisabled ? 0 : Math.round(effectiveQty * effectiveRate * 100);
+    const lineGSTPaise = isDisabled ? 0 : Math.round(lineTotalPaise * effectiveGstPct);
+    const lineSubTotalPaise = lineTotalPaise + lineGSTPaise;
+
+    const lineTotal = lineTotalPaise / 100;
+    const lineGST = lineGSTPaise / 100;
+    const lineSubTotal = lineSubTotalPaise / 100;
 
     const descUpper = item.description.toUpperCase();
     const isEquipment = ['PANEL', 'INVERTER', 'BATTERY'].some(prefix =>
@@ -1420,7 +1425,9 @@ export function calculateSystem(input: CalcInput): CalcResult {
         isEligible: true,
         schemeNote: 'Custom overridden subsidy'
       };
-    } else {
+    } else if (input.selectedScheme === 'pm_suryaghar') {
+      subsidyResult = calculatePMSuryaGharSubsidy(input.panelCapacityKW ?? system.capacityKW ?? 0, input.projectType);
+    } else if (input.selectedScheme === 'state' || !input.selectedScheme) {
       const computedSubsidy = getSubsidyAmount(
         input.panelCapacityKW ?? system.capacityKW ?? 0,
         input.inverterCapacityKW,

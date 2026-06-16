@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+
+const weatherQuerySchema = z.object({
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lon: z.coerce.number().min(-180).max(180).optional(),
+});
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const lat = searchParams.get('lat');
-  const lon = searchParams.get('lon');
+  const parseResult = weatherQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
+  if (!parseResult.success) {
+    return NextResponse.json({ error: 'Invalid query parameters' }, { status: 400 });
+  }
+  const { lat, lon } = parseResult.data;
 
   // Mock weather data
   return NextResponse.json({

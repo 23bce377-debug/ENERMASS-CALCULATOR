@@ -131,7 +131,7 @@ export function useMasterQuery<T>(entity: string, options?: any) {
       if (error) throw error;
       return (data || []).map((item: any) => transformFromDb(entity, item)) as T[];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes cache validity
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours cache validity
     ...options
   });
 }
@@ -140,6 +140,17 @@ export function useMasterCreateMutation<T>(entity: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    onMutate: async (newItem: any) => {
+      await queryClient.cancelQueries({ queryKey: ['masters', entity] });
+      const previousData = queryClient.getQueryData(['masters', entity]);
+      
+      const optimisticItem = { ...newItem, id: 'temp-id-' + Date.now() };
+      queryClient.setQueryData(['masters', entity], (old: any) => {
+        return old ? [...old, optimisticItem] : [optimisticItem];
+      });
+
+      return { previousData };
+    },
     mutationFn: async (newItem: any) => {
       const { orgId, userId } = await getOrgContext();
       const table = getEntityTable(entity);
@@ -157,7 +168,12 @@ export function useMasterCreateMutation<T>(entity: string) {
       await logAudit(orgId, userId, 'masters', table, data.id, 'create', null, data);
       return transformFromDb(entity, data) as T;
     },
-    onSuccess: async () => {
+    onError: (err, newItem, context: any) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['masters', entity], context.previousData);
+      }
+    },
+    onSettled: async () => {
       try {
         const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
         await revalidateMasterCache();
@@ -174,6 +190,17 @@ export function useMasterUpdateMutation<T>(entity: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    onMutate: async ({ id, updates }: { id: string; updates: any }) => {
+      await queryClient.cancelQueries({ queryKey: ['masters', entity] });
+      const previousData = queryClient.getQueryData(['masters', entity]);
+      
+      queryClient.setQueryData(['masters', entity], (old: any) => {
+        if (!old) return old;
+        return old.map((item: any) => item.id === id ? { ...item, ...updates } : item);
+      });
+
+      return { previousData };
+    },
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
       const { orgId, userId } = await getOrgContext();
       const table = getEntityTable(entity);
@@ -206,7 +233,12 @@ export function useMasterUpdateMutation<T>(entity: string) {
 
       return transformFromDb(entity, data) as T;
     },
-    onSuccess: async () => {
+    onError: (err, variables, context: any) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['masters', entity], context.previousData);
+      }
+    },
+    onSettled: async () => {
       try {
         const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
         await revalidateMasterCache();
@@ -222,6 +254,17 @@ export function useMasterDeleteMutation(entity: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['masters', entity] });
+      const previousData = queryClient.getQueryData(['masters', entity]);
+      
+      queryClient.setQueryData(['masters', entity], (old: any) => {
+        if (!old) return old;
+        return old.filter((item: any) => item.id !== id);
+      });
+
+      return { previousData };
+    },
     mutationFn: async (id: string) => {
       const { orgId, userId } = await getOrgContext();
       const table = getEntityTable(entity);
@@ -258,7 +301,12 @@ export function useMasterDeleteMutation(entity: string) {
 
       return id;
     },
-    onSuccess: async () => {
+    onError: (err, id, context: any) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['masters', entity], context.previousData);
+      }
+    },
+    onSettled: async () => {
       try {
         const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
         await revalidateMasterCache();
@@ -463,6 +511,72 @@ export function useUpdateSubsidyMutation() {
         entity_id: schemeId,
         change_type: 'updated',
         old_values: beforeScheme,
+        new_values: afterScheme,
+      });
+
+      return afterScheme;
+    },
+    onSuccess: async () => {
+      try {
+        const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
+        await revalidateMasterCache();
+      } catch (err) {
+        console.error('Failed to revalidate master cache:', err);
+      }
+      queryClient.invalidateQueries({ queryKey: ['masters', 'subsidy'] });
+    }
+  });
+}
+
+export function useCreateSubsidyMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ updates, slabs }: { updates: any; slabs: any[] }) => {
+      const { orgId, userId } = await getOrgContext();
+
+      // 1. Insert scheme
+      const { data: scheme, error: schemeErr } = await (supabase
+        .from('calculation_schemes')
+        .insert({ ...updates, org_id: orgId, is_active: true, updated_at: new Date().toISOString() })
+        .select()
+        .maybeSingle() as any);
+
+      if (schemeErr) throw schemeErr;
+      if (!scheme) throw new Error('Failed to create subsidy scheme');
+
+      const schemeId = scheme.id;
+
+      // 2. Insert scheme slabs
+      if (slabs && slabs.length > 0) {
+        const slabsToInsert = slabs.map((s, idx) => ({
+          scheme_id: schemeId,
+          slab_index: idx + 1,
+          start_kw: parseFloat(s.startKW ?? s.start_kw),
+          end_kw: s.endKW || s.end_kw ? parseFloat(s.endKW ?? s.end_kw) : null,
+          rate_per_kw: parseFloat(s.ratePerKW ?? s.rate_per_kw ?? 0),
+          is_fixed_amount: s.isFixedAmount ?? s.is_fixed_amount ?? false,
+          fixed_amount: s.fixedAmount || s.fixed_amount ? parseFloat(s.fixedAmount ?? s.fixed_amount) : null,
+        }));
+
+        const { error: slabsErr } = await supabase.from('scheme_slabs').insert(slabsToInsert);
+        if (slabsErr) throw slabsErr;
+      }
+
+      // 3. Log Audit Trail
+      const { data: afterScheme } = await (supabase
+        .from('calculation_schemes')
+        .select('*, scheme_slabs(*)')
+        .eq('id', schemeId)
+        .maybeSingle() as any);
+
+      await logAudit(orgId, userId, 'masters', 'calculation_schemes', schemeId, 'create', null, afterScheme);
+      
+      await supabase.from('master_data_changes_log').insert({
+        entity_type: 'calculation_schemes',
+        entity_id: schemeId,
+        change_type: 'created',
+        old_values: null,
         new_values: afterScheme,
       });
 

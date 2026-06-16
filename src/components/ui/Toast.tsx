@@ -74,12 +74,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
 
       {/* Toast Stack */}
-      <div className="fixed bottom-20 md:bottom-6 right-4 z-[300] flex flex-col gap-2.5 pointer-events-none">
+      <div 
+        aria-live="polite"
+        aria-atomic="true"
+        className="fixed bottom-20 md:bottom-6 right-4 z-[300] flex flex-col gap-2.5 pointer-events-none"
+      >
         {toasts.map((t) => {
           const cfg = TOAST_CONFIG[t.type];
           return (
             <div
               key={t.id}
+              role={t.type === 'error' ? 'alert' : 'status'}
               className={[
                 'pointer-events-auto',
                 'flex items-center gap-3',

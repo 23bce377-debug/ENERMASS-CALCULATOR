@@ -36,10 +36,15 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = 'ma
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-fade-in">
-      <div className={cn("bg-surface border border-border rounded-2xl shadow-xl w-full flex flex-col max-h-[90vh]", maxWidth)}>
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        className={cn("bg-surface border border-border rounded-2xl shadow-xl w-full flex flex-col max-h-[90vh]", maxWidth)}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border/50 shrink-0">
-          <h2 className="text-lg font-bold text-text-primary">{title}</h2>
+          <h2 id="modal-title" className="text-lg font-bold text-text-primary">{title}</h2>
           <button
             onClick={onClose}
             className="p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-md transition-colors"

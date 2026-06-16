@@ -488,7 +488,7 @@ export default function PricingMasterPage() {
       {editorOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditorOpen(false)} />
-          <div className="relative w-full max-w-md bg-surface border border-border rounded-xl shadow-2xl overflow-hidden animate-scale-in">
+          <div className="relative z-10 w-full max-w-md bg-surface border border-border rounded-xl shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-5 border-b border-border flex justify-between items-center bg-surface-2">
               <h3 className="text-sm font-bold text-text-primary">
                 {editingItem ? 'Edit Pricing Override Rate' : 'Create Pricing Override'}
@@ -511,6 +511,7 @@ export default function PricingMasterPage() {
                     onChange={(e) => setDraft({ ...draft, bom_item_id: e.target.value })}
                     className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none cursor-pointer"
                   >
+                    <option value="" disabled>Select a component...</option>
                     {bomItems?.map((item: any) => (
                       <option key={item.id} value={item.id}>
                         {item.description} ({item.unit}) — Baseline: ₹{item.buy_price}
@@ -526,12 +527,25 @@ export default function PricingMasterPage() {
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-xs">₹</span>
                   <input
                     type="number" required min={0}
-                    value={draft.override_rate || ''}
-                    onChange={(e) => setDraft({ ...draft, override_rate: parseFloat(e.target.value) })}
+                    value={draft.override_rate === 0 ? '' : draft.override_rate}
+                    onChange={(e) => setDraft({ ...draft, override_rate: parseFloat(e.target.value) || 0 })}
                     className="w-full pl-8 pr-4 py-2.5 rounded-lg bg-background border border-border text-sm text-text-primary focus:border-accent/40 outline-none font-mono"
                     placeholder="Enter Custom Price Rate"
                   />
                 </div>
+              </div>
+
+              <div className="flex items-center gap-3 mt-2">
+                <input
+                  type="checkbox"
+                  id="isActiveToggle"
+                  checked={draft.is_active}
+                  onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })}
+                  className="w-4 h-4 rounded border-border text-accent focus:ring-accent/40 cursor-pointer"
+                />
+                <label htmlFor="isActiveToggle" className="text-xs font-semibold text-text-primary cursor-pointer select-none">
+                  Active Override
+                </label>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-border mt-5">
@@ -558,7 +572,7 @@ export default function PricingMasterPage() {
       {markupOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMarkupOpen(false)} />
-          <div className="relative w-full max-w-sm bg-surface border border-border rounded-xl shadow-2xl overflow-hidden animate-scale-in">
+          <div className="relative z-10 w-full max-w-sm bg-surface border border-border rounded-xl shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-5 border-b border-border flex justify-between items-center bg-surface-2">
               <div>
                 <h3 className="text-sm font-bold text-text-primary">Bulk Markup Adjustment</h3>

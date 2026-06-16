@@ -18,6 +18,7 @@
  *   does not evict another org's cache.
  */
 
+import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { getOrSetCache } from './redisCache';
@@ -32,11 +33,7 @@ export const CACHE_TTL = 300; // 5 minutes
 // service role ONLY in a tightly scoped server action — never exposed to HTTP.
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  // FIX SEC-01: Fall back to anon key if service role not available.
-  // Cache population runs in a trusted server context (Next.js server component).
-  // The service role is acceptable HERE because this code never runs client-side
-  // and is not exposed via any API route. It is NOT imported in route.ts.
-  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 

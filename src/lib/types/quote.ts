@@ -50,7 +50,7 @@ export interface SalesInfo {
 }
 
 export interface QuoteStatusEntry {
-  status: 'Draft' | 'Sent' | 'Won' | 'Lost';
+  status: 'Draft' | 'Sent' | 'Survey' | 'Revised' | 'Won' | 'Lost';
   changedAt: string;
 }
 
@@ -113,7 +113,7 @@ export interface Quote {
   calculations: CalcResult;
 
   // Lifecycle
-  status: 'Draft' | 'Sent' | 'Won' | 'Lost';
+  status: 'Draft' | 'Sent' | 'Survey' | 'Revised' | 'Won' | 'Lost';
   statusHistory?: QuoteStatusEntry[];
   createdAt: string;
   updatedAt: string;

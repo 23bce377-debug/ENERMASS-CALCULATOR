@@ -28,14 +28,18 @@ import { ITCSummary } from '@/components/quotes/ITCSummary';
 
 const STATUS_STYLES: Record<Quote['status'], string> = {
   Draft: 'bg-white/5 text-text-secondary border-white/10',
-  Sent: 'bg-info/12 text-info border-info/20',
+  Sent: 'bg-accent/10 text-accent border-accent/20',
+  Survey: 'bg-warning/12 text-warning border-warning/20',
+  Revised: 'bg-info/12 text-info border-info/20',
   Won: 'bg-success/12 text-success border-success/20',
   Lost: 'bg-error/12 text-error border-error/20',
 };
 
 const STATUS_CYCLE: Record<Quote['status'], Quote['status'][]> = {
-  Draft: ['Sent'],
-  Sent: ['Won', 'Lost'],
+  Draft: ['Sent', 'Survey'],
+  Sent: ['Survey'],
+  Survey: ['Revised'],
+  Revised: ['Won', 'Lost'],
   Won: ['Draft'],
   Lost: ['Draft'],
 };
@@ -434,7 +438,7 @@ export default function QuotesPage() {
     const next = nextOptions[0];
 
     // UI-level Survey Gate validation
-    if (next === 'Sent') {
+    if (next === 'Revised') {
       try {
         const { data: quoteData } = await supabase.from('quotes').select('lead_id, org_id').eq('quote_number', quoteId).single();
         if (quoteData?.lead_id) {

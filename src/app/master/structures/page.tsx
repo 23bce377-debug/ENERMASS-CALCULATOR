@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import {
@@ -624,8 +624,8 @@ export default function StructuresMasterPage() {
                 const isSelected = selectedIds.includes(s.id);
                 const isExpanded = expandedId === s.id;
                 return (
-                  <>
-                    <tr key={s.id} className={isSelected ? 'bg-accent-glow/50' : ''}>
+                  <Fragment key={s.id}>
+                    <tr className={isSelected ? 'bg-accent-glow/50' : ''}>
                       <td>
                         <button onClick={() => toggleSelectRow(s.id)} className="text-text-muted hover:text-text-primary">
                           {isSelected ? (
@@ -883,7 +883,7 @@ export default function StructuresMasterPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>

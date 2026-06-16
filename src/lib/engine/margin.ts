@@ -30,35 +30,36 @@ export function calculatePricingAndMargins(input: PricingMarginInput) {
     );
   }
 
-  let mrpInclGST = 0;
-  let mrpExclGST = 0;
-  let marginAmount = 0;
+  const baseCostPaise = Math.round(input.baseCost * 100);
+  let mrpInclGSTPaise = 0;
+  let mrpExclGSTPaise = 0;
+  let marginAmountPaise = 0;
   let effectiveMarginPct = 0;
 
   if (input.targetMRPInclGST !== undefined) {
-    mrpInclGST = input.targetMRPInclGST;
-    mrpExclGST = mrpInclGST / (1 + input.gstOutputRate);
-    marginAmount = mrpExclGST - input.baseCost;
-    effectiveMarginPct = mrpExclGST > 0 ? marginAmount / mrpExclGST : 0;
+    mrpInclGSTPaise = Math.round(input.targetMRPInclGST * 100);
+    mrpExclGSTPaise = Math.round(mrpInclGSTPaise / (1 + input.gstOutputRate));
+    marginAmountPaise = mrpExclGSTPaise - baseCostPaise;
+    effectiveMarginPct = mrpExclGSTPaise > 0 ? marginAmountPaise / mrpExclGSTPaise : 0;
   } else if (input.targetMRPPerWatt !== undefined) {
-    mrpInclGST = input.targetMRPPerWatt * input.capacityWatts;
-    mrpExclGST = mrpInclGST / (1 + input.gstOutputRate);
-    marginAmount = mrpExclGST - input.baseCost;
-    effectiveMarginPct = mrpExclGST > 0 ? marginAmount / mrpExclGST : 0;
+    mrpInclGSTPaise = Math.round(input.targetMRPPerWatt * input.capacityWatts * 100);
+    mrpExclGSTPaise = Math.round(mrpInclGSTPaise / (1 + input.gstOutputRate));
+    marginAmountPaise = mrpExclGSTPaise - baseCostPaise;
+    effectiveMarginPct = mrpExclGSTPaise > 0 ? marginAmountPaise / mrpExclGSTPaise : 0;
   } else {
     effectiveMarginPct = input.targetMarginPct !== undefined
       ? input.targetMarginPct
       : input.defaultMarginPct;
     effectiveMarginPct = Math.max(Math.min(effectiveMarginPct, 0.99), 0); // Cap at 99%
-    mrpExclGST = input.baseCost / (1 - effectiveMarginPct);
-    marginAmount = mrpExclGST - input.baseCost;
-    mrpInclGST = mrpExclGST * (1 + input.gstOutputRate);
+    mrpExclGSTPaise = Math.round(baseCostPaise / (1 - effectiveMarginPct));
+    marginAmountPaise = mrpExclGSTPaise - baseCostPaise;
+    mrpInclGSTPaise = Math.round(mrpExclGSTPaise * (1 + input.gstOutputRate));
   }
 
   return {
-    mrpInclGST,
-    mrpExclGST,
-    marginAmount,
+    mrpInclGST: mrpInclGSTPaise / 100,
+    mrpExclGST: mrpExclGSTPaise / 100,
+    marginAmount: marginAmountPaise / 100,
     effectiveMarginPct
   };
 }
@@ -70,21 +71,22 @@ export interface DiscountInput {
 }
 
 export function calculateDiscountAmount(input: DiscountInput): number {
-  let discountAmount = 0;
+  let discountAmountPaise = 0;
   const val = Math.max(0, input.discountVal);
+  const mrpInclGSTPaise = Math.round(input.mrpInclGST * 100);
 
   switch (input.discountType) {
     case 'flat':
-      discountAmount = val;
+      discountAmountPaise = Math.round(val * 100);
       break;
     case 'percent':
-      discountAmount = input.mrpInclGST * (val / 100);
+      discountAmountPaise = Math.round(mrpInclGSTPaise * (val / 100));
       break;
     case 'none':
     default:
-      discountAmount = 0;
+      discountAmountPaise = 0;
       break;
   }
 
-  return Math.max(0, Math.min(discountAmount, input.mrpInclGST));
+  return Math.max(0, Math.min(discountAmountPaise, mrpInclGSTPaise)) / 100;
 }

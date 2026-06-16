@@ -1,10 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, DollarSign, Activity } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 
+function formatINR(value: number): string {
+  if (value >= 10000000) return `₹${(value / 10000000).toFixed(2)} Cr`;
+  if (value >= 100000) return `₹${(value / 100000).toFixed(2)} L`;
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+}
+
+function formatPercent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
 export default function ManagementDashboardPage() {
+  const [data, setData] = useState<{
+    totalRevenue: number;
+    avgMargin: number;
+    activeProjectsCount: number;
+    profitability: any[];
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/dashboard/management');
+        if (!res.ok) throw new Error('Failed to fetch data');
+        const json = await res.json();
+        setData(json);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return <div className="p-6 text-text-muted">Loading dashboard...</div>;
+  }
+
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -22,7 +60,7 @@ export default function ManagementDashboardPage() {
             </div>
             <div>
               <p className="text-sm text-text-muted">Total Revenue (YTD)</p>
-              <p className="text-xl font-bold text-text-primary">₹14.5 Cr</p>
+              <p className="text-xl font-bold text-text-primary">{data ? formatINR(data.totalRevenue) : '₹0'}</p>
             </div>
           </div>
         </Card>
@@ -33,7 +71,7 @@ export default function ManagementDashboardPage() {
             </div>
             <div>
               <p className="text-sm text-text-muted">Avg Margin</p>
-              <p className="text-xl font-bold text-text-primary">18.2%</p>
+              <p className="text-xl font-bold text-text-primary">{data ? formatPercent(data.avgMargin) : '0%'}</p>
             </div>
           </div>
         </Card>
@@ -44,7 +82,7 @@ export default function ManagementDashboardPage() {
             </div>
             <div>
               <p className="text-sm text-text-muted">Active Projects</p>
-              <p className="text-xl font-bold text-text-primary">42</p>
+              <p className="text-xl font-bold text-text-primary">{data?.activeProjectsCount || 0}</p>
             </div>
           </div>
         </Card>
@@ -66,20 +104,21 @@ export default function ManagementDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-border/50 hover:bg-surface-hover/30">
-                <td className="px-4 py-3 text-text-primary font-medium">PRJ-2026-01 (City Mall)</td>
-                <td className="px-4 py-3 text-right text-text-secondary">₹1,20,00,000</td>
-                <td className="px-4 py-3 text-right text-text-secondary">₹1,25,00,000</td>
-                <td className="px-4 py-3 text-right text-text-secondary">₹1,45,00,000</td>
-                <td className="px-4 py-3 text-right text-success font-medium">13.8%</td>
-              </tr>
-              <tr className="border-b border-border/50 hover:bg-surface-hover/30">
-                <td className="px-4 py-3 text-text-primary font-medium">PRJ-2026-02 (Tech Park)</td>
-                <td className="px-4 py-3 text-right text-text-secondary">₹85,00,000</td>
-                <td className="px-4 py-3 text-right text-text-secondary">₹82,00,000</td>
-                <td className="px-4 py-3 text-right text-text-secondary">₹1,05,00,000</td>
-                <td className="px-4 py-3 text-right text-success font-medium">21.9%</td>
-              </tr>
+              {data?.profitability && data.profitability.length > 0 ? (
+                data.profitability.map((p, i) => (
+                  <tr key={i} className="border-b border-border/50 hover:bg-surface-hover/30">
+                    <td className="px-4 py-3 text-text-primary font-medium">{p.project_code} ({p.project_name})</td>
+                    <td className="px-4 py-3 text-right text-text-secondary">{formatINR(Number(p.estimated_cost))}</td>
+                    <td className="px-4 py-3 text-right text-text-secondary">{formatINR(Number(p.actual_cost))}</td>
+                    <td className="px-4 py-3 text-right text-text-secondary">{formatINR(Number(p.revenue))}</td>
+                    <td className="px-4 py-3 text-right text-success font-medium">{formatPercent(Number(p.margin_pct))}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-center text-text-muted">No projects found.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

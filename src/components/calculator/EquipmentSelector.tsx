@@ -243,6 +243,32 @@ export function EquipmentSelector({
   const showInventoryInfo = useCalculatorStore((s) => (s as any).showInventoryInfo);
   const setShowInventoryInfo = useCalculatorStore((s) => (s as any).setShowInventoryInfo);
 
+  const activePanels = useMemo(() => {
+    const mixEntries = Object.entries(panelMix).filter(([, qty]) => qty > 0);
+    if (mixEntries.length > 0) {
+      return mixEntries.map(([id]) => allPanels.find(p => p.id === id)).filter(Boolean);
+    }
+    if (selectedPanelId) {
+      const p = allPanels.find(x => x.id === selectedPanelId);
+      if (p) return [p];
+    }
+    return [];
+  }, [panelMix, selectedPanelId, allPanels]);
+
+  const activeInverters = useMemo(() => {
+    return Object.entries(selectedInverterMix)
+      .filter(([, qty]) => qty > 0)
+      .map(([id]) => allInverters.find(i => i.id === id))
+      .filter(Boolean);
+  }, [selectedInverterMix, allInverters]);
+
+  const activeBatteries = useMemo(() => {
+    return Object.entries(selectedBatteryMix)
+      .filter(([, qty]) => qty > 0)
+      .map(([id]) => allBatteries.find(b => b.id === id))
+      .filter(Boolean);
+  }, [selectedBatteryMix, allBatteries]);
+
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden" id="equipment-selector">
       {/* Tab bar with ERP stock toggle */}
@@ -275,18 +301,6 @@ export function EquipmentSelector({
               </button>
             );
           })}
-        </div>
-        <div className="flex items-center gap-2 px-3 py-2 shrink-0 border-t md:border-t-0 border-border/50">
-          <input
-            type="checkbox"
-            id="toggle-inventory-info"
-            checked={showInventoryInfo}
-            onChange={(e) => setShowInventoryInfo(e.target.checked)}
-            className="rounded border-border text-accent focus:ring-accent bg-background cursor-pointer"
-          />
-          <label htmlFor="toggle-inventory-info" className="text-xs text-text-muted cursor-pointer hover:text-text-secondary select-none font-semibold uppercase tracking-wider text-[9px]">
-            Show ERP Stock Details
-          </label>
         </div>
       </div>
 
@@ -373,6 +387,78 @@ export function EquipmentSelector({
           <StructureConfigTable />
         )}
       </div>
+
+      {/* Active Components Overview */}
+      {(activePanels.length > 0 || activeInverters.length > 0 || activeBatteries.length > 0) && (
+        <div className="p-3 bg-surface-2 border-t border-border">
+          <h4 className="text-xs uppercase font-bold text-text-secondary tracking-wider mb-4">Active Components Overview</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {activePanels.map((panel: any) => {
+              const qty = panelMix[panel.id] || requiredPanelQty || 0;
+              return (
+                <EquipmentDetailCard
+                  key={`panel-${panel.id}`}
+                  title="Solar Panel"
+                  brand={panel.brand}
+                  model={panel.model}
+                  category={`${panel.type} PV Module`}
+                  specs={[
+                    `Wattage: ${panel.wattage}W`,
+                    `Type: ${panel.type}`,
+                    `Quantity: ${qty} Nos`,
+                    `Total Wattage: ${panel.wattage * qty}W`
+                  ]}
+                  gstPct={panel.gst_pct || TAX_CONSTANTS.RESIDENTIAL_GST_RATE}
+                  sellingPrice={panel.ratePerWatt * panel.wattage}
+                  itemDescForInventory={`${panel.brand} ${panel.model} ${Number(panel.wattage)}W Panel`}
+                />
+              );
+            })}
+            
+            {activeInverters.map((inverter: any) => {
+              const qty = selectedInverterMix[inverter.id] || 0;
+              return (
+                <EquipmentDetailCard
+                  key={`inv-${inverter.id}`}
+                  title="Inverter"
+                  brand={inverter.brand}
+                  model={inverter.model}
+                  category={`${inverter.type} Inverter`}
+                  specs={[
+                    `Capacity: ${inverter.capacity / 1000}kW`,
+                    `Phase: ${inverter.phase}`,
+                    `Quantity: ${qty} Nos`
+                  ]}
+                  gstPct={inverter.gst_pct || TAX_CONSTANTS.INVERTER_GST_RATE}
+                  sellingPrice={inverter.rate}
+                  itemDescForInventory={`${inverter.brand} ${inverter.model} ${inverter.capacity / 1000}kW Inverter`}
+                />
+              );
+            })}
+            
+            {activeBatteries.map((battery: any) => {
+              const qty = selectedBatteryMix[battery.id] || 0;
+              return (
+                <EquipmentDetailCard
+                  key={`bat-${battery.id}`}
+                  title="Battery"
+                  brand={battery.brand}
+                  model={battery.model}
+                  category={`${battery.type} Battery`}
+                  specs={[
+                    `Capacity: ${battery.capacity}Ah`,
+                    `Voltage: ${battery.voltage}V`,
+                    `Quantity: ${qty} Nos`
+                  ]}
+                  gstPct={battery.gst_pct || TAX_CONSTANTS.INVERTER_GST_RATE}
+                  sellingPrice={battery.rate}
+                  itemDescForInventory={`${battery.brand} ${battery.model} ${battery.capacity}Ah Battery`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -479,6 +565,16 @@ function PanelTable({
   const setSelectedGoalWattage = useCalculatorStore((s) => s.setSelectedGoalWattage);
   const [customGoalInput, setCustomGoalInput] = useState<string>('');
   const [showCustomInput, setShowCustomInput] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (selectedGoalWattage !== null && ![3000, 5000, 8000, 10000].includes(selectedGoalWattage)) {
+      setShowCustomInput(true);
+      setCustomGoalInput(selectedGoalWattage.toString());
+    } else if (selectedGoalWattage === null) {
+      setShowCustomInput(false);
+      setCustomGoalInput('');
+    }
+  }, [selectedGoalWattage]);
 
   const targetWattage = selectedGoalWattage;
 
@@ -996,34 +1092,6 @@ function PanelTable({
         </table>
       </div>
 
-      {activePanels.length > 0 && (
-        <div className="mt-6 space-y-4 border-t border-border pt-4">
-          <h4 className="text-xs uppercase font-bold text-text-secondary tracking-wider">Active Panel Detail Overview</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {activePanels.map((panel: any) => {
-              const qty = panelMix[panel.id] || requiredPanelQty || 0;
-              return (
-                <EquipmentDetailCard
-                  key={panel.id}
-                  title="Solar Panel"
-                  brand={panel.brand}
-                  model={panel.model}
-                  category={`${panel.type} PV Module`}
-                  specs={[
-                    `Wattage: ${panel.wattage}W`,
-                    `Type: ${panel.type}`,
-                    `Quantity: ${qty} Nos`,
-                    `Total Wattage: ${panel.wattage * qty}W`
-                  ]}
-                  gstPct={panel.gst_pct || TAX_CONSTANTS.RESIDENTIAL_GST_RATE}
-                  sellingPrice={panel.ratePerWatt * panel.wattage}
-                  itemDescForInventory={`${panel.brand} ${panel.model} ${Number(panel.wattage)}W Panel`}
-                />
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -2105,6 +2173,190 @@ const ACCESSORY_FALLBACK_RATES: Record<string, { rate: number; unit: string }> =
   'cutting wheel 4"': { rate: 15, unit: 'Nos' },
 };
 
+// ─── Structure Elevation Cell ──────────────────────────────────────────────────────
+function StructureElevationCell({
+  struct,
+  overrideVal,
+  onSaveOverride,
+}: {
+  struct: any;
+  overrideVal: number | null;
+  onSaveOverride: (val: number | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+
+  const defaultVal = Number(struct.elevation_height_mm ?? 0);
+  const currentVal = overrideVal !== null ? overrideVal : defaultVal;
+  const isOverridden = overrideVal !== null && struct.id !== 'custom';
+
+  function handleSave() {
+    const val = parseFloat(editValue);
+    if (isNaN(val) || val < 0) {
+      setEditing(false);
+      return;
+    }
+    onSaveOverride(val);
+    setEditing(false);
+  }
+
+  function handleReset() {
+    onSaveOverride(null);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+        <input
+          autoFocus
+          type="number"
+          step="100"
+          min="0"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSave();
+            if (e.key === 'Escape') setEditing(false);
+          }}
+          onBlur={handleSave}
+          className="w-16 px-1.5 py-0.5 rounded bg-background border border-accent/50 text-right text-xs font-mono text-text-primary outline-none"
+        />
+        <span className="text-[9px] text-text-muted font-mono">mm</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-1.5 group/rate" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-col items-end">
+        {isOverridden && (
+          <span className="text-[9px] font-mono text-text-muted line-through">
+            {defaultVal}mm
+          </span>
+        )}
+        <span className={`text-xs font-mono font-semibold ${isOverridden ? 'text-warning' : 'text-text-primary'}`}>
+          {currentVal}mm
+        </span>
+      </div>
+      {struct.id !== 'custom' && (
+        <>
+          <button
+            onClick={() => {
+              setEditValue(String(currentVal));
+              setEditing(true);
+            }}
+            className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-accent/10 text-text-muted hover:text-accent transition-all"
+            title="Edit elevation"
+          >
+            <Edit3 size={10} />
+          </button>
+          {isOverridden && (
+            <button
+              onClick={handleReset}
+              className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-error/10 text-text-muted hover:text-error transition-all"
+              title="Reset to default"
+            >
+              <RotateCcw size={10} />
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Structure Weight Cell ──────────────────────────────────────────────────────
+function StructureWeightCell({
+  struct,
+  overrideVal,
+  onSaveOverride,
+}: {
+  struct: any;
+  overrideVal: number | null;
+  onSaveOverride: (val: number | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+
+  const defaultVal = Number(struct.base_weight_kg ?? 0);
+  const currentVal = overrideVal !== null ? overrideVal : defaultVal;
+  const isOverridden = overrideVal !== null && struct.id !== 'custom';
+
+  function handleSave() {
+    const val = parseFloat(editValue);
+    if (isNaN(val) || val < 0) {
+      setEditing(false);
+      return;
+    }
+    onSaveOverride(val);
+    setEditing(false);
+  }
+
+  function handleReset() {
+    onSaveOverride(null);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+        <input
+          autoFocus
+          type="number"
+          step="1"
+          min="0"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSave();
+            if (e.key === 'Escape') setEditing(false);
+          }}
+          onBlur={handleSave}
+          className="w-16 px-1.5 py-0.5 rounded bg-background border border-accent/50 text-right text-xs font-mono text-text-primary outline-none"
+        />
+        <span className="text-[9px] text-text-muted font-mono">kg</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-1.5 group/rate" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-col items-end">
+        {isOverridden && (
+          <span className="text-[9px] font-mono text-text-muted line-through">
+            {defaultVal} kg
+          </span>
+        )}
+        <span className={`text-xs font-mono font-semibold ${isOverridden ? 'text-warning' : 'text-text-primary'}`}>
+          {currentVal} kg
+        </span>
+      </div>
+      {struct.id !== 'custom' && (
+        <>
+          <button
+            onClick={() => {
+              setEditValue(String(currentVal));
+              setEditing(true);
+            }}
+            className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-accent/10 text-text-muted hover:text-accent transition-all"
+            title="Edit weight"
+          >
+            <Edit3 size={10} />
+          </button>
+          {isOverridden && (
+            <button
+              onClick={handleReset}
+              className="p-0.5 rounded opacity-0 group-hover/rate:opacity-100 hover:bg-error/10 text-text-muted hover:text-error transition-all"
+              title="Reset to default"
+            >
+              <RotateCcw size={10} />
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function StructureConfigTable() {
   const dbStructures = useCalculatorStore((s) => s.dbStructures);
   const dbWeightLookups = useCalculatorStore((s) => s.dbWeightLookups);
@@ -2118,6 +2370,7 @@ function StructureConfigTable() {
   const structureWastageOverride = useCalculatorStore((s) => s.structureWastageOverride);
   const structureFastenerOverride = useCalculatorStore((s) => s.structureFastenerOverride);
   const structureBaseWeightOverride = useCalculatorStore((s) => s.structureBaseWeightOverride);
+  const structureElevationOverride = useCalculatorStore((s) => s.structureElevationOverride);
   const structureWeightLookupKg = useCalculatorStore((s) => s.structureWeightLookupKg);
   const structureCustomRawRate = useCalculatorStore((s) => s.structureCustomRawRate);
   const structureCustomFabricationRate = useCalculatorStore((s) => s.structureCustomFabricationRate);
@@ -2771,8 +3024,30 @@ function StructureConfigTable() {
                   <td className="py-2.5 px-2 font-medium text-text-primary">{struct.name}</td>
                   <td className="py-2.5 px-2 text-text-secondary">{struct.material}</td>
                   <td className="py-2.5 px-2 text-text-secondary capitalize">{struct.roof_mount_type.replace(/_/g, ' ')}</td>
-                  <td className="py-2.5 px-2 text-right font-mono text-text-primary">{struct.elevation_height_mm}mm</td>
-                  <td className="py-2.5 px-2 text-right font-mono text-text-primary">{struct.base_weight_kg} kg</td>
+                  <td className="py-2.5 px-2">
+                    <StructureElevationCell
+                      struct={struct}
+                      overrideVal={isSelected ? structureElevationOverride : null}
+                      onSaveOverride={(val) => {
+                        if (!isSelected) {
+                          setStructureSelection(struct.id, rowMode);
+                        }
+                        setStructureCustomField('structureElevationOverride', val);
+                      }}
+                    />
+                  </td>
+                  <td className="py-2.5 px-2">
+                    <StructureWeightCell
+                      struct={struct}
+                      overrideVal={isSelected ? structureBaseWeightOverride : null}
+                      onSaveOverride={(val) => {
+                        if (!isSelected) {
+                          setStructureSelection(struct.id, rowMode);
+                        }
+                        setStructureCustomField('structureBaseWeightOverride', val);
+                      }}
+                    />
+                  </td>
                   <td className="py-2.5 px-2" onClick={(e) => e.stopPropagation()}>
                     <Select
                       size="sm"
@@ -3182,15 +3457,6 @@ function EquipmentDetailCard({
   description,
   itemDescForInventory
 }: DetailCardProps) {
-  const showInventoryInfo = useCalculatorStore((s) => (s as any).showInventoryInfo);
-  const inventorySummary = useCalculatorStore((s) => (s as any).inventorySummary) || [];
-  
-  const inv = inventorySummary.find((x: any) => x.item_description === itemDescForInventory);
-  const currentStock = inv ? Number(inv.current_qty) : 0;
-  const wac = inv ? Number(inv.weighted_avg_cost) : 0;
-  
-  const isAvailable = currentStock > 0;
-  
   return (
     <div className="p-4 rounded-xl border border-border bg-surface-hover/30 shadow-md relative overflow-hidden transition-all duration-200 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/2 flex flex-col gap-3">
       {/* Decorative accent glow */}
@@ -3201,11 +3467,6 @@ function EquipmentDetailCard({
           <span className="text-[10px] uppercase font-bold text-accent tracking-widest">{category}</span>
           <h4 className="text-sm font-bold text-text-primary mt-0.5">{brand} {model}</h4>
         </div>
-        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-          isAvailable ? 'bg-success/15 text-success border border-success/30' : 'bg-error/15 text-error border border-error/30'
-        }`}>
-          {isAvailable ? 'In Stock' : 'Out of Stock'}
-        </span>
       </div>
 
       {description && (
@@ -3230,29 +3491,6 @@ function EquipmentDetailCard({
           </div>
         </div>
       </div>
-
-      {/* Optional Inventory & Costing Block */}
-      {showInventoryInfo && (
-        <div className="rounded-lg bg-background/50 border border-border p-3 space-y-2 text-xs font-mono">
-          <div className="flex justify-between items-center text-[9px] uppercase font-bold text-text-muted tracking-wider border-b border-border/30 pb-1.5">
-            <span>ERP Inventory Details</span>
-            <span className="text-accent">Live Status</span>
-          </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-text-secondary">
-            <div>Current Stock:</div>
-            <div className="text-right text-text-primary font-bold">{currentStock.toLocaleString()} Nos</div>
-            
-            <div>Available Stock:</div>
-            <div className="text-right text-text-primary font-bold">{currentStock.toLocaleString()} Nos</div>
-            
-            <div>Weighted Avg Cost (WAC):</div>
-            <div className="text-right text-accent font-bold">₹{formatRate(wac)}</div>
-            
-            <div>Last Purchase Cost:</div>
-            <div className="text-right text-accent font-bold">₹{formatRate(wac)}</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

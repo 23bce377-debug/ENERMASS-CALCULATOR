@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   useSubsidySchemesQuery,
   useUpdateSubsidyMutation,
+  useCreateSubsidyMutation,
 } from '@/lib/hooks/useMasters';
 import {
   Plus,
@@ -47,6 +48,7 @@ interface Scheme {
 export default function SubsidyMasterPage() {
   const { data: schemes, isLoading } = useSubsidySchemesQuery();
   const updateMutation = useUpdateSubsidyMutation();
+  const createMutation = useCreateSubsidyMutation();
 
   const confirm = useConfirm();
   const { toast } = useToast();
@@ -57,6 +59,7 @@ export default function SubsidyMasterPage() {
 
   // Scheme Form State
   const [schemeDraft, setSchemeDraft] = useState({
+    code: '',
     name: '',
     description: '',
     applies_to: 'residential' as 'residential' | 'commercial',
@@ -74,6 +77,7 @@ export default function SubsidyMasterPage() {
   const handleOpenEdit = (scheme: Scheme) => {
     setSelectedSchemeId(scheme.id);
     setSchemeDraft({
+      code: scheme.code,
       name: scheme.name,
       description: scheme.description || '',
       applies_to: scheme.applies_to,
@@ -83,6 +87,20 @@ export default function SubsidyMasterPage() {
     // Sort slabs by index
     const sortedSlabs = [...(scheme.scheme_slabs || [])].sort((a, b) => a.slab_index - b.slab_index);
     setSlabs(sortedSlabs);
+    setEditorOpen(true);
+  };
+
+  const handleOpenAdd = () => {
+    setSelectedSchemeId(null);
+    setSchemeDraft({
+      code: '',
+      name: '',
+      description: '',
+      applies_to: 'residential',
+      max_capacity_kw: 10,
+      max_absolute_subsidy: 78000,
+    });
+    setSlabs([]);
     setEditorOpen(true);
   };
 
@@ -133,11 +151,18 @@ export default function SubsidyMasterPage() {
     }
 
     try {
-      await updateMutation.mutateAsync({
-        schemeId: selectedSchemeId,
-        updates: schemeDraft,
-        slabs,
-      });
+      if (selectedSchemeId) {
+        await updateMutation.mutateAsync({
+          schemeId: selectedSchemeId,
+          updates: schemeDraft,
+          slabs,
+        });
+      } else {
+        await createMutation.mutateAsync({
+          updates: schemeDraft,
+          slabs,
+        });
+      }
       setEditorOpen(false);
       toast('Subsidy scheme and capacity slabs saved ✓', 'success');
     } catch (err: any) {
@@ -153,12 +178,20 @@ export default function SubsidyMasterPage() {
           <h2 className="text-sm font-bold text-text-primary">Subsidy Formulas & Schemes</h2>
           <p className="text-[11px] text-text-muted mt-0.5">PM Surya Ghar piecewise slab editor for solar residential incentives.</p>
         </div>
-        <button
-          onClick={() => setHistoryOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary hover:text-text-primary transition-all cursor-pointer"
-        >
-          <History size={14} /> View History Logs
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleOpenAdd}
+            className="flex items-center gap-1.5 px-4.5 py-2 rounded-lg bg-accent text-background text-xs font-semibold hover:bg-accent-hover transition-all cursor-pointer"
+          >
+            <Plus size={14} /> Create Scheme
+          </button>
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary hover:text-text-primary transition-all cursor-pointer"
+          >
+            <History size={14} /> View History Logs
+          </button>
+        </div>
       </div>
 
       {/* Schemes Grid */}
@@ -234,7 +267,7 @@ export default function SubsidyMasterPage() {
           <div className="relative w-full max-w-2xl bg-surface border border-border rounded-xl shadow-2xl overflow-hidden animate-scale-in flex flex-col max-h-[90vh]">
             <div className="p-5 border-b border-border flex justify-between items-center bg-surface-2 shrink-0">
               <h3 className="text-sm font-bold text-text-primary">
-                Edit Subsidy Scheme Slabs ({selectedScheme?.code})
+                {selectedSchemeId ? `Edit Subsidy Scheme Slabs (${selectedScheme?.code})` : 'Create New Subsidy Scheme'}
               </h3>
               <button onClick={() => setEditorOpen(false)} className="text-text-muted hover:text-text-primary">
                 <X size={16} />
@@ -244,6 +277,28 @@ export default function SubsidyMasterPage() {
             <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-5">
               {/* Properties */}
               <div className="grid grid-cols-2 gap-4 border-b border-border pb-4">
+                <div className="space-y-1 col-span-1">
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Scheme Code *</label>
+                  <input
+                    type="text" required
+                    value={schemeDraft.code}
+                    onChange={(e) => setSchemeDraft({ ...schemeDraft, code: e.target.value.toUpperCase() })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none uppercase font-mono"
+                    placeholder="e.g. SURYA-GHAR"
+                    disabled={!!selectedSchemeId}
+                  />
+                </div>
+                <div className="space-y-1 col-span-1">
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Applies To *</label>
+                  <select
+                    value={schemeDraft.applies_to}
+                    onChange={(e) => setSchemeDraft({ ...schemeDraft, applies_to: e.target.value as any })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none cursor-pointer capitalize"
+                  >
+                    <option value="residential">Residential</option>
+                    <option value="commercial">Commercial</option>
+                  </select>
+                </div>
                 <div className="space-y-1 col-span-2">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Scheme Name *</label>
                   <input

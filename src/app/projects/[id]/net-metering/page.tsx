@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Activity, Upload, CheckCircle, ChevronRight, AlertTriangle, FileText } from 'lucide-react';
 
@@ -27,14 +27,15 @@ const STAGE_DOCS = {
   'approved': ['Commissioning Certificate']
 };
 
-export default function NetMeteringTracker({ params }: { params: { id: string } }) {
+export default function NetMeteringTracker({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [app, setApp] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchApplication();
-  }, [params.id]);
+  }, [id]);
 
   async function fetchApplication() {
     try {
@@ -42,7 +43,7 @@ export default function NetMeteringTracker({ params }: { params: { id: string } 
       const { data, error } = await supabase
         .from('net_metering_applications')
         .select('*')
-        .eq('project_id', params.id)
+        .eq('project_id', id)
         .maybeSingle();
       
       if (error && error.code !== 'PGRST116') throw error;
@@ -87,7 +88,7 @@ export default function NetMeteringTracker({ params }: { params: { id: string } 
     
     try {
       const ext = file.name.split('.').pop();
-      const fileName = `${params.id}/${app.current_stage}/${docName.replace(/\s+/g, '_')}_${Date.now()}.${ext}`;
+      const fileName = `${id}/${app.current_stage}/${docName.replace(/\s+/g, '_')}_${Date.now()}.${ext}`;
       
       const { error: uploadError } = await supabase.storage
         .from('documents')
@@ -125,21 +126,37 @@ export default function NetMeteringTracker({ params }: { params: { id: string } 
         <h2 className="text-xl font-bold text-text-primary">No Application Found</h2>
         <p className="text-text-muted mt-2">The net metering application for this project has not been initiated yet.</p>
         <button 
+          disabled={uploading}
           onClick={async () => {
-            const { data } = await supabase.from('epc_projects').select('quote_id').eq('id', params.id).single();
-            if (!data?.quote_id) return;
-            const { data: surveyData } = await supabase.from('crm_site_surveys').select('discom_name, consumer_number').eq('quote_id', data.quote_id).order('created_at', { ascending: false }).limit(1).maybeSingle();
-            await supabase.from('net_metering_applications').insert({
-              project_id: params.id,
-              discom_name: surveyData?.discom_name || 'Pending DISCOM',
-              consumer_number: surveyData?.consumer_number || 'Pending Consumer No',
-              current_stage: 'feasibility'
-            });
-            fetchApplication();
+            try {
+              setUploading(true);
+              const { data, error: projErr } = await supabase.from('epc_projects').select('quote_id, org_id').eq('id', id).single();
+              if (projErr && projErr.code !== 'PGRST116') throw projErr;
+              
+              let surveyData = null;
+              if (data?.quote_id) {
+                const { data: sData } = await supabase.from('crm_site_surveys').select('discom_name, consumer_number').eq('quote_id', data.quote_id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+                surveyData = sData;
+              }
+              
+              const { error: insertErr } = await supabase.from('net_metering_applications').insert({
+                project_id: id,
+                discom_name: surveyData?.discom_name || 'Pending DISCOM',
+                consumer_number: surveyData?.consumer_number || 'Pending Consumer No',
+                current_stage: 'feasibility'
+              });
+              if (insertErr) throw insertErr;
+              await fetchApplication();
+            } catch (err: any) {
+              console.error(err);
+              alert("Failed to initiate application: " + (err.message || "Unknown error"));
+            } finally {
+              setUploading(false);
+            }
           }}
-          className="mt-6 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent-hover"
+          className={`mt-6 px-4 py-2 bg-accent text-white rounded-lg transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent-hover'}`}
         >
-          Initiate Application Now
+          {uploading ? 'Initiating...' : 'Initiate Application Now'}
         </button>
       </div>
     );

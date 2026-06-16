@@ -52,6 +52,18 @@ export function withAuth(handler: AuthenticatedRouteHandler) {
 }
 
 /**
+ * Route Handler wrapper that enforces specific user roles.
+ */
+export function withRole(allowedRoles: string[], handler: AuthenticatedRouteHandler) {
+  return withAuth(async (request: Request, context) => {
+    if (!allowedRoles.includes(context.auth.role)) {
+      return NextResponse.json({ error: 'Forbidden: Insufficient role' }, { status: 403 });
+    }
+    return await handler(request, context);
+  });
+}
+
+/**
  * Route Handler wrapper that enforces a specific permission code.
  */
 export function withPermission(permissionCode: string, handler: AuthenticatedRouteHandler) {

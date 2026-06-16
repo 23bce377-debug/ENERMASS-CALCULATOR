@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Clock, Wrench, User, Activity, ClipboardList, CheckCircle, PackageSearch, AlertTriangle, ExternalLink } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -96,13 +97,13 @@ export const ProjectDetailView = React.memo(function ProjectDetailView({
             <option value="cancelled">Cancelled</option>
           </select>
 
-          <a
+          <Link
             href={`/projects/${projectDetails.id}/net-metering`}
             className="px-3 py-1.5 border border-border rounded-lg bg-surface-hover hover:bg-accent hover:text-white transition-colors text-xs font-semibold text-text-primary flex items-center gap-1"
           >
             <Activity size={14} />
             Net Metering Tracker
-          </a>
+          </Link>
         </div>
       </Card>
 

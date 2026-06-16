@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
 import { withAuth } from '@/lib/api/wrappers';
 import { getOrSetCache } from '@/lib/cache/redisCache';
+import { z } from 'zod';
+
+const bootstrapQuerySchema = z.object({
+  bomLimit: z.coerce.number().min(1).max(10000).default(1000),
+  invLimit: z.coerce.number().min(1).max(10000).default(1000),
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -11,37 +16,55 @@ export const GET = withAuth(async (request, context) => {
     return NextResponse.json({ error: 'Unauthorized: No org_id associated with profile' }, { status: 401 });
   }
 
-  // Parse limit parameters to prevent payload and memory explosion under large scales (P0-7)
   const { searchParams } = new URL(request.url);
-  const bomLimit = Math.min(10000, Math.max(1, parseInt(searchParams.get('bomLimit') || '1000', 10)));
-  const invLimit = Math.min(10000, Math.max(1, parseInt(searchParams.get('invLimit') || '1000', 10)));
+  const parseResult = bootstrapQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
+  if (!parseResult.success) {
+    return NextResponse.json({ error: 'Invalid query parameters', details: parseResult.error.format() }, { status: 400 });
+  }
+  const { bomLimit, invLimit } = parseResult.data;
 
   try {
     // Include limits in the cache key to prevent collision/poisoning (P0-7)
     const cacheKey = `erp:bootstrap:${orgId}:bomLimit_${bomLimit}:invLimit_${invLimit}`;
     const data = await getOrSetCache(cacheKey, async () => {
-      const supabaseAdmin = createAdminClient() as any;
+      const { createClient } = await import('@/lib/supabase/server');
+      const supabase = await createClient();
 
+      // Chunk 1: Basic Equipment
+      const [panelsRes, invertersRes, batteriesRes, metersRes, laRes, commDevicesRes] = await Promise.all([
+        supabase.from('eq_panels').select('*').eq('is_active', true),
+        supabase.from('eq_inverters').select('*').eq('is_active', true),
+        supabase.from('eq_batteries').select('*').eq('is_active', true),
+        supabase.from('eq_meters').select('*').eq('is_active', true),
+        supabase.from('eq_lightning_arresters').select('*').eq('is_active', true),
+        supabase.from('eq_communication_devices').select('*').eq('is_active', true),
+      ]);
+
+      // Chunk 2: Structures & App Config
+      const [structuresRes, weightLookupsRes, structureComponentsRes, structureBomRes, structureAddonsRes, appSettingsRes] = await Promise.all([
+        supabase.from('eq_mounting_structures').select('*').eq('is_active', true),
+        supabase.from('structure_weight_lookup').select('*'),
+        supabase.from('eq_structure_components').select('*').eq('is_active', true),
+        supabase.from('eq_structure_bom').select('*'),
+        supabase.from('eq_structure_addons').select('*').eq('is_active', true),
+        supabase.from('app_settings').select('*').eq('org_id', orgId).maybeSingle()
+      ]);
+
+      // Chunk 3: Rules, Schemes, Vendors, Systems, and GST Master
+      const [stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes, taxHsnRes, taxGstRatesRes] = await Promise.all([
+        supabase.from('state_rules').select('*').eq('is_active', true),
+        supabase.from('scheme_slabs').select('*'),
+        supabase.from('calculation_schemes').select('*').eq('is_active', true),
+        supabase.from('inventory_summary').select('*').eq('org_id', orgId).limit(invLimit),
+        supabase.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true }),
+        supabase.from('systems').select('*, system_items(*)').eq('is_active', true).order('capacity_kw', { ascending: true }),
+        supabase.from('tax_hsn_sac').select('*').eq('org_id', orgId).eq('is_active', true),
+        supabase.from('tax_gst_rates').select('*').eq('org_id', orgId)
+      ]);
+
+      // Chunk 4: Heavy BOM & Structural Templates
       const [
-        panelsRes,
-        invertersRes,
-        batteriesRes,
-        metersRes,
-        laRes,
-        structuresRes,
         bomItemsRes,
-        commDevicesRes,
-        systemsRes,
-        weightLookupsRes,
-        stateRulesRes,
-        slabsRes,
-        schemesRes,
-        inventoryRes,
-        vendorsRes,
-        structureComponentsRes,
-        structureBomRes,
-        structureAddonsRes,
-        appSettingsRes,
         structureAccessoryRatesRes,
         structureMaterialRatesRes,
         structureTemplatesRes,
@@ -50,60 +73,26 @@ export const GET = withAuth(async (request, context) => {
         ladderTemplatesRes,
         structureComponentMasterRes
       ] = await Promise.all([
-        supabaseAdmin.from('eq_panels').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('eq_inverters').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('eq_batteries').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('eq_meters').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('eq_lightning_arresters').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('eq_mounting_structures').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('eq_bom_items').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true).limit(bomLimit),
-        supabaseAdmin.from('eq_communication_devices').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('systems').select('*, system_items(*)').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true).order('capacity_kw', { ascending: true }),
-        supabaseAdmin.from('structure_weight_lookup').select('*'),
-        supabaseAdmin.from('state_rules').select('*').eq('is_active', true),
-        supabaseAdmin.from('scheme_slabs').select('*'),
-        supabaseAdmin.from('calculation_schemes').select('*').eq('is_active', true),
-        supabaseAdmin.from('inventory_summary').select('*').eq('org_id', orgId).limit(invLimit),
-        supabaseAdmin.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true }),
-        supabaseAdmin.from('eq_structure_components').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('eq_structure_bom').select('*'),
-        supabaseAdmin.from('eq_structure_addons').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('app_settings').select('*').eq('org_id', orgId).maybeSingle(),
-        supabaseAdmin.from('structure_accessory_rates').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true),
-        supabaseAdmin.from('structure_material_rates').select('*'),
-        supabaseAdmin.from('structure_templates').select('*'),
-        supabaseAdmin.from('structure_template_items').select('*'),
-        supabaseAdmin.from('walkway_templates').select('*'),
-        supabaseAdmin.from('ladder_templates').select('*'),
-        supabaseAdmin.from('structure_component_master').select('*').or(`org_id.eq.${orgId},org_id.is.null`).eq('is_active', true)
+        supabase.from('eq_bom_items').select('*').eq('is_active', true).limit(bomLimit),
+        supabase.from('structure_accessory_rates').select('*').eq('is_active', true),
+        supabase.from('structure_material_rates').select('*'),
+        supabase.from('structure_templates').select('*'),
+        supabase.from('structure_template_items').select('*'),
+        supabase.from('walkway_templates').select('*'),
+        supabase.from('ladder_templates').select('*'),
+        supabase.from('structure_component_master').select('*').eq('is_active', true)
       ]);
 
-      if (panelsRes.error) throw panelsRes.error;
-      if (invertersRes.error) throw invertersRes.error;
-      if (batteriesRes.error) throw batteriesRes.error;
-      if (metersRes.error) throw metersRes.error;
-      if (laRes.error) throw laRes.error;
-      if (structuresRes.error) throw structuresRes.error;
-      if (bomItemsRes.error) throw bomItemsRes.error;
-      if (commDevicesRes.error) throw commDevicesRes.error;
-      if (systemsRes.error) throw systemsRes.error;
-      if (weightLookupsRes.error) throw weightLookupsRes.error;
-      if (stateRulesRes.error) throw stateRulesRes.error;
-      if (slabsRes.error) throw slabsRes.error;
-      if (schemesRes.error) throw schemesRes.error;
-      if (inventoryRes.error) throw inventoryRes.error;
-      if (vendorsRes.error) throw vendorsRes.error;
-      if (structureComponentsRes.error) throw structureComponentsRes.error;
-      if (structureBomRes.error) throw structureBomRes.error;
-      if (structureAddonsRes.error) throw structureAddonsRes.error;
-      if (appSettingsRes.error) throw appSettingsRes.error;
-      if (structureAccessoryRatesRes.error) throw structureAccessoryRatesRes.error;
-      if (structureMaterialRatesRes.error) throw structureMaterialRatesRes.error;
-      if (structureTemplatesRes.error) throw structureTemplatesRes.error;
-      if (structureTemplateItemsRes.error) throw structureTemplateItemsRes.error;
-      if (walkwayTemplatesRes.error) throw walkwayTemplatesRes.error;
-      if (ladderTemplatesRes.error) throw ladderTemplatesRes.error;
-      if (structureComponentMasterRes.error) throw structureComponentMasterRes.error;
+      const errors = [
+        panelsRes, invertersRes, batteriesRes, metersRes, laRes, commDevicesRes,
+        structuresRes, weightLookupsRes, structureComponentsRes, structureBomRes, structureAddonsRes, appSettingsRes,
+        stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes, taxHsnRes, taxGstRatesRes,
+        bomItemsRes, structureAccessoryRatesRes, structureMaterialRatesRes, structureTemplatesRes, structureTemplateItemsRes, walkwayTemplatesRes, ladderTemplatesRes, structureComponentMasterRes
+      ].filter(res => res.error);
+
+      if (errors.length > 0) {
+        throw errors[0].error;
+      }
 
       return {
         panels: panelsRes.data || [],
@@ -132,7 +121,9 @@ export const GET = withAuth(async (request, context) => {
         structureTemplateItems: structureTemplateItemsRes.data || [],
         walkwayTemplates: walkwayTemplatesRes.data || [],
         ladderTemplates: ladderTemplatesRes.data || [],
-        structureComponentMasters: structureComponentMasterRes.data || []
+        structureComponentMasters: structureComponentMasterRes.data || [],
+        taxHsnCodes: (taxHsnRes as any)?.data || [],
+        taxGstRates: (taxGstRatesRes as any)?.data || []
       };
     }, 300); // Cache for 5 minutes
 

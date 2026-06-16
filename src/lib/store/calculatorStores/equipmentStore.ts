@@ -23,6 +23,7 @@ export const createEquipmentSlice: StateCreator<
     | 'structureWastageOverride'
     | 'structureFastenerOverride'
     | 'structureBaseWeightOverride'
+    | 'structureElevationOverride'
     | 'structureWeightLookupKg'
     | 'structureCustomRawRate'
     | 'structureCustomFabricationRate'
@@ -78,6 +79,7 @@ export const createEquipmentSlice: StateCreator<
   structureWastageOverride: null,
   structureFastenerOverride: null,
   structureBaseWeightOverride: null,
+  structureElevationOverride: null,
   structureWeightLookupKg: null,
   structureCustomRawRate: null,
   structureCustomFabricationRate: null,

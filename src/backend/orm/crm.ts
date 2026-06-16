@@ -26,6 +26,17 @@ export const LeadORM = {
     return data;
   },
 
+  async getById(id: string) {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('crm_leads')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
   async create(lead: Omit<LeadInsert, 'org_id'> & { org_id?: string }) {
     const supabase = await createClient();
     

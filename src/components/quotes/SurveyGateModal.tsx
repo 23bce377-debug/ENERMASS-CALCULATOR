@@ -5,6 +5,7 @@ import { X, AlertTriangle, MapPin, ShieldAlert, CheckCircle } from 'lucide-react
 import { supabase } from '@/lib/supabase/client';
 import { useWaiveSurveyMutation } from '@/lib/hooks/useSurveys';
 import { useToast } from '@/components/ui/Toast';
+import { CreateSurveyModal } from './CreateSurveyModal';
 
 interface SurveyGateModalProps {
   quoteNumber: string;
@@ -23,6 +24,7 @@ export function SurveyGateModal({
   onWaived,
 }: SurveyGateModalProps) {
   const [showWaiverForm, setShowWaiverForm] = useState(false);
+  const [showSurveyForm, setShowSurveyForm] = useState(false);
   const [waiveReason, setWaiveReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -92,14 +94,13 @@ export function SurveyGateModal({
           {/* No waiver form: show two action buttons */}
           {!showWaiverForm ? (
             <div className="space-y-3">
-              <a
-                href="/crm"
-                onClick={onClose}
+              <button
+                onClick={() => setShowSurveyForm(true)}
                 className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-accent hover:bg-accent-hover text-background text-sm font-bold transition-all shadow-md shadow-accent/15 cursor-pointer"
               >
                 <MapPin size={16} />
-                Schedule Site Survey in CRM
-              </a>
+                Record Site Survey
+              </button>
 
               <button
                 onClick={() => setShowWaiverForm(true)}
@@ -167,6 +168,18 @@ export function SurveyGateModal({
           )}
         </div>
       </div>
+      {showSurveyForm && leadId && (
+        <CreateSurveyModal
+          quoteNumber={quoteNumber}
+          leadId={leadId}
+          orgId={orgId}
+          onClose={() => setShowSurveyForm(false)}
+          onCreated={() => {
+            setShowSurveyForm(false);
+            onWaived(); // This acts as a success callback to retry the status update
+          }}
+        />
+      )}
     </div>
   );
 }

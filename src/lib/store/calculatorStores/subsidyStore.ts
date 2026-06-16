@@ -8,9 +8,21 @@ export const createSubsidySlice: StateCreator<
   CalculatorState,
   [],
   [],
-  Pick<CalculatorState, 'rpcSubsidyAmount' | 'fetchRpcSubsidy'>
+  Pick<CalculatorState, 'rpcSubsidyAmount' | 'fetchRpcSubsidy' | 'setApplySubsidy' | 'setSelectedScheme'>
 > = (set, get) => ({
   rpcSubsidyAmount: null,
+  
+  setApplySubsidy: (val) => {
+    set({ applySubsidy: val });
+    const { result, error } = runCalculation(get());
+    set({ calcResult: result, calcError: error });
+  },
+
+  setSelectedScheme: (val) => {
+    set({ selectedScheme: val });
+    const { result, error } = runCalculation(get());
+    set({ calcResult: result, calcError: error });
+  },
 
   fetchRpcSubsidy: async () => {
     let state = get();
