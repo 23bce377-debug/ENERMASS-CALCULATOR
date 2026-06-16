@@ -2,17 +2,7 @@ import { NextResponse } from 'next/server';
 import { BundlePresetORM } from '@/backend/orm/bundle';
 import { z } from 'zod';
 
-const updateBundleSchema = z.object({
-  name: z.string().optional(),
-  vendor_id: z.string().nullable().optional(),
-  effective_bundle_price: z.coerce.number().optional(),
-  allocation_strategy: z.string().optional(),
-  notes: z.string().optional(),
-  gst_pct: z.coerce.number().optional(),
-  items: z.array(z.any()).optional(),
-});
 import { withAuth } from '@/lib/api/wrappers';
-import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 

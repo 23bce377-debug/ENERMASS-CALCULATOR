@@ -61,6 +61,9 @@ export const createCalculationSlice: StateCreator<
     | 'dbStructureTemplateItems'
     | 'dbWalkwayTemplates'
     | 'dbLadderTemplates'
+    | 'dbTaxHsnCodes'
+    | 'dbTaxGstRates'
+    | 'selectedScheme'
     | 'inventorySummary'
     | 'dbOrientationMultipliers'
     | 'dbLoaded'
@@ -135,6 +138,8 @@ export const createCalculationSlice: StateCreator<
   dbLadderTemplates: [],
   dbWeightLookups: [],
   dbMeters: [],
+  dbTaxHsnCodes: [],
+  dbTaxGstRates: [],
   dbLAs: [],
   dbStructureParts: [],
   dbStructureComponents: [],

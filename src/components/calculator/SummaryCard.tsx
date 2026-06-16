@@ -14,6 +14,7 @@ export function SummaryCard() {
   const projectType = useCalculatorStore((s) => s.projectType);
   const itcEligible = useCalculatorStore((s) => s.itcEligible);
   const selectedGoalWattage = useCalculatorStore((s) => s.selectedGoalWattage);
+  const selectedScheme = useCalculatorStore((s) => s.selectedScheme);
 
   const { settings } = useSettings();
 
@@ -165,7 +166,7 @@ export function SummaryCard() {
             <div className="flex items-center justify-between">
               <span className="text-xs text-text-secondary">Subsidy Scheme</span>
               <select
-                value={useCalculatorStore((s) => s.selectedScheme)}
+                value={selectedScheme}
                 onChange={(e) => useCalculatorStore.getState().setSelectedScheme(e.target.value as any)}
                 className="bg-background border border-border rounded text-xs px-2 py-1 text-text-primary outline-none focus:border-accent/50"
               >
@@ -175,7 +176,7 @@ export function SummaryCard() {
               </select>
             </div>
             
-            {useCalculatorStore((s) => s.selectedScheme) !== 'none' && (
+            {selectedScheme !== 'none' && (
               <>
                 <div title={calcResult.subsidyResult?.breakdown} className="mt-2">
                   <Row label={subsidyLabel} value={`-${formatINR(calcResult.subsidyAmount)}`} success={calcResult.subsidyAmount > 0} />

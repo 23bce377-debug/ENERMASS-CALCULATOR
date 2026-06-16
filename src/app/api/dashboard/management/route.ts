@@ -16,7 +16,7 @@ export const GET = withAuth(async (request, context) => {
       .eq('org_id', orgId)
       .eq('status', 'won');
     if (revError) throw revError;
-    const totalRevenue = revenueData?.reduce((acc, q) => acc + Number(q.total_inc_gst || 0), 0) || 0;
+    const totalRevenue = revenueData?.reduce((acc, q: any) => acc + Number(q.total_inc_gst || 0), 0) || 0;
 
     // 2. Avg Margin - from quotes
     const { data: marginData, error: marginError } = await supabase
@@ -26,7 +26,7 @@ export const GET = withAuth(async (request, context) => {
       .eq('status', 'won');
     if (marginError) throw marginError;
     const avgMargin = marginData && marginData.length > 0
-      ? marginData.reduce((acc, q) => acc + Number(q.margin_pct || 0), 0) / marginData.length
+      ? marginData.reduce((acc, q: any) => acc + Number(q.margin_pct || 0), 0) / marginData.length
       : 0;
 
     // 3. Active Projects - from quotes or projects. Fallback to won quotes count if projects table not mapped yet

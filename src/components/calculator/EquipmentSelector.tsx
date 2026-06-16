@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import { Check, X, Sun, Cpu, Battery, Plus, Minus, ChevronDown, Edit3, RotateCcw, SlidersHorizontal, Layers, Package2, Wrench, Bolt, Droplets, Construction, Milestone, ChevronUp, Search } from 'lucide-react';

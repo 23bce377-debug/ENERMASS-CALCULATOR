@@ -19,7 +19,7 @@ export async function perform3WayMatch(
     .from('proc_purchase_orders')
     .select('*, proc_po_items(*)')
     .eq('id', poId)
-    .single();
+    .single() as any;
 
   if (poError || !po) throw new Error('PO not found');
 
@@ -28,7 +28,7 @@ export async function perform3WayMatch(
     .from('proc_goods_receipt_notes')
     .select('*, proc_grn_items(*)')
     .eq('id', grnId)
-    .single();
+    .single() as any;
 
   if (grnError || !grn) throw new Error('GRN not found');
 
@@ -37,7 +37,7 @@ export async function perform3WayMatch(
     .from('acc_invoices')
     .select('*, acc_invoice_lines(*)')
     .eq('id', invoiceId)
-    .single();
+    .single() as any;
 
   if (invoiceError || !invoice) throw new Error('Invoice not found');
 

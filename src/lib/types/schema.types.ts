@@ -470,6 +470,95 @@ export interface Database {
         }
         Relationships: []
       }
+      tax_hsn_sac: {
+        Row: {
+          id: string
+          code: string
+          description: string | null
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          code: string
+          description?: string | null
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          code?: string
+          description?: string | null
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      tax_gst_rates: {
+        Row: {
+          id: string
+          hsn_sac_id: string
+          effective_from: string
+          cgst_rate: number
+          sgst_rate: number
+          igst_rate: number
+          cess_rate: number
+        }
+        Insert: {
+          id?: string
+          hsn_sac_id: string
+          effective_from: string
+          cgst_rate?: number
+          sgst_rate?: number
+          igst_rate?: number
+          cess_rate?: number
+        }
+        Update: {
+          id?: string
+          hsn_sac_id?: string
+          effective_from?: string
+          cgst_rate?: number
+          sgst_rate?: number
+          igst_rate?: number
+          cess_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_gst_rates_hsn_sac_id_fkey"
+            columns: ["hsn_sac_id"]
+            isOneToOne: false
+            referencedRelation: "tax_hsn_sac"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      inv_cost_layers: {
+        Row: {
+          id: string
+          org_id: string
+          warehouse_id: string
+          catalog_item_id: string
+          qty: number
+          remaining_qty: number
+          unit_cost: number
+        }
+        Insert: {
+          id?: string
+          org_id?: string
+          warehouse_id?: string
+          catalog_item_id?: string
+          qty?: number
+          remaining_qty?: number
+          unit_cost?: number
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          warehouse_id?: string
+          catalog_item_id?: string
+          qty?: number
+          remaining_qty?: number
+          unit_cost?: number
+        }
+        Relationships: []
+      }
       bom_categories: {
         Row: {
           id: string
@@ -5863,7 +5952,43 @@ export interface Database {
         Relationships: []
       }
     }
-    Functions: {}
+    Functions: {
+      decrement_layer_qty: {
+        Args: {
+          p_layer_id: string
+          p_qty: number
+        }
+        Returns: void
+      }
+      get_gstr3b_summary: {
+        Args: {
+          p_org_id: string
+          p_period_start: string
+          p_period_end: string
+        }
+        Returns: any
+      }
+      create_journal_entry: {
+        Args: {
+          p_org_id: string
+          p_entry_date: string
+          p_reference: string
+          p_description: string
+          p_source_module: string
+          p_source_id: string
+          p_lines: any
+        }
+        Returns: string
+      }
+      post_opening_balances: {
+        Args: {
+          p_org_id: string
+          p_entry_date: string
+          p_balances: any
+        }
+        Returns: string
+      }
+    }
     Enums: {
       acc_account_type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
       acquisition_status: 'pending' | 'received' | 'cancelled'

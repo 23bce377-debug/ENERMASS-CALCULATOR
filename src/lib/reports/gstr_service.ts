@@ -34,8 +34,8 @@ export async function getGSTR3BDataFromLedger(orgId: string, startDate: string, 
   // Grouped by IGST, CGST, SGST.
   const { data, error } = await supabase.rpc('get_gstr3b_summary', {
     p_org_id: orgId,
-    p_start_date: startDate,
-    p_end_date: endDate
+    p_period_start: startDate,
+    p_period_end: endDate
   });
 
   if (error) {

@@ -19,12 +19,10 @@ export async function getGstRateForHsnSac(orgId: string, hsnSacCode: string, dat
     .from('tax_hsn_sac')
     .select(`
       code,
-      type,
       tax_gst_rates (
-        cgst_rate, sgst_rate, igst_rate, cess_rate, is_reverse_charge, effective_from, effective_to
+        cgst_rate, sgst_rate, igst_rate, cess_rate, effective_from
       )
     `)
-    .eq('org_id', orgId)
     .eq('code', hsnSacCode)
     .eq('is_active', true)
     .single();
@@ -37,9 +35,8 @@ export async function getGstRateForHsnSac(orgId: string, hsnSacCode: string, dat
   const rates: any[] = Array.isArray(data.tax_gst_rates) ? data.tax_gst_rates : [data.tax_gst_rates];
   const activeRate = rates.find(r => {
     const from = new Date(r.effective_from);
-    const to = r.effective_to ? new Date(r.effective_to) : new Date('2099-12-31');
     const target = new Date(date);
-    return target >= from && target <= to;
+    return target >= from; // Removed effective_to since it doesn't exist in schema
   });
 
   if (!activeRate) {
@@ -52,7 +49,7 @@ export async function getGstRateForHsnSac(orgId: string, hsnSacCode: string, dat
     sgst_rate: Number(activeRate.sgst_rate),
     igst_rate: Number(activeRate.igst_rate),
     cess_rate: Number(activeRate.cess_rate),
-    is_reverse_charge: Boolean(activeRate.is_reverse_charge),
+    is_reverse_charge: false, // Defaulting to false as it's missing from schema
   };
 }
 

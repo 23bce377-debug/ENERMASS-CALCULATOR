@@ -18,6 +18,10 @@ import { calculatePMSuryaGharSubsidy, type SubsidyResult } from '../subsidy';
 
 import { safeEvalFormula, FormulaParseError } from './formulaParser';
 
+import { generateElectricalBOM } from './bomElectrical';
+import { generateStructureBOM } from './bomStructure';
+import { generateCivilEarthingBOM } from './bomCivilEarthing';
+
 export function roundTo5(num: number | null | undefined): number {
   if (num === null || num === undefined || isNaN(num)) return 0;
   return Number(Math.round(Number(num + 'e5')) + 'e-5');
@@ -1134,29 +1138,32 @@ export function calculateSystem(input: CalcInput): CalcResult {
     if (la) {
       const gst = Number(la.gst_pct) || TAX_CONSTANTS.BOS_GST_RATE;
       upsertItem(laKey, {
+        description: `LIGHTNING ARRESTER ${la.brand} ${la.model}`,
         qty: input.lightningArresterQty ?? 1,
         ratePerUnit: Number(la.rate),
         gstPct: gst as any,
         unit: 'Nos',
         remarks: la.description ?? la.model,
-      }, true);
+      });
     } else {
-      upsertItem(laKey, {
+      resolvedItems.push({
+        description: 'LIGHTNING ARRESTER',
         qty: 0,
         ratePerUnit: 0,
         gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
         unit: 'Nos',
         remarks: 'None (Unselected)',
-      }, true);
+      });
     }
   } else {
-    upsertItem(laKey, {
+    resolvedItems.push({
+      description: 'LIGHTNING ARRESTER',
       qty: 0,
       ratePerUnit: 0,
       gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
       unit: 'Nos',
       remarks: 'None (Unselected)',
-    }, true);
+    });
   }
 
   // customItems
@@ -1164,87 +1171,51 @@ export function calculateSystem(input: CalcInput): CalcResult {
     resolvedItems.push(...input.customItems);
   }
 
-  // Inject standard product categories if they are missing so they aren't "left to rot"
-  const STANDARD_CATEGORIES = [
-    { desc: 'ISOLATOR', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'METER BOX', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'CHAMBER BOX', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'EARTH BENCH', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'ALUM CABLE 50 SQMM', unit: 'Meter', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'ALUM CABLE 10 SQMM', unit: 'Meter', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'COPPER', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'MC4(ADDITIONAL)', unit: 'Nos', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'WIRING ACCESSORIES', unit: 'Lot', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'TRANSPORTATION', unit: 'Lot', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'COMMISSION', unit: 'Lot', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'SITE VISIT', unit: 'Lot', gstPct: TAX_CONSTANTS.BOS_GST_RATE },
-    { desc: 'INSTALLATION', unit: 'Lot', gstPct: TAX_CONSTANTS.INSTALLATION_SERVICE_GST },
-  ];
-
-  for (const cat of STANDARD_CATEGORIES) {
-    const exists = resolvedItems.some(i => i.description.toUpperCase().startsWith(cat.desc.toUpperCase()));
-    if (!exists) {
-      upsertItem(cat.desc, {
-        qty: 0,
-        ratePerUnit: 0,
-        gstPct: cat.gstPct as any,
-        unit: cat.unit,
-        remarks: 'Standard item',
-      }, true);
-    }
-  }
-
-  
-  // ── Step 3.5: Inject DB Seeded BOS Components ──
+  // 🚀 Step 3.5: Inject Engineering BOS Components (Electrical, Structure, Civil)
   const systemKw = input.panelCapacityKW ?? system.capacityKW ?? 0;
   const panelCount = equipmentOverrides.panelQtyOverride ?? system.panelQty ?? 0;
-  const roofAreaSqft = systemKw * 100; // rough estimate if not provided
+  
+  // Phase and Inverter approximations based on current state parameters
+  const inverterCount = resolvedItems.filter(i => i.description.toUpperCase().includes('INVERTER')).reduce((acc, curr) => acc + curr.qty, 0) || 1;
+  const phase = systemKw > 5 ? 3 : 1; 
 
-  for (const item of SEED_BOM_TEMPLATE_ITEMS) {
-    if (item.categoryId === 'cat-civil') {
-      const spec = input.structureType ? STRUCTURE_CONFIGS[input.structureType] : null;
-      const isCivilRequired = spec ? spec.civilRequired : false;
-      if (!isCivilRequired) continue;
-    }
+  const electricalBOM = generateElectricalBOM({
+    systemKw,
+    panelCount,
+    inverterCount,
+    phase
+  });
 
-    let calculatedQty = 0;
-    
-    if (!item.isSystemSurveyDependent && item.qtyFormula && item.qtyFormula !== 'null') {
-      let formula = item.qtyFormula
-        .replace(/system_kw/g, systemKw.toString())
-        .replace(/panel_count/g, panelCount.toString())
-        .replace(/roof_area_sqft/g, roofAreaSqft.toString());
-        
-      // Safely evaluate basic math
-      try {
-        const cleanFormula = formula
-          .replace(/CEIL/g, 'Math.ceil')
-          .replace(/MAX/g, 'Math.max');
-        calculatedQty = eval(cleanFormula);
-      } catch (e) {
-        console.warn('Failed to parse formula:', item.qtyFormula, e);
-        calculatedQty = 1;
-      }
-    }
+  const structureBOM = generateStructureBOM({
+    systemKw,
+    structureType: input.structureType as any
+  });
 
-    const category = SEED_BOM_CATEGORIES.find(c => c.id === item.categoryId);
+  const civilEarthingBOM = generateCivilEarthingBOM({
+    systemKw,
+    structureType: input.structureType as any
+  });
 
-    upsertItem(item.description, {
-      qty: calculatedQty,
-      ratePerUnit: item.defaultRate,
-      gstPct: TAX_CONSTANTS.BOS_GST_RATE,
-      unit: item.unit,
-      remarks: item.isSystemSurveyDependent ? 'Pending Site Survey' : 'Calculated BOM',
-    }, false);
-    
-    // Attach metadata for the UI to use later
-    const idx = resolvedItems.findIndex(i => i.description === item.description);
-    if (idx !== -1) {
-      (resolvedItems[idx] as any).categoryId = item.categoryId;
-      (resolvedItems[idx] as any).categoryName = category?.name;
-      (resolvedItems[idx] as any).unitRateMin = item.unitRateMin;
-      (resolvedItems[idx] as any).unitRateMax = item.unitRateMax;
-      (resolvedItems[idx] as any).isSurveyDependent = item.isSystemSurveyDependent;
+  // Additional base overheads that must exist
+  const logisticsBOM: BomItem[] = [
+    { description: 'TRANSPORTATION', unit: 'Lot', qty: 1, ratePerUnit: 0, gstPct: TAX_CONSTANTS.BOS_GST_RATE as any },
+    { description: 'COMMISSION', unit: 'Lot', qty: 1, ratePerUnit: 0, gstPct: TAX_CONSTANTS.BOS_GST_RATE as any },
+    { description: 'SITE VISIT', unit: 'Lot', qty: 1, ratePerUnit: 0, gstPct: TAX_CONSTANTS.BOS_GST_RATE as any },
+    { description: 'INSTALLATION', unit: 'Lot', qty: systemKw, ratePerUnit: 3000, gstPct: TAX_CONSTANTS.INSTALLATION_SERVICE_GST as any }
+  ];
+
+  const engineeredItems = [...electricalBOM, ...structureBOM, ...civilEarthingBOM, ...logisticsBOM];
+
+  for (const item of engineeredItems) {
+    const exists = resolvedItems.some(i => i.description.toUpperCase().includes(item.description.toUpperCase()));
+    if (!exists) {
+      upsertItem(item.description, {
+        qty: item.qty,
+        ratePerUnit: item.ratePerUnit,
+        gstPct: item.gstPct as any,
+        unit: item.unit,
+        remarks: 'Engineered BOM',
+      }, false);
     }
   }
 

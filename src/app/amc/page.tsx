@@ -43,7 +43,6 @@ export default function AmcPage() {
   const [orgId, setOrgId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [technicians, setTechnicians] = useState<any[]>([]);
-  const [technicians, setTechnicians] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'contracts' | 'visits' | 'alerts'>('contracts');
 
@@ -196,16 +195,6 @@ export default function AmcPage() {
       fetchData();
     } catch (err: any) {
       toast(err.message || 'Failed to schedule visit', 'error');
-    }
-  };
-
-  const handleAssignTechnician = async (visitId: string, technicianId: string) => {
-    try {
-      await (supabase as any).from('field_amc_visits').update({ conducted_by: technicianId || null, updated_at: new Date().toISOString() }).eq('id', visitId);
-      toast('Technician assigned successfully', 'success');
-      fetchData();
-    } catch (err: any) {
-      toast(err.message || 'Failed to assign technician', 'error');
     }
   };
 

@@ -97,7 +97,7 @@ export async function commitInventoryConsumption(
     });
 
     // Log the transaction
-    await supabase.from('inv_stock_transactions').insert({
+    await supabase.from('inventory_movements').insert({
       org_id: orgId,
       warehouse_id: warehouseId,
       catalog_item_id: catalogItemId,
@@ -107,7 +107,7 @@ export async function commitInventoryConsumption(
       cost_layer_id: layer.layerId,
       valuation_method: 'FIFO',
       project_id: projectId
-    });
+    } as any);
   }
 
   // Trigger will decrement inv_stock_balances automatically or we do it via RPC

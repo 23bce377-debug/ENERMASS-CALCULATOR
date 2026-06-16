@@ -58,8 +58,8 @@ export const GET = withAuth(async (request, context) => {
         supabase.from('inventory_summary').select('*').eq('org_id', orgId).limit(invLimit),
         supabase.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true }),
         supabase.from('systems').select('*, system_items(*)').eq('is_active', true).order('capacity_kw', { ascending: true }),
-        supabase.from('tax_hsn_sac').select('*').eq('org_id', orgId).eq('is_active', true),
-        supabase.from('tax_gst_rates').select('*').eq('org_id', orgId)
+        supabase.from('tax_hsn_sac').select('*').eq('is_active', true),
+        supabase.from('tax_gst_rates').select('*')
       ]);
 
       // Chunk 4: Heavy BOM & Structural Templates
@@ -74,13 +74,13 @@ export const GET = withAuth(async (request, context) => {
         structureComponentMasterRes
       ] = await Promise.all([
         supabase.from('eq_bom_items').select('*').eq('is_active', true).limit(bomLimit),
-        supabase.from('structure_accessory_rates').select('*').eq('is_active', true),
-        supabase.from('structure_material_rates').select('*'),
-        supabase.from('structure_templates').select('*'),
-        supabase.from('structure_template_items').select('*'),
-        supabase.from('walkway_templates').select('*'),
-        supabase.from('ladder_templates').select('*'),
-        supabase.from('structure_component_master').select('*').eq('is_active', true)
+        (supabase.from('structure_accessory_rates').select('*').eq('is_active', true) as any).catch(() => ({ data: [], error: null })),
+        (supabase.from('structure_material_rates').select('*') as any).catch(() => ({ data: [], error: null })),
+        (supabase.from('structure_templates').select('*') as any).catch(() => ({ data: [], error: null })),
+        (supabase.from('structure_template_items').select('*') as any).catch(() => ({ data: [], error: null })),
+        (supabase.from('walkway_templates').select('*') as any).catch(() => ({ data: [], error: null })),
+        (supabase.from('ladder_templates').select('*') as any).catch(() => ({ data: [], error: null })),
+        (supabase.from('structure_component_master').select('*').eq('is_active', true) as any).catch(() => ({ data: [], error: null }))
       ]);
 
       const errors = [

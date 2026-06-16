@@ -50,7 +50,7 @@ export async function postJournalEntry(orgId: string, payload: JournalEntryPaylo
     p_reference_no: payload.reference_no || null,
     p_description: payload.description || null,
     p_lines: payload.lines,
-  });
+  } as any);
 
   if (error) {
     console.error('[Ledger] Failed to post journal entry:', error);
