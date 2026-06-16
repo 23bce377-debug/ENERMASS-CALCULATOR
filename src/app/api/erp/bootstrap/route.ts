@@ -30,36 +30,45 @@ export const GET = withAuth(async (request, context) => {
       const { createClient } = await import('@/lib/supabase/server');
       const supabase = await createClient();
 
+      const safeQuery = async (queryPromise: PromiseLike<any>) => {
+        try {
+          const result = await queryPromise;
+          return result;
+        } catch (error) {
+          return { data: [], error };
+        }
+      };
+
       // Chunk 1: Basic Equipment
       const [panelsRes, invertersRes, batteriesRes, metersRes, laRes, commDevicesRes] = await Promise.all([
-        supabase.from('eq_panels').select('*').eq('is_active', true),
-        supabase.from('eq_inverters').select('*').eq('is_active', true),
-        supabase.from('eq_batteries').select('*').eq('is_active', true),
-        supabase.from('eq_meters').select('*').eq('is_active', true),
-        supabase.from('eq_lightning_arresters').select('*').eq('is_active', true),
-        supabase.from('eq_communication_devices').select('*').eq('is_active', true),
+        safeQuery(supabase.from('eq_panels').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('eq_inverters').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('eq_batteries').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('eq_meters').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('eq_lightning_arresters').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('eq_communication_devices').select('*').eq('is_active', true)),
       ]);
 
       // Chunk 2: Structures & App Config
       const [structuresRes, weightLookupsRes, structureComponentsRes, structureBomRes, structureAddonsRes, appSettingsRes] = await Promise.all([
-        supabase.from('eq_mounting_structures').select('*').eq('is_active', true),
-        supabase.from('structure_weight_lookup').select('*'),
-        supabase.from('eq_structure_components').select('*').eq('is_active', true),
-        supabase.from('eq_structure_bom').select('*'),
-        supabase.from('eq_structure_addons').select('*').eq('is_active', true),
-        supabase.from('app_settings').select('*').eq('org_id', orgId).maybeSingle()
+        safeQuery(supabase.from('eq_mounting_structures').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('structure_weight_lookup').select('*')),
+        safeQuery(supabase.from('eq_structure_components').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('eq_structure_bom').select('*')),
+        safeQuery(supabase.from('eq_structure_addons').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('app_settings').select('*').eq('org_id', orgId).maybeSingle())
       ]);
 
       // Chunk 3: Rules, Schemes, Vendors, Systems, and GST Master
       const [stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes, taxHsnRes, taxGstRatesRes] = await Promise.all([
-        supabase.from('state_rules').select('*').eq('is_active', true),
-        supabase.from('scheme_slabs').select('*'),
-        supabase.from('calculation_schemes').select('*').eq('is_active', true),
-        supabase.from('inventory_summary').select('*').eq('org_id', orgId).limit(invLimit),
-        supabase.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true }),
-        supabase.from('systems').select('*, system_items(*)').eq('is_active', true).order('capacity_kw', { ascending: true }),
-        supabase.from('tax_hsn_sac').select('*').eq('is_active', true),
-        supabase.from('tax_gst_rates').select('*')
+        safeQuery(supabase.from('state_rules').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('scheme_slabs').select('*')),
+        safeQuery(supabase.from('calculation_schemes').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('inventory_summary').select('*').eq('org_id', orgId).limit(invLimit)),
+        safeQuery(supabase.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true })),
+        safeQuery(supabase.from('systems').select('*, system_items(*)').eq('is_active', true).order('capacity_kw', { ascending: true })),
+        safeQuery(supabase.from('tax_hsn_sac').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('tax_gst_rates').select('*'))
       ]);
 
       // Chunk 4: Heavy BOM & Structural Templates
@@ -73,25 +82,21 @@ export const GET = withAuth(async (request, context) => {
         ladderTemplatesRes,
         structureComponentMasterRes
       ] = await Promise.all([
-        supabase.from('eq_bom_items').select('*').eq('is_active', true).limit(bomLimit),
-        (supabase.from('structure_accessory_rates').select('*').eq('is_active', true) as any).catch(() => ({ data: [], error: null })),
-        (supabase.from('structure_material_rates').select('*') as any).catch(() => ({ data: [], error: null })),
-        (supabase.from('structure_templates').select('*') as any).catch(() => ({ data: [], error: null })),
-        (supabase.from('structure_template_items').select('*') as any).catch(() => ({ data: [], error: null })),
-        (supabase.from('walkway_templates').select('*') as any).catch(() => ({ data: [], error: null })),
-        (supabase.from('ladder_templates').select('*') as any).catch(() => ({ data: [], error: null })),
-        (supabase.from('structure_component_master').select('*').eq('is_active', true) as any).catch(() => ({ data: [], error: null }))
+        safeQuery(supabase.from('eq_bom_items').select('*').eq('is_active', true).limit(bomLimit)),
+        safeQuery(supabase.from('structure_accessory_rates').select('*').eq('is_active', true)),
+        safeQuery(supabase.from('structure_material_rates').select('*')),
+        safeQuery(supabase.from('structure_templates').select('*')),
+        safeQuery(supabase.from('structure_template_items').select('*')),
+        safeQuery(supabase.from('walkway_templates').select('*')),
+        safeQuery(supabase.from('ladder_templates').select('*')),
+        safeQuery(supabase.from('structure_component_master').select('*').eq('is_active', true))
       ]);
 
-      const errors = [
-        panelsRes, invertersRes, batteriesRes, metersRes, laRes, commDevicesRes,
-        structuresRes, weightLookupsRes, structureComponentsRes, structureBomRes, structureAddonsRes, appSettingsRes,
-        stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes, taxHsnRes, taxGstRatesRes,
-        bomItemsRes, structureAccessoryRatesRes, structureMaterialRatesRes, structureTemplatesRes, structureTemplateItemsRes, walkwayTemplatesRes, ladderTemplatesRes, structureComponentMasterRes
-      ].filter(res => res.error);
-
-      if (errors.length > 0) {
-        throw errors[0].error;
+      // Only throw if core equipment tables fail (panels, inverters, batteries)
+      const coreErrors = [panelsRes, invertersRes, batteriesRes]
+        .filter(res => res?.error && res.error.code !== 'PGRST116');
+      if (coreErrors.length > 0) {
+        throw coreErrors[0].error;
       }
 
       return {

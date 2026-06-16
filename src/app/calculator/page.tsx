@@ -22,7 +22,6 @@ import { AdditionalCostsPanel } from '@/components/calculator/AdditionalCostsPan
 import { SummaryCard } from '@/components/calculator/SummaryCard';
 import { EnergyCard } from '@/components/calculator/EnergyCard';
 import { ConnectedROIDisplay } from '@/components/calculator/ROIDisplay';
-import { VariantsComparison } from '@/components/calculator/VariantsComparison';
 import { QuoteSaveModal } from '@/components/calculator/QuoteSaveModal';
 import { QuotePDF } from '@/components/print/QuotePDF';
 
@@ -251,9 +250,8 @@ export default function CalculatorPage() {
   const { syncState, forceSave, draftId } = useCalculatorAutoSave(initialDraftId);
 
   const handleDismissDraft = () => {
+    // Just hide the banner — do NOT reset the store or the draft
     setRestoredDate(null);
-    useCalculatorStore.getState().reset();
-    setInitialDraftId(null);
   };
 
   const selectedSystemId = useCalculatorStore((s) => s.selectedSystemId);
@@ -290,8 +288,6 @@ export default function CalculatorPage() {
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
   const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
   
-  const applySubsidy = useCalculatorStore((s) => s.applySubsidy);
-  const setApplySubsidy = useCalculatorStore((s) => s.setApplySubsidy);
   const itcEligible = useCalculatorStore((s) => s.itcEligible);
   const setItcEligible = useCalculatorStore((s) => s.setItcEligible);
   const projectType = useCalculatorStore((s) => s.projectType);
@@ -427,7 +423,7 @@ export default function CalculatorPage() {
           <span className="text-sm font-medium text-accent">
             Restored your last session from {restoredDate.toLocaleString()}
           </span>
-          <button onClick={handleDismissDraft} className="p-1 rounded-md hover:bg-accent/20 text-accent transition-colors cursor-pointer" title="Dismiss and start fresh">
+          <button type="button" onClick={handleDismissDraft} className="p-1 rounded-md hover:bg-accent/20 text-accent transition-colors cursor-pointer" title="Dismiss notification">
             <X size={16} />
           </button>
         </div>
@@ -442,50 +438,28 @@ export default function CalculatorPage() {
             <SystemPresetDropdown onSaveConfig={handleSaveModalOpen} />
             <div className="h-px bg-border/60" />
             <StateSelector />
-            {projectType !== 'commercial' && (
+            {((projectType as string) === 'commercial' || (projectType as string) === 'industrial') && (
               <>
                 <div className="h-px bg-border/60" />
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-surface hover:border-border-light transition-all duration-200">
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold text-text-primary">Apply Subsidy</span>
-                    <span className="text-[10px] text-text-muted truncate">PM Surya Ghar Scheme</span>
+                    <span className="text-xs font-semibold text-text-primary">ITC Eligible</span>
+                    <span className="text-[10px] text-text-muted truncate">GST Registered Customer</span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setApplySubsidy(!applySubsidy)}
+                    onClick={() => setItcEligible(!itcEligible)}
                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      applySubsidy ? 'bg-accent' : 'bg-border-light'
+                      itcEligible ? 'bg-accent' : 'bg-border-light'
                     }`}
                   >
                     <span
                       className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out ${
-                        applySubsidy ? 'translate-x-4' : 'translate-x-0'
+                        itcEligible ? 'translate-x-4' : 'translate-x-0'
                       }`}
                     />
                   </button>
                 </div>
-
-                {((projectType as string) === 'commercial' || (projectType as string) === 'industrial') && (
-                  <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-surface hover:border-border-light transition-all duration-200 mt-3">
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-semibold text-text-primary">ITC Eligible</span>
-                      <span className="text-[10px] text-text-muted truncate">GST Registered Customer</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setItcEligible(!itcEligible)}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        itcEligible ? 'bg-accent' : 'bg-border-light'
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out ${
-                          itcEligible ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                )}
               </>
             )}
 
@@ -540,9 +514,6 @@ export default function CalculatorPage() {
           <div className="mt-8">
             <ConnectedROIDisplay />
           </div>
-
-          {/* Option Variants Comparison */}
-          <VariantsComparison />
 
           {/* Actions */}
           <div className="h-px bg-border/60 my-6" />

@@ -1410,34 +1410,6 @@ function InverterTable({
           </tbody>
         </table>
       </div>
-
-      {activeInverters.length > 0 && (
-        <div className="mt-6 space-y-4 border-t border-border pt-4">
-          <h4 className="text-xs uppercase font-bold text-text-secondary tracking-wider">Active Inverter Detail Overview</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {activeInverters.map((inverter: any) => {
-              const qty = selectedMix[inverter.id] || 0;
-              return (
-                <EquipmentDetailCard
-                  key={inverter.id}
-                  title="Inverter"
-                  brand={inverter.brand}
-                  model={inverter.model}
-                  category={`${inverter.type} Inverter`}
-                  specs={[
-                    `Capacity: ${inverter.capacityKW} kW`,
-                    `Phases: ${inverter.phases}-Phase`,
-                    `Quantity: ${qty} Nos`
-                  ]}
-                  gstPct={inverter.gst_pct || 0.12}
-                  sellingPrice={inverter.rate}
-                  itemDescForInventory={`${inverter.brand} ${inverter.model} ${Number(inverter.capacity_kw)}kW Inverter`}
-                />
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -1712,34 +1684,6 @@ function BatteryTable({
           </tbody>
         </table>
       </div>
-
-      {activeBatteries.length > 0 && (
-        <div className="mt-6 space-y-4 border-t border-border pt-4">
-          <h4 className="text-xs uppercase font-bold text-text-secondary tracking-wider">Active Battery Detail Overview</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {activeBatteries.map((battery: any) => {
-              const qty = selectedMix[battery.id] || 0;
-              return (
-                <EquipmentDetailCard
-                  key={battery.id}
-                  title="Battery"
-                  brand={battery.brand}
-                  model={battery.model}
-                  category={`${battery.chemistry} Storage`}
-                  specs={[
-                    `Capacity: ${battery.capacityKWh} kWh`,
-                    `Chemistry: ${battery.chemistry}`,
-                    `Quantity: ${qty} Nos`
-                  ]}
-                  gstPct={battery.gst_pct || 0.12}
-                  sellingPrice={battery.rate}
-                  itemDescForInventory={`${battery.brand} ${battery.model} ${Number(battery.capacityKWh)}kWh Battery`}
-                />
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

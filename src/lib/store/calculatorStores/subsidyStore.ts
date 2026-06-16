@@ -8,8 +8,9 @@ export const createSubsidySlice: StateCreator<
   CalculatorState,
   [],
   [],
-  Pick<CalculatorState, 'rpcSubsidyAmount' | 'fetchRpcSubsidy' | 'setApplySubsidy' | 'setSelectedScheme'>
+  Pick<CalculatorState, 'applySubsidy' | 'rpcSubsidyAmount' | 'fetchRpcSubsidy' | 'setApplySubsidy' | 'setSelectedScheme'>
 > = (set, get) => ({
+  applySubsidy: true,
   rpcSubsidyAmount: null,
   
   setApplySubsidy: (val) => {

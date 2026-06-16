@@ -31,7 +31,8 @@ export default function NetMeteringTracker({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const [app, setApp] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null); // track which doc is uploading
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchApplication();
@@ -84,15 +85,25 @@ export default function NetMeteringTracker({ params }: { params: Promise<{ id: s
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, docName: string) => {
     if (!e.target.files || e.target.files.length === 0 || !app) return;
     const file = e.target.files[0];
-    setUploading(true);
+    
+    // Guard: 10 MB max
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('File too large. Maximum size is 10 MB.');
+      e.target.value = '';
+      return;
+    }
+
+    setUploading(docName);
+    setUploadError(null);
     
     try {
       const ext = file.name.split('.').pop();
-      const fileName = `${id}/${app.current_stage}/${docName.replace(/\s+/g, '_')}_${Date.now()}.${ext}`;
+      const safeName = docName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      const fileName = `projects/${id}/${app.current_stage}/${safeName}_${Date.now()}.${ext}`;
       
       const { error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(fileName, file);
+        .upload(fileName, file, { upsert: true });
         
       if (uploadError) throw uploadError;
       
@@ -107,11 +118,12 @@ export default function NetMeteringTracker({ params }: { params: Promise<{ id: s
         .eq('id', app.id);
         
       await fetchApplication();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to upload document");
+      setUploadError(err.message || 'Failed to upload document. Please try again.');
     } finally {
-      setUploading(false);
+      setUploading(null);
+      e.target.value = '';
     }
   };
 
@@ -126,10 +138,10 @@ export default function NetMeteringTracker({ params }: { params: Promise<{ id: s
         <h2 className="text-xl font-bold text-text-primary">No Application Found</h2>
         <p className="text-text-muted mt-2">The net metering application for this project has not been initiated yet.</p>
         <button 
-          disabled={uploading}
+          disabled={!!uploading}
           onClick={async () => {
             try {
-              setUploading(true);
+              setUploading('initiating');
               const { data, error: projErr } = await supabase.from('epc_projects').select('quote_id, org_id').eq('id', id).single();
               if (projErr && projErr.code !== 'PGRST116') throw projErr;
               
@@ -151,12 +163,12 @@ export default function NetMeteringTracker({ params }: { params: Promise<{ id: s
               console.error(err);
               alert("Failed to initiate application: " + (err.message || "Unknown error"));
             } finally {
-              setUploading(false);
+              setUploading(null);
             }
           }}
-          className={`mt-6 px-4 py-2 bg-accent text-white rounded-lg transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent-hover'}`}
+          className={`mt-6 px-4 py-2 bg-accent text-white rounded-lg transition-colors ${!!uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent-hover'}`}
         >
-          {uploading ? 'Initiating...' : 'Initiate Application Now'}
+          {uploading === 'initiating' ? 'Initiating...' : 'Initiate Application Now'}
         </button>
       </div>
     );
@@ -217,13 +229,22 @@ export default function NetMeteringTracker({ params }: { params: Promise<{ id: s
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
           <div className="bg-surface border border-border p-6 rounded-2xl">
-            <h3 className="text-lg font-bold mb-4">Required Documents</h3>
+            <h3 className="text-lg font-bold mb-1">Required Documents</h3>
+            <p className="text-xs text-text-muted mb-4">Accepted: PDF, JPG, PNG, DOCX, XLSX · Max 10 MB per file</p>
+            {uploadError && (
+              <div className="mb-4 p-3 rounded-lg bg-error/10 border border-error/30 text-error text-sm flex items-start gap-2">
+                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                {uploadError}
+                <button onClick={() => setUploadError(null)} className="ml-auto text-error/70 hover:text-error">✕</button>
+              </div>
+            )}
             {STAGE_DOCS[app.current_stage as keyof typeof STAGE_DOCS].length === 0 ? (
               <p className="text-text-muted italic text-sm">No documents required for this stage.</p>
             ) : (
               <div className="space-y-3">
                 {STAGE_DOCS[app.current_stage as keyof typeof STAGE_DOCS].map(doc => {
                   const url = app.document_urls?.[doc];
+                  const isUploading = uploading === doc;
                   return (
                     <div key={doc} className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-surface-hover">
                       <div className="flex items-center gap-3">
@@ -231,13 +252,22 @@ export default function NetMeteringTracker({ params }: { params: Promise<{ id: s
                         <span className="font-medium text-sm text-text-primary">{doc}</span>
                       </div>
                       {url ? (
-                        <a href={url} target="_blank" rel="noreferrer" className="text-xs text-accent hover:underline flex items-center gap-1 font-medium">
-                          View Document <CheckCircle size={14} className="text-success" />
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <a href={url} target="_blank" rel="noreferrer" className="text-xs text-accent hover:underline flex items-center gap-1 font-medium">
+                            View Document <CheckCircle size={14} className="text-success" />
+                          </a>
+                          <label className="text-xs px-2 py-1 bg-surface border border-border hover:border-accent hover:text-accent rounded cursor-pointer transition-colors" title="Replace file">
+                            Replace
+                            <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx" onChange={(e) => handleFileUpload(e, doc)} disabled={!!uploading} />
+                          </label>
+                        </div>
                       ) : (
-                        <label className="text-xs px-3 py-1.5 bg-surface border border-border hover:border-accent hover:text-accent rounded cursor-pointer transition-colors flex items-center gap-2">
-                          <Upload size={14} /> {uploading ? 'Uploading...' : 'Upload'}
-                          <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, doc)} disabled={uploading} />
+                        <label className={`text-xs px-3 py-1.5 bg-surface border rounded cursor-pointer transition-colors flex items-center gap-2 ${
+                          isUploading ? 'border-accent text-accent' : 'border-border hover:border-accent hover:text-accent'
+                        } ${!!uploading && !isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                          <Upload size={14} className={isUploading ? 'animate-bounce' : ''} />
+                          {isUploading ? 'Uploading...' : 'Upload'}
+                          <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx" onChange={(e) => handleFileUpload(e, doc)} disabled={!!uploading} />
                         </label>
                       )}
                     </div>

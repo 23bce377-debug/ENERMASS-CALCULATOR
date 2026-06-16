@@ -33,10 +33,10 @@ describe('PM Surya Ghar Subsidy Calculation', () => {
     assert.strictEqual(result.isEligible, true);
   });
 
-  it('rejects subsidy for 11kW residential system (>10kW limit)', () => {
+  it('calculates subsidy for 11kW residential system (capped at ₹78,000)', () => {
     const result = calculatePMSuryaGharSubsidy(11, 'residential');
-    assert.strictEqual(result.amount, 0);
-    assert.strictEqual(result.isEligible, false);
+    assert.strictEqual(result.amount, 78000);
+    assert.strictEqual(result.isEligible, true);
   });
 
   it('rejects subsidy for commercial systems regardless of size', () => {

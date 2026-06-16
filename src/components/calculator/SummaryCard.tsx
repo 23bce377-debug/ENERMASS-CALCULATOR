@@ -69,8 +69,8 @@ export function SummaryCard() {
   });
 
   // Subsidy eligibility based on capacity
-  const showNoSubsidy = capacityKW > 10;
-  const subsidyLabel = showNoSubsidy ? 'No Subsidy (>10 kW)' : 'PM Surya Ghar Subsidy';
+  const showNoSubsidy = selectedScheme === 'state' && capacityKW > 10;
+  const subsidyLabel = showNoSubsidy ? 'No Subsidy (>10 kW)' : (selectedScheme === 'state' ? 'State Subsidy' : 'PM Surya Ghar Subsidy');
 
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden shadow-lg shadow-black/20" id="summary-card">
@@ -94,12 +94,12 @@ export function SummaryCard() {
       <div className="p-5 space-y-4">
         {/* Base Costs */}
         <div className="space-y-2">
-          <Row label="Cost Before GST" value={formatINR(calcResult.costBeforeGST)} />
+          <Row label="Procurement Cost (Base)" value={formatINR(calcResult.costBeforeGST)} />
           {calcResult.civilLogisticsCost > 0 && (
-            <Row label="Civil & Logistics (incl. above)" value={formatINR(calcResult.civilLogisticsCost)} muted />
+            <Row label="Civil & Logistics (Base)" value={formatINR(calcResult.civilLogisticsCost)} muted />
           )}
-          <Row label="Total Input GST" value={formatINR(calcResult.totalInputGST)} muted />
-          <Row label="Total (incl. GST)" value={formatINR(calcResult.totalIncGST)} bold />
+          <Row label="Input GST (ITC)" value={formatINR(calcResult.totalInputGST)} muted />
+          <Row label="Total Procurement Cost" value={formatINR(calcResult.totalIncGST)} bold />
         </div>
 
         <div className="border-t border-border/60" />
@@ -175,14 +175,13 @@ export function SummaryCard() {
                 <option value="state">State Scheme</option>
               </select>
             </div>
-            
             {selectedScheme !== 'none' && (
               <>
                 <div title={calcResult.subsidyResult?.breakdown} className="mt-2">
                   <Row label={subsidyLabel} value={`-${formatINR(calcResult.subsidyAmount)}`} success={calcResult.subsidyAmount > 0} />
                 </div>
                 {calcResult.subsidyResult?.schemeNote && (
-                  <span className="text-[10px] text-text-muted leading-tight">
+                  <span className="text-[10px] text-text-muted leading-tight block">
                     {calcResult.subsidyResult.schemeNote}
                   </span>
                 )}

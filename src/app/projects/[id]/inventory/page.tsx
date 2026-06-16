@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { PackageSearch, ArrowRight, Truck, MapPin, CheckCircle, AlertTriangle } from 'lucide-react';
+import { PackageSearch, Truck, MapPin, CheckCircle, AlertTriangle } from 'lucide-react';
 import { formatINR } from '@/lib/engine/calculator';
 
 interface InventoryRow {
@@ -16,7 +17,9 @@ interface InventoryRow {
   installed: number;
 }
 
-export default function SiteInventoryDashboard({ params }: { params: { id: string } }) {
+export default function SiteInventoryDashboard() {
+  const params = useParams();
+  const projectId = params.id as string;
   const [data, setData] = useState<InventoryRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +30,7 @@ export default function SiteInventoryDashboard({ params }: { params: { id: strin
         const { data: project, error: pErr } = await supabase
           .from('epc_projects')
           .select('id, quote_id, project_number')
-          .eq('id', params.id)
+          .eq('id', projectId)
           .single();
 
         if (pErr) throw pErr;
@@ -51,7 +54,7 @@ export default function SiteInventoryDashboard({ params }: { params: { id: strin
         const { data: positions } = await supabase
           .from('inventory_positions')
           .select('*')
-          .eq('project_id', params.id);
+          .eq('project_id', projectId);
 
         const posMap = new Map();
         positions?.forEach(p => {
@@ -104,7 +107,7 @@ export default function SiteInventoryDashboard({ params }: { params: { id: strin
       }
     }
     fetchDashboard();
-  }, [params.id]);
+  }, [projectId]);
 
   if (loading) {
     return <div className="p-8 text-center text-text-muted">Loading Site Inventory...</div>;

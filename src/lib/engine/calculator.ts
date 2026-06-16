@@ -161,7 +161,6 @@ export interface CalcInput {
   maxAbsoluteSubsidy?: number;
   // FIX CALC-02: Additional state subsidy from state_scheme_overrides
   additionalStateSubsidy?: number;
-  applySubsidy?: boolean;
   selectedScheme?: 'none' | 'pm_suryaghar' | 'state';
   dbLoaded?: boolean;
 }
@@ -768,8 +767,8 @@ export function calculateSystem(input: CalcInput): CalcResult {
     batteryQtyOverride: input.batteryQtyOverride,
   };
 
-  const capacityKW = input.panelCapacityKW || system.capacityKW || (system as any).capacity_kw || 1.0;
-  const capacityWatts = capacityKW * 1000;
+  let capacityKW = input.panelCapacityKW || system.capacityKW || (system as any).capacity_kw || 1.0;
+  let capacityWatts = capacityKW * 1000;
 
   // Clone system items and expand generic placeholders to specific selected models
   let resolvedItems: import('../data/bom').BomItem[] = [];
@@ -1010,6 +1009,34 @@ export function calculateSystem(input: CalcInput): CalcResult {
     }
   }
 
+  // Recalculate capacity dynamically based on resolved panel wattage and overrides
+  let totalPanelWatts = 0;
+  resolvedItems.forEach((item, index) => {
+    if (item.description.toUpperCase().startsWith('PANEL')) {
+      const rowOverride = input.overrides?.[index];
+      const effectiveQty = rowOverride?.qty !== undefined
+        ? rowOverride.qty
+        : equipmentOverrides.panelQtyOverride !== undefined
+        ? equipmentOverrides.panelQtyOverride
+        : item.qty;
+
+      let wattage = item.unitWattage ?? 0;
+      if (wattage === 0) {
+        const match = item.description.match(/\((\d+)\s*W\)/i);
+        if (match) {
+          wattage = parseInt(match[1], 10);
+        }
+      }
+      if (wattage > 0) {
+        totalPanelWatts += effectiveQty * wattage;
+      }
+    }
+  });
+
+  if (totalPanelWatts > 0) {
+    capacityKW = totalPanelWatts / 1000;
+    capacityWatts = totalPanelWatts;
+  }
 
   // Helper to find or update/create an item in BOM
   const upsertItem = (description: string, itemData: Partial<import('../data/bom').BomItem>, forceAdd = false) => {
@@ -1172,7 +1199,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
   }
 
   // 🚀 Step 3.5: Inject Engineering BOS Components (Electrical, Structure, Civil)
-  const systemKw = input.panelCapacityKW ?? system.capacityKW ?? 0;
+  const systemKw = capacityKW;
   const panelCount = equipmentOverrides.panelQtyOverride ?? system.panelQty ?? 0;
   
   // Phase and Inverter approximations based on current state parameters
@@ -1381,26 +1408,34 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const finalCustomerPrice = roundToINR(Math.max(0, mrpInclGST - discountAmount + additionalCostTotal));
 
   // ── Step 13: Subsidy ──
+  // FIX: selectedScheme is the source of truth. 'none' always means zero subsidy.
+  // rpcSubsidyAmount is only used as a FALLBACK within the pm_suryaghar path.
   let subsidyResult: SubsidyResult = {
     amount: 0,
-    breakdown: '',
+    breakdown: 'No subsidy applied',
     isEligible: false,
     schemeNote: ''
   };
 
-  if (input.applySubsidy !== false) {
-    if (input.rpcSubsidyAmount !== undefined) {
-      subsidyResult = {
-        amount: input.rpcSubsidyAmount,
-        breakdown: 'Custom overridden subsidy',
-        isEligible: true,
-        schemeNote: 'Custom overridden subsidy'
-      };
-    } else if (input.selectedScheme === 'pm_suryaghar') {
-      subsidyResult = calculatePMSuryaGharSubsidy(input.panelCapacityKW ?? system.capacityKW ?? 0, input.projectType);
-    } else if (input.selectedScheme === 'state' || !input.selectedScheme) {
+  const isSubsidyEnabled = input.selectedScheme && input.selectedScheme !== 'none';
+
+  if (isSubsidyEnabled) {
+    const panelCapKW = capacityKW;
+
+    if (input.selectedScheme === 'pm_suryaghar') {
+      if (input.rpcSubsidyAmount !== undefined && input.rpcSubsidyAmount > 0) {
+        subsidyResult = {
+          amount: input.rpcSubsidyAmount,
+          breakdown: `PM Surya Ghar — ₹${input.rpcSubsidyAmount.toLocaleString('en-IN')} for ${panelCapKW.toFixed(2)} kW system (server-computed)`,
+          isEligible: true,
+          schemeNote: 'PM Surya Ghar Muft Bijli Yojana · MNRE 2024 · DISCOM approval required',
+        };
+      } else {
+        subsidyResult = calculatePMSuryaGharSubsidy(panelCapKW, input.projectType);
+      }
+    } else if (input.selectedScheme === 'state') {
       const computedSubsidy = getSubsidyAmount(
-        input.panelCapacityKW ?? system.capacityKW ?? 0,
+        panelCapKW,
         input.inverterCapacityKW,
         input.state,
         input.projectType,
@@ -1412,9 +1447,11 @@ export function calculateSystem(input: CalcInput): CalcResult {
       );
       subsidyResult = {
         amount: computedSubsidy,
-        breakdown: 'Calculated from DB scheme slabs',
+        breakdown: computedSubsidy > 0
+          ? `${input.state} State Scheme — ₹${computedSubsidy.toLocaleString('en-IN')} for ${panelCapKW.toFixed(2)} kW`
+          : `${input.state} — No state subsidy applicable for this configuration`,
         isEligible: computedSubsidy > 0,
-        schemeNote: 'Subsidy calculated based on state rules'
+        schemeNote: `${input.state} State Subsidy Scheme`,
       };
     }
   }

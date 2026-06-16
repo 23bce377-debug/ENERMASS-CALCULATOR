@@ -353,7 +353,7 @@ const BOMRow = memo(function BOMRow({
       </td>
 
       {/* Remarks */}
-      <td className={`py-2 px-2 text-xs text-text-muted w-20 ${line.isDisabled ? 'line-through' : ''} ${dimClass}`}>
+      <td className={`py-2 px-2 text-xs text-text-muted w-56 ${line.isDisabled ? 'line-through' : ''} ${dimClass}`}>
         {line.remarks || '–'}
       </td>
 
@@ -869,7 +869,7 @@ export function BOMTable() {
             <tr className="border-b border-border">
               <th className="py-2.5 px-2 text-center text-text-muted font-medium w-12">#</th>
               <th className="py-2.5 px-2 text-left text-text-muted font-medium">Description</th>
-              <th className="py-2.5 px-2 text-left text-text-muted font-medium w-20">Remarks</th>
+              <th className="py-2.5 px-2 text-left text-text-muted font-medium w-56">Remarks</th>
               <th className="py-2.5 px-2 text-center text-text-muted font-medium w-14">Unit</th>
               <th className="py-2.5 px-2 text-right text-text-muted font-medium w-16">Qty</th>
               <th className="py-2.5 px-2 text-right text-text-muted font-medium w-28">Rate/Unit</th>
@@ -1100,9 +1100,9 @@ export function BOMTable() {
         <div className="border-t border-border bg-background/40">
           {/* Cost aggregates */}
           <div className="px-4 py-3 space-y-2">
-          <FooterRow label="Cost Before GST" value={formatINR(calcResult.costBeforeGST)} />
-          <FooterRow label="Total Input GST" value={formatINR(calcResult.totalInputGST)} muted />
-          <FooterRow label="Total Incl. GST (Selling)" value={formatINR(calcResult.totalIncGST)} bold />
+          <FooterRow label="Procurement Cost (Base)" value={formatINR(calcResult.costBeforeGST)} />
+          <FooterRow label="Input GST (ITC)" value={formatINR(calcResult.totalInputGST)} muted />
+          <FooterRow label="Total Procurement Cost" value={formatINR(calcResult.totalIncGST)} bold />
           <FooterRow label="Total Buying Price (WAC)" value={formatINR(totalBuyingPrice)} success />
         </div>
 

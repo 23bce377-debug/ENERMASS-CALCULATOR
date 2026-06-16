@@ -156,9 +156,11 @@ export default function BundlePresetModal({
   };
 
   const updateItem = (index: number, field: keyof BundlePresetItem, value: any) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setItems(newItems);
+    setItems(prev => {
+      const newItems = [...prev];
+      newItems[index] = { ...newItems[index], [field]: value };
+      return newItems;
+    });
   };
 
   const selectCatalogItem = (index: number, sugName: string) => {

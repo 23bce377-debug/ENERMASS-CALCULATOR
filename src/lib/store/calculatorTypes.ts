@@ -208,8 +208,8 @@ export interface DbCacheSliceState {
 
 /** Owned by subsidyStore.ts */
 export interface SubsidySliceState {
-  rpcSubsidyAmount: number | null;
   applySubsidy: boolean;
+  rpcSubsidyAmount: number | null;
   selectedScheme: 'none' | 'pm_suryaghar' | 'state';
   dbActiveScheme: any | null;
   setApplySubsidy: (val: boolean) => void;
@@ -488,11 +488,18 @@ export function runCalculation(state: CalculatorState): {
 
     // Resolve systemId: use selected, or fall back to first available system
     const systems = state.dbLoaded ? state.dbSystems : [...SYSTEMS, ...customSystems];
-    const resolvedSystemId = state.selectedSystemId
+    let resolvedSystemId = state.selectedSystemId
       ?? (systems.length > 0 ? systems[0].id : null);
 
+    // If the system ID is stale/invalid, fall back to the first available system
+    let system = systems.find(s => s.id === resolvedSystemId);
+    if (!system && systems.length > 0) {
+      system = systems[0];
+      resolvedSystemId = system.id;
+    }
+
     // If there are truly no systems available at all, we can't calculate
-    if (!resolvedSystemId) {
+    if (!resolvedSystemId || !system) {
       return { result: null, error: null };
     }
 
@@ -541,28 +548,42 @@ export function runCalculation(state: CalculatorState): {
       batteryQtyOverride = batteryMix.totalQty;
     }
 
-    const system = systems.find(s => s.id === resolvedSystemId);
-    let panelCapacityKW = system?.capacityKW ?? 0;
+    let panelCapacityKW = system.capacityKW ?? 0;
     let panelDegradationRate = 0.005;
+    
+    // Default to system capacity, we will only override if we find valid panels
+    let customPanelCapacityKW = 0;
+    let foundCustomPanels = false;
+
     if (panelMixEntries.length > 0) {
-      panelCapacityKW = 0;
       let weightedDegradationSum = 0;
       for (const [panelId, qty] of panelMixEntries) {
         const p = allPanels.find(x => x.id === panelId);
         if (p) {
+          foundCustomPanels = true;
           const capKW = (p.wattage * qty) / 1000;
-          panelCapacityKW += capKW;
+          customPanelCapacityKW += capKW;
           const deg = ('type' in p && p.type === 'TOPCon') ? 0.004 : 0.0055;
           weightedDegradationSum += deg * capKW;
         }
       }
-      if (panelCapacityKW > 0) {
-        panelDegradationRate = weightedDegradationSum / panelCapacityKW;
+      if (foundCustomPanels && customPanelCapacityKW > 0) {
+        panelCapacityKW = customPanelCapacityKW;
+        panelDegradationRate = weightedDegradationSum / customPanelCapacityKW;
       }
     } else if (state.selectedPanelId) {
       const p = allPanels.find(x => x.id === state.selectedPanelId);
-      const qty = system?.panelQty ?? 0;
-      if (p) {
+      // Dynamically compute qty if system.panelQty is missing but capacityKW is known
+      let qty = system?.panelQty ?? 0;
+      if (qty === 0 && system?.items) {
+        const panelItem = system.items.find((item: any) => item.description.toUpperCase() === 'PANEL');
+        qty = panelItem?.qty ?? 0;
+      }
+      if (qty === 0 && system?.capacityKW && p) {
+        qty = Math.ceil((system.capacityKW * 1000) / p.wattage);
+      }
+      
+      if (p && qty > 0) {
         panelCapacityKW = (p.wattage * qty) / 1000;
         panelDegradationRate = ('type' in p && p.type === 'TOPCon') ? 0.004 : 0.0055;
       }
@@ -570,11 +591,20 @@ export function runCalculation(state: CalculatorState): {
 
     let inverterCapacityKW: number | undefined;
     const inverterMixEntries = Object.entries(state.selectedInverterMix).filter(([, q]) => Number.isFinite(q) && q > 0);
+    
+    let customInverterCapacityKW = 0;
+    let foundCustomInverters = false;
+    
     if (inverterMixEntries.length > 0) {
-      inverterCapacityKW = 0;
       for (const [invId, qty] of inverterMixEntries) {
         const inv = allInverters.find(x => x.id === invId);
-        if (inv) inverterCapacityKW += inv.capacityKW * qty;
+        if (inv) {
+          foundCustomInverters = true;
+          customInverterCapacityKW += inv.capacityKW * qty;
+        }
+      }
+      if (foundCustomInverters) {
+        inverterCapacityKW = customInverterCapacityKW;
       }
     }
 
@@ -647,7 +677,6 @@ const result = calculateSystem({
       rpcSubsidyAmount: state.rpcSubsidyAmount ?? undefined,
       maxSubsidyCapacityKW: state.dbActiveScheme?.max_capacity_kw ? Number(state.dbActiveScheme.max_capacity_kw) : undefined,
       maxAbsoluteSubsidy: state.dbActiveScheme?.max_absolute_subsidy ? Number(state.dbActiveScheme.max_absolute_subsidy) : undefined,
-      applySubsidy: state.applySubsidy,
       selectedScheme: state.selectedScheme,
       structureType: state.structureType,
       structureVendorId: state.structureVendorId ?? undefined,

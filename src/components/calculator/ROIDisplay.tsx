@@ -212,8 +212,7 @@ export function ConnectedROIDisplay() {
 
   const electricityRatePerUnit = calcResult.annualGenerationKWh > 0 ? (calcResult.annualSavingsINR / calcResult.annualGenerationKWh) : 8;
   
-  const loc = selectedState.toLowerCase();
-  const location = ['gujarat', 'maharashtra', 'rajasthan', 'karnataka'].includes(loc) ? loc as "gujarat" | "maharashtra" | "rajasthan" | "karnataka" : "default";
+  const location = selectedState.toLowerCase();
 
   const inputs: ROIInputs = {
     systemKw,

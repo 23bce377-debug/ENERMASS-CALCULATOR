@@ -36,7 +36,7 @@ export default function MastersLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
 
   return (
-    <div className="p-4 md:p-6 space-y-6 animate-fade-in">
+    <div className="p-4 md:p-6 space-y-6 relative">
       {/* Masters Navigation Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-1">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin scrollbar-thumb-border">

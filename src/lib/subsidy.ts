@@ -18,14 +18,7 @@ export function calculatePMSuryaGharSubsidy(
       schemeNote: "PM Surya Ghar scheme is for residential consumers only",
     };
   }
-  if (systemKw > 10) {
-    return {
-      amount: 0,
-      breakdown: `${systemKw}kW exceeds the 10kW residential eligibility ceiling`,
-      isEligible: false,
-      schemeNote: "Systems above 10kW are not eligible under PM Surya Ghar",
-    };
-  }
+  // Removed the >10kW hard block so larger residential systems still receive the flat MNRE cap.
   // Slab calculation per MNRE Budget 2024 notification
   let subsidy = 0;
   let breakdown = "";
@@ -38,9 +31,9 @@ export function calculatePMSuryaGharSubsidy(
     subsidy = tier1 + tier2;
     breakdown = `2kW×₹30,000 + ${(systemKw-2).toFixed(2)}kW×₹18,000 = ₹${subsidy.toLocaleString("en-IN")}`;
   } else {
-    // 3kW < systemKw <= 10kW: flat cap at ₹78,000
+    // > 3kW: flat cap at ₹78,000
     subsidy = 78000;
-    breakdown = `Capped at ₹78,000 (MNRE ceiling for systems >3kW up to 10kW)`;
+    breakdown = `Capped at ₹78,000 (MNRE ceiling for systems > 3kW)`;
   }
   return {
     amount: subsidy,
