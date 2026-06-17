@@ -99,10 +99,10 @@ export default function LeadDetailPage() {
 
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-2">
-          <Link href={`/projects/${id}/survey`}>
+          <Link href={`/projects?createForLead=${id}`}>
             <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2a2a2a] text-white hover:bg-[#333] transition-colors text-sm font-medium border border-[#444]">
               <ClipboardList size={16} />
-              Site Survey
+              Convert to Project
             </button>
           </Link>
           <Link href={`/calculator?leadId=${id}`}>

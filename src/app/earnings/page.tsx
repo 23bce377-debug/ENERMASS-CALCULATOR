@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { useVendorsQuery, useBundlePresetsQuery } from '@/lib/hooks/useAcquisitions';
+import { useBundlePresetsQuery } from '@/lib/hooks/useAcquisitions';
+import { useMasterQuery } from '@/lib/hooks/useMasters';
 import { useSalesStatsQuery, useProcurementAnalyticsQuery } from '@/lib/hooks/useDashboard';
 import { 
   BarChart3, TrendingUp, DollarSign, PieChart, ArrowUpRight, 
@@ -47,7 +48,7 @@ export default function EarningsPage() {
     !!orgId && activeTab === 'procurement'
   );
 
-  const { data: vendorsList = [] } = useVendorsQuery(orgId);
+  const { data: vendorsList = [] } = useMasterQuery('vendors');
   const { data: presetsList = [] } = useBundlePresetsQuery(orgId);
 
   const chartData = [

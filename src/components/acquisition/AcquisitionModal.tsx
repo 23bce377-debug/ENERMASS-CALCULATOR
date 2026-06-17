@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { X, Plus, Trash2, Save, Loader2, Calendar, Info, Layers, ChevronDown, ChevronUp } from 'lucide-react';
-import { AcquisitionORM, type Vendor, type AcquisitionItem } from '@/backend/orm/acquisition';
+import { AcquisitionORM, type AcquisitionItem } from '@/backend/orm/acquisition';
 import { useToast } from '@/components/ui/Toast';
 import { Select } from '@/components/ui/Select';
 import { formatINR } from '@/lib/engine/calculator';
@@ -15,7 +15,7 @@ interface AcquisitionModalProps {
   onClose: () => void;
   onSuccess: () => void;
   orgId: string;
-  vendors: Vendor[];
+  vendors: any[];
   presets: BundlePreset[];
 }
 

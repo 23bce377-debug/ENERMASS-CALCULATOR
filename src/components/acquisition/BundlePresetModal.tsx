@@ -6,7 +6,6 @@ import { useToast } from '@/components/ui/Toast';
 import { Select } from '@/components/ui/Select';
 import { formatINR } from '@/lib/engine/calculator';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
-import { BundlePresetORM } from '@/backend/orm/bundle';
 import type { BundlePreset, BundlePresetItem } from '@/lib/types/bundle';
 import { TAX_CONSTANTS } from '@/lib/tax-constants';
 import CatalogPickerModal from './CatalogPickerModal';
@@ -209,29 +208,52 @@ export default function BundlePresetModal({
 
     setLoading(true);
     try {
-      const presetData: Partial<BundlePreset> = {
-        org_id: orgId,
-        vendor_id: vendorId || null,
+      const payload = {
         name,
+        vendor_id: vendorId ? vendorId : null,
         effective_bundle_price: parseFloat(effectivePrice) || 0,
         allocation_strategy: allocationStrategy,
-        notes,
+        notes: notes || null,
         gst_pct: parseFloat(gstPct),
-        is_active: true
+        items: items.map(item => ({
+          item_description: item.item_description,
+          category: item.category,
+          qty: Number(item.qty),
+          unit: item.unit || 'Nos',
+          base_cost: Number(item.base_cost || 0),
+          allocated_cost_override: Number(item.allocated_cost_override || 0),
+          gst_pct: Number(item.gst_pct ?? 0.18)
+        }))
       };
 
       if (preset?.id && !isDuplicate) {
-        await BundlePresetORM.update(preset.id, presetData, items as BundlePresetItem[]);
+        const res = await fetch(`/api/bundles/${preset.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'Failed to update bundle preset');
+        }
         toast('Bundle preset updated successfully', 'success');
       } else {
-        await BundlePresetORM.create(presetData, items as BundlePresetItem[]);
+        const res = await fetch('/api/bundles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'Failed to create bundle preset');
+        }
         toast('Bundle preset created successfully', 'success');
       }
       onSuccess();
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving bundle preset:', err);
-      toast('Failed to save bundle preset', 'error');
+      toast(err.message || 'Failed to save bundle preset', 'error');
     } finally {
       setLoading(false);
     }

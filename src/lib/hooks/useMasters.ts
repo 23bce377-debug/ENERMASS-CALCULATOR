@@ -123,7 +123,7 @@ export function useMasterQuery<T>(entity: string, options?: any) {
         }
       }
 
-      if (entity !== 'pricing') {
+      if (entity !== 'pricing' && entity !== 'vendors') {
         query = query.eq('is_active', true);
       }
 
@@ -272,9 +272,9 @@ export function useMasterDeleteMutation(entity: string) {
       // Fetch before deleting
       const { data: beforeState } = await (supabase.from(table as any).select('*').eq('id', id).maybeSingle() as any);
 
-      // Perform soft delete by default or hard delete for rate overrides / connections
       let error;
-      if (entity === 'pricing') {
+      // Perform soft delete by default or hard delete for rate overrides / connections
+      if (entity === 'pricing' || entity === 'vendors') {
         const res = await supabase.from(table as any).delete().eq('id', id);
         error = res.error;
       } else {

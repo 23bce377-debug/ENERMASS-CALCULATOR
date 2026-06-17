@@ -47,14 +47,11 @@ export const ProjectList = React.memo(function ProjectList({ projects, selectedP
         onChange={setStatusFilter}
         options={[
           { value: 'all', label: 'All Projects' },
-          { value: 'survey_phase', label: 'Survey Phase' },
-          { value: 'engineering_design', label: 'Engineering Design' },
-          { value: 'permitting', label: 'Permitting' },
-          { value: 'material_dispatched', label: 'Materials Dispatched' },
-          { value: 'installation_started', label: 'Installation Started' },
-          { value: 'net_metering_pending', label: 'Net Metering Pending' },
-          { value: 'commissioned', label: 'Commissioned' },
-          { value: 'closed', label: 'Closed / Handover' }
+          { value: 'draft', label: 'Draft' },
+          { value: 'in_progress', label: 'In Progress' },
+          { value: 'on_hold', label: 'On Hold' },
+          { value: 'completed', label: 'Completed' },
+          { value: 'cancelled', label: 'Cancelled' }
         ]}
         className="text-xs"
       />

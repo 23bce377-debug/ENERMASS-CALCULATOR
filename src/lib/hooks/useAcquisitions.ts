@@ -1,10 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase/client';
 import {
-  VendorORM,
   AcquisitionORM,
   InventoryORM,
-  type Vendor,
   type Acquisition,
   type InventorySummary,
   type AcquisitionItem
@@ -39,17 +37,7 @@ export function useAcquisitionsQuery(orgId: string | null) {
   });
 }
 
-export function useVendorsQuery(orgId: string | null) {
-  return useQuery({
-    queryKey: ['vendors', orgId],
-    queryFn: async () => {
-      if (!orgId) return [];
-      return VendorORM.getAll(orgId);
-    },
-    enabled: !!orgId,
-    staleTime: 1000 * 60 * 5,
-  });
-}
+
 
 export function useBundlePresetsQuery(orgId: string | null) {
   return useQuery({
@@ -79,18 +67,7 @@ export function useMarkAsReceivedMutation() {
   });
 }
 
-export function useDeleteVendorMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id }: { id: string }) => {
-      return VendorORM.delete(id);
-    },
-    onSuccess: async (data, variables) => {
-      await revalidateMasterCache();
-      queryClient.invalidateQueries({ queryKey: ['vendors'] });
-    }
-  });
-}
+
 
 export function useDeletePresetMutation() {
   const queryClient = useQueryClient();
@@ -105,31 +82,7 @@ export function useDeletePresetMutation() {
   });
 }
 
-export function useCreateVendorMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ vendor, orgId }: { vendor: Partial<Vendor>; orgId: string }) => {
-      return VendorORM.create({ ...vendor, org_id: orgId });
-    },
-    onSuccess: async (data, variables) => {
-      await revalidateMasterCache(variables.orgId);
-      queryClient.invalidateQueries({ queryKey: ['vendors', variables.orgId] });
-    }
-  });
-}
 
-export function useUpdateVendorMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, updates, orgId }: { id: string; updates: Partial<Vendor>; orgId: string }) => {
-      return VendorORM.update(id, updates);
-    },
-    onSuccess: async (data, variables) => {
-      await revalidateMasterCache(variables.orgId);
-      queryClient.invalidateQueries({ queryKey: ['vendors', variables.orgId] });
-    }
-  });
-}
 
 export function useCreatePresetMutation() {
   const queryClient = useQueryClient();

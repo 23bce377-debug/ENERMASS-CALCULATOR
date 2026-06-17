@@ -55,27 +55,25 @@ export function calculateFinancialProjections(input: ProjectionsInput) {
     runningSavings = runningSavings * (1 - degradationRate) * (1 + inflationRate);
   }
 
-  // IRR Calculation using secant method
-  let irr = 0;
-  let rate0 = 0.05, rate1 = 0.15;
-  let f0 = calculateNPV(cashFlows, rate0);
-  let f1 = calculateNPV(cashFlows, rate1);
-  
-  // Validate initial bracket
-  if (f0 * f1 > 0) {
-    console.warn('IRR initial guesses do not bracket root');
-  } else {
-    for(let i=0; i<20; i++) {
-      if (Math.abs(rate1 - rate0) < 1e-6) break;
-      const rate2 = rate1 - f1 * (rate1 - rate0) / (f1 - f0);
-      rate0 = rate1;
-      f0 = f1;
-      rate1 = rate2;
-      f1 = calculateNPV(cashFlows, rate1);
+  // IRR Calculation using Newton-Raphson method
+  let irr = 0.1;
+  for (let i = 0; i < 100; i++) {
+    const npv_rate = calculateNPV(cashFlows, irr);
+    const dnpv = cashFlows.reduce((d, cf, t) => d - (t * cf) / Math.pow(1 + irr, t + 1), 0);
+    if (Math.abs(dnpv) < 0.0001) break;
+    
+    let step = npv_rate / dnpv;
+    step = Math.max(-0.1, Math.min(step, 0.1)); // Prevent huge jumps
+    const newRate = irr - step;
+    if (Math.abs(newRate - irr) < 0.0001) {
+      irr = newRate;
+      break;
     }
+    irr = newRate;
   }
-  // Clamp
-  irr = Math.max(0, Math.min(rate1, 0.5));
+  
+  // Clamp between 0% and 100%
+  irr = Math.max(0, Math.min(irr, 1.0));
 
   const lcoe = lifetimeGenerationKWh > 0 ? input.totalSystemCost / lifetimeGenerationKWh : 0;
 

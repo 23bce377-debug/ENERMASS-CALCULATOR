@@ -4,6 +4,7 @@ import { X, Plus, AlertTriangle, Calendar, User, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 import { useCreateProjectMutation } from '@/lib/hooks/useProjects';
+import { Select } from '@/components/ui/Select';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -255,18 +256,17 @@ export function CreateProjectModal({
                   <span>No unlinked won quotes found. Try manual creation.</span>
                 </div>
               ) : (
-                <select
+                <Select
                   value={quoteId}
-                  onChange={(e) => setQuoteId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-[#2a2a2a] rounded-lg bg-black text-white focus:outline-none focus:border-[#f0a500] transition-colors"
-                >
-                  <option value="">-- Choose proposal --</option>
-                  {availableQuotes.map((q) => (
-                    <option key={q.id} value={q.id}>
-                      {q.quote_number} - {q.customer_name} ({q.system_capacity_kw} kW, {q.project_type})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setQuoteId(val)}
+                  options={availableQuotes.map((q) => ({
+                    value: q.id,
+                    label: `${q.quote_number} - ${q.customer_name} (${q.system_capacity_kw} kW, ${q.project_type})`
+                  }))}
+                  placeholder="-- Choose proposal --"
+                  size="sm"
+                  triggerClassName="bg-black border-[#2a2a2a] text-xs py-2 text-white"
+                />
               )}
             </div>
           ) : (
@@ -310,15 +310,17 @@ export function CreateProjectModal({
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] text-[#888]">Sector *</label>
-                  <select
+                  <Select
                     value={projectType}
-                    onChange={(e) => setProjectType(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs border border-[#2a2a2a] rounded-lg bg-black text-white focus:outline-none focus:border-[#f0a500] transition-colors"
-                  >
-                    <option value="residential">Residential</option>
-                    <option value="commercial">Commercial</option>
-                    <option value="industrial">Industrial</option>
-                  </select>
+                    onChange={(val) => setProjectType(val)}
+                    options={[
+                      { value: 'residential', label: 'Residential' },
+                      { value: 'commercial', label: 'Commercial' },
+                      { value: 'industrial', label: 'Industrial' }
+                    ]}
+                    size="sm"
+                    triggerClassName="bg-black border-[#2a2a2a] text-xs py-1.5 text-white"
+                  />
                 </div>
               </div>
             </div>
@@ -349,18 +351,17 @@ export function CreateProjectModal({
           {/* PM Assignment */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-[#555] uppercase tracking-wider">Assign Project PM</label>
-            <select
+            <Select
               value={assignedPmId}
-              onChange={(e) => setAssignedPmId(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-[#2a2a2a] rounded-lg bg-black text-white focus:outline-none focus:border-[#f0a500] transition-colors"
-            >
-              <option value="">-- No Project Manager assigned --</option>
-              {profiles.map((prof) => (
-                <option key={prof.id} value={prof.id}>
-                  {prof.full_name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setAssignedPmId(val)}
+              options={profiles.map((prof) => ({
+                value: prof.id,
+                label: prof.full_name
+              }))}
+              placeholder="-- No Project Manager assigned --"
+              size="sm"
+              triggerClassName="bg-black border-[#2a2a2a] text-xs py-2 text-white"
+            />
           </div>
 
           {/* Actions */}

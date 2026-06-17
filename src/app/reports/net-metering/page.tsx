@@ -157,10 +157,10 @@ export default function NetMeteringReport() {
                       </td>
                       <td className="px-4 py-3">
                         <Link 
-                          href={`/projects/${app.project_id}/net-metering`}
+                          href={`/projects?projectId=${app.project_id}`}
                           className="flex items-center gap-1.5 text-accent hover:underline text-xs font-semibold"
                         >
-                          View Tracker <ExternalLink size={14} />
+                          View Project <ExternalLink size={14} />
                         </Link>
                       </td>
                     </tr>

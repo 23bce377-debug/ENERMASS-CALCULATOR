@@ -81,7 +81,7 @@ export default function VendorModal({ isOpen, onClose, onSuccess, orgId, vendor 
               <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Contact Person</label>
               <input
                 type="text"
-                value={formData.contact_person}
+                value={formData.contact_person ?? ''}
                 onChange={e => setFormData({ ...formData, contact_person: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent/50 transition-all"
                 placeholder="John Doe"
@@ -92,7 +92,7 @@ export default function VendorModal({ isOpen, onClose, onSuccess, orgId, vendor 
               <label className="text-xs font-bold text-text-muted uppercase tracking-wider">GST Number</label>
               <input
                 type="text"
-                value={formData.gst_number}
+                value={formData.gst_number ?? ''}
                 onChange={e => setFormData({ ...formData, gst_number: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent/50 transition-all"
                 placeholder="24AAAAA0000A1Z5"
@@ -103,7 +103,7 @@ export default function VendorModal({ isOpen, onClose, onSuccess, orgId, vendor 
               <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Email</label>
               <input
                 type="email"
-                value={formData.email}
+                value={formData.email ?? ''}
                 onChange={e => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent/50 transition-all"
                 placeholder="vendor@example.com"
@@ -114,7 +114,7 @@ export default function VendorModal({ isOpen, onClose, onSuccess, orgId, vendor 
               <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Phone</label>
               <input
                 type="text"
-                value={formData.phone}
+                value={formData.phone ?? ''}
                 onChange={e => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent/50 transition-all"
                 placeholder="+91 9876543210"
@@ -124,7 +124,7 @@ export default function VendorModal({ isOpen, onClose, onSuccess, orgId, vendor 
             <div className="col-span-2 space-y-1.5">
               <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Address</label>
               <textarea
-                value={formData.address}
+                value={formData.address ?? ''}
                 onChange={e => setFormData({ ...formData, address: e.target.value })}
                 rows={3}
                 className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent/50 transition-all resize-none"

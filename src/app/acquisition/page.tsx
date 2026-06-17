@@ -2,18 +2,17 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { type Vendor, type InventorySummary } from '@/backend/orm/acquisition';
+import { type InventorySummary } from '@/backend/orm/acquisition';
 import type { BundlePreset } from '@/lib/types/bundle';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   useInventoryQuery,
   useAcquisitionsQuery,
-  useVendorsQuery,
   useBundlePresetsQuery,
   useMarkAsReceivedMutation,
-  useDeleteVendorMutation,
   useDeletePresetMutation
 } from '@/lib/hooks/useAcquisitions';
+import { useMasterQuery } from '@/lib/hooks/useMasters';
 import { revalidateMasterCache } from '@/app/actions/revalidateMasters';
 import { 
   ShoppingCart, Plus, Package, Users, CheckCircle2, Clock, 
@@ -21,7 +20,7 @@ import {
   ChevronDown, PenSquare, Copy, Layers, ListCollapse 
 } from 'lucide-react';
 import { formatINR } from '@/lib/engine/calculator';
-import VendorModal from '@/components/acquisition/VendorModal';
+
 import AcquisitionModal from '@/components/acquisition/AcquisitionModal';
 import BundlePresetModal from '@/components/acquisition/BundlePresetModal';
 import { useToast } from '@/components/ui/Toast';
@@ -29,7 +28,7 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { Select } from '@/components/ui/Select';
 
 export default function AcquisitionPage() {
-  const [activeTab, setActiveTab] = useState<'inventory' | 'acquisitions' | 'vendors' | 'presets'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'acquisitions' | 'presets'>('inventory');
   const [orgId, setOrgId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
@@ -37,14 +36,13 @@ export default function AcquisitionPage() {
   // Queries
   const { data: inventory = [], isLoading: inventoryLoading } = useInventoryQuery(orgId);
   const { data: acquisitions = [], isLoading: acquisitionsLoading } = useAcquisitionsQuery(orgId);
-  const { data: vendors = [], isLoading: vendorsLoading } = useVendorsQuery(orgId);
+  const { data: vendors = [], isLoading: vendorsLoading } = useMasterQuery('vendors');
   const { data: presets = [], isLoading: presetsLoading } = useBundlePresetsQuery(orgId);
 
   const loading = inventoryLoading || acquisitionsLoading || vendorsLoading || presetsLoading;
 
   // Mutations
   const markAsReceivedMutation = useMarkAsReceivedMutation();
-  const deleteVendorMutation = useDeleteVendorMutation();
   const deletePresetMutation = useDeletePresetMutation();
   
   // Search and Filters
@@ -53,10 +51,8 @@ export default function AcquisitionPage() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   // Modals state
-  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [isAcqModalOpen, setIsAcqModalOpen] = useState(false);
   const [isBundleModalOpen, setIsBundleModalOpen] = useState(false);
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | undefined>(undefined);
   const [selectedPreset, setSelectedPreset] = useState<BundlePreset | undefined>(undefined);
   const [isDuplicatePreset, setIsDuplicatePreset] = useState(false);
 
@@ -91,7 +87,6 @@ export default function AcquisitionPage() {
     }
     queryClient.invalidateQueries({ queryKey: ['inventory', orgId] });
     queryClient.invalidateQueries({ queryKey: ['acquisitions', orgId] });
-    queryClient.invalidateQueries({ queryKey: ['vendors', orgId] });
     queryClient.invalidateQueries({ queryKey: ['bundlePresets', orgId] });
   };
 
@@ -111,27 +106,6 @@ export default function AcquisitionPage() {
         toast('Inventory updated successfully', 'success');
       } catch (err) {
         toast('Failed to update inventory', 'error');
-      }
-    }
-  }
-
-  async function handleDeleteVendor(id: string, name: string) {
-    if (!orgId) return;
-    const confirmed = await confirm({
-      title: 'Delete Vendor?',
-      message: `Are you sure you want to delete "${name}"? This action cannot be undone and will fail if they have active purchase histories in your system.`,
-      confirmLabel: 'Delete Vendor',
-      cancelLabel: 'Cancel',
-      type: 'danger'
-    });
-
-    if (confirmed) {
-      try {
-        await deleteVendorMutation.mutateAsync({ id });
-        queryClient.invalidateQueries({ queryKey: ['vendors', orgId] });
-        toast('Vendor deleted successfully', 'success');
-      } catch (err) {
-        toast('Failed to delete vendor. They might have associated records.', 'error');
       }
     }
   }
@@ -175,17 +149,6 @@ export default function AcquisitionPage() {
       return matchesSearch && matchesStatus;
     });
   }, [acquisitions, searchQuery, statusFilter]);
-
-  const filteredVendors = useMemo(() => {
-    return vendors.filter(vendor => {
-      return (
-        vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (vendor.contact_person?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (vendor.email?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (vendor.phone?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-      );
-    });
-  }, [vendors, searchQuery]);
 
   const filteredPresets = useMemo(() => {
     return presets.filter(preset => {
@@ -272,14 +235,7 @@ export default function AcquisitionPage() {
               <ShoppingCart size={18} />
               Purchases
             </button>
-            <button
-              onClick={() => setActiveTab('vendors')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer
-                ${activeTab === 'vendors' ? 'bg-accent text-background shadow-md shadow-accent/15' : 'text-text-muted hover:text-text-secondary'}`}
-            >
-              <Users size={18} />
-              Vendors
-            </button>
+
             <button
               onClick={() => setActiveTab('presets')}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer
@@ -301,8 +257,6 @@ export default function AcquisitionPage() {
                     ? "Search inventory items..."
                     : activeTab === 'acquisitions'
                     ? "Search by invoice # or vendor..."
-                    : activeTab === 'vendors'
-                    ? "Search vendors..."
                     : "Search bundle presets..."
                 }
                 value={searchQuery}
@@ -348,16 +302,6 @@ export default function AcquisitionPage() {
                   New Purchase
                 </button>
               </>
-            )}
-
-            {activeTab === 'vendors' && (
-              <button 
-                onClick={() => { setSelectedVendor(undefined); setIsVendorModalOpen(true); }}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-accent text-background text-sm font-bold hover:bg-accent-hover transition-all shadow-md shadow-accent/15 cursor-pointer whitespace-nowrap"
-              >
-                <Plus size={16} />
-                Add Vendor
-              </button>
             )}
 
             {activeTab === 'presets' && (
@@ -514,103 +458,7 @@ export default function AcquisitionPage() {
             </div>
           )}
 
-          {/* Vendors Tab Content */}
-          {activeTab === 'vendors' && (
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {loading ? (
-                <div className="col-span-full py-16 text-center text-text-muted font-mono uppercase tracking-wider animate-pulse">
-                  Loading vendor contacts...
-                </div>
-              ) : filteredVendors.length === 0 && vendors.length > 0 ? (
-                <div className="col-span-full py-16 text-center text-text-muted">
-                  No matching vendors found for &quot;{searchQuery}&quot;
-                </div>
-              ) : (
-                <>
-                  {filteredVendors.map((vendor) => (
-                    <div 
-                      key={vendor.id} 
-                      className="p-5 rounded-2xl border border-border/40 bg-surface/50 backdrop-blur-sm hover:border-accent/40 hover:shadow-lg hover:shadow-accent/5 transition-all duration-300 group flex flex-col justify-between"
-                    >
-                      <div>
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-accent-dim text-accent flex items-center justify-center text-sm font-bold border border-accent/20 shrink-0">
-                              {vendor.name.substring(0, 2).toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <h4 className="font-bold text-text-primary group-hover:text-accent transition-colors text-sm truncate">
-                                {vendor.name}
-                              </h4>
-                              {vendor.gst_number && (
-                                <p className="text-[9px] font-mono text-text-muted mt-0.5 uppercase tracking-wider">
-                                  GST: {vendor.gst_number}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              onClick={() => { setSelectedVendor(vendor); setIsVendorModalOpen(true); }}
-                              className="p-1.5 rounded-lg hover:bg-accent/10 text-text-muted hover:text-accent transition-colors cursor-pointer"
-                              title="Edit Vendor"
-                            >
-                              <PenSquare size={14} />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteVendor(vendor.id, vendor.name)}
-                              className="p-1.5 rounded-lg hover:bg-error/10 text-text-muted hover:text-error transition-colors cursor-pointer"
-                              title="Delete Vendor"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2.5 border-t border-border/20 pt-3 text-xs">
-                          {vendor.contact_person && (
-                            <div className="flex items-center gap-2.5 text-text-secondary">
-                              <Users size={13} className="text-text-muted shrink-0" />
-                              <span className="truncate">{vendor.contact_person}</span>
-                            </div>
-                          )}
-                          {vendor.phone && (
-                            <div className="flex items-center gap-2.5 text-text-secondary">
-                              <Phone size={13} className="text-text-muted shrink-0" />
-                              <span className="font-mono">{vendor.phone}</span>
-                            </div>
-                          )}
-                          {vendor.email && (
-                            <div className="flex items-center gap-2.5 text-text-secondary truncate">
-                              <Mail size={13} className="text-text-muted shrink-0" />
-                              <span className="truncate">{vendor.email}</span>
-                            </div>
-                          )}
-                          {vendor.address && (
-                            <div className="flex items-start gap-2.5 text-text-muted">
-                              <MapPin size={13} className="text-text-muted mt-0.5 shrink-0" />
-                              <span className="line-clamp-2 leading-relaxed">{vendor.address}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  <button 
-                    onClick={() => { setSelectedVendor(undefined); setIsVendorModalOpen(true); }}
-                    className="flex flex-col items-center justify-center p-6 min-h-[180px] rounded-2xl border border-dashed border-border/60 hover:border-accent hover:bg-accent/[0.02] transition-all duration-300 text-text-muted hover:text-accent group shadow-sm hover:shadow-lg hover:shadow-accent/2 cursor-pointer"
-                  >
-                    <div className="w-12 h-12 rounded-full border border-dashed border-border group-hover:border-accent flex items-center justify-center mb-3 group-hover:scale-110 transition-all duration-300">
-                      <Plus size={20} />
-                    </div>
-                    <span className="text-sm font-bold">Add New Vendor</span>
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+
 
           {/* Bundle Presets Tab Content */}
           {activeTab === 'presets' && (
@@ -711,13 +559,7 @@ export default function AcquisitionPage() {
       {/* Modals */}
       {orgId && (
         <>
-          <VendorModal 
-            isOpen={isVendorModalOpen} 
-            onClose={() => setIsVendorModalOpen(false)} 
-            onSuccess={invalidateAll} 
-            orgId={orgId}
-            vendor={selectedVendor}
-          />
+
           <AcquisitionModal
             isOpen={isAcqModalOpen}
             onClose={() => setIsAcqModalOpen(false)}

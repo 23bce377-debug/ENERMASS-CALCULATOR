@@ -3,19 +3,6 @@ import { allocateBundlePrice } from '@/lib/engine/bundleAllocation';
 
 
 // Local types until schema.types.ts is regenerated
-export interface Vendor {
-  id: string;
-  org_id: string;
-  name: string;
-  contact_person?: string;
-  email?: string;
-  phone?: string;
-  gst_number?: string;
-  address?: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Acquisition {
   id: string;
   org_id: string;
@@ -50,46 +37,54 @@ export interface InventorySummary {
   last_updated: string;
 }
 
-// ─── Vendor ORM ───────────────────────────────────────────────────────────────
+export interface Vendor {
+  id: string;
+  org_id: string;
+  name: string;
+  contact_person?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  gst_number?: string | null;
+  address?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  status?: string;
+  is_structure_vendor?: boolean;
+  version?: number;
+}
 
 export const VendorORM = {
-  async getAll(orgId: string) {
-    const { data, error } = await (supabase as any)
-      .from('vendors')
-      .select('*')
-      .eq('org_id', orgId)
-      .order('name', { ascending: true });
-    if (error) throw error;
-    return data as Vendor[];
-  },
-
   async create(vendor: Partial<Vendor>) {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('vendors')
-      .insert(vendor)
+      .insert({
+        ...vendor,
+        version: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
       .select()
-      .maybeSingle();
+      .single();
     if (error) throw error;
-    return data as Vendor;
+    return data;
   },
 
   async update(id: string, updates: Partial<Vendor>) {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('vendors')
-      .update(updates)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id)
       .select()
-      .maybeSingle();
+      .single();
     if (error) throw error;
-    return data as Vendor;
-  },
-
-  async delete(id: string) {
-    const { error } = await (supabase as any).from('vendors').delete().eq('id', id);
-    if (error) throw error;
-    return true;
+    return data;
   }
 };
+
+
 
 // ─── Acquisition ORM ──────────────────────────────────────────────────────────
 

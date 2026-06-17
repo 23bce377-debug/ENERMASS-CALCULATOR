@@ -71,14 +71,12 @@ function QuoteDetailModal({
   onClose,
   onEdit,
   onDuplicate,
-  onDownloadCloud,
 }: {
   quote: Quote;
   companyName: string;
   onClose: () => void;
   onEdit: (quoteId: string) => void;
   onDuplicate: (quoteId: string) => void;
-  onDownloadCloud: (quote: Quote) => void;
 }) {
   const { settings } = useSettings();
   const system = SYSTEMS.find((s) => s.id === quote.systemId) || settings.customSystems?.find((s) => s.id === quote.systemId);
@@ -164,16 +162,10 @@ function QuoteDetailModal({
               <MessageCircle size={16} /> WhatsApp
             </button>
             <button
-              onClick={() => onDownloadCloud(quote)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-info/10 text-info text-sm font-medium hover:bg-info/20 transition-colors"
-            >
-              <Download size={16} /> Cloud JSON
-            </button>
-            <button
               onClick={handlePrint}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/10 text-accent text-sm font-medium hover:bg-accent/20 transition-colors"
             >
-              <Printer size={16} /> Download PDF
+              <Download size={16} /> Download PDF
             </button>
             <button
               onClick={onClose}
@@ -375,7 +367,6 @@ export default function QuotesPage() {
   const [statusFilter, setStatusFilter] = useState<Quote['status'] | 'All'>('All');
   const [sortAsc, setSortAsc] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
-  const [quoteMode, setQuoteMode] = useState<'system' | 'generic'>('system');
 
   // Survey gate state
   const [surveyGate, setSurveyGate] = useState<{
@@ -385,40 +376,6 @@ export default function QuotesPage() {
   } | null>(null);
 
   const companyName = settings.company.name || 'ENERMASS Solar';
-
-  const downloadFromBucket = async (quote: Quote) => {
-    try {
-      const { supabase } = await import('@/lib/supabase/client');
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('Not authenticated. Please log in.');
-
-      const { ProfileORM } = await import('@/backend/orm/profile');
-      const profile = await ProfileORM.getById(session.user.id);
-      const orgId = profile.org_id;
-
-      const filePath = `${orgId}/${quote.quoteId}.json`;
-      const { data, error } = await supabase.storage
-        .from('quotes')
-        .download(filePath);
-
-      if (error) {
-        throw new Error(`File not found in storage bucket. Error: ${error.message}`);
-      }
-
-      // Trigger standard browser download
-      const blobUrl = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `${quote.quoteId}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-    } catch (err: any) {
-      console.error('[QuotesPage] Failed to download from bucket:', err);
-      alert(err.message || 'Failed to download from storage bucket.');
-    }
-  };
 
   const goToCalculatorForEdit = (quoteId: string) => {
     loadQuote(quoteId);
@@ -537,20 +494,6 @@ export default function QuotesPage() {
             <h1 className="text-2xl font-bold text-text-primary">Quote Management</h1>
             <p className="text-sm text-text-muted mt-1">{quotes.length} total quotes</p>
           </div>
-          <div className="flex bg-surface border border-border rounded-lg p-1 self-start">
-            <button
-              onClick={() => setQuoteMode('system')}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${quoteMode === 'system' ? 'bg-accent text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
-            >
-              System Quotes
-            </button>
-            <button
-              onClick={() => setQuoteMode('generic')}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${quoteMode === 'generic' ? 'bg-accent text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
-            >
-              Generic Quotes
-            </button>
-          </div>
         </div>
 
         {/* Filters */}
@@ -585,19 +528,8 @@ export default function QuotesPage() {
           </button>
         </div>
 
-        {/* Table / Generic View */}
-        {quoteMode === 'generic' ? (
-          <div className="bg-surface border border-border rounded-xl p-12 text-center flex flex-col items-center">
-            <div className="w-16 h-16 bg-accent/10 text-accent rounded-full flex items-center justify-center mb-4">
-              <FileText size={32} />
-            </div>
-            <h2 className="text-xl font-bold text-text-primary mb-2">Generic Quoting Mode</h2>
-            <p className="text-text-muted max-w-md mx-auto mb-6">Create quotes for individual items, spare parts, or services without requiring a full solar system configuration.</p>
-            <button className="px-6 py-2.5 bg-accent text-white font-medium rounded-lg hover:bg-accent-light transition-colors">
-              Create Generic Quote
-            </button>
-          </div>
-        ) : isLoading ? (
+        {/* Table View */}
+        {isLoading ? (
           <div className="flex justify-center items-center py-20 text-text-muted">
             <span className="text-sm font-semibold animate-pulse font-mono uppercase tracking-wider">Loading quotes...</span>
           </div>
@@ -669,14 +601,7 @@ export default function QuotesPage() {
                               setSelectedQuote(quote);
                               setTimeout(() => window.print(), 300);
                             }}
-                            title="Print Quote (PDF)"
-                            className="p-1.5 rounded-md hover:bg-accent/10 text-text-muted hover:text-accent transition-colors"
-                          >
-                            <Printer size={15} />
-                          </button>
-                          <button
-                            onClick={() => downloadFromBucket(quote)}
-                            title="Download JSON (Cloud)"
+                            title="Download Quote (PDF)"
                             className="p-1.5 rounded-md hover:bg-accent/10 text-text-muted hover:text-accent transition-colors"
                           >
                             <Download size={15} />
@@ -713,7 +638,6 @@ export default function QuotesPage() {
             setSelectedQuote(null);
             cloneQuoteAsTemplate(quoteId);
           }}
-          onDownloadCloud={downloadFromBucket}
         />
       )}
       {/* Survey Gate Modal */}
