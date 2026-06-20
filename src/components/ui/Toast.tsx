@@ -73,11 +73,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toast: addToast }}>
       {children}
 
-      {/* Toast Stack */}
       <div 
         aria-live="polite"
         aria-atomic="true"
-        className="fixed bottom-20 md:bottom-6 right-4 z-[300] flex flex-col gap-2.5 pointer-events-none"
+        className="fixed bottom-20 md:bottom-6 right-4 z-toast flex flex-col gap-2.5 pointer-events-none"
       >
         {toasts.map((t) => {
           const cfg = TOAST_CONFIG[t.type];

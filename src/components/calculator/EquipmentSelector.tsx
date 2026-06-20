@@ -106,7 +106,7 @@ function buildOptimalMix<T extends { id: string; capacity: number; rate: number 
   const normalizedItems = items
     .map((item) => ({
       ...item,
-      units: Math.max(1, Math.round(item.capacity / 100)),
+      units: Math.max(1, Math.round(item.capacity)),
     }))
     .filter((item) => item.units > 0);
 
@@ -114,7 +114,7 @@ function buildOptimalMix<T extends { id: string; capacity: number; rate: number 
     return {};
   }
 
-  const targetUnits = Math.ceil(targetCapacity / 100);
+  const targetUnits = Math.ceil(targetCapacity);
   const maxUnits = targetUnits + Math.max(...normalizedItems.map((item) => item.units)) - 1;
   const dp = Array<number>(maxUnits + 1).fill(Number.POSITIVE_INFINITY);
   const prev: Array<{ from: number; itemIndex: number } | null> = Array(maxUnits + 1).fill(null);
@@ -887,6 +887,12 @@ function PanelTable({
         </div>
       </div>
 
+      {filteredBrands.length > 100 && (
+        <div className="mb-2.5 px-3 py-2 bg-warning-bg text-warning border border-warning/10 rounded-xl text-xs font-medium">
+          Showing first 100 of {filteredBrands.length} panels. Use search or wattage filter to narrow results.
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -902,7 +908,7 @@ function PanelTable({
             </tr>
           </thead>
           <tbody>
-            {filteredBrands.map((brand) => {
+            {filteredBrands.slice(0, 100).map((brand) => {
               const selectedQty = panelMix[brand.id] ?? 0;
               const isLegacySelected = selectedPanelQty === 0 && brand.id === selectedId;
               const isSelected = selectedQty > 0 || isLegacySelected;
@@ -1012,6 +1018,7 @@ function PanelTable({
                         type="text"
                         value={customPanel.brand}
                         onChange={(e) => setCustomPanel({ ...customPanel, brand: e.target.value })}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomPanel(); } }}
                         placeholder="Brand"
                         className="w-full px-2.5 py-2 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
                       />
@@ -1019,6 +1026,7 @@ function PanelTable({
                         type="text"
                         value={customPanel.model}
                         onChange={(e) => setCustomPanel({ ...customPanel, model: e.target.value })}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomPanel(); } }}
                         placeholder="Model"
                         className="w-full px-2.5 py-2 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
                       />
@@ -1027,6 +1035,7 @@ function PanelTable({
                         min={1}
                         value={customPanel.wattage}
                         onChange={(e) => setCustomPanel({ ...customPanel, wattage: e.target.value })}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomPanel(); } }}
                         placeholder="Wattage"
                         className="w-full px-2.5 py-2 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
                       />
@@ -1045,6 +1054,7 @@ function PanelTable({
                         step="0.01"
                         value={customPanel.ratePerWatt}
                         onChange={(e) => setCustomPanel({ ...customPanel, ratePerWatt: e.target.value })}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomPanel(); } }}
                         placeholder="₹/W"
                         className="w-full px-2.5 py-2 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
                       />
@@ -1054,6 +1064,7 @@ function PanelTable({
                         step={1}
                         value={customPanel.qty}
                         onChange={(e) => setCustomPanel({ ...customPanel, qty: e.target.value })}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomPanel(); } }}
                         placeholder="Qty"
                         className="w-full px-2.5 py-2 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
                       />
@@ -1159,8 +1170,8 @@ function InverterTable({
 
   const applyAutoFit = () => {
     const recommendedMix = buildOptimalMix(
-      brands.map((brand) => ({ id: brand.id, capacity: brand.capacityKW * 1000, rate: brand.rate })),
-      solarCapacityWattage,
+      brands.map((brand) => ({ id: brand.id, capacity: brand.capacityKW, rate: brand.rate })),
+      solarCapacityWattage / 1000,
     );
     onClearMix();
     Object.entries(recommendedMix).forEach(([brandId, qty]) => onSetMixQty(brandId, qty));
@@ -1269,6 +1280,12 @@ function InverterTable({
         </div>
       </div>
 
+      {filteredBrands.length > 100 && (
+        <div className="mb-2.5 px-3 py-2 bg-warning-bg text-warning border border-warning/10 rounded-xl text-xs font-medium">
+          Showing first 100 of {filteredBrands.length} inverters. Use search or capacity filter to narrow results.
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -1283,7 +1300,7 @@ function InverterTable({
             </tr>
           </thead>
           <tbody>
-            {filteredBrands.map((brand) => {
+            {filteredBrands.slice(0, 100).map((brand) => {
               const qty = selectedMix[brand.id] ?? 0;
               const isSelected = qty > 0;
               return (
@@ -1370,11 +1387,11 @@ function InverterTable({
                   <div className="flex flex-wrap gap-2 items-center justify-between">
                     <div className="flex flex-wrap gap-2 flex-1">
                       <input type="text" placeholder="Brand" className="w-24 px-2 py-1 rounded bg-background border border-border text-xs focus:border-accent focus:outline-none"
-                        value={customInv.brand} onChange={(e) => setCustomInv({ ...customInv, brand: e.target.value })} autoFocus />
+                        value={customInv.brand} onChange={(e) => setCustomInv({ ...customInv, brand: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomInv(); } }} autoFocus />
                       <input type="text" placeholder="Model" className="w-24 px-2 py-1 rounded bg-background border border-border text-xs focus:border-accent focus:outline-none"
-                        value={customInv.model} onChange={(e) => setCustomInv({ ...customInv, model: e.target.value })} />
+                        value={customInv.model} onChange={(e) => setCustomInv({ ...customInv, model: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomInv(); } }} />
                       <input type="number" placeholder="kW" className="w-16 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
-                        value={customInv.capacity} onChange={(e) => setCustomInv({ ...customInv, capacity: e.target.value })} />
+                        value={customInv.capacity} onChange={(e) => setCustomInv({ ...customInv, capacity: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomInv(); } }} />
                       <Select
                         size="sm"
                         value={customInv.type}
@@ -1387,9 +1404,9 @@ function InverterTable({
                         ]}
                       />
                       <input type="number" placeholder="Rate (₹)" className="w-20 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
-                        value={customInv.rate} onChange={(e) => setCustomInv({ ...customInv, rate: e.target.value })} />
+                        value={customInv.rate} onChange={(e) => setCustomInv({ ...customInv, rate: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomInv(); } }} />
                       <input type="number" placeholder="Qty (opt)" className="w-20 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
-                        value={customInv.qty} onChange={(e) => setCustomInv({ ...customInv, qty: e.target.value })} />
+                        value={customInv.qty} onChange={(e) => setCustomInv({ ...customInv, qty: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomInv(); } }} />
                     </div>
                     <div className="flex gap-2">
                       {customError && <p className="text-[11px] text-error flex items-center mr-2">{customError}</p>}
@@ -1545,6 +1562,12 @@ function BatteryTable({
         </div>
       </div>
 
+      {filteredBrands.length > 100 && (
+        <div className="mb-2.5 px-3 py-2 bg-warning-bg text-warning border border-warning/10 rounded-xl text-xs font-medium">
+          Showing first 100 of {filteredBrands.length} batteries. Use search or capacity filter to narrow results.
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -1559,7 +1582,7 @@ function BatteryTable({
             </tr>
           </thead>
           <tbody>
-            {filteredBrands.map((brand) => {
+            {filteredBrands.slice(0, 100).map((brand) => {
               const qty = selectedMix[brand.id] ?? 0;
               const isSelected = qty > 0;
               return (
@@ -1584,32 +1607,33 @@ function BatteryTable({
                       {brand.chemistry}
                     </span>
                   </td>
-                  <td className="py-2.5 px-2" onClick={(e) => e.stopPropagation()}>
-                    <BatteryRateCell brand={brand} />
+                  <td className="py-2.5 px-2 text-right font-mono text-text-primary">
+                    ₹{brand.rate.toLocaleString('en-IN')}
                   </td>
-                  <td className="py-2.5 px-2">
-                    <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <td className="py-2.5 px-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-center gap-1.5">
                       <button
-                        onClick={() => onSetMixQty(brand.id, qty - 1)}
-                        className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors"
-                        title="Decrease qty"
+                        onClick={() => onSetMixQty(brand.id, Math.max(0, qty - 1))}
+                        className="w-5 h-5 flex items-center justify-center rounded bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
                       >
-                        <Minus size={11} />
+                        -
                       </button>
                       <input
                         type="number"
                         min={0}
                         value={qty || ''}
-                        onChange={(e) => onSetMixQty(brand.id, parseInt(e.target.value || '0', 10))}
-                        className="w-14 px-2 py-1 rounded bg-background border border-border text-center text-xs font-mono text-text-primary outline-none focus:border-accent"
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          onSetMixQty(brand.id, isNaN(val) ? 0 : val);
+                        }}
                         placeholder="0"
+                        className="w-10 text-center py-0.5 rounded bg-background border border-border text-[11px] font-mono focus:border-accent focus:outline-none"
                       />
                       <button
                         onClick={() => onSetMixQty(brand.id, qty + 1)}
-                        className="p-1 rounded border border-border hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors"
-                        title="Increase qty"
+                        className="w-5 h-5 flex items-center justify-center rounded bg-surface border border-border text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
                       >
-                        <Plus size={11} />
+                        +
                       </button>
                     </div>
                   </td>
@@ -1644,11 +1668,11 @@ function BatteryTable({
                   <div className="flex flex-wrap gap-2 items-center justify-between">
                     <div className="flex flex-wrap gap-2 flex-1">
                       <input type="text" placeholder="Brand" className="w-24 px-2 py-1 rounded bg-background border border-border text-xs focus:border-accent focus:outline-none"
-                        value={customBat.brand} onChange={(e) => setCustomBat({ ...customBat, brand: e.target.value })} autoFocus />
+                        value={customBat.brand} onChange={(e) => setCustomBat({ ...customBat, brand: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomBat(); } }} autoFocus />
                       <input type="text" placeholder="Model" className="w-24 px-2 py-1 rounded bg-background border border-border text-xs focus:border-accent focus:outline-none"
-                        value={customBat.model} onChange={(e) => setCustomBat({ ...customBat, model: e.target.value })} />
+                        value={customBat.model} onChange={(e) => setCustomBat({ ...customBat, model: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomBat(); } }} />
                       <input type="number" placeholder="kWh" className="w-16 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
-                        value={customBat.capacity} onChange={(e) => setCustomBat({ ...customBat, capacity: e.target.value })} />
+                        value={customBat.capacity} onChange={(e) => setCustomBat({ ...customBat, capacity: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomBat(); } }} />
                       <Select
                         size="sm"
                         value={customBat.chemistry}
@@ -1661,9 +1685,9 @@ function BatteryTable({
                         ]}
                       />
                       <input type="number" placeholder="Rate (₹)" className="w-20 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
-                        value={customBat.rate} onChange={(e) => setCustomBat({ ...customBat, rate: e.target.value })} />
+                        value={customBat.rate} onChange={(e) => setCustomBat({ ...customBat, rate: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomBat(); } }} />
                       <input type="number" placeholder="Qty (opt)" className="w-20 px-2 py-1 rounded bg-background border border-border text-xs text-right focus:border-accent focus:outline-none"
-                        value={customBat.qty} onChange={(e) => setCustomBat({ ...customBat, qty: e.target.value })} />
+                        value={customBat.qty} onChange={(e) => setCustomBat({ ...customBat, qty: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomBat(); } }} />
                     </div>
                     <div className="flex gap-2">
                       {customError && <p className="text-[11px] text-error flex items-center mr-2">{customError}</p>}
@@ -2725,20 +2749,20 @@ function StructureConfigTable() {
               <label className="block text-[10px] uppercase font-bold text-text-secondary tracking-wider">
                 Vendor
               </label>
-              <div className="relative">
-                <select
-                  value={structureVendorId || ''}
-                  onChange={(e) => setStructureTypeAndVendor(structureMaterialType, e.target.value || null)}
-                  className="w-full px-3 py-2 rounded-md bg-background border border-border text-xs text-text-primary outline-none focus:border-accent"
-                >
-                  <option value="">Select Vendor</option>
-                  {vendorsForMaterial.map((v: any) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                value={structureVendorId || ''}
+                onChange={(val) => setStructureTypeAndVendor(structureMaterialType, val || null)}
+                placeholder="Select Vendor"
+                options={[
+                  { value: '', label: 'Select Vendor' },
+                  ...vendorsForMaterial.map((v: any) => ({
+                    value: v.id,
+                    label: v.name,
+                  })),
+                ]}
+                size="sm"
+                className="w-full"
+              />
             </div>
 
             <div className="space-y-2">

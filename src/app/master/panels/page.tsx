@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { Select } from '@/components/ui/Select';
 import {
   useMasterQuery,
   useMasterCreateMutation,
@@ -287,27 +288,27 @@ export default function PanelsMasterPage() {
             />
           </div>
 
-          <select
+          <Select
             value={brandFilter}
-            onChange={(e) => setBrandFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary outline-none cursor-pointer hover:bg-surface-hover"
-          >
-            <option value="">All Brands</option>
-            {uniqueBrands.map((b) => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
+            onChange={(val) => setBrandFilter(val)}
+            options={[
+              { value: '', label: 'All Brands' },
+              ...uniqueBrands.map((b) => ({ value: b, label: b }))
+            ]}
+            size="sm"
+            className="min-w-[130px]"
+          />
 
-          <select
+          <Select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary outline-none cursor-pointer hover:bg-surface-hover"
-          >
-            <option value="">All Cell Techs</option>
-            {uniqueTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+            onChange={(val) => setTypeFilter(val)}
+            options={[
+              { value: '', label: 'All Cell Techs' },
+              ...uniqueTypes.map((t) => ({ value: t, label: t }))
+            ]}
+            size="sm"
+            className="min-w-[150px]"
+          />
         </div>
 
         {/* Action Buttons */}
@@ -487,15 +488,16 @@ export default function PanelsMasterPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Cell Technology *</label>
-                  <select
+                  <Select
                     value={draft.panel_type}
-                    onChange={(e) => setDraft({ ...draft, panel_type: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                  >
-                    <option value="Mono PERC">Mono PERC</option>
-                    <option value="TOPCon">TOPCon</option>
-                    <option value="HJT">HJT</option>
-                  </select>
+                    onChange={(val) => setDraft({ ...draft, panel_type: val })}
+                    options={[
+                      { value: 'Mono PERC', label: 'Mono PERC' },
+                      { value: 'TOPCon', label: 'TOPCon' },
+                      { value: 'HJT', label: 'HJT' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Base Cost Rate (INR / Watt) *</label>
@@ -508,15 +510,16 @@ export default function PanelsMasterPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Standard GST Slabs *</label>
-                  <select
-                    value={draft.gst_pct}
-                    onChange={(e) => setDraft({ ...draft, gst_pct: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                  >
-                    <option value={0.05}>5% GST</option>
-                    <option value={0.12}>12% GST</option>
-                    <option value={0.18}>18% GST</option>
-                  </select>
+                  <Select
+                    value={String(draft.gst_pct)}
+                    onChange={(val) => setDraft({ ...draft, gst_pct: parseFloat(val) })}
+                    options={[
+                      { value: '0.05', label: '5% GST' },
+                      { value: '0.12', label: '12% GST' },
+                      { value: '0.18', label: '18% GST' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
               </div>
               

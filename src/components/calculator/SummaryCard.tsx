@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
+import { Select } from '@/components/ui/Select';
 import { SYSTEMS } from '@/lib/data/bom';
 import { formatINR } from '@/lib/engine/calculator';
 import { useSettings } from '@/lib/hooks/useSettings';
@@ -165,15 +166,17 @@ export function SummaryCard() {
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <span className="text-xs text-text-secondary">Subsidy Scheme</span>
-              <select
+              <Select
                 value={selectedScheme}
-                onChange={(e) => useCalculatorStore.getState().setSelectedScheme(e.target.value as any)}
-                className="bg-background border border-border rounded text-xs px-2 py-1 text-text-primary outline-none focus:border-accent/50"
-              >
-                <option value="none">No Subsidy</option>
-                <option value="pm_suryaghar">PM Surya Ghar</option>
-                <option value="state">State Scheme</option>
-              </select>
+                onChange={(val) => useCalculatorStore.getState().setSelectedScheme(val as any)}
+                options={[
+                  { value: 'none', label: 'No Subsidy' },
+                  { value: 'pm_suryaghar', label: 'PM Surya Ghar' },
+                  { value: 'state', label: 'State Scheme' }
+                ]}
+                size="sm"
+                className="w-40"
+              />
             </div>
             {selectedScheme !== 'none' && (
               <>

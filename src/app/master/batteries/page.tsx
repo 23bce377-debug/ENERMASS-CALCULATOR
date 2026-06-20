@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { Select } from '@/components/ui/Select';
 import {
   useMasterQuery,
   useMasterCreateMutation,
@@ -297,27 +298,27 @@ export default function BatteriesMasterPage() {
             />
           </div>
 
-          <select
+          <Select
             value={brandFilter}
-            onChange={(e) => setBrandFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary outline-none cursor-pointer hover:bg-surface-hover"
-          >
-            <option value="">All Brands</option>
-            {uniqueBrands.map((b) => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
+            onChange={(val) => setBrandFilter(val)}
+            options={[
+              { value: '', label: 'All Brands' },
+              ...uniqueBrands.map((b) => ({ value: b, label: b }))
+            ]}
+            size="sm"
+            className="min-w-[130px]"
+          />
 
-          <select
+          <Select
             value={chemFilter}
-            onChange={(e) => setChemFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary outline-none cursor-pointer hover:bg-surface-hover"
-          >
-            <option value="">All Chemistry Types</option>
-            {uniqueChems.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+            onChange={(val) => setChemFilter(val)}
+            options={[
+              { value: '', label: 'All Chemistry Types' },
+              ...uniqueChems.map((c) => ({ value: c, label: c }))
+            ]}
+            size="sm"
+            className="min-w-[170px]"
+          />
         </div>
 
         {/* Action Buttons */}
@@ -495,16 +496,17 @@ export default function BatteriesMasterPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Battery Chemistry *</label>
-                  <select
+                  <Select
                     value={draft.chemistry}
-                    onChange={(e) => setDraft({ ...draft, chemistry: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                  >
-                    <option value="LFP">LFP (Lithium Iron Phosphate)</option>
-                    <option value="Li-Ion">Li-Ion (Lithium Ion)</option>
-                    <option value="Lead-Acid">Lead-Acid</option>
-                    <option value="NMC">NMC</option>
-                  </select>
+                    onChange={(val) => setDraft({ ...draft, chemistry: val as any })}
+                    options={[
+                      { value: 'LFP', label: 'LFP (Lithium Iron Phosphate)' },
+                      { value: 'Li-Ion', label: 'Li-Ion (Lithium Ion)' },
+                      { value: 'Lead-Acid', label: 'Lead-Acid' },
+                      { value: 'NMC', label: 'NMC' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Voltage (V)</label>
@@ -536,14 +538,15 @@ export default function BatteriesMasterPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Standard GST Slabs *</label>
-                  <select
-                    value={draft.gst_pct}
-                    onChange={(e) => setDraft({ ...draft, gst_pct: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                  >
-                    <option value={0.12}>12% GST (Default Batteries)</option>
-                    <option value={0.18}>18% GST (Alternative Slabs)</option>
-                  </select>
+                  <Select
+                    value={String(draft.gst_pct)}
+                    onChange={(val) => setDraft({ ...draft, gst_pct: parseFloat(val) })}
+                    options={[
+                      { value: '0.12', label: '12% GST (Default Batteries)' },
+                      { value: '0.18', label: '18% GST (Alternative Slabs)' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
               </div>
               

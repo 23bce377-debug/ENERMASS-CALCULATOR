@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Save, X } from 'lucide-react';
 import { SystemORM, SystemItemORM } from '@/backend/orm/system';
+import { Select } from '@/components/ui/Select';
 
 export function SavePresetModal({ isOpen, onClose, statePayload }: { isOpen: boolean; onClose: () => void; statePayload: any }) {
   const [name, setName] = useState('');
@@ -104,16 +105,17 @@ export function SavePresetModal({ isOpen, onClose, statePayload }: { isOpen: boo
             </div>
             <div>
               <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Category</label>
-              <select 
+              <Select 
                 value={type} 
-                onChange={e => setType(e.target.value as any)}
+                onChange={val => setType(val as any)}
                 disabled={overwriteMaster}
-                className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:border-accent/50 outline-none text-sm disabled:opacity-50"
-              >
-                <option value="residential">Residential</option>
-                <option value="commercial">Commercial</option>
-                <option value="industrial">Industrial</option>
-              </select>
+                options={[
+                  { value: 'residential', label: 'Residential' },
+                  { value: 'commercial', label: 'Commercial' },
+                  { value: 'industrial', label: 'Industrial' }
+                ]}
+                className="w-full"
+              />
             </div>
           </div>
           

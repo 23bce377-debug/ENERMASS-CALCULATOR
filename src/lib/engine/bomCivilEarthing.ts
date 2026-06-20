@@ -6,19 +6,30 @@ export interface CivilEarthingInputs {
   systemKw: number;
   roofAreaSqft?: number;
   structureType?: StructureType;
+  laCount?: number;
+  earthPits?: number;
+  earthStripLengthMeters?: number;
 }
 
 export function generateCivilEarthingBOM(inputs: CivilEarthingInputs): BomItem[] {
   const items: BomItem[] = [];
-  const { systemKw, roofAreaSqft = systemKw * 100, structureType = 'rcc_roof_elevated' } = inputs;
+  const { 
+    systemKw, 
+    roofAreaSqft = systemKw * 100, 
+    structureType = 'rcc_roof_elevated',
+    laCount: inputLaCount,
+    earthPits: inputEarthPits,
+    earthStripLengthMeters: inputEarthStripLengthMeters
+  } = inputs;
 
   if (systemKw <= 0) return items;
 
   // --- EARTHING ---
 
   // 1. Earth Pits (Chemical)
-  // Base 2 pits + 1 pit per 10kW
-  const earthPits = 2 + Math.max(0, Math.ceil((systemKw - 10) / 10));
+  const earthPits = inputEarthPits !== undefined && inputEarthPits >= 0
+    ? inputEarthPits
+    : (2 + Math.max(0, Math.ceil((systemKw - 10) / 10)));
   items.push({
     description: 'Chemical Earthing Kit (Pipe + Compound)',
     qty: earthPits,
@@ -28,8 +39,9 @@ export function generateCivilEarthingBOM(inputs: CivilEarthingInputs): BomItem[]
   });
 
   // 2. Earthing Strip (GI 25x3mm)
-  // Distance between pits + roof run
-  const earthStripLengthMeters = (earthPits * 5) + Math.sqrt(roofAreaSqft) * 2;
+  const earthStripLengthMeters = inputEarthStripLengthMeters !== undefined && inputEarthStripLengthMeters >= 0
+    ? inputEarthStripLengthMeters
+    : ((earthPits * 5) + Math.sqrt(roofAreaSqft) * 2);
   items.push({
     description: 'Earthing Strip (GI Flat 25x3mm)',
     qty: Math.ceil(earthStripLengthMeters),
@@ -39,8 +51,9 @@ export function generateCivilEarthingBOM(inputs: CivilEarthingInputs): BomItem[]
   });
 
   // 3. Lightning Arrester (LA)
-  // 1 per 1500 sqft
-  const laCount = Math.max(1, Math.ceil(roofAreaSqft / 1500));
+  const laCount = inputLaCount !== undefined && inputLaCount >= 0
+    ? inputLaCount
+    : Math.max(1, Math.ceil(roofAreaSqft / 1500));
   items.push({
     description: 'Lightning Arrester (Franklin/ESE)',
     qty: laCount,

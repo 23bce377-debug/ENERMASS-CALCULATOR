@@ -7,6 +7,7 @@ export interface EnergyInput {
   performanceRatio: number;
   orientation?: 'South' | 'East/West' | 'Flat';
   orientationMultipliers?: Record<string, number>;
+  panelDegradationRate?: number;
 }
 
 const DAYS_PER_MONTH = 30.4375;
@@ -17,40 +18,59 @@ export function calculateEnergyProjections(input: EnergyInput) {
     throw new Error('orientationMultipliers required — load from app_settings');
   }
   const multipliers = input.orientationMultipliers;
-  const orientationMultiplier = input.orientation
-    ? (multipliers[input.orientation] ?? 1.0)
-    : 1.0;
+  
+  let orientationMultiplier = 1.0;
+  if (input.orientation) {
+    const val = multipliers[input.orientation];
+    if (val === undefined || val === null || isNaN(val)) {
+      throw new Error(`Invalid or missing orientation multiplier for: "${input.orientation}"`);
+    }
+    orientationMultiplier = val;
+  }
 
   const effectivePanelKW = input.panelCapacityKW;
 
   /**
    * FIX CALC-06: Multi-inverter clipping correction.
-   *
-   * The old code used `inverterCapacityKW ?? effectivePanelKW`, which assumed a
-   * single inverter. For multi-inverter systems (e.g., two 5kW inverters for a
-   * 10kW array), the caller MUST sum inverter capacities before passing to this
-   * function.
-   *
-   * Priority:
-   *   1. totalInverterCapacityKW (pre-summed by dbCalculator for multi-inverter mix)
-   *   2. inverterCapacityKW      (single inverter or already-aggregated value)
-   *   3. effectivePanelKW        (fallback: assume inverter matches panel)
    */
   const aggregateInverterKW =
     input.totalInverterCapacityKW ??
     input.inverterCapacityKW ??
     effectivePanelKW;
 
-  // Inverter clipping caps hourly generation at inverter capacity
-  const maxHourlyGeneration = Math.min(effectivePanelKW, aggregateInverterKW);
+  // Accurate Inverter Clipping Model (NREL approximations)
+  const dcAcRatio = effectivePanelKW / aggregateInverterKW;
+  let clippingLoss = 0;
+  if (dcAcRatio > 1.1) {
+    clippingLoss = Math.pow(dcAcRatio - 1.1, 2);
+  }
+  clippingLoss = Math.min(clippingLoss, 0.9);
+  
+  const utilizedPanelKW = effectivePanelKW * (1 - clippingLoss);
 
-  const dailyGenerationKWh = maxHourlyGeneration * input.sunHoursPerDay * input.performanceRatio * orientationMultiplier;
-  const monthlyGenerationKWh = dailyGenerationKWh * DAYS_PER_MONTH;
-  const annualGenerationKWh = dailyGenerationKWh * DAYS_PER_YEAR;
+  // Year 1 (undegraded) generation values
+  const undegradedDailyGenerationKWh = utilizedPanelKW * input.sunHoursPerDay * input.performanceRatio * orientationMultiplier;
+  const undegradedMonthlyGenerationKWh = undegradedDailyGenerationKWh * DAYS_PER_MONTH;
+  const undegradedAnnualGenerationKWh = undegradedDailyGenerationKWh * DAYS_PER_YEAR;
+
+  // Lifetime average degraded generation (25-year timeline)
+  const degradationRate = input.panelDegradationRate ?? 0.005;
+  const lifetimeYears = 25;
+  let totalLifetimeGenerationKWh = 0;
+  for (let year = 1; year <= lifetimeYears; year++) {
+    totalLifetimeGenerationKWh += undegradedAnnualGenerationKWh * Math.pow(1 - degradationRate, year - 1);
+  }
+  
+  const annualGenerationKWh = totalLifetimeGenerationKWh / lifetimeYears;
+  const monthlyGenerationKWh = annualGenerationKWh / 12;
+  const dailyGenerationKWh = annualGenerationKWh / DAYS_PER_YEAR;
 
   return {
     dailyGenerationKWh,
     monthlyGenerationKWh,
-    annualGenerationKWh
+    annualGenerationKWh,
+    undegradedDailyGenerationKWh,
+    undegradedMonthlyGenerationKWh,
+    undegradedAnnualGenerationKWh,
   };
 }

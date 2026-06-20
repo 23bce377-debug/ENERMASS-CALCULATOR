@@ -18,6 +18,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label className="block text-xs font-bold text-text-primary mb-1.5 uppercase tracking-wide">
             {label}
+            {props.required && <span className="text-error ml-0.5">*</span>}
           </label>
         )}
         <div className="relative">

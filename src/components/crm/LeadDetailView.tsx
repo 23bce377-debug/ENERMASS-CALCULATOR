@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Users, Activity, Plus, MessageSquare, MapPin, Calendar, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { formatINR } from '@/lib/engine/calculator';
 import { LEAD_STATUS_LABELS } from './LeadLedger';
@@ -139,19 +140,21 @@ export const LeadDetailView = React.memo(function LeadDetailView({
             <Button variant="outline" size="sm" onClick={onDeleteLead} className="border-red-500/20 text-red-500 hover:bg-red-500/10 hover:border-red-500">
               Delete Lead
             </Button>
-            <select
+            <Select
               value={selectedLead.status}
-              onChange={(e) => onUpdateStatus(selectedLead.id, e.target.value)}
-              className="bg-background border border-border text-xs font-semibold text-text-primary rounded-lg px-2.5 py-1.5 outline-none focus:border-accent"
-            >
-              <option value="new">New Lead</option>
-              <option value="site_survey_requested">Site Survey Requested</option>
-              <option value="qualified">Qualified</option>
-              <option value="quote_presented">Quote Presented</option>
-              <option value="negotiation">In Negotiation</option>
-              <option value="won">Closed Won</option>
-              <option value="lost">Closed Lost</option>
-            </select>
+              onChange={(val) => onUpdateStatus(selectedLead.id, val)}
+              options={[
+                { value: 'new', label: 'New Lead' },
+                { value: 'site_survey_requested', label: 'Site Survey Requested' },
+                { value: 'qualified', label: 'Qualified' },
+                { value: 'quote_presented', label: 'Quote Presented' },
+                { value: 'negotiation', label: 'In Negotiation' },
+                { value: 'won', label: 'Closed Won' },
+                { value: 'lost', label: 'Closed Lost' }
+              ]}
+              size="sm"
+              className="w-48"
+            />
           </div>
         </div>
 
@@ -280,16 +283,16 @@ export const LeadDetailView = React.memo(function LeadDetailView({
                 </div>
                 <div className="space-y-1">
                   <label className="text-text-secondary font-bold">Assign Surveyor</label>
-                  <select
+                  <Select
                     value={surveyorId}
-                    onChange={e => setSurveyorId(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent"
-                  >
-                    <option value="">— Select team member —</option>
-                    {profiles.map(p => (
-                      <option key={p.id} value={p.id}>{p.full_name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSurveyorId(val)}
+                    placeholder="— Select team member —"
+                    options={[
+                      { value: '', label: '— Select team member —' },
+                      ...profiles.map(p => ({ value: p.id, label: p.full_name }))
+                    ]}
+                    className="w-full"
+                  />
                 </div>
               </div>
               <Button onClick={handleScheduleSurveySubmit} className="w-full mt-2"><Calendar size={14} className="mr-2" /> Schedule Survey</Button>
@@ -307,14 +310,18 @@ export const LeadDetailView = React.memo(function LeadDetailView({
                 </div>
                 <div className="space-y-1">
                   <label className="text-text-secondary font-bold">Roof Type</label>
-                  <select value={surveyRoofType} onChange={e => setSurveyRoofType(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent">
-                    <option value="rcc_roof_elevated">RCC Elevated</option>
-                    <option value="rcc_roof_flush">RCC Flush</option>
-                    <option value="tin_shed_hook">Tin Shed</option>
-                    <option value="ground_mount">Ground Mount</option>
-                    <option value="trapezoidal_sheet">Trapezoidal Sheet</option>
-                  </select>
+                  <Select
+                    value={surveyRoofType}
+                    onChange={(val) => setSurveyRoofType(val)}
+                    options={[
+                      { value: 'rcc_roof_elevated', label: 'RCC Elevated' },
+                      { value: 'rcc_roof_flush', label: 'RCC Flush' },
+                      { value: 'tin_shed_hook', label: 'Tin Shed' },
+                      { value: 'ground_mount', label: 'Ground Mount' },
+                      { value: 'trapezoidal_sheet', label: 'Trapezoidal Sheet' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 {/* Simplified for brevity. Full fields implemented in actual component */}
               </div>

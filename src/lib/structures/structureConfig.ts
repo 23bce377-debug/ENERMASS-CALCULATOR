@@ -10,6 +10,7 @@ export interface StructureSpec {
   type: StructureType;
   displayName: string;
   weightPerKwKg: number;        // kg per kW installed
+  engineeringWeightMultiplier?: number; // for detailed BOM weight calculation
   ratePerKwMin: number;         // ₹/kW minimum (HDG, market 2026)
   ratePerKwMax: number;         // ₹/kW maximum
   ratePerKwDefault: number;     // ₹/kW default for quoting
@@ -23,6 +24,7 @@ export const STRUCTURE_CONFIGS: Record<StructureType, StructureSpec> = {
     type: "rcc_roof_elevated",
     displayName: "RCC Roof — Elevated Tilt (HDG)",
     weightPerKwKg: 18,        // 18 kg/kW for standard 2-row elevated
+    engineeringWeightMultiplier: 120,
     ratePerKwMin: 4500,
     ratePerKwMax: 6000,
     ratePerKwDefault: 5000,
@@ -34,6 +36,7 @@ export const STRUCTURE_CONFIGS: Record<StructureType, StructureSpec> = {
     type: "rcc_roof_flush",
     displayName: "RCC Roof — Flush Mount (HDG)",
     weightPerKwKg: 14,
+    engineeringWeightMultiplier: 50,
     ratePerKwMin: 3800,
     ratePerKwMax: 5000,
     ratePerKwDefault: 4200,
@@ -45,6 +48,7 @@ export const STRUCTURE_CONFIGS: Record<StructureType, StructureSpec> = {
     type: "tin_shed_hook",
     displayName: "Tin/GI Sheet Roof — Hook Mount",
     weightPerKwKg: 8,
+    engineeringWeightMultiplier: 35,
     ratePerKwMin: 2800,
     ratePerKwMax: 4000,
     ratePerKwDefault: 3200,
@@ -56,6 +60,7 @@ export const STRUCTURE_CONFIGS: Record<StructureType, StructureSpec> = {
     type: "ground_mount",
     displayName: "Ground Mount — Concrete Foundation",
     weightPerKwKg: 28,
+    engineeringWeightMultiplier: 90,
     ratePerKwMin: 6000,
     ratePerKwMax: 9000,
     ratePerKwDefault: 7000,
@@ -67,6 +72,7 @@ export const STRUCTURE_CONFIGS: Record<StructureType, StructureSpec> = {
     type: "carport",
     displayName: "Carport / Parking Canopy",
     weightPerKwKg: 35,
+    engineeringWeightMultiplier: 135,
     ratePerKwMin: 9000,
     ratePerKwMax: 14000,
     ratePerKwDefault: 11000,
@@ -78,6 +84,7 @@ export const STRUCTURE_CONFIGS: Record<StructureType, StructureSpec> = {
     type: "trapezoidal_sheet",
     displayName: "Industrial Trapezoidal Sheet — Top Hook",
     weightPerKwKg: 10,
+    engineeringWeightMultiplier: 35,
     ratePerKwMin: 3200,
     ratePerKwMax: 4800,
     ratePerKwDefault: 3800,

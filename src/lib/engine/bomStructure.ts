@@ -1,11 +1,13 @@
 import { TAX_CONSTANTS } from '@/lib/tax-constants';
 import type { BomItem } from '../data/bom';
-import { type StructureType } from '../structures/structureConfig';
+import { STRUCTURE_CONFIGS, type StructureType } from '../structures/structureConfig';
 
 export interface StructureInputs {
   systemKw: number;
   structureType?: StructureType;
   windSpeedKmph?: number; // e.g. 150 kmph
+  weightMultiplier?: number;
+  baseRatePerKg?: number;
 }
 
 /**
@@ -14,24 +16,27 @@ export interface StructureInputs {
  */
 export function generateStructureBOM(inputs: StructureInputs): BomItem[] {
   const items: BomItem[] = [];
-  const { systemKw, structureType = 'rcc_roof_elevated', windSpeedKmph = 150 } = inputs;
+  const { 
+    systemKw, 
+    structureType = 'rcc_roof_elevated', 
+    windSpeedKmph = 150,
+    weightMultiplier: inputWeightMultiplier,
+    baseRatePerKg: inputBaseRatePerKg
+  } = inputs;
 
   // If there's no structure required (e.g. some upgrade templates), return empty.
   if (systemKw <= 0) return items;
 
   // Base kg per kW multiplier based on wind load and structure type.
   // 150 kmph wind load typically requires 80-100 kg/kW for fixed tilt RCC.
-  let weightMultiplier = 85; 
-  if (structureType === 'ground_mount') weightMultiplier = 90;
-  if (structureType === 'tin_shed_hook' || structureType === 'trapezoidal_sheet') weightMultiplier = 35; // Rails only
-  if (structureType === 'rcc_roof_elevated') weightMultiplier = 120;
-  if (structureType === 'rcc_roof_flush') weightMultiplier = 50; // Plus ballast
+  const spec = STRUCTURE_CONFIGS[structureType];
+  let weightMultiplier = inputWeightMultiplier ?? spec?.engineeringWeightMultiplier ?? spec?.weightPerKwKg ?? 85; 
 
   if (windSpeedKmph > 150) weightMultiplier *= 1.2;
   if (windSpeedKmph < 120) weightMultiplier *= 0.85;
 
   const totalWeightKg = systemKw * weightMultiplier;
-  const baseRatePerKg = structureType === 'ground_mount' ? 85 : 81.5;
+  const baseRatePerKg = inputBaseRatePerKg ?? (structureType === 'ground_mount' ? 85 : 81.5);
 
   if (structureType === 'tin_shed_hook' || structureType === 'trapezoidal_sheet') {
     // Sheet roof mainly consists of Rails and Clamps

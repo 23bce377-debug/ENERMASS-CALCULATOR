@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { STATE_DATA } from '@/lib/data/masters';
 import { X, CheckCircle2, RotateCcw } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
+import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
 import type { CustomerInfo, AddressInfo, SiteInfo, SalesInfo, Quote } from '@/lib/types/quote';
 
@@ -48,6 +49,65 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
   // Client-side mounting for portal
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap and Escape key handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      if (e.key === 'Escape' && !savedQuoteId) {
+        handleClose();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        if (!modalRef.current) return;
+        const focusableElements = modalRef.current.querySelectorAll(
+          'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex="0"], [contenteditable]'
+        );
+        
+        if (focusableElements.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+      // Focus first input or wrapper
+      setTimeout(() => {
+        if (modalRef.current) {
+          const firstInput = modalRef.current.querySelector('input, select, textarea, button') as HTMLElement;
+          if (firstInput) firstInput.focus();
+          else modalRef.current.focus();
+        }
+      }, 50);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, savedQuoteId]);
 
   // Fetch projects when modal opens
   useEffect(() => {
@@ -249,8 +309,8 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-modal-backdrop flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div ref={modalRef} tabIndex={-1} className="w-full max-w-lg bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] outline-none">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-active shrink-0">
@@ -394,11 +454,11 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                     />
                   </div>
 
-                  <Input label="Project Title" value={sales.projectTitle} onChange={(v) => setSales({...sales, projectTitle: v})} required />
-                  <Input label="Customer Name" value={customer.name} onChange={(v) => setCustomer({...customer, name: v})} required />
-                  <Input label="Phone Number" value={customer.phone} onChange={(v) => setCustomer({...customer, phone: v})} required />
-                  <Input label="WhatsApp Number" value={customer.whatsapp} onChange={(v) => setCustomer({...customer, whatsapp: v})} />
-                  <Input label="Email Address" value={customer.email} onChange={(v) => setCustomer({...customer, email: v})} type="email" />
+                  <Input label="Project Title" value={sales.projectTitle} onChange={(e) => setSales({...sales, projectTitle: e.target.value})} required />
+                  <Input label="Customer Name" value={customer.name} onChange={(e) => setCustomer({...customer, name: e.target.value})} required />
+                  <Input label="Phone Number" value={customer.phone} onChange={(e) => setCustomer({...customer, phone: e.target.value})} required />
+                  <Input label="WhatsApp Number" value={customer.whatsapp} onChange={(e) => setCustomer({...customer, whatsapp: e.target.value})} />
+                  <Input label="Email Address" value={customer.email} onChange={(e) => setCustomer({...customer, email: e.target.value})} type="email" />
 
                   {itcEligible && (
                     <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-hover mt-2">
@@ -422,11 +482,11 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
 
               {step === 1 && (
                 <div className="space-y-4 animate-fade-in">
-                  <Input label="Address Line 1" value={address.line1} onChange={(v) => setAddress({...address, line1: v})} />
-                  <Input label="Address Line 2" value={address.line2} onChange={(v) => setAddress({...address, line2: v})} />
+                  <Input label="Address Line 1" value={address.line1} onChange={(e) => setAddress({...address, line1: e.target.value})} />
+                  <Input label="Address Line 2" value={address.line2} onChange={(e) => setAddress({...address, line2: e.target.value})} />
                   <div className="grid grid-cols-2 gap-4">
-                    <Input label="City" value={address.city} onChange={(v) => setAddress({...address, city: v})} />
-                    <Input label="PIN Code" value={address.pin} onChange={(v) => setAddress({...address, pin: v})} />
+                    <Input label="City" value={address.city} onChange={(e) => setAddress({...address, city: e.target.value})} />
+                    <Input label="PIN Code" value={address.pin} onChange={(e) => setAddress({...address, pin: e.target.value})} />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-text-secondary">State</label>
@@ -442,10 +502,10 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
               {step === 2 && (
                 <div className="space-y-4 animate-fade-in">
                   <div className="grid grid-cols-2 gap-4">
-                    <Input label="Meter Number" value={site.meterNo} onChange={(v) => setSite({...site, meterNo: v})} />
-                    <Input label="Sanctioned Load (kW)" value={site.sanctionedLoad} onChange={(v) => setSite({...site, sanctionedLoad: v})} />
+                    <Input label="Meter Number" value={site.meterNo} onChange={(e) => setSite({...site, meterNo: e.target.value})} />
+                    <Input label="Sanctioned Load (kW)" value={site.sanctionedLoad} onChange={(e) => setSite({...site, sanctionedLoad: e.target.value})} />
                   </div>
-                  <Input label="Avg Monthly Bill (₹)" type="number" value={String(site.monthlyBill || '')} onChange={(v) => setSite({...site, monthlyBill: Number(v)})} />
+                  <Input label="Avg Monthly Bill (₹)" type="number" value={String(site.monthlyBill || '')} onChange={(e) => setSite({...site, monthlyBill: Number(e.target.value)})} />
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-text-secondary">Roof Type</label>
@@ -460,14 +520,14 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                         ]}
                       />
                     </div>
-                    <Input label="Roof Area (sq ft)" type="number" value={String(site.roofArea || '')} onChange={(v) => setSite({...site, roofArea: Number(v)})} />
+                    <Input label="Roof Area (sq ft)" type="number" value={String(site.roofArea || '')} onChange={(e) => setSite({...site, roofArea: Number(e.target.value)})} />
                   </div>
                 </div>
               )}
 
               {step === 3 && (
                 <div className="space-y-4 animate-fade-in">
-                  <Input label="Sales Executive" value={sales.execName} onChange={(v) => setSales({...sales, execName: v})} required />
+                  <Input label="Sales Executive" value={sales.execName} onChange={(e) => setSales({...sales, execName: e.target.value})} required />
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-text-secondary">Sale Type</label>
                     <div className="flex gap-2">
@@ -584,20 +644,5 @@ function validateQuoteBasics(customer: CustomerInfo, sales: SalesInfo, skipSales
   return null;
 }
 
-function Input({ label, value, onChange, type = 'text', required }: { label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium text-text-secondary">
-        {label} {required && <span className="text-error">*</span>}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent"
-        placeholder={`Enter ${label.toLowerCase()}`}
-      />
-    </div>
-  );
-}
+
 

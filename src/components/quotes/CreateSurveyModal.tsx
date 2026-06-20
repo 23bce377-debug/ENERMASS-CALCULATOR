@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, ClipboardCheck, Building } from 'lucide-react';
 import { useCreateSurveyMutation } from '@/lib/hooks/useSurveys';
+import { Select } from '@/components/ui/Select';
 import { useToast } from '@/components/ui/Toast';
 import { supabase } from '@/lib/supabase/client';
 
@@ -85,12 +86,17 @@ export function CreateSurveyModal({
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Roof Type</label>
-              <select value={formData.roof_type} onChange={e => setFormData({...formData, roof_type: e.target.value})} className="w-full px-3 py-2 border border-border rounded-xl bg-background text-sm text-text-primary focus:border-accent outline-none">
-                <option value="RCC">RCC</option>
-                <option value="Metal Sheet">Metal Sheet</option>
-                <option value="Tin">Tin</option>
-                <option value="Other">Other</option>
-              </select>
+              <Select
+                value={formData.roof_type}
+                onChange={(val) => setFormData({...formData, roof_type: val})}
+                options={[
+                  { value: 'RCC', label: 'RCC' },
+                  { value: 'Metal Sheet', label: 'Metal Sheet' },
+                  { value: 'Tin', label: 'Tin' },
+                  { value: 'Other', label: 'Other' }
+                ]}
+                className="w-full"
+              />
             </div>
           </div>
 

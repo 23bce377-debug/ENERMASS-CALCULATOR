@@ -75,7 +75,7 @@ export function calculateFinancialProjections(input: ProjectionsInput) {
   // Clamp between 0% and 100%
   irr = Math.max(0, Math.min(irr, 1.0));
 
-  const lcoe = lifetimeGenerationKWh > 0 ? input.totalSystemCost / lifetimeGenerationKWh : 0;
+  const lcoe = lifetimeGenerationKWh > 0 ? input.beneficiaryContribution / lifetimeGenerationKWh : 0;
 
   return {
     paybackYears,

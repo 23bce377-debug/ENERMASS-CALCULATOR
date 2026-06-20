@@ -7,22 +7,18 @@ import { CreateProjectModal } from '@/components/projects/CreateProjectModal';
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { ProjectORM, type Project } from '@/backend/orm/project';
 import {
   useProjectsQuery,
   useProjectDetailsQuery,
   useUpdateProjectStatusMutation,
-  useAssignPMMutation,
-  useUpdateProjectNotesMutation
+  useAssignPMMutation
 } from '@/lib/hooks/useProjects';
 import { 
-  Wrench, ShieldCheck, Clock, 
-  User, Calendar, Activity, ClipboardList, Plus
+  ClipboardList, Activity, ShieldCheck, Plus
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 
-// Status labels and styling
 export const STATUS_LABELS: Record<string, string> = {
   draft: 'Draft',
   in_progress: 'In Progress',
@@ -48,13 +44,11 @@ export default function ProjectsPage() {
   const createForLead = searchParams.get('createForLead');
   const initialProjectId = searchParams.get('projectId');
     
-  // Selected Project Details
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(initialProjectId);
 
   const { toast } = useToast();
   const confirm = useConfirm();
 
-  // Load Session and Org Context
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -63,7 +57,6 @@ export default function ProjectsPage() {
           .then(({ data }: any) => {
             if (data?.org_id) {
               setOrgId(data.org_id);
-              // Load profiles list
               supabase.from('profiles').select('id, full_name').eq('org_id', data.org_id)
                 .then(({ data: profList }) => {
                   setProfiles(profList || []);
@@ -83,23 +76,18 @@ export default function ProjectsPage() {
     }
   }, [createForLead, initialProjectId, orgId, userId]);
 
-  // TanStack Query Hooks
   const { data: projects = [], isLoading: projectsLoading, refetch: refetchProjects } = useProjectsQuery(orgId);
   const { data: projectDetails = null, isLoading: detailsLoading } = useProjectDetailsQuery(selectedProjectId);
 
   const updateStatusMutation = useUpdateProjectStatusMutation();
   const assignPMMutation = useAssignPMMutation();
-  const updateNotesMutation = useUpdateProjectNotesMutation();
 
-  const loading = projectsLoading;
-
-  // Project Actions
   const handleUpdateStatus = async (status: string) => {
     if (!projectDetails || !orgId) return;
     const confirmed = await confirm({
       title: 'Update Project Status?',
-      message: `Are you sure you want to transition this project to the stage: "${STATUS_LABELS[status]}"?`,
-      confirmLabel: 'Transition Stage',
+      message: `Change status to "${STATUS_LABELS[status]}"?`,
+      confirmLabel: 'Update Status',
       cancelLabel: 'Cancel',
       type: 'info'
     });
@@ -112,7 +100,7 @@ export default function ProjectsPage() {
           version: projectDetails.version,
           orgId
         });
-        toast(`Project transitioned to ${STATUS_LABELS[status]}`, 'success');
+        toast(`Project status updated to ${STATUS_LABELS[status]}`, 'success');
       } catch (err: any) {
         toast(err.message || 'Failed to update status', 'error');
       }
@@ -133,38 +121,21 @@ export default function ProjectsPage() {
     }
   };
 
-  const handleUpdateNotes = async (notes: string) => {
-    if (!projectDetails || !orgId) return;
-    try {
-      await updateNotesMutation.mutateAsync({
-        projectId: projectDetails.id,
-        notes,
-        orgId
-      });
-      toast('Project notes updated successfully', 'success');
-    } catch (err) {
-      toast('Failed to update project notes', 'error');
-    }
-  };
-
-  // Dashboard Stats Computation
   const dashboardStats = useMemo(() => {
     const total = projects.length;
-    const active = projects.filter(p => !['closed', 'cancelled', 'draft'].includes(p.status)).length;
-    const drafts = projects.filter(p => p.status === 'draft').length;
-    const commissioned = projects.filter(p => p.status === 'commissioned' || p.status === 'closed').length;
-    return { total, active, drafts, commissioned };
+    const active = projects.filter(p => p.status === 'in_progress').length;
+    const completed = projects.filter(p => p.status === 'completed').length;
+    return { total, active, completed };
   }, [projects]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <main className="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full space-y-6">
         
-        {/* Header section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black text-text-primary">Projects Delivery Ledger</h1>
-            <p className="text-sm text-text-muted mt-0.5">Record rooftop solar projects, assign project managers, update status, and manage execution notes.</p>
+            <h1 className="text-2xl font-black text-text-primary">Projects Ledger</h1>
+            <p className="text-sm text-text-muted mt-0.5">Manage and track high-level project statuses.</p>
           </div>
           
           <button
@@ -176,8 +147,7 @@ export default function ProjectsPage() {
           </button>
         </div>
 
-        {/* KPI Summary Widgets */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div className="bg-surface border border-border/40 rounded-2xl p-5 shadow-md card-hover flex items-center gap-4 relative overflow-hidden group">
             <div className="absolute right-0 top-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl group-hover:bg-accent/10 transition-all duration-300" />
             <div className="w-12 h-12 rounded-xl bg-accent-dim text-accent flex items-center justify-center border border-accent/20 shrink-0">
@@ -195,19 +165,8 @@ export default function ProjectsPage() {
               <Activity size={22} />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Active Pipeline</p>
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">In Progress</p>
               <h4 className="text-2xl font-black text-text-primary font-mono mt-1">{dashboardStats.active}</h4>
-            </div>
-          </div>
-
-          <div className="bg-surface border border-border/40 rounded-2xl p-5 shadow-md card-hover flex items-center gap-4 relative overflow-hidden group">
-            <div className="absolute right-0 top-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all duration-300" />
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-warning flex items-center justify-center border border-amber-500/20 shrink-0">
-              <Clock size={22} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Draft Projects</p>
-              <h4 className="text-2xl font-black text-text-primary font-mono mt-1">{dashboardStats.drafts}</h4>
             </div>
           </div>
 
@@ -217,13 +176,12 @@ export default function ProjectsPage() {
               <ShieldCheck size={22} />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Completed Plants</p>
-              <h4 className="text-2xl font-black text-text-primary font-mono mt-1">{dashboardStats.commissioned}</h4>
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Completed</p>
+              <h4 className="text-2xl font-black text-text-primary font-mono mt-1">{dashboardStats.completed}</h4>
             </div>
           </div>
         </div>
 
-        {/* Projects Master View Split */}
         <div className="flex flex-col lg:flex-row gap-6 mt-6">
           <ProjectList 
             projects={projects}
@@ -234,9 +192,9 @@ export default function ProjectsPage() {
             projectDetails={projectDetails}
             detailsLoading={detailsLoading}
             profiles={profiles}
+            orgId={orgId}
             onAssignPM={handleAssignPM}
             onUpdateStatus={handleUpdateStatus}
-            onUpdateNotes={handleUpdateNotes}
           />
         </div>
       </main>

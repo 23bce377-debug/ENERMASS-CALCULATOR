@@ -715,17 +715,18 @@ export default function CrmPage() {
 
                 <div className="space-y-1.5 col-span-2">
                   <label className="text-text-secondary font-bold">Acquisition Channel / Source</label>
-                  <select
+                  <Select
                     value={leadSource}
-                    onChange={(e) => setLeadSource(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent"
-                  >
-                    <option value="Website">Website Form</option>
-                    <option value="Reference">Customer Referral</option>
-                    <option value="Social Media">Social Marketing</option>
-                    <option value="Cold Call">Cold Outreach</option>
-                    <option value="Offline Campaign">Print/Offline Event</option>
-                  </select>
+                    onChange={(val) => setLeadSource(val)}
+                    options={[
+                      { value: 'Website', label: 'Website Form' },
+                      { value: 'Reference', label: 'Customer Referral' },
+                      { value: 'Social Media', label: 'Social Marketing' },
+                      { value: 'Cold Call', label: 'Cold Outreach' },
+                      { value: 'Offline Campaign', label: 'Print/Offline Event' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
               </div>
 
@@ -769,18 +770,19 @@ export default function CrmPage() {
             <form onSubmit={handleAddEvent} className="p-5 space-y-4 text-xs">
               <div className="space-y-1.5">
                 <label className="text-text-secondary font-bold">Activity Format</label>
-                <select
+                <Select
                   value={eventType}
-                  onChange={(e) => setEventType(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent"
-                >
-                  <option value="phone_call">Phone Call Dialed</option>
-                  <option value="whatsapp_sent">WhatsApp Message Sent</option>
-                  <option value="whatsapp_received">WhatsApp Message Received</option>
-                  <option value="email_sent">Email Dispatched</option>
-                  <option value="email_received">Email Received</option>
-                  <option value="quote_generated">Custom Quote Sent</option>
-                </select>
+                  onChange={(val) => setEventType(val)}
+                  options={[
+                    { value: 'phone_call', label: 'Phone Call Dialed' },
+                    { value: 'whatsapp_sent', label: 'WhatsApp Message Sent' },
+                    { value: 'whatsapp_received', label: 'WhatsApp Message Received' },
+                    { value: 'email_sent', label: 'Email Dispatched' },
+                    { value: 'email_received', label: 'Email Received' },
+                    { value: 'quote_generated', label: 'Custom Quote Sent' }
+                  ]}
+                  className="w-full"
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -870,32 +872,34 @@ export default function CrmPage() {
 
               <div className="space-y-1.5">
                 <label className="text-text-secondary font-bold">Win Probability (%)</label>
-                <select
+                <Select
                   value={probability}
-                  onChange={(e) => setProbability(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent font-mono"
-                >
-                  <option value="10">10% - Cold Lead / Pitch</option>
-                  <option value="30">30% - Survey Complete</option>
-                  <option value="50">50% - Proposal Sent</option>
-                  <option value="70">70% - Review / Negotiation</option>
-                  <option value="90">90% - Verbal Confirmation</option>
-                </select>
+                  onChange={(val) => setProbability(val)}
+                  options={[
+                    { value: '10', label: '10% - Cold Lead / Pitch' },
+                    { value: '30', label: '30% - Survey Complete' },
+                    { value: '50', label: '50% - Proposal Sent' },
+                    { value: '70', label: '70% - Review / Negotiation' },
+                    { value: '90', label: '90% - Verbal Confirmation' }
+                  ]}
+                  className="w-full font-mono"
+                />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-text-secondary font-bold">Deal Stage</label>
-                <select
+                <Select
                   value={oppStage}
-                  onChange={(e) => setOppStage(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none"
-                >
-                  <option value="Lead Qualification">Lead Qualification</option>
-                  <option value="Site Survey">Site Survey</option>
-                  <option value="Proposal Drafted">Proposal Drafted</option>
-                  <option value="Negotiation">Negotiation</option>
-                  <option value="Verbal Commit">Verbal Commit</option>
-                </select>
+                  onChange={(val) => setOppStage(val)}
+                  options={[
+                    { value: 'Lead Qualification', label: 'Lead Qualification' },
+                    { value: 'Site Survey', label: 'Site Survey' },
+                    { value: 'Proposal Drafted', label: 'Proposal Drafted' },
+                    { value: 'Negotiation', label: 'Negotiation' },
+                    { value: 'Verbal Commit', label: 'Verbal Commit' }
+                  ]}
+                  className="w-full"
+                />
               </div>
 
               <div className="space-y-1.5">

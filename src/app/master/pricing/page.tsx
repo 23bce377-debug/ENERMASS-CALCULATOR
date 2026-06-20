@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Select } from '@/components/ui/Select';
 import { supabase } from '@/lib/supabase/client';
 import {
   useMasterQuery,
@@ -506,18 +507,19 @@ export default function PricingMasterPage() {
                     {editingItem.bom_description} ({editingItem.bom_unit})
                   </div>
                 ) : (
-                  <select
-                    value={draft.bom_item_id}
-                    onChange={(e) => setDraft({ ...draft, bom_item_id: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none cursor-pointer"
-                  >
-                    <option value="" disabled>Select a component...</option>
-                    {bomItems?.map((item: any) => (
-                      <option key={item.id} value={item.id}>
-                        {item.description} ({item.unit}) — Baseline: ₹{item.buy_price}
-                      </option>
-                    ))}
-                  </select>
+                <Select
+                  value={draft.bom_item_id}
+                  onChange={(val) => setDraft({ ...draft, bom_item_id: val })}
+                  placeholder="Select a component..."
+                  options={[
+                    { value: '', label: 'Select a component...', disabled: true },
+                    ...(bomItems || []).map((item: any) => ({
+                      value: item.id,
+                      label: `${item.description} (${item.unit}) — Baseline: ₹${item.buy_price}`
+                    }))
+                  ]}
+                  className="w-full"
+                />
                 )}
               </div>
 

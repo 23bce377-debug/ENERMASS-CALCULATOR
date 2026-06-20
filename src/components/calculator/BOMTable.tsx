@@ -51,9 +51,9 @@ function groupLines(lines: LineResult[]): GroupedLines[] {
   const groups: GroupedLines[] = [];
 
   // 1. Group by dynamic categoryName from DB seeds
-  const dynamicCategories = Array.from(new Set(lines.map(l => (l as any).categoryName).filter(Boolean)));
+  const dynamicCategories = Array.from(new Set(lines.map(l => l.categoryName).filter(Boolean)));
   for (const catName of dynamicCategories) {
-    const matching = lines.filter(l => (l as any).categoryName === catName);
+    const matching = lines.filter(l => l.categoryName === catName);
     matching.forEach(l => assigned.add(l.index));
     if (matching.length > 0) {
       groups.push({
@@ -115,6 +115,8 @@ function InlineCell({ value, onCommit, format, className = '', isRate }: InlineC
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const isEditingRef = useRef(false);
+  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -123,23 +125,44 @@ function InlineCell({ value, onCommit, format, className = '', isRate }: InlineC
     }
   }, [editing]);
 
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    };
+  }, []);
+
   const startEdit = () => {
     setDraft(String(value));
     setEditing(true);
+    isEditingRef.current = true;
   };
 
   const commit = () => {
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    if (!isEditingRef.current) return;
+    
     const parsed = parseFloat(draft);
     if (!isNaN(parsed) && parsed >= 0) {
       onCommit(parsed);
     } else {
-      setDraft(String(value)); // Revert if invalid
+      setDraft(String(value));
     }
     setEditing(false);
+    isEditingRef.current = false;
   };
 
   const cancel = () => {
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    isEditingRef.current = false;
     setEditing(false);
+  };
+
+  const handleBlur = () => {
+    blurTimeoutRef.current = setTimeout(() => {
+      if (isEditingRef.current) {
+        commit();
+      }
+    }, 150);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -156,7 +179,7 @@ function InlineCell({ value, onCommit, format, className = '', isRate }: InlineC
         min="0"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
+        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         className={`w-full px-1.5 py-0.5 rounded bg-background border border-accent/40
           text-xs font-mono text-text-primary text-right

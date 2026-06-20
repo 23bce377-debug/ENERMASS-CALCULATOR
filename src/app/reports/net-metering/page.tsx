@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Activity, Search, Filter, AlertTriangle, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { Select } from '@/components/ui/Select';
 
 const STAGE_LABELS = {
   'feasibility': 'Feasibility',
@@ -82,16 +83,15 @@ export default function NetMeteringReport() {
       <div className="flex flex-col sm:flex-row gap-4 bg-surface p-4 rounded-xl border border-border items-center">
         <div className="flex-1 flex gap-4 w-full">
           <div className="relative flex-1">
-            <select 
+            <Select 
               value={stageFilter}
-              onChange={(e) => setStageFilter(e.target.value)}
-              className="w-full pl-3 pr-10 py-2 bg-transparent border border-border rounded-lg text-sm appearance-none outline-none focus:border-accent"
-            >
-              <option value="all">All Stages</option>
-              {Object.entries(STAGE_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
-            </select>
+              onChange={(val) => setStageFilter(val)}
+              options={[
+                { value: 'all', label: 'All Stages' },
+                ...Object.entries(STAGE_LABELS).map(([k, v]) => ({ value: k, label: v }))
+              ]}
+              className="w-full"
+            />
           </div>
           
           <label className="flex items-center gap-2 text-sm text-text-primary cursor-pointer whitespace-nowrap px-4 py-2 border border-border rounded-lg hover:border-accent transition-colors">

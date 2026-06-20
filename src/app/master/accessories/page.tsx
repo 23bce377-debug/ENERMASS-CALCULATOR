@@ -28,6 +28,7 @@ import { HistoryDrawer } from '@/components/master/HistoryDrawer';
 import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditModal';
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
+import { Select } from '@/components/ui/Select';
 
 interface BomItem {
   id: string;
@@ -287,16 +288,15 @@ export default function AccessoriesMasterPage() {
             />
           </div>
 
-          <select
-            value={sectionFilter}
-            onChange={(e) => setSectionFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary outline-none cursor-pointer hover:bg-surface-hover capitalize"
-          >
-            <option value="">All BOM Sections</option>
-            {SECTION_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+          <Select
+            value={sectionFilter || 'all'}
+            onChange={(val) => setSectionFilter(val === 'all' ? '' : val)}
+            options={[
+              { value: 'all', label: 'All BOM Sections' },
+              ...SECTION_OPTIONS
+            ]}
+            className="w-48 text-xs text-text-secondary"
+          />
         </div>
 
         {/* Actions */}
@@ -438,15 +438,12 @@ export default function AccessoriesMasterPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">BOM Section *</label>
-                  <select
+                  <Select
                     value={draft.section}
-                    onChange={(e) => setDraft({ ...draft, section: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                  >
-                    {SECTION_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setDraft({ ...draft, section: val as any })}
+                    options={SECTION_OPTIONS}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Sub Type Identifier *</label>
@@ -480,17 +477,18 @@ export default function AccessoriesMasterPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Standard billing Unit *</label>
-                  <select
+                  <Select
                     value={draft.unit}
-                    onChange={(e) => setDraft({ ...draft, unit: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                  >
-                    <option value="Nos">Nos</option>
-                    <option value="Mtr">Mtr (Meters)</option>
-                    <option value="kg">kg (Kilograms)</option>
-                    <option value="Set">Set</option>
-                    <option value="Lump">Lump Sum</option>
-                  </select>
+                    onChange={(val) => setDraft({ ...draft, unit: val })}
+                    options={[
+                      { value: 'Nos', label: 'Nos' },
+                      { value: 'Mtr', label: 'Mtr (Meters)' },
+                      { value: 'kg', label: 'kg (Kilograms)' },
+                      { value: 'Set', label: 'Set' },
+                      { value: 'Lump', label: 'Lump Sum' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Base Cost Rate (INR) *</label>
@@ -503,15 +501,16 @@ export default function AccessoriesMasterPage() {
                 </div>
                 <div className="space-y-1 col-span-2">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Standard GST Slabs *</label>
-                  <select
-                    value={draft.gst_pct}
-                    onChange={(e) => setDraft({ ...draft, gst_pct: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                  >
-                    <option value={0.18}>18% GST (Cables, Protection, Earthing)</option>
-                    <option value={0.12}>12% GST (Alternative slabs)</option>
-                    <option value={0.05}>5% GST (Solar panels standard)</option>
-                  </select>
+                  <Select
+                    value={String(draft.gst_pct)}
+                    onChange={(val) => setDraft({ ...draft, gst_pct: parseFloat(val) })}
+                    options={[
+                      { value: '0.18', label: '18% GST (Cables, Protection, Earthing)' },
+                      { value: '0.12', label: '12% GST (Alternative slabs)' },
+                      { value: '0.05', label: '5% GST (Solar panels standard)' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
               </div>
 

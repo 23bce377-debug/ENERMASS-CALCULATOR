@@ -8,11 +8,22 @@ export interface ElectricalInputs {
   phase: 1 | 3; // 1-phase or 3-phase
   mpptCount?: number;
   distanceToMccbMeters?: number;
+  dcCableLengthM?: number;
+  acCableLengthM?: number;
 }
 
 export function generateElectricalBOM(inputs: ElectricalInputs): BomItem[] {
   const items: BomItem[] = [];
-  const { systemKw, panelCount, phase, inverterCount, mpptCount = 2, distanceToMccbMeters = 20 } = inputs;
+  const { 
+    systemKw, 
+    panelCount, 
+    phase, 
+    inverterCount, 
+    mpptCount = 2, 
+    distanceToMccbMeters = 20,
+    dcCableLengthM,
+    acCableLengthM
+  } = inputs;
 
   const currentAmps = (systemKw * 1000) / (phase === 1 ? 230 : Math.sqrt(3) * 400);
 
@@ -113,7 +124,7 @@ export function generateElectricalBOM(inputs: ElectricalInputs): BomItem[] {
   // --- CABLING & TERMINATIONS ---
 
   // 1. DC Cable
-  const dcCableMeters = stringCount * 40; // Approx 20m out + 20m back per string
+  const dcCableMeters = dcCableLengthM && dcCableLengthM > 0 ? dcCableLengthM : stringCount * 40; // Approx 20m out + 20m back per string
   items.push({
     description: `DC Solar Cable (4mm², Cu, XLPO)`,
     qty: dcCableMeters,
@@ -133,9 +144,11 @@ export function generateElectricalBOM(inputs: ElectricalInputs): BomItem[] {
     if (systemKw > 6) { acCableSpec = '10mm², 3-Core Cu Armoured'; acCableRate = 180; }
   }
 
+  const acCableMeters = acCableLengthM && acCableLengthM > 0 ? acCableLengthM : distanceToMccbMeters * 1.1; // 10% routing wastage
+
   items.push({
     description: `AC Cable (${acCableSpec})`,
-    qty: distanceToMccbMeters * 1.1, // 10% routing wastage
+    qty: acCableMeters,
     unit: 'Meters',
     ratePerUnit: acCableRate,
     gstPct: TAX_CONSTANTS.BOS_GST_RATE as any

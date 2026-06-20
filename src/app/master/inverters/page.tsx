@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { Select } from '@/components/ui/Select';
 import {
   useMasterQuery,
   useMasterCreateMutation,
@@ -294,27 +295,27 @@ export default function InvertersMasterPage() {
             />
           </div>
 
-          <select
+          <Select
             value={brandFilter}
-            onChange={(e) => setBrandFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary outline-none cursor-pointer hover:bg-surface-hover"
-          >
-            <option value="">All Brands</option>
-            {uniqueBrands.map((b) => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
+            onChange={(val) => setBrandFilter(val)}
+            options={[
+              { value: '', label: 'All Brands' },
+              ...uniqueBrands.map((b) => ({ value: b, label: b }))
+            ]}
+            size="sm"
+            className="min-w-[130px]"
+          />
 
-          <select
+          <Select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary outline-none cursor-pointer hover:bg-surface-hover capitalize"
-          >
-            <option value="">All Inverter Types</option>
-            {uniqueTypes.map((t) => (
-              <option key={t} value={t}>{t.replace('_', ' ')}</option>
-            ))}
-          </select>
+            onChange={(val) => setTypeFilter(val)}
+            options={[
+              { value: '', label: 'All Inverter Types' },
+              ...uniqueTypes.map((t) => ({ value: t, label: t.replace('_', ' ') }))
+            ]}
+            size="sm"
+            className="min-w-[170px]"
+          />
         </div>
 
         {/* Action Buttons */}
@@ -490,27 +491,29 @@ export default function InvertersMasterPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Inverter Type *</label>
-                  <select
+                  <Select
                     value={draft.inverter_type}
-                    onChange={(e) => setDraft({ ...draft, inverter_type: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                  >
-                    <option value="on_grid">On-Grid</option>
-                    <option value="hybrid">Hybrid</option>
-                    <option value="micro">Micro Inverter</option>
-                    <option value="3_phase">3-Phase</option>
-                  </select>
+                    onChange={(val) => setDraft({ ...draft, inverter_type: val as any })}
+                    options={[
+                      { value: 'on_grid', label: 'On-Grid' },
+                      { value: 'hybrid', label: 'Hybrid' },
+                      { value: 'micro', label: 'Micro Inverter' },
+                      { value: '3_phase', label: '3-Phase' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">System Phases *</label>
-                  <select
-                    value={draft.phases}
-                    onChange={(e) => setDraft({ ...draft, phases: parseInt(e.target.value, 10) })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                  >
-                    <option value={1}>1 Phase</option>
-                    <option value={3}>3 Phase</option>
-                  </select>
+                  <Select
+                    value={String(draft.phases)}
+                    onChange={(val) => setDraft({ ...draft, phases: parseInt(val, 10) })}
+                    options={[
+                      { value: '1', label: '1 Phase' },
+                      { value: '3', label: '3 Phase' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Base Selling Rate (INR) *</label>
@@ -523,14 +526,15 @@ export default function InvertersMasterPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Standard GST Slabs *</label>
-                  <select
-                    value={draft.gst_pct}
-                    onChange={(e) => setDraft({ ...draft, gst_pct: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                  >
-                    <option value={0.12}>12% GST (Default Inverters)</option>
-                    <option value={0.18}>18% GST (Alternative / Accessories)</option>
-                  </select>
+                  <Select
+                    value={String(draft.gst_pct)}
+                    onChange={(val) => setDraft({ ...draft, gst_pct: parseFloat(val) })}
+                    options={[
+                      { value: '0.12', label: '12% GST (Default Inverters)' },
+                      { value: '0.18', label: '18% GST (Alternative / Accessories)' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
               </div>
               

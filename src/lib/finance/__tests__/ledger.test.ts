@@ -1,5 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(),
+}));
+
 import { journalEntrySchema } from '../ledger';
+
+const VALID_UUID_1 = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+const VALID_UUID_2 = 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22';
 
 describe('Ledger Double-Entry Validation', () => {
   it('should accept a balanced journal entry', () => {
@@ -8,8 +16,8 @@ describe('Ledger Double-Entry Validation', () => {
       reference_no: 'TEST-001',
       description: 'Test entry',
       lines: [
-        { account_id: '11111111-1111-1111-1111-111111111111', debit: 1000, credit: 0 },
-        { account_id: '22222222-2222-2222-2222-222222222222', debit: 0, credit: 1000 }
+        { account_id: VALID_UUID_1, debit: 1000, credit: 0 },
+        { account_id: VALID_UUID_2, debit: 0, credit: 1000 }
       ]
     };
 
@@ -23,8 +31,8 @@ describe('Ledger Double-Entry Validation', () => {
       reference_no: 'TEST-002',
       description: 'Unbalanced entry',
       lines: [
-        { account_id: '11111111-1111-1111-1111-111111111111', debit: 1000, credit: 0 },
-        { account_id: '22222222-2222-2222-2222-222222222222', debit: 0, credit: 900 }
+        { account_id: VALID_UUID_1, debit: 1000, credit: 0 },
+        { account_id: VALID_UUID_2, debit: 0, credit: 900 }
       ]
     };
 
@@ -38,7 +46,7 @@ describe('Ledger Double-Entry Validation', () => {
       reference_no: 'TEST-003',
       description: 'Invalid line entry',
       lines: [
-        { account_id: '11111111-1111-1111-1111-111111111111', debit: 1000, credit: 1000 }
+        { account_id: VALID_UUID_1, debit: 1000, credit: 1000 }
       ]
     };
 

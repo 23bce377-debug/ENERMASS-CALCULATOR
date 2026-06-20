@@ -12,6 +12,7 @@ import {
   BarChart3, Building, Wrench, Eye
 } from 'lucide-react';
 import { useOnceClick } from '@/lib/hooks/useOnceClick';
+import { Select } from '@/components/ui/Select';
 
 const PR_STATUS_LABELS: Record<string, string> = {
   draft: 'Draft',
@@ -490,16 +491,16 @@ export default function ProcurementPage() {
             {activeTab === 'shortfall' && (
               <div className="p-4 space-y-4">
                 <div className="flex items-center gap-3">
-                  <select
+                  <Select
                     value={shortfallProject}
-                    onChange={e => setShortfallProject(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-xs text-text-primary focus:outline-none focus:border-accent"
-                  >
-                    <option value="">-- Select Project to Analyse --</option>
-                    {projects.map(p => (
-                      <option key={p.id} value={p.id}>{p.project_number} ({p.status})</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setShortfallProject(val)}
+                    placeholder="-- Select Project to Analyse --"
+                    options={[
+                      { value: '', label: '-- Select Project to Analyse --' },
+                      ...projects.map(p => ({ value: p.id, label: `${p.project_number} (${p.status})` }))
+                    ]}
+                    className="flex-1"
+                  />
                   <button
                     onClick={handleLoadShortfall}
                     disabled={!shortfallProject || shortfallLoading}
@@ -650,19 +651,29 @@ export default function ProcurementPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="font-bold text-text-secondary">Vendor (Optional)</label>
-                    <select value={prVendorId} onChange={e => setPrVendorId(e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent">
-                      <option value="">-- Select Vendor --</option>
-                      {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                    </select>
+                    <Select
+                      value={prVendorId}
+                      onChange={(val) => setPrVendorId(val)}
+                      placeholder="-- Select Vendor --"
+                      options={[
+                        { value: '', label: '-- Select Vendor --' },
+                        ...vendors.map(v => ({ value: v.id, label: v.name }))
+                      ]}
+                      className="w-full"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <label className="font-bold text-text-secondary">Linked Project</label>
-                    <select value={prProjectId} onChange={e => setPrProjectId(e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent">
-                      <option value="">-- Select Project --</option>
-                      {projects.map(p => <option key={p.id} value={p.id}>{p.project_number}</option>)}
-                    </select>
+                    <Select
+                      value={prProjectId}
+                      onChange={(val) => setPrProjectId(val)}
+                      placeholder="-- Select Project --"
+                      options={[
+                        { value: '', label: '-- Select Project --' },
+                        ...projects.map(p => ({ value: p.id, label: p.project_number }))
+                      ]}
+                      className="w-full"
+                    />
                   </div>
                   <div className="space-y-1.5 col-span-2">
                     <label className="font-bold text-text-secondary">Notes</label>
@@ -729,11 +740,16 @@ export default function ProcurementPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5 col-span-2">
                     <label className="font-bold text-text-secondary">Assign Vendor *</label>
-                    <select required value={convertVendorId} onChange={e => setConvertVendorId(e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent">
-                      <option value="">-- Select Vendor --</option>
-                      {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                    </select>
+                    <Select
+                      value={convertVendorId}
+                      onChange={(val) => setConvertVendorId(val)}
+                      placeholder="-- Select Vendor --"
+                      options={[
+                        { value: '', label: '-- Select Vendor --' },
+                        ...vendors.map(v => ({ value: v.id, label: v.name }))
+                      ]}
+                      className="w-full"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <label className="font-bold text-text-secondary">Expected Delivery Date</label>

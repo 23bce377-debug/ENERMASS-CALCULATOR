@@ -172,7 +172,17 @@ export function Select({
   const isPlaceholder = !value || value === '';
 
   return (
-    <div ref={containerRef} className={`relative ${className}`} onKeyDown={handleKeyDown}>
+    <div
+      ref={containerRef}
+      className={`relative ${className}`}
+      onKeyDown={handleKeyDown}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+          setOpen(false);
+          setFocusedIndex(-1);
+        }
+      }}
+    >
       {/* ── Trigger ── */}
       <button
         ref={triggerRef}
@@ -229,7 +239,7 @@ export function Select({
           role="listbox"
           aria-label="Options"
           className={[
-            'absolute z-[200] mt-1 w-full min-w-max',
+            'absolute z-dropdown mt-1 w-full min-w-max',
             'bg-surface-2 border border-border rounded-xl',
             'overflow-auto max-h-56',
             'animate-scale-in',

@@ -5,6 +5,7 @@ import { Download, Printer, Calendar, FileText, FileBarChart, RefreshCw } from '
 import { supabase } from '@/lib/supabase/client';
 import { generateGSTR1CSV } from '@/lib/reports/gstr1';
 import { generateGSTR3BSummary, GSTR3BSummary } from '@/lib/reports/gstr3b';
+import { Select } from '@/components/ui/Select';
 
 const MONTHS = [
   'April', 'May', 'June', 'July', 'August', 'September', 
@@ -101,25 +102,25 @@ export default function GSTReportPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-surface border border-border rounded-lg p-1">
-            <Calendar size={18} className="text-text-muted ml-2 mr-1" />
-            <select 
-              value={selectedMonth} 
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer"
-            >
-              {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-            <span className="text-border mx-2">|</span>
-            <select 
-              value={selectedFY} 
-              onChange={(e) => setSelectedFY(parseInt(e.target.value))}
-              className="bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer pr-4"
-            >
-              {[currentFY - 2, currentFY - 1, currentFY, currentFY + 1].map(y => (
-                <option key={y} value={y}>FY {y.toString().slice(2)}-{(y+1).toString().slice(2)}</option>
-              ))}
-            </select>
+          <div className="flex items-center gap-2 bg-surface border border-border rounded-lg p-1">
+            <Calendar size={18} className="text-text-muted ml-2" />
+            <Select
+              value={selectedMonth}
+              onChange={(val) => setSelectedMonth(val)}
+              options={MONTHS.map(m => ({ value: m, label: m }))}
+              size="sm"
+              className="min-w-[110px]"
+            />
+            <Select
+              value={String(selectedFY)}
+              onChange={(val) => setSelectedFY(parseInt(val))}
+              options={[currentFY - 2, currentFY - 1, currentFY, currentFY + 1].map(y => ({
+                value: String(y),
+                label: `FY ${y.toString().slice(2)}-${(y+1).toString().slice(2)}`
+              }))}
+              size="sm"
+              className="min-w-[130px]"
+            />
           </div>
           
           <button 

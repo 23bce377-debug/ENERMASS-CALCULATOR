@@ -2,6 +2,7 @@
 
 import { useState, useMemo, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Select } from '@/components/ui/Select';
 import { supabase } from '@/lib/supabase/client';
 import {
   useMasterQuery,
@@ -821,15 +822,17 @@ export default function StructuresMasterPage() {
                                                   </td>
                                                   <td className="p-2 text-center text-text-muted text-[10px]">
                                                     {isEditing ? (
-                                                      <select
-                                                        value={compGstDraft}
-                                                        onChange={(e) => setCompGstDraft(parseFloat(e.target.value))}
-                                                        className="w-16 px-1 py-0.5 border border-border bg-background text-[10px] rounded outline-none focus:border-accent/40"
-                                                      >
-                                                        <option value={0.05}>5%</option>
-                                                        <option value={0.12}>12%</option>
-                                                        <option value={0.18}>18%</option>
-                                                      </select>
+                                                      <Select
+                                                        value={String(compGstDraft)}
+                                                        onChange={(val) => setCompGstDraft(parseFloat(val))}
+                                                        options={[
+                                                          { value: '0.05', label: '5%' },
+                                                          { value: '0.12', label: '12%' },
+                                                          { value: '0.18', label: '18%' }
+                                                        ]}
+                                                        size="sm"
+                                                        className="w-20 text-left bg-background rounded"
+                                                      />
                                                     ) : (
                                                       <span>{(comp.gst_pct * 100).toFixed(0)}%</span>
                                                     )}
@@ -955,33 +958,35 @@ export default function StructuresMasterPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Metal Material *</label>
-                  <select
+                  <Select
                     value={draft.material}
-                    onChange={(e) => setDraft({ ...draft, material: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                  >
-                    <option value="gi_galvanized">GI Galvanized</option>
-                    <option value="hot_dip_galvanized">Hot Dip Galvanized</option>
-                    <option value="aluminum">Aluminum</option>
-                    <option value="stainless_steel">Stainless Steel</option>
-                    <option value="custom">Custom</option>
-                  </select>
+                    onChange={(val) => setDraft({ ...draft, material: val })}
+                    options={[
+                      { value: 'gi_galvanized', label: 'GI Galvanized' },
+                      { value: 'hot_dip_galvanized', label: 'Hot Dip Galvanized' },
+                      { value: 'aluminum', label: 'Aluminum' },
+                      { value: 'stainless_steel', label: 'Stainless Steel' },
+                      { value: 'custom', label: 'Custom' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Roof Mount Type *</label>
-                  <select
+                  <Select
                     value={draft.roof_mount_type}
-                    onChange={(e) => setDraft({ ...draft, roof_mount_type: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none animate-fade-in"
-                  >
-                    <option value="rcc_flat">RCC Flat Roof</option>
-                    <option value="rcc_sloped">RCC Sloped Roof</option>
-                    <option value="tin_shed">Tin Shed Mounting</option>
-                    <option value="metal_sheet">Metal Sheet Profile</option>
-                    <option value="ground_mount">Ground Mount Rack</option>
-                    <option value="elevated">Elevated Structure</option>
-                    <option value="custom">Custom</option>
-                  </select>
+                    onChange={(val) => setDraft({ ...draft, roof_mount_type: val })}
+                    options={[
+                      { value: 'rcc_flat', label: 'RCC Flat Roof' },
+                      { value: 'rcc_sloped', label: 'RCC Sloped Roof' },
+                      { value: 'tin_shed', label: 'Tin Shed Mounting' },
+                      { value: 'metal_sheet', label: 'Metal Sheet Profile' },
+                      { value: 'ground_mount', label: 'Ground Mount Rack' },
+                      { value: 'elevated', label: 'Elevated Structure' },
+                      { value: 'custom', label: 'Custom' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Elevation Height (mm) *</label>

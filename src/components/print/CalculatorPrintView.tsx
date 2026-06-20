@@ -15,6 +15,7 @@ export function CalculatorPrintView() {
   const calcResult = useCalculatorStore((s) => s.calcResult);
   const selectedState = useCalculatorStore((s) => s.selectedState);
   const projectType = useCalculatorStore((s) => s.projectType);
+  const itcEligible = useCalculatorStore((s) => s.itcEligible);
   const { settings } = useSettings();
 
   if (!selectedSystemId || !calcResult) return null;
@@ -104,21 +105,98 @@ export function CalculatorPrintView() {
       {/* ═══ PAGE 2 ═══ */}
       <div className="pdf-page pdf-page-break">
         {/* Pricing Summary */}
-        <div className="pdf-section-label">Pricing Summary</div>
-        <table className="pdf-table">
+        <div className="pdf-section-label">Investment Summary</div>
+        <table className="pdf-table pdf-pricing">
           <tbody>
-            <tr><td>Cost Before GST</td><td style={{ textAlign: 'right' }}>{formatINR(calc.costBeforeGST)}</td></tr>
-            <tr><td>Margin ({(calc.effectiveMarginPct * 100).toFixed(1)}%)</td><td style={{ textAlign: 'right' }}>{formatINR(calc.marginAmount)}</td></tr>
-            <tr><td>MRP (excl GST)</td><td style={{ textAlign: 'right' }}>{formatINR(calc.mrpExclGST)}</td></tr>
-            <tr><td>Output GST ({(calc.gstOutputRate * 100).toFixed(1)}%)</td><td style={{ textAlign: 'right' }}>{formatINR(calc.mrpInclGST - calc.mrpExclGST)}</td></tr>
-            <tr><td><strong>MRP (incl GST)</strong></td><td style={{ textAlign: 'right' }}><strong>{formatINR(calc.mrpInclGST)}</strong></td></tr>
-            {calc.discountAmount > 0 && <tr><td>Discount</td><td style={{ textAlign: 'right', color: '#22c55e' }}>−{formatINR(calc.discountAmount)}</td></tr>}
-            {calc.additionalCostTotal > 0 && <tr><td>Additional Costs</td><td style={{ textAlign: 'right' }}>+{formatINR(calc.additionalCostTotal)}</td></tr>}
-            <tr className="pdf-highlight-row"><td><strong>Final Customer Price</strong></td><td style={{ textAlign: 'right' }}><strong>{formatINR(calc.finalCustomerPrice)}</strong></td></tr>
-            {calc.subsidyAmount > 0 && <tr><td>Govt. Subsidy</td><td style={{ textAlign: 'right', color: '#22c55e' }}>−{formatINR(calc.subsidyAmount)}</td></tr>}
-            <tr className="pdf-highlight-row"><td><strong>YOU PAY (after subsidy)</strong></td><td style={{ textAlign: 'right' }}><strong>{formatINR(calc.beneficiaryContribution)}</strong></td></tr>
+            <tr>
+              <td>System Price (incl. all taxes)</td>
+              <td style={{ textAlign: 'right' }}>
+                <strong>{formatINR(calc.finalCustomerPrice)}</strong>
+              </td>
+            </tr>
+            {calc.discountAmount > 0 && (
+              <tr>
+                <td>Discount Applied</td>
+                <td style={{ textAlign: 'right', color: '#16a34a' }}>
+                  −{formatINR(calc.discountAmount)}
+                </td>
+              </tr>
+            )}
+            {calc.additionalCostTotal > 0 && (
+              <tr>
+                <td>Additional Site Charges</td>
+                <td style={{ textAlign: 'right' }}>
+                  +{formatINR(calc.additionalCostTotal)}
+                </td>
+              </tr>
+            )}
+            {calc.subsidyAmount > 0 && (
+              <tr>
+                <td>
+                  <strong>Government Subsidy (PM Surya Ghar)</strong>
+                </td>
+                <td style={{ textAlign: 'right', color: '#16a34a' }}>
+                  <strong>−{formatINR(calc.subsidyAmount)}</strong>
+                </td>
+              </tr>
+            )}
+            <tr className="pdf-highlight-row">
+              <td>
+                <strong>Your Net Investment</strong>
+              </td>
+              <td style={{ textAlign: 'right' }}>
+                <strong>{formatINR(calc.beneficiaryContribution)}</strong>
+              </td>
+            </tr>
           </tbody>
         </table>
+
+        {calc.subsidyAmount > 0 && (
+          <div className="pdf-subsidy-note" style={{ fontSize: '7pt', color: '#888', fontStyle: 'italic', marginTop: '4px', padding: '4px 8px', background: '#fafafa', borderRadius: '4px' }}>
+            * Subsidy disbursed directly by DISCOM post-commissioning and inspection. Not deducted at invoice stage. Customer must apply via National Portal.
+          </div>
+        )}
+
+        {projectType === 'commercial' && itcEligible && (() => {
+          const gstAmount = calc.finalCustomerPrice - (calc.finalCustomerPrice / (1 + calc.gstOutputRate));
+          const netCost = calc.finalCustomerPrice - gstAmount;
+          return (
+            <div style={{ marginTop: '16px', border: '1px solid #16a34a', borderRadius: '8px', padding: '10px', backgroundColor: '#f0fdf4' }}>
+              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#16a34a', textTransform: 'uppercase', marginBottom: '6px' }}>
+                Commercial ITC Benefit Analysis
+              </div>
+              <table style={{ width: '100%', fontSize: '11px' }}>
+                <tbody>
+                  <tr>
+                    <td>System Cost (excl. GST)</td>
+                    <td style={{ textAlign: 'right' }}>{formatINR(netCost)}</td>
+                  </tr>
+                  <tr>
+                    <td>GST @18% (Payable)</td>
+                    <td style={{ textAlign: 'right' }}>+{formatINR(gstAmount)}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Total Invoice</strong></td>
+                    <td style={{ textAlign: 'right' }}><strong>{formatINR(calc.finalCustomerPrice)}</strong></td>
+                  </tr>
+                  <tr><td colSpan={2}><hr style={{ borderTop: '1px solid #bbf7d0', margin: '4px 0' }} /></td></tr>
+                  <tr>
+                    <td>ITC Claimable (GSTR-2B)</td>
+                    <td style={{ textAlign: 'right', color: '#dc2626' }}>-{formatINR(gstAmount)}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ color: '#16a34a' }}><strong>Effective Net Cost</strong></td>
+                    <td style={{ textAlign: 'right', color: '#16a34a' }}><strong>{formatINR(netCost)}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style={{ fontSize: '9px', color: '#6b7280', marginTop: '6px', lineHeight: '1.2' }}>
+                ITC effectively reduces your cost by {Math.round((gstAmount / calc.finalCustomerPrice) * 100)}%.<br/>
+                ITC eligibility subject to vendor GST compliance (GSTR-1 filing). Consult your CA.
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Energy Generation */}
         <div className="pdf-section-label" style={{ marginTop: '20px' }}>Energy Generation & Savings</div>

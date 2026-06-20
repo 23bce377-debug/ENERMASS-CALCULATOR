@@ -6,6 +6,7 @@ import { X, Save, Trash2, Check, AlertCircle, Plus, ChevronRight } from 'lucide-
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { useToast } from '@/components/ui/Toast';
 import { BomItem } from '@/lib/data/bom';
+import { Select } from '@/components/ui/Select';
 
 interface PresetComposerDrawerProps {
   isOpen: boolean;
@@ -225,13 +226,13 @@ export function PresetComposerDrawer({ isOpen, onClose, presetId }: PresetCompos
                   </div>
                 </div>
               ))}
-              <div className="p-4 rounded-xl border border-dashed border-border bg-surface/50 flex flex-col items-center justify-center min-h-[100px] text-text-muted transition-colors">
+              <div className="p-4 rounded-xl border border-dashed border-border bg-surface/50 flex flex-col items-center justify-center min-h-[100px] text-text-muted transition-colors w-full">
                 <span className="text-xs font-semibold mb-2">Select Panel from Catalog</span>
-                <select 
-                  className="w-full px-3 py-2 rounded bg-background border border-border text-sm outline-none focus:border-accent/50 text-text-primary"
+                <Select 
                   value=""
-                  onChange={(e) => {
-                    const panel = dbPanels.find((p: any) => p.id === e.target.value);
+                  placeholder="-- Select Panel --"
+                  onChange={(val) => {
+                    const panel = dbPanels.find((p: any) => p.id === val);
                     if (panel) {
                       setItems([...items, {
                         description: 'PANEL',
@@ -243,12 +244,15 @@ export function PresetComposerDrawer({ isOpen, onClose, presetId }: PresetCompos
                       }]);
                     }
                   }}
-                >
-                  <option value="" disabled>-- Select Panel --</option>
-                  {dbPanels.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.brand} - {p.model} ({p.wattage}Wp)</option>
-                  ))}
-                </select>
+                  options={[
+                    { value: '', label: '-- Select Panel --', disabled: true },
+                    ...dbPanels.map((p: any) => ({
+                      value: p.id,
+                      label: `${p.brand} - ${p.model} (${p.wattage}Wp)`
+                    }))
+                  ]}
+                  className="w-full"
+                />
               </div>
             </div>
           )}
@@ -277,13 +281,13 @@ export function PresetComposerDrawer({ isOpen, onClose, presetId }: PresetCompos
                   </div>
                 </div>
               ))}
-              <div className="p-4 rounded-xl border border-dashed border-border bg-surface/50 flex flex-col items-center justify-center min-h-[100px] text-text-muted transition-colors">
+              <div className="p-4 rounded-xl border border-dashed border-border bg-surface/50 flex flex-col items-center justify-center min-h-[100px] text-text-muted transition-colors w-full">
                 <span className="text-xs font-semibold mb-2">Select Inverter from Catalog</span>
-                <select 
-                  className="w-full px-3 py-2 rounded bg-background border border-border text-sm outline-none focus:border-accent/50 text-text-primary"
+                <Select 
                   value=""
-                  onChange={(e) => {
-                    const inv = dbInverters.find((i: any) => i.id === e.target.value);
+                  placeholder="-- Select Inverter --"
+                  onChange={(val) => {
+                    const inv = dbInverters.find((i: any) => i.id === val);
                     if (inv) {
                       setItems([...items, {
                         description: 'INVERTER',
@@ -295,12 +299,15 @@ export function PresetComposerDrawer({ isOpen, onClose, presetId }: PresetCompos
                       }]);
                     }
                   }}
-                >
-                  <option value="" disabled>-- Select Inverter --</option>
-                  {dbInverters.map((i: any) => (
-                    <option key={i.id} value={i.id}>{i.brand} - {i.model} ({i.capacityKW}kW)</option>
-                  ))}
-                </select>
+                  options={[
+                    { value: '', label: '-- Select Inverter --', disabled: true },
+                    ...dbInverters.map((i: any) => ({
+                      value: i.id,
+                      label: `${i.brand} - ${i.model} (${i.capacityKW}kW)`
+                    }))
+                  ]}
+                  className="w-full"
+                />
               </div>
             </div>
           )}

@@ -380,10 +380,9 @@ export default function AmcPage() {
                                     </button>
                                   </>
                                 )}
-                                <select value={c.status} onChange={e => handleUpdateStatus(c.id, e.target.value)}
-                                  className="bg-background border border-border text-[10px] rounded px-1.5 py-1 text-text-secondary outline-none focus:border-accent">
-                                  {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                                </select>
+                                <Select value={c.status} onChange={(val) => handleUpdateStatus(c.id, val)}
+                                  options={Object.entries(STATUS_LABELS).map(([v, l]) => ({ value: v, label: l }))}
+                                  className="w-28 text-[10px]" />
                               </div>
                             </td>
                           </tr>
@@ -477,14 +476,15 @@ export default function AmcPage() {
                         <td className="px-4 py-3 text-text-secondary">{v.visit_date}</td>
                         <td className="px-4 py-3 capitalize text-text-secondary">{v.visit_type}</td>
                         <td className="px-4 py-3">
-                          <select 
-                            value={v.conducted_by || ''} 
-                            onChange={(e) => handleAssignTechnician(v.id, e.target.value)}
-                            className="bg-background border border-border text-[10px] rounded px-1.5 py-1 outline-none text-text-secondary max-w-[120px]"
-                          >
-                            <option value="">Unassigned</option>
-                            {technicians.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
-                          </select>
+                          <Select 
+                            value={v.conducted_by || 'unassigned'} 
+                            onChange={(val) => handleAssignTechnician(v.id, val === 'unassigned' ? '' : val)}
+                            options={[
+                              { value: 'unassigned', label: 'Unassigned' },
+                              ...technicians.map(t => ({ value: t.id, label: t.full_name }))
+                            ]}
+                            className="w-32 text-[10px]"
+                          />
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-semibold border ${v.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : isOverdue ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
@@ -569,11 +569,13 @@ export default function AmcPage() {
                 </div>
                 <div className="space-y-1.5 col-span-2">
                   <label className="text-text-secondary font-bold">Plant Asset (Optional)</label>
-                  <select value={assetId} onChange={e => setAssetId(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent">
-                    <option value="">-- Select Asset --</option>
-                    {assets.map(a => <option key={a.id} value={a.id}>[{a.item_type?.toUpperCase()}] {a.brand} {a.model}</option>)}
-                  </select>
+                  <Select value={assetId || 'none'} onChange={(val) => setAssetId(val === 'none' ? '' : val)}
+                    options={[
+                      { value: 'none', label: '-- Select Asset --' },
+                      ...assets.map(a => ({ value: a.id, label: `[${a.item_type?.toUpperCase()}] ${a.brand} ${a.model}` }))
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-text-secondary font-bold">Annual Price (excl. GST) *</label>
@@ -582,13 +584,15 @@ export default function AmcPage() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-text-secondary font-bold">Visits Per Year</label>
-                  <select value={visitsPerYear} onChange={e => setVisitsPerYear(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent">
-                    <option value="1">1 (Annual)</option>
-                    <option value="2">2 (Semi-Annual)</option>
-                    <option value="4">4 (Quarterly)</option>
-                    <option value="12">12 (Monthly)</option>
-                  </select>
+                  <Select value={visitsPerYear} onChange={(val) => setVisitsPerYear(val)}
+                    options={[
+                      { value: '1', label: '1 (Annual)' },
+                      { value: '2', label: '2 (Semi-Annual)' },
+                      { value: '4', label: '4 (Quarterly)' },
+                      { value: '12', label: '12 (Monthly)' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-text-secondary font-bold">Start Date *</label>
@@ -633,11 +637,13 @@ export default function AmcPage() {
               </div>
               <div className="space-y-1.5">
                 <label className="font-bold text-text-secondary">Visit Type</label>
-                <select value={visitType} onChange={e => setVisitType(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent">
-                  <option value="scheduled">Scheduled Maintenance</option>
-                  <option value="emergency">Emergency Call-Out</option>
-                </select>
+                <Select value={visitType} onChange={(val) => setVisitType(val as any)}
+                  options={[
+                    { value: 'scheduled', label: 'Scheduled Maintenance' },
+                    { value: 'emergency', label: 'Emergency Call-Out' }
+                  ]}
+                  className="w-full"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="font-bold text-text-secondary">Notes</label>

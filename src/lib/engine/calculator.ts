@@ -24,7 +24,7 @@ import { generateCivilEarthingBOM } from './bomCivilEarthing';
 
 export function roundTo5(num: number | null | undefined): number {
   if (num === null || num === undefined || isNaN(num)) return 0;
-  return Number(Math.round(Number(num + 'e5')) + 'e-5');
+  return Math.round(num * 1e5) / 1e5;
 }
 
 /**
@@ -32,7 +32,7 @@ export function roundTo5(num: number | null | undefined): number {
  */
 export function roundToINR(num: number | null | undefined): number {
   if (num === null || num === undefined || isNaN(num)) return 0;
-  return Number(Math.round(Number(num + 'e2')) + 'e-2');
+  return Math.round(num * 1e2) / 1e2;
 }
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -363,7 +363,7 @@ export function getSubsidyAmount(
   let total = 0;
   for (const slab of slabs) {
     const start = Number(slab.start_kw);
-    if (eligibleCapacityKW < start) {
+    if (eligibleCapacityKW <= start) {
       break;
     }
     if (slab.is_fixed_amount) {
@@ -468,12 +468,14 @@ export function resolveStructureItems(
             return rName === itemLower || itemLower.includes(rName) || rName.includes(itemLower);
           });
           if (accessoryRow) {
-            ratePerUnit = Number(accessoryRow.rate ?? accessoryRow.override_rate ?? 0);
+            const resolvedRate = Number(accessoryRow.rate ?? accessoryRow.override_rate);
+            if (isNaN(resolvedRate) || resolvedRate <= 0) {
+              throw new Error(`Invalid or zero rate for structure accessory "${item.item}" in structure_accessory_rates.`);
+            }
+            ratePerUnit = resolvedRate;
             unit = accessoryRow.unit ?? 'Nos';
           } else {
-            console.error(`Missing accessory rate for "${item.item}" in structure_accessory_rates. Configure before quoting.`);
-            ratePerUnit = 0;
-            unit = 'Nos';
+            throw new Error(`Missing accessory rate for "${item.item}" in structure_accessory_rates. Configure before quoting.`);
           }
           remarks = `Accessory (DB rate)`;
         }
@@ -875,7 +877,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
               ratePerUnit: bat.rate,
               // FIX CALC-08: Battery GST is 12% by default (not 18%).
               // Use the value from DB. Default 0.12 if DB column is NULL/zero.
-              gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : TAX_CONSTANTS.INVERTER_GST_RATE) as any,
+              gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : TAX_CONSTANTS.BATTERY_GST_RATE) as any,
               unit: 'Nos',
               remarks: item.remarks ?? '',
             });
@@ -991,7 +993,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
             description: `BATTERY ${bat.brand} ${bat.model}`,
             qty: qty,
             ratePerUnit: bat.rate,
-            gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : TAX_CONSTANTS.INVERTER_GST_RATE) as any,
+            gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : TAX_CONSTANTS.BATTERY_GST_RATE) as any,
             unit: 'Nos',
             remarks: '',
           });
@@ -1002,7 +1004,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
         description: 'BATTERY',
         qty: input.batteryQtyOverride !== undefined ? input.batteryQtyOverride : 0,
         ratePerUnit: input.batteryRateOverride !== undefined ? input.batteryRateOverride : 0,
-        gstPct: TAX_CONSTANTS.INVERTER_GST_RATE,
+        gstPct: TAX_CONSTANTS.BATTERY_GST_RATE,
         unit: 'Nos',
         remarks: 'None (Unselected)',
       });
@@ -1051,7 +1053,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
         gstPct: (itemData.gstPct ?? (
           description.toUpperCase().startsWith('PANEL') ? TAX_CONSTANTS.RESIDENTIAL_GST_RATE :
           description.toUpperCase().startsWith('INVERTER') ? TAX_CONSTANTS.INVERTER_GST_RATE :
-          description.toUpperCase().startsWith('BATTERY') ? TAX_CONSTANTS.INVERTER_GST_RATE :
+          description.toUpperCase().startsWith('BATTERY') ? TAX_CONSTANTS.BATTERY_GST_RATE :
           TAX_CONSTANTS.BOS_GST_RATE
         )) as any,
         unit: itemData.unit ?? 'Nos',
@@ -1210,7 +1212,9 @@ export function calculateSystem(input: CalcInput): CalcResult {
     systemKw,
     panelCount,
     inverterCount,
-    phase
+    phase,
+    dcCableLengthM: input.dcCableLengthM,
+    acCableLengthM: input.acCableLengthM
   });
 
   const structureBOM = generateStructureBOM({
@@ -1220,7 +1224,8 @@ export function calculateSystem(input: CalcInput): CalcResult {
 
   const civilEarthingBOM = generateCivilEarthingBOM({
     systemKw,
-    structureType: input.structureType as any
+    structureType: input.structureType as any,
+    laCount: input.lightningArresterQty
   });
 
   // Additional base overheads that must exist
@@ -1228,7 +1233,13 @@ export function calculateSystem(input: CalcInput): CalcResult {
     { description: 'TRANSPORTATION', unit: 'Lot', qty: 1, ratePerUnit: 0, gstPct: TAX_CONSTANTS.BOS_GST_RATE as any },
     { description: 'COMMISSION', unit: 'Lot', qty: 1, ratePerUnit: 0, gstPct: TAX_CONSTANTS.BOS_GST_RATE as any },
     { description: 'SITE VISIT', unit: 'Lot', qty: 1, ratePerUnit: 0, gstPct: TAX_CONSTANTS.BOS_GST_RATE as any },
-    { description: 'INSTALLATION', unit: 'Lot', qty: systemKw, ratePerUnit: 3000, gstPct: TAX_CONSTANTS.INSTALLATION_SERVICE_GST as any }
+    { 
+      description: 'INSTALLATION', 
+      unit: 'Lot', 
+      qty: systemKw, 
+      ratePerUnit: 3000, 
+      gstPct: (input.projectType === 'residential' ? TAX_CONSTANTS.RESIDENTIAL_COMPOSITE_GST_RATE : TAX_CONSTANTS.INSTALLATION_SERVICE_GST) as any 
+    }
   ];
 
   const engineeredItems = [...electricalBOM, ...structureBOM, ...civilEarthingBOM, ...logisticsBOM];
@@ -1331,6 +1342,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
       isCustomItem,
       customItemIndex,
       isDisabled,
+      categoryName: resolveCategoryName(item.description, (item as any).section),
     };
   });
 
@@ -1343,7 +1355,15 @@ export function calculateSystem(input: CalcInput): CalcResult {
   // ── Step 7: Resolve output GST ──
   // FIX CALC-03: Validate GST override against legal Indian GST slabs.
   // Valid slabs: 0%, 5%, 12%, 18%, 28% (plus composite 13.8% for solar output)
-  const VALID_OUTPUT_GST_SLABS = new Set([0, TAX_CONSTANTS.RESIDENTIAL_GST_RATE, TAX_CONSTANTS.INVERTER_GST_RATE, TAX_CONSTANTS.COMPOSITE_GST_RATE, TAX_CONSTANTS.BOS_GST_RATE, 0.28]);
+  const VALID_OUTPUT_GST_SLABS = new Set([
+    0, 
+    TAX_CONSTANTS.RESIDENTIAL_GST_RATE, 
+    TAX_CONSTANTS.INVERTER_GST_RATE, 
+    TAX_CONSTANTS.COMPOSITE_GST_RATE, 
+    TAX_CONSTANTS.RESIDENTIAL_COMPOSITE_GST_RATE, 
+    TAX_CONSTANTS.BOS_GST_RATE, 
+    0.28
+  ]);
   const rawGstOverride = input.gstOnOutputOverride;
   const resolvedGstOverride = (() => {
     if (rawGstOverride === undefined || input.allowGstOverride !== true) return undefined;
@@ -1365,12 +1385,13 @@ export function calculateSystem(input: CalcInput): CalcResult {
       ? resolvedGstOverride
       : (input.gstOnOutput !== undefined 
           ? input.gstOnOutput 
-          : (input.projectType === 'commercial' ? TAX_CONSTANTS.COMMERCIAL_GST_RATE : stateData.gstOnOutput))
+          : (input.projectType === 'commercial' ? TAX_CONSTANTS.COMMERCIAL_GST_RATE : TAX_CONSTANTS.RESIDENTIAL_COMPOSITE_GST_RATE))
   );
 
   // ── Step 8 & 6: Resolve MRP & Margin ──
-  // ITC Handling: Commercial projects use costBeforeGST (can claim ITC), Residential use totalIncGST (absorb input GST as cost)
-  const baseCostForMargin = input.projectType === 'commercial' ? costBeforeGST : totalIncGST;
+  // ITC Handling: The EPC contractor can always claim ITC (if registered), so base cost is always costBeforeGST.
+  // Using totalIncGST would result in charging Output GST on top of Input GST (Tax-on-Tax).
+  const baseCostForMargin = costBeforeGST;
 
   const marginResults = calculatePricingAndMargins({
     baseCost: baseCostForMargin,
@@ -1423,6 +1444,8 @@ export function calculateSystem(input: CalcInput): CalcResult {
     const panelCapKW = capacityKW;
 
     if (input.selectedScheme === 'pm_suryaghar') {
+      const aggregateInverterKW = input.totalInverterCapacityKW ?? input.inverterCapacityKW ?? panelCapKW;
+      const eligibleKw = Math.min(panelCapKW, aggregateInverterKW);
       if (input.rpcSubsidyAmount !== undefined && input.rpcSubsidyAmount > 0) {
         subsidyResult = {
           amount: input.rpcSubsidyAmount,
@@ -1431,12 +1454,13 @@ export function calculateSystem(input: CalcInput): CalcResult {
           schemeNote: 'PM Surya Ghar Muft Bijli Yojana · MNRE 2024 · DISCOM approval required',
         };
       } else {
-        subsidyResult = calculatePMSuryaGharSubsidy(panelCapKW, input.projectType);
+        subsidyResult = calculatePMSuryaGharSubsidy(eligibleKw, input.projectType);
       }
     } else if (input.selectedScheme === 'state') {
+      const aggregateInverterKW = input.totalInverterCapacityKW ?? input.inverterCapacityKW;
       const computedSubsidy = getSubsidyAmount(
         panelCapKW,
-        input.inverterCapacityKW,
+        aggregateInverterKW,
         input.state,
         input.projectType,
         stateDataResolved,
@@ -1459,10 +1483,12 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const subsidyAmount = roundToINR(subsidyResult.amount);
 
   // ── Step 14: Beneficiary contribution ──
-  // Commercial customers can claim GST Input Tax Credit on the system price
+  // Commercial customers can claim GST Input Tax Credit on the system price.
+  // The ITC is exactly the output GST portion of the final invoice price.
   let itcAmount = 0;
   if (input.projectType === 'commercial') {
-    itcAmount = mrpInclGST - mrpExclGST;
+    const finalCustomerPriceExclGST = finalCustomerPrice / (1 + gstOutputRate);
+    itcAmount = finalCustomerPrice - finalCustomerPriceExclGST;
   }
   const beneficiaryContribution = roundToINR(Math.max(0, finalCustomerPrice - subsidyAmount - itcAmount));
 
@@ -1474,7 +1500,8 @@ export function calculateSystem(input: CalcInput): CalcResult {
     sunHoursPerDay: stateData.sunHoursPerDay,
     performanceRatio: stateData.performanceRatio,
     orientation: input.orientation,
-    orientationMultipliers: input.dbOrientationMultipliers
+    orientationMultipliers: input.dbOrientationMultipliers,
+    panelDegradationRate: input.panelDegradationRate
   });
   const dailyGenerationKWh = roundTo5(energyProjections.dailyGenerationKWh);
   const monthlyGenerationKWh = roundTo5(energyProjections.monthlyGenerationKWh);
@@ -1497,8 +1524,8 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const financialProjections = calculateFinancialProjections({
     beneficiaryContribution,
     totalSystemCost: finalCustomerPrice,
-    annualGenerationKWh,
-    annualSavingsINR,
+    annualGenerationKWh: energyProjections.undegradedAnnualGenerationKWh,
+    annualSavingsINR: energyProjections.undegradedAnnualGenerationKWh * effectiveGridTariffPerKWh,
     panelDegradationRate: input.panelDegradationRate,
     electricityInflationRate: input.electricityInflationRate,
     systemLifetimeYears: 25
@@ -1567,4 +1594,34 @@ export function formatINR(value: number, decimals?: number): string {
     minimumFractionDigits: decimals ?? 0,
     maximumFractionDigits: decimals ?? 0,
   }).format(value);
+}
+
+export function resolveCategoryName(description: string, section?: string): string {
+  if (section) {
+    const mapping: Record<string, string> = {
+      solar_panels: 'Solar Panels',
+      power_electronics: 'Power Electronics',
+      metering: 'Metering',
+      mounting_structure: 'Mounting & Structure',
+      electrical_protection: 'Electrical Protection',
+      earthing: 'Earthing',
+      cabling: 'Cabling',
+      wiring: 'Wiring',
+      services: 'Services',
+    };
+    if (mapping[section]) return mapping[section];
+  }
+
+  const desc = description.toUpperCase();
+  if (desc.includes('PANEL')) return 'Solar Panels';
+  if (desc.includes('INVERTER') || desc.includes('BATTERY') || desc.includes('COMMUNICATION')) return 'Power Electronics';
+  if (desc.includes('SOLAR METER') || desc.includes('NET METER')) return 'Metering';
+  if (desc.includes('STRUCTURE') || desc.includes('ACCESSORIES') || desc.includes('WALKWAY') || desc.includes('LADDER')) return 'Mounting & Structure';
+  if (desc.includes('ACDB') || desc.includes('DCDB') || desc.includes('ISOLATOR') || desc.includes('METER BOX')) return 'Electrical Protection';
+  if (desc.includes('EARTH') || desc.includes('GI STRIP') || desc.includes('CHAMBER')) return 'Earthing';
+  if (desc.includes('CABLE') || desc.includes('MC4') || desc.includes('COPPER')) return 'Cabling';
+  if (desc.includes('PIPE') || desc.includes('LIGHTNING') || desc.includes(' L/A')) return 'Wiring';
+  if (desc.includes('TRANSPORT') || desc.includes('COMMISSION') || desc.includes('VISIT') || desc.includes('INSTALLATION')) return 'Services';
+
+  return 'Other';
 }

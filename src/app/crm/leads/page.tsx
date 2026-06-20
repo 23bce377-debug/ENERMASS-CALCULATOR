@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Search, Plus, Filter, Users } from 'lucide-react';
+import { Select } from '@/components/ui/Select';
 
 const MOCK_LEADS = [
   { id: 'LD-001', name: 'John Doe', company: 'JD Enterprises', status: 'New', source: 'Website', value: '₹12L' },
@@ -12,6 +13,7 @@ const MOCK_LEADS = [
 export default function CRMLeadsPage() {
   const [search, setSearch] = useState('');
   const [showAddLead, setShowAddLead] = useState(false);
+  const [leadSource, setLeadSource] = useState('Organic');
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -84,13 +86,18 @@ export default function CRMLeadsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-text-secondary mb-1">Source</label>
-                    <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-text-primary focus:border-accent outline-none">
-                      <option>Organic</option>
-                      <option>Referral</option>
-                      <option>Facebook Ads</option>
-                      <option>Google Ads</option>
-                      <option>Exhibition</option>
-                    </select>
+                    <Select
+                      value={leadSource}
+                      onChange={(val) => setLeadSource(val)}
+                      options={[
+                        { value: 'Organic', label: 'Organic' },
+                        { value: 'Referral', label: 'Referral' },
+                        { value: 'Facebook Ads', label: 'Facebook Ads' },
+                        { value: 'Google Ads', label: 'Google Ads' },
+                        { value: 'Exhibition', label: 'Exhibition' }
+                      ]}
+                      className="w-full"
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-text-secondary mb-1">Campaign Tag</label>

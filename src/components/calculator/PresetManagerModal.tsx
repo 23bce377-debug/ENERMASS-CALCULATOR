@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, X, Star, Settings, LayoutGrid, List, Plus, Tag, Zap, Building2, User, ChevronRight } from 'lucide-react';
 import { PresetORM, PresetRow, PresetTagRow } from '@/backend/orm/presets';
@@ -99,22 +99,70 @@ export function PresetManagerModal({ isOpen, onClose, onSelectPreset }: { isOpen
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap and Escape key handler
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        if (!modalRef.current) return;
+        const focusableElements = modalRef.current.querySelectorAll(
+          'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex="0"], [contenteditable]'
+        );
+        
+        if (focusableElements.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
+      }
     };
-  }, [isOpen]);
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+      // Focus first input or wrapper
+      setTimeout(() => {
+        if (modalRef.current) {
+          const firstInput = modalRef.current.querySelector('input, select, textarea, button') as HTMLElement;
+          if (firstInput) firstInput.focus();
+          else modalRef.current.focus();
+        }
+      }, 50);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6 animate-fade-in">
-      <div className="flex flex-col w-full max-w-6xl h-full max-h-[85vh] bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden">
+    <div className="fixed inset-0 z-modal-backdrop flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6 animate-fade-in">
+      <div ref={modalRef} tabIndex={-1} className="flex flex-col w-full max-w-6xl h-full max-h-[85vh] bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden outline-none">
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-surface-active">

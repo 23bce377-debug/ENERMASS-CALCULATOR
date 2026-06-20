@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Select } from '@/components/ui/Select';
 import {
   useSubsidySchemesQuery,
   useUpdateSubsidyMutation,
@@ -290,14 +291,15 @@ export default function SubsidyMasterPage() {
                 </div>
                 <div className="space-y-1 col-span-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Applies To *</label>
-                  <select
+                  <Select
                     value={schemeDraft.applies_to}
-                    onChange={(e) => setSchemeDraft({ ...schemeDraft, applies_to: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none cursor-pointer capitalize"
-                  >
-                    <option value="residential">Residential</option>
-                    <option value="commercial">Commercial</option>
-                  </select>
+                    onChange={(val) => setSchemeDraft({ ...schemeDraft, applies_to: val as any })}
+                    options={[
+                      { value: 'residential', label: 'Residential' },
+                      { value: 'commercial', label: 'Commercial' }
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1 col-span-2">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Scheme Name *</label>
@@ -384,10 +386,10 @@ export default function SubsidyMasterPage() {
 
                       {/* Pricing Rule */}
                       <div className="flex items-center gap-3 w-full sm:w-auto flex-1 justify-end">
-                        <select
+                        <Select
                           value={slab.is_fixed_amount ? 'fixed' : 'rate'}
-                          onChange={(e) => {
-                            const isFixed = e.target.value === 'fixed';
+                          onChange={(val) => {
+                            const isFixed = val === 'fixed';
                             handleSlabChange(index, 'is_fixed_amount', isFixed);
                             if (isFixed) {
                               handleSlabChange(index, 'fixed_amount', 18000);
@@ -397,11 +399,13 @@ export default function SubsidyMasterPage() {
                               handleSlabChange(index, 'rate_per_kw', 18000);
                             }
                           }}
-                          className="px-2 py-1 bg-surface border border-border text-[10px] font-bold rounded cursor-pointer"
-                        >
-                          <option value="rate">Rate / kW</option>
-                          <option value="fixed">Fixed Amount</option>
-                        </select>
+                          options={[
+                            { value: 'rate', label: 'Rate / kW' },
+                            { value: 'fixed', label: 'Fixed Amount' }
+                          ]}
+                          size="sm"
+                          className="w-32"
+                        />
 
                         {slab.is_fixed_amount ? (
                           <div className="relative max-w-[120px]">

@@ -190,7 +190,7 @@ export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCo
                   collapsed ? 'justify-center px-0' : '',
                 ].join(' ')}
               >
-                {isActive && !collapsed && <div className="sidebar-active-bar" />}
+                {isActive && <div className="sidebar-active-bar" />}
 
                 {/* Icon */}
                 <span className="shrink-0">

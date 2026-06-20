@@ -173,6 +173,13 @@ body {
 .animate-toast-in   { animation: toast-in   0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .animate-spin-slow  { animation: spin-slow  3s    linear infinite; }
 
+/* === Z-Index Scale Utilities === */
+@utility z-dropdown { z-index: 100; }
+@utility z-modal-backdrop { z-index: 200; }
+@utility z-modal { z-index: 210; }
+@utility z-toast { z-index: 300; }
+@utility z-tooltip { z-index: 400; }
+
 /* === Glass Utility ========================================================== */
 
 .glass {
@@ -270,7 +277,7 @@ html.dark .input-field:focus {
 
 /* === Gradient Accents ======================================================= */
 
-.gold-gradient {
+@utility gold-gradient {
   background: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #B8860B 100%);
 }
 
@@ -447,7 +454,7 @@ html.dark .inner-glow {
     -webkit-print-color-adjust: exact;
     background: white !important;
     color: #111 !important;
-    font-size: 11px !important;
+    font-size: 10pt !important;
   }
 
   body > *:not(.print-only) { display: none !important; }
@@ -482,9 +489,9 @@ html.dark .inner-glow {
     color: #111;
   }
 
-  .pdf-brand    { font-size: 16px; font-weight: 800; color: #111; letter-spacing: 0.5px; }
-  .pdf-tagline  { font-size: 10px; color: #666; letter-spacing: 0.3px; }
-  .pdf-meta     { text-align: right; font-size: 10px; color: #444; }
+  .pdf-brand    { font-size: 14pt; font-weight: 800; color: #111; letter-spacing: 0.5px; }
+  .pdf-tagline  { font-size: 8.5pt; color: #666; letter-spacing: 0.3px; }
+  .pdf-meta     { text-align: right; font-size: 8.5pt; color: #444; }
   .pdf-meta-row { margin-bottom: 2px; }
   .pdf-meta-row span { margin-right: 4px; }
 
@@ -503,8 +510,8 @@ html.dark .inner-glow {
     border-radius: 8px;
   }
 
-  .pdf-project-title    { font-size: 16px; font-weight: 800; color: #111; letter-spacing: 0.3px; }
-  .pdf-project-subtitle { font-size: 11px; color: #666; margin-top: 2px; }
+  .pdf-project-title    { font-size: 14pt; font-weight: 800; color: #111; letter-spacing: 0.3px; }
+  .pdf-project-subtitle { font-size: 9pt; color: #666; margin-top: 2px; }
 
   .pdf-two-col {
     display: grid;
@@ -516,7 +523,7 @@ html.dark .inner-glow {
   .pdf-info-block { padding: 10px; border: 1px solid #e0e0e0; border-radius: 6px; }
 
   .pdf-section-label {
-    font-size: 10px;
+    font-size: 8.5pt;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
@@ -526,10 +533,10 @@ html.dark .inner-glow {
     margin-bottom: 8px;
   }
 
-  .pdf-info-row { font-size: 10px; color: #333; padding: 2px 0; }
+  .pdf-info-row { font-size: 8.5pt; color: #333; padding: 2px 0; }
   .pdf-info-row span { color: #888; margin-right: 4px; }
 
-  .pdf-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 8px; }
+  .pdf-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-bottom: 8px; }
   .pdf-table th,
   .pdf-table td { padding: 5px 8px; border: 1px solid #e0e0e0; text-align: left; color: #333; }
   .pdf-table th {
@@ -537,18 +544,18 @@ html.dark .inner-glow {
     font-weight: 700;
     color: #444;
     text-transform: uppercase;
-    font-size: 8px;
+    font-size: 7.5pt;
     letter-spacing: 0.5px;
   }
 
-  .pdf-table.pdf-bom { font-size: 9px; }
-  .pdf-table.pdf-pricing td { padding: 6px 10px; font-size: 11px; }
+  .pdf-table.pdf-bom { font-size: 8pt; }
+  .pdf-table.pdf-pricing td { padding: 6px 10px; font-size: 9.5pt; }
 
   .pdf-highlight-row td {
     background: #fef9ee !important;
     font-weight: 700;
     border-top: 2px solid #D4A843;
-    font-size: 12px !important;
+    font-size: 10.5pt !important;
   }
 
   .pdf-included-grid {
@@ -558,11 +565,11 @@ html.dark .inner-glow {
     margin-bottom: 8px;
   }
 
-  .pdf-included-item { font-size: 9px; color: #555; padding: 2px 0; }
+  .pdf-included-item { font-size: 8pt; color: #555; padding: 2px 0; }
   .pdf-check { color: #16a34a; font-weight: 700; margin-right: 3px; }
 
   .pdf-subsidy-note {
-    font-size: 8px;
+    font-size: 7pt;
     color: #888;
     font-style: italic;
     margin-top: 4px;
@@ -578,8 +585,8 @@ html.dark .inner-glow {
     margin-bottom: 8px;
   }
 
-  .pdf-brand-small   { font-size: 12px; font-weight: 700; color: #D4A843; }
-  .pdf-quote-id-small { font-size: 9px; color: #888; }
+  .pdf-brand-small   { font-size: 10pt; font-weight: 700; color: #D4A843; }
+  .pdf-quote-id-small { font-size: 8pt; color: #888; }
 
   .pdf-stats-grid {
     display: grid;
@@ -597,9 +604,9 @@ html.dark .inner-glow {
   }
 
   .pdf-stat-card.pdf-stat-gold { border-color: #D4A843; background: #fef9ee; }
-  .pdf-stat-value  { font-size: 16px; font-weight: 800; color: #111; line-height: 1.2; }
-  .pdf-stat-unit   { font-size: 8px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
-  .pdf-stat-label  { font-size: 8px; color: #666; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 4px; font-weight: 600; }
+  .pdf-stat-value  { font-size: 13.5pt; font-weight: 800; color: #111; line-height: 1.2; }
+  .pdf-stat-unit   { font-size: 7pt; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+  .pdf-stat-label  { font-size: 7pt; color: #666; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 4px; font-weight: 600; }
 
   .pdf-savings-banner {
     text-align: center;
@@ -610,9 +617,9 @@ html.dark .inner-glow {
     color: #111;
   }
 
-  .pdf-savings-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #333; }
-  .pdf-savings-value { font-size: 22px; font-weight: 900; color: #111; margin: 4px 0 2px; }
-  .pdf-savings-note  { font-size: 7px; color: #555; }
+  .pdf-savings-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #333; }
+  .pdf-savings-value { font-size: 18pt; font-weight: 900; color: #111; margin: 4px 0 2px; }
+  .pdf-savings-note  { font-size: 6pt; color: #555; }
 
   .pdf-highlights-grid {
     display: grid;
@@ -622,7 +629,7 @@ html.dark .inner-glow {
   }
 
   .pdf-highlight-item {
-    font-size: 9px;
+    font-size: 8pt;
     color: #333;
     padding: 6px 8px;
     border: 1px solid #e8e8e8;
@@ -630,9 +637,9 @@ html.dark .inner-glow {
     background: #fafafa;
   }
 
-  .pdf-highlight-item strong { display: block; font-size: 10px; margin-bottom: 2px; }
+  .pdf-highlight-item strong { display: block; font-size: 8.5pt; margin-bottom: 2px; }
 
-  .pdf-terms { font-size: 9px; color: #555; padding-left: 16px; margin: 8px 0; line-height: 1.6; }
+  .pdf-terms { font-size: 8pt; color: #555; padding-left: 16px; margin: 8px 0; line-height: 1.6; }
   .pdf-terms li { margin-bottom: 2px; }
 
   .pdf-signature {
@@ -642,13 +649,13 @@ html.dark .inner-glow {
     padding-top: 16px;
   }
 
-  .pdf-sig-block { text-align: center; font-size: 10px; color: #666; width: 200px; }
+  .pdf-sig-block { text-align: center; font-size: 8.5pt; color: #666; width: 200px; }
   .pdf-sig-line  { border-bottom: 1px solid #333; margin-bottom: 6px; height: 40px; }
   .pdf-sig-name  { font-weight: 600; color: #333; margin-top: 2px; }
 
   .pdf-footer {
     text-align: center;
-    font-size: 8px;
+    font-size: 7pt;
     color: #999;
     margin-top: 16px;
     padding-top: 8px;

@@ -24,6 +24,8 @@ import { EnergyCard } from '@/components/calculator/EnergyCard';
 import { ConnectedROIDisplay } from '@/components/calculator/ROIDisplay';
 import { QuoteSaveModal } from '@/components/calculator/QuoteSaveModal';
 import { QuotePDF } from '@/components/print/QuotePDF';
+import { Select } from '@/components/ui/Select';
+import { BOMTableSkeleton, SummaryCardSkeleton, CardSkeleton } from '@/components/ui/Skeletons';
 
 // ─── Left Panel Components ────────────────────────────────────────────────────────
 
@@ -36,111 +38,33 @@ function StateSelector() {
     if (keys.length > 0) return keys.sort();
     return Object.keys(STATE_DATA).sort();
   }, [dbStateData]);
-  
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const filteredStates = states.filter(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+  const selectOptions = useMemo(() => {
+    return states.map((stateName) => ({
+      value: stateName,
+      label: stateName,
+    }));
+  }, [states]);
 
   return (
-    <div ref={containerRef} className="relative space-y-2">
+    <div className="space-y-2">
       <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
         Installation State
       </label>
-      
-      <button
-        type="button"
-        role="combobox"
-        aria-expanded={isOpen}
-        aria-controls="state-listbox"
-        aria-haspopup="listbox"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between gap-2 px-3.5 py-3
-          rounded-xl border transition-all duration-200 text-left
-          ${isOpen
-            ? 'border-accent/40 bg-surface-active shadow-lg shadow-accent/5'
-            : 'border-border bg-surface hover:border-border-light hover:bg-surface-hover'
-          }`}
-      >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <MapPin size={16} className="shrink-0 text-accent" />
-          <span className="text-sm font-medium text-text-primary truncate">
-            {selectedState || 'Select State'}
-          </span>
-        </div>
-        <ChevronDown
-          size={16}
-          className={`shrink-0 text-text-muted transition-transform duration-200
-            ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div 
-          id="state-listbox"
-          role="listbox"
-          className="absolute z-50 left-0 right-0 mt-2 rounded-xl border border-border
-          bg-surface shadow-2xl shadow-black/40 overflow-hidden animate-fade-in">
-          
-          <div className="p-2 border-b border-border">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input
-                autoFocus
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search states..."
-                className="w-full pl-8 pr-3 py-2 rounded-lg bg-background border border-border
-                  text-sm text-text-primary placeholder:text-text-muted
-                  focus:outline-none focus:border-accent/40"
-              />
-            </div>
+      <Select
+        value={selectedState || ''}
+        onChange={(val) => setState(val)}
+        options={selectOptions}
+        placeholder="Select State"
+        renderTrigger={(selected) => (
+          <div className="flex items-center gap-2.5 min-w-0">
+            <MapPin size={16} className="shrink-0 text-accent" />
+            <span className="text-sm font-medium text-text-primary truncate">
+              {selected?.label || 'Select State'}
+            </span>
           </div>
-
-          <div className="max-h-60 overflow-y-auto py-1">
-            {filteredStates.length === 0 ? (
-              <div className="px-4 py-4 text-center text-sm text-text-muted">
-                No states found
-              </div>
-            ) : (
-              filteredStates.map((st) => {
-                const isSelected = st === selectedState;
-                return (
-                  <button
-                    key={st}
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => {
-                      setState(st);
-                      setIsOpen(false);
-                      setSearchQuery('');
-                    }}
-                    className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left
-                      transition-all duration-150
-                      ${isSelected ? 'bg-accent-dim' : 'hover:bg-surface-hover'}`}
-                  >
-                    <span className={`text-sm flex-1 truncate ${isSelected ? 'text-accent font-semibold' : 'text-text-primary'}`}>
-                      {st}
-                    </span>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
+        )}
+      />
     </div>
   );
 }
@@ -388,12 +312,46 @@ export default function CalculatorPage() {
         .select('id')
         .eq('quote_number', quote.quoteId)
         .single();
-      
       if (quoteRow?.id) {
         await supabase.from('draft_quotes').delete().eq('id', draftId);
       }
     }
   };
+
+  if (!dbLoaded) {
+    return (
+      <div className="p-4 md:p-6 lg:p-8 max-w-400 mx-auto space-y-6 pb-32 md:pb-8">
+        {/* Title */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-text-primary">Calculator</h1>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface border border-border text-[10px] font-bold uppercase tracking-wider">
+              <Loader2 size={12} className="animate-spin text-accent" />
+              <span className="text-text-muted">Loading master data...</span>
+            </div>
+          </div>
+          <p className="text-sm text-text-muted mt-1">Configure system parameters and generate accurate quotes.</p>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="w-full lg:w-[320px] shrink-0 space-y-6">
+            <CardSkeleton />
+          </div>
+          <div className="flex-1 min-w-0 space-y-6">
+            <BOMTableSkeleton />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              <SummaryCardSkeleton />
+              <CardSkeleton />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-400 mx-auto animate-fade-in pb-32 md:pb-8">

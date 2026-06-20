@@ -6,6 +6,7 @@ import type { Quote } from '@/lib/types/quote';
 import { SYSTEMS } from '@/lib/data/bom';
 import { formatINR } from '@/lib/engine/calculator';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
+import { useSettings } from '@/lib/hooks/useSettings';
 
 /**
  * QuotePDF — Professional customer-facing quote layout.
@@ -36,6 +37,7 @@ export function QuotePDF({
 }: QuotePDFProps) {
   // Client-side mounting for portal
   const [mounted, setMounted] = useState(false);
+  const { settings: equipmentSettings } = useSettings();
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
   const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
   const dbPanels = useCalculatorStore((s) => s.dbPanels);
@@ -47,14 +49,8 @@ export function QuotePDF({
   // Look up system from both built-in and custom systems
   const systemsList = dbLoaded && dbSystems.length > 0 ? dbSystems : SYSTEMS;
   let system = systemsList.find((s) => s.id === quote.systemId);
-  if (!system && typeof window !== 'undefined') {
-    try {
-      const raw = window.localStorage.getItem('enermass-settings');
-      if (raw) {
-        const settings = JSON.parse(raw);
-        system = settings.customSystems?.find((s: { id: string }) => s.id === quote.systemId);
-      }
-    } catch {}
+  if (!system) {
+    system = equipmentSettings?.customSystems?.find((s: { id: string }) => s.id === quote.systemId);
   }
 
   const calc = quote.calculations;
@@ -69,15 +65,6 @@ export function QuotePDF({
   );
 
   const projectTitle = quote.sales.projectTitle || quote.systemName;
-
-  // Resolve equipment names for display
-  let equipmentSettings: any;
-  if (typeof window !== 'undefined') {
-    try {
-      const raw = window.localStorage.getItem('enermass-settings');
-      if (raw) equipmentSettings = JSON.parse(raw);
-    } catch {}
-  }
 
   const allPanels = useMemo(() => {
     const base = dbLoaded && dbPanels.length > 0 ? dbPanels : [];
@@ -109,17 +96,18 @@ export function QuotePDF({
   // Build equipment description
   const panelEntries = (quote.equipment.panelMix ?? []).map((entry) => {
     const panel = allPanels.find((p) => p.id === entry.panelBrandId);
-    return { name: panel ? `${panel.brand} ${panel.model}` : entry.panelBrandId, qty: entry.qty, wattage: panel?.wattage ?? 0 };
+    return { name: panel ? `${panel.brand} ${panel.model}` : entry.panelBrandId, qty: entry.qty, wattage: panel?.wattage_w ?? panel?.wattage ?? 0 };
   });
 
   const inverterEntries = (quote.equipment.inverterMix ?? []).map((entry) => {
     const inv = allInverters.find((i) => i.id === entry.inverterBrandId);
-    return { name: inv ? `${inv.brand} ${inv.model}` : entry.inverterBrandId, qty: entry.qty, capacityKW: inv?.capacityKW ?? 0 };
+    return { name: inv ? `${inv.brand} ${inv.model}` : entry.inverterBrandId, qty: entry.qty, capacityKW: inv?.capacity_kw ?? inv?.capacityKW ?? 0 };
   });
 
   const batteryEntries = (quote.equipment.batteryMix ?? []).map((entry) => {
     const bat = allBatteries.find((b) => b.id === entry.batteryBrandId);
-    return { name: bat ? `${bat.brand} ${bat.model}` : entry.batteryBrandId, qty: entry.qty, capacityKWh: bat?.capacityKWh ?? 0 };
+    const capKWh = bat ? ((bat.capacity_ah ?? 0) * (bat.voltage_v ?? 0)) / 1000 : 0;
+    return { name: bat ? `${bat.brand} ${bat.model}` : entry.batteryBrandId, qty: entry.qty, capacityKWh: bat?.capacityKWh ?? capKWh };
   });
 
   const totalPanelWattage = panelEntries.reduce((sum, e) => sum + e.wattage * e.qty, 0);

@@ -1377,6 +1377,8 @@ export interface Database {
           chemistry: Database['public']['Enums']['battery_chemistry']
           dod_pct: number
           selling_price: number
+          /** GENERATED ALWAYS AS (selling_price) STORED */
+          rate: number
           gst_pct: number
           description: string | null
           is_active: boolean
@@ -1402,6 +1404,8 @@ export interface Database {
           chemistry?: Database['public']['Enums']['battery_chemistry']
           dod_pct?: number
           selling_price: number
+          /** GENERATED ALWAYS — cannot be set by application code */
+          rate?: never
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1427,6 +1431,8 @@ export interface Database {
           chemistry?: Database['public']['Enums']['battery_chemistry']
           dod_pct?: number
           selling_price?: number
+          /** GENERATED ALWAYS — cannot be set by application code */
+          rate?: never
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1589,6 +1595,8 @@ export interface Database {
           inverter_type: Database['public']['Enums']['inverter_type']
           phases: number
           selling_price: number
+          /** GENERATED ALWAYS AS (selling_price) STORED */
+          rate: number
           gst_pct: number
           description: string | null
           is_active: boolean
@@ -1613,6 +1621,8 @@ export interface Database {
           inverter_type: Database['public']['Enums']['inverter_type']
           phases?: number
           selling_price: number
+          /** GENERATED ALWAYS — cannot be set by application code */
+          rate?: never
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1637,6 +1647,8 @@ export interface Database {
           inverter_type?: Database['public']['Enums']['inverter_type']
           phases?: number
           selling_price?: number
+          /** GENERATED ALWAYS — cannot be set by application code */
+          rate?: never
           gst_pct?: number
           description?: string | null
           is_active?: boolean
@@ -1938,6 +1950,8 @@ export interface Database {
           imported_by: string | null
           buy_price: number
           selling_price: number
+          /** GENERATED ALWAYS AS (selling_price / NULLIF(wattage_w, 0)) STORED */
+          rate_per_watt: number
         }
         Insert: {
           id?: string
@@ -1961,6 +1975,8 @@ export interface Database {
           imported_by?: string | null
           buy_price?: number
           selling_price?: number
+          /** GENERATED ALWAYS — cannot be set by application code */
+          rate_per_watt?: never
         }
         Update: {
           id?: string
@@ -1984,6 +2000,8 @@ export interface Database {
           imported_by?: string | null
           buy_price?: number
           selling_price?: number
+          /** GENERATED ALWAYS — cannot be set by application code */
+          rate_per_watt?: never
         }
         Relationships: []
       }

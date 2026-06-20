@@ -390,18 +390,20 @@ export default function WarrantyPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-                          <select
+                          <Select
                             value={claim.status}
-                            onChange={(e) => handleUpdateStatus(claim.id, e.target.value)}
-                            className="bg-background border border-border text-[10px] rounded px-1.5 py-1 text-text-secondary outline-none focus:border-accent"
-                          >
-                            <option value="draft">Draft</option>
-                            <option value="submitted">Submitted</option>
-                            <option value="under_review">Under Review</option>
-                            <option value="approved">Approved</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="resolved">Resolved</option>
-                          </select>
+                            onChange={(val) => handleUpdateStatus(claim.id, val)}
+                            options={[
+                              { value: 'draft', label: 'Draft' },
+                              { value: 'submitted', label: 'Submitted' },
+                              { value: 'under_review', label: 'Under Review' },
+                              { value: 'approved', label: 'Approved' },
+                              { value: 'rejected', label: 'Rejected' },
+                              { value: 'resolved', label: 'Resolved' }
+                            ]}
+                            size="sm"
+                            className="w-28 text-left"
+                          />
                         </td>
                       </tr>
                     ))}
@@ -502,36 +504,36 @@ export default function WarrantyPage() {
             <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
               <div className="space-y-1.5">
                 <label className="text-text-secondary font-bold">Select Customer Asset *</label>
-                <select
-                  required
+                <Select
                   value={assetId}
-                  onChange={(e) => setAssetId(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent"
-                >
-                  <option value="">-- Choose Asset --</option>
-                  {assets.map(asset => (
-                    <option key={asset.id} value={asset.id}>
-                      [{asset.item_type.toUpperCase()}] {asset.brand} {asset.model} (S/N: {asset.serial_number || 'N/A'})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setAssetId(val)}
+                  placeholder="-- Choose Asset --"
+                  options={[
+                    { value: '', label: '-- Choose Asset --' },
+                    ...assets.map(asset => ({
+                      value: asset.id,
+                      label: `[${asset.item_type.toUpperCase()}] ${asset.brand} ${asset.model} (S/N: ${asset.serial_number || 'N/A'})`
+                    }))
+                  ]}
+                  className="w-full"
+                />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-text-secondary font-bold">Select Supplier / Vendor *</label>
-                <select
-                  required
+                <Select
                   value={vendorId}
-                  onChange={(e) => setVendorId(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-text-primary focus:outline-none focus:border-accent"
-                >
-                  <option value="">-- Choose Supplier --</option>
-                  {vendors.map(vendor => (
-                    <option key={vendor.id} value={vendor.id}>
-                      {vendor.name} {vendor.contact_person ? `(${vendor.contact_person})` : ''}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setVendorId(val)}
+                  placeholder="-- Choose Supplier --"
+                  options={[
+                    { value: '', label: '-- Choose Supplier --' },
+                    ...vendors.map(vendor => ({
+                      value: vendor.id,
+                      label: `${vendor.name} ${vendor.contact_person ? `(${vendor.contact_person})` : ''}`
+                    }))
+                  ]}
+                  className="w-full"
+                />
               </div>
 
               <div className="space-y-1.5">

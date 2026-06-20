@@ -161,6 +161,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  useEffect(() => {
+    const persisted = localStorage.getItem('enermass-sidebar-collapsed');
+    if (persisted !== null) {
+      setSidebarCollapsed(persisted === 'true');
+    }
+  }, []);
+
+  const handleSetSidebarCollapsed = (val: boolean | ((prev: boolean) => boolean)) => {
+    setSidebarCollapsed((prev) => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      localStorage.setItem('enermass-sidebar-collapsed', String(next));
+      return next;
+    });
+  };
+
   const isLoginPage = pathname === '/login';
 
   if (isLoginPage) {
@@ -188,7 +203,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <ToastProvider>
       <ConfirmProvider>
         {/* Desktop sidebar */}
-        <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+        <Sidebar collapsed={sidebarCollapsed} setCollapsed={handleSetSidebarCollapsed} />
 
         {/* Main area — responsive offset based on sidebar state */}
         <div className={`flex flex-col min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'md:ml-[62px]' : 'md:ml-[228px]'}`}>

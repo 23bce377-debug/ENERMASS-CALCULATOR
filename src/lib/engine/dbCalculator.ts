@@ -269,7 +269,8 @@ export async function calculateSystemFromDb(
     galvanizing_rate: s.galvanizing_rate,
     base_weight_kg: s.base_weight_kg,
     wastage_pct: s.wastage_pct,
-    fastener_weight_pct: s.fastener_weight_pct
+    fastener_weight_pct: s.fastener_weight_pct,
+    rate_per_kg: s.rate_per_kg
   }));
 
   const dbWeightLookups = wlRes.rows.map(w => ({
