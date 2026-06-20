@@ -23,7 +23,7 @@ export async function getCachedMasterData(orgId?: string): Promise<MasterDataPay
   ] = await Promise.all([
     supabase.from('eq_panels').select('id, brand, model, wattage_w, rate_per_watt, gst_pct, is_active').eq('is_active', true),
     supabase.from('eq_inverters').select('id, brand, model, capacity_kw, phase, rate, gst_pct, is_active').eq('is_active', true),
-    supabase.from('eq_batteries').select('id, brand, model, capacity_ah, voltage_v, rate, gst_pct, is_active').eq('is_active', true),
+    supabase.from('eq_batteries').select('id, brand, model, capacity_kwh, voltage_v, rate, gst_pct, is_active').eq('is_active', true),
     supabase.from('state_rules').select('id, state_code, state_name, is_active').eq('is_active', true),
     supabase.from('scheme_slabs').select('id, scheme_id, slab_index, start_kw, end_kw, rate_per_kw, is_fixed_amount, fixed_amount'),
     supabase.from('calculation_schemes').select('id, name, max_capacity_kw, applies_to').eq('is_active', true),

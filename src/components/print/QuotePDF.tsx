@@ -106,8 +106,7 @@ export function QuotePDF({
 
   const batteryEntries = (quote.equipment.batteryMix ?? []).map((entry) => {
     const bat = allBatteries.find((b) => b.id === entry.batteryBrandId);
-    const capKWh = bat ? ((bat.capacity_ah ?? 0) * (bat.voltage_v ?? 0)) / 1000 : 0;
-    return { name: bat ? `${bat.brand} ${bat.model}` : entry.batteryBrandId, qty: entry.qty, capacityKWh: bat?.capacityKWh ?? capKWh };
+    return { name: bat ? `${bat.brand} ${bat.model}` : entry.batteryBrandId, qty: entry.qty, capacityKWh: bat?.capacity_kwh ?? bat?.capacityKWh ?? 0 };
   });
 
   const totalPanelWattage = panelEntries.reduce((sum, e) => sum + e.wattage * e.qty, 0);

@@ -27,6 +27,8 @@ export function EnergyCard() {
   const setOrientation = useCalculatorStore((s) => s.setOrientation);
   const electricityInflationRate = useCalculatorStore((s) => s.electricityInflationRate);
   const setElectricityInflationRate = useCalculatorStore((s) => s.setElectricityInflationRate);
+  const dbBatteries = useCalculatorStore((s) => s.dbBatteries);
+  const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
   const { settings } = useSettings();
 
   // Local slider state — only commit to store on release
@@ -40,7 +42,14 @@ export function EnergyCard() {
     }
   }, [localSlider, setBackupLoadW]);
 
-  const allBatteries = useMemo(() => getActiveBatteryBrands(settings), [settings]);
+  const allBatteries = useMemo(() => {
+    const base = dbLoaded && dbBatteries.length > 0 ? dbBatteries : [];
+    const rateOverrides = settings?.currentEquipmentRates?.batteries ?? {};
+    return [...base, ...(settings?.customBatteries ?? [])].map((battery) => ({
+      ...battery,
+      rate: rateOverrides[battery.id] ?? battery.rate,
+    }));
+  }, [dbLoaded, dbBatteries, settings]);
 
   const totalBatteryCapacityKWh = useMemo(() => {
     const batteryById = new Map(allBatteries.map((battery) => [battery.id, battery]));

@@ -80,6 +80,9 @@ function transformToDb(entity: string, item: any, currentItem?: any): any {
   } else if (entity === 'batteries' || entity === 'inverters' || entity === 'accessories') {
     if ('rate' in copy) {
       copy.selling_price = copy.rate;
+      if (entity === 'accessories' && !('buy_price' in copy)) {
+        copy.buy_price = copy.rate;
+      }
       delete copy.rate;
     }
   } else if (entity === 'structures') {
@@ -208,7 +211,41 @@ export function useMasterUpdateMutation<T>(entity: string) {
       // 1. Fetch current values for audit comparison
       const { data: beforeState } = await (supabase.from(table as any).select('*').eq('id', id).maybeSingle() as any);
 
-      // 2. Perform update
+      // If modifying a global template as an org user, FORK it into an org override
+      if (beforeState && beforeState.org_id === null && orgId !== null) {
+        const payloadToApply = transformToDb(entity, updates, beforeState);
+        const insertPayload = { 
+          ...beforeState, 
+          ...payloadToApply, 
+          org_id: orgId,
+          updated_at: new Date().toISOString()
+        };
+        // Ensure we create a new row by removing id and created_at
+        delete insertPayload.id;
+        delete insertPayload.created_at;
+
+        const { data, error } = await (supabase
+          .from(table as any)
+          .insert(insertPayload)
+          .select()
+          .maybeSingle() as any);
+
+        if (error) throw error;
+        
+        await logAudit(orgId, userId, 'masters', table, data.id, 'create_override', beforeState, data);
+        
+        await supabase.from('master_data_changes_log').insert({
+          entity_type: table,
+          entity_id: data.id,
+          change_type: 'created',
+          old_values: beforeState,
+          new_values: data,
+        });
+
+        return transformFromDb(entity, data) as T;
+      }
+
+      // 2. Perform normal update
       const { data, error } = await (supabase
         .from(table as any)
         .update({ ...transformToDb(entity, updates, beforeState), updated_at: new Date().toISOString() })
@@ -337,6 +374,38 @@ export function useMasterBulkUpdateMutation(entity: string) {
       // Since it's a bulk operation on a relational database, doing updates in batch matches Supabase syntax
       const promises = ids.map(async (id) => {
         const before = beforeStates?.find((b: any) => b.id === id);
+        
+        if (before && before.org_id === null && orgId !== null) {
+          const payloadToApply = transformToDb(entity, updates, before);
+          const insertPayload = {
+            ...before,
+            ...payloadToApply,
+            org_id: orgId,
+            updated_at: new Date().toISOString()
+          };
+          delete insertPayload.id;
+          delete insertPayload.created_at;
+
+          const { data, error } = await (supabase
+            .from(table as any)
+            .insert(insertPayload)
+            .select()
+            .maybeSingle() as any);
+          if (error) throw error;
+
+          await logAudit(orgId, userId, 'masters', table, data.id, 'bulk_create_override', before, data);
+          
+          await supabase.from('master_data_changes_log').insert({
+            entity_type: table,
+            entity_id: data.id,
+            change_type: 'created',
+            old_values: before,
+            new_values: data,
+          });
+
+          return transformFromDb(entity, data);
+        }
+
         const { data, error } = await (supabase
           .from(table as any)
           .update({ ...transformToDb(entity, updates, before), updated_at: new Date().toISOString() })

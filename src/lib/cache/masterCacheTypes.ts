@@ -24,7 +24,7 @@ export interface MasterData {
 
 export interface CachedPanel { id: string; brand: string; model: string; wattage_w: number; rate_per_watt: number; gst_pct: number; is_active: boolean; }
 export interface CachedInverter { id: string; brand: string; model: string; capacity_kw: number; phase: number; rate: number; gst_pct: number; is_active: boolean; }
-export interface CachedBattery { id: string; brand: string; model: string; capacity_ah: number; voltage_v: number; rate: number; gst_pct: number; is_active: boolean; }
+export interface CachedBattery { id: string; brand: string; model: string; capacity_kwh: number; voltage_v: number; rate: number; gst_pct: number; is_active: boolean; }
 export interface CachedStateRule { id: string; state_code: string; state_name: string; is_active: boolean; }
 export interface CachedSlab { id: string; scheme_id: string; slab_index: number; start_kw: number; end_kw: number | null; rate_per_kw: number; is_fixed_amount: boolean; fixed_amount: number | null; }
 
