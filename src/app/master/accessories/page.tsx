@@ -33,14 +33,14 @@ import { Select } from '@/components/ui/Select';
 interface BomItem {
   id: string;
   org_id: string | null;
-  section: 'solar_panels' | 'power_electronics' | 'metering' | 'mounting_structure' | 'electrical_protection' | 'earthing' | 'cabling' | 'wiring' | 'services';
-  sub_type: string;
+  category_id: string;
+  sku_code: string;
   description: string;
-  remarks: string | null;
+  notes: string | null;
   unit: string;
-  rate: number;
-  gst_pct: number;
-  is_active: boolean;
+  default_rate: number;
+  civil_required_only: boolean;
+  is_survey_dependent: boolean;
 }
 
 const SECTION_OPTIONS = [
@@ -78,18 +78,19 @@ export default function AccessoriesMasterPage() {
 
   // Accessories draft state
   const [draft, setDraft] = useState({
-    section: 'electrical_protection' as any,
-    sub_type: '',
+    category_id: 'electrical_protection' as any,
+    sku_code: '',
     description: '',
-    remarks: '',
+    notes: '',
     unit: 'Nos',
-    rate: 1500,
-    gst_pct: 0.18,
+    default_rate: 1500,
+    is_survey_dependent: false,
+    civil_required_only: false,
   });
 
   // Bulk Edit Schema
   const bulkEditFields: FieldSchema[] = [
-    { name: 'section', label: 'BOM Section', type: 'select', options: SECTION_OPTIONS },
+    { name: 'category_id', label: 'BOM Category', type: 'select', options: SECTION_OPTIONS },
     { name: 'unit', label: 'Standard Unit', type: 'select', options: [
       { value: 'Nos', label: 'Nos / Units' },
       { value: 'Mtr', label: 'Meters' },
@@ -97,11 +98,10 @@ export default function AccessoriesMasterPage() {
       { value: 'Set', label: 'Sets' },
       { value: 'Lump', label: 'Lump Sum' }
     ]},
-    { name: 'rate', label: 'Cost Rate (₹)', type: 'number' },
-    { name: 'gst_pct', label: 'GST Slabs', type: 'select', options: [
-      { value: 0.18, label: '18% Standard' },
-      { value: 0.12, label: '12% Special' },
-      { value: 0.05, label: '5% Solar Panel slab' }
+    { name: 'default_rate', label: 'Cost Rate (₹)', type: 'number' },
+    { name: 'is_survey_dependent', label: 'Survey Dependent', type: 'select', options: [
+      { value: 'true', label: 'Yes' },
+      { value: 'false', label: 'No' }
     ]},
   ];
 
@@ -112,10 +112,10 @@ export default function AccessoriesMasterPage() {
     return items.filter((i) => {
       const matchSearch =
         (i.description || '').toLowerCase().includes(search.toLowerCase()) ||
-        (i.sub_type || '').toLowerCase().includes(search.toLowerCase()) ||
-        (i.remarks || '').toLowerCase().includes(search.toLowerCase());
+        (i.sku_code || '').toLowerCase().includes(search.toLowerCase()) ||
+        (i.notes || '').toLowerCase().includes(search.toLowerCase());
       
-      const matchSection = sectionFilter ? i.section === sectionFilter : true;
+      const matchSection = sectionFilter ? i.category_id === sectionFilter : true;
 
       return matchSearch && matchSection;
     });
@@ -142,13 +142,14 @@ export default function AccessoriesMasterPage() {
   const handleOpenAdd = () => {
     setEditingItem(null);
     setDraft({
-      section: 'electrical_protection',
-      sub_type: '',
+      category_id: 'electrical_protection',
+      sku_code: '',
       description: '',
-      remarks: '',
+      notes: '',
       unit: 'Nos',
-      rate: 1500,
-      gst_pct: 0.18,
+      default_rate: 1500,
+      is_survey_dependent: false,
+      civil_required_only: false,
     });
     setEditorOpen(true);
   };
@@ -156,13 +157,14 @@ export default function AccessoriesMasterPage() {
   const handleOpenEdit = (item: BomItem) => {
     setEditingItem(item);
     setDraft({
-      section: item.section,
-      sub_type: item.sub_type,
+      category_id: item.category_id,
+      sku_code: item.sku_code,
       description: item.description,
-      remarks: item.remarks || '',
+      notes: item.notes || '',
       unit: item.unit,
-      rate: item.rate,
-      gst_pct: item.gst_pct,
+      default_rate: item.default_rate,
+      is_survey_dependent: item.is_survey_dependent,
+      civil_required_only: item.civil_required_only,
     });
     setEditorOpen(true);
   };
@@ -215,13 +217,12 @@ export default function AccessoriesMasterPage() {
 
   const handleExport = () => {
     const dataToExport = filteredItems.map((i) => ({
-      Section: i.section,
-      'Sub Type': i.sub_type,
+      Category: i.category_id,
+      'SKU Code': i.sku_code,
       Description: i.description,
-      Remarks: i.remarks || '',
+      Notes: i.notes || '',
       Unit: i.unit,
-      'Selling Rate (INR)': i.rate,
-      'GST Percentage': i.gst_pct,
+      'Selling Rate (INR)': i.default_rate,
     }));
     exportToExcel(dataToExport, 'Accessories_Master', 'Accessories');
     toast('Master list exported to Excel', 'success');
@@ -235,14 +236,15 @@ export default function AccessoriesMasterPage() {
       const rawData = await importFromExcel(file);
       
       const parsedRows = rawData.map((row: any) => ({
-        section: row.Section || row.section || 'electrical_protection',
-        sub_type: row['Sub Type'] || row.sub_type || 'ACCESSORY',
+        category_id: row.Category || row.category_id || row.Section || row.section || 'electrical_protection',
+        sku_code: row['SKU Code'] || row.sku_code || row['Sub Type'] || row.sub_type || 'ACCESSORY',
         description: row.Description || row.description,
-        remarks: row.Remarks || row.remarks || '',
+        notes: row.Notes || row.notes || row.Remarks || row.remarks || '',
         unit: row.Unit || row.unit || 'Nos',
-        rate: parseFloat(row['Selling Rate (INR)'] || row.rate || 0),
-        gst_pct: parseFloat(row['GST Percentage'] || row.gst_pct || 0.18),
-      })).filter((r) => r.description && !isNaN(r.rate));
+        default_rate: parseFloat(row['Selling Rate (INR)'] || row.default_rate || row.rate || 0),
+        is_survey_dependent: false,
+        civil_required_only: false,
+      })).filter((r) => r.description && !isNaN(r.default_rate));
 
       if (parsedRows.length === 0) {
         toast('No valid rows found in Excel sheet. Check column headers.', 'error');
@@ -383,14 +385,14 @@ export default function AccessoriesMasterPage() {
                       </button>
                     </td>
                     <td className="capitalize font-semibold text-text-secondary">
-                      {item.section.replace(/_/g, ' ')}
+                      {item.category_id.replace(/_/g, ' ')}
                     </td>
-                    <td className="font-mono text-xs">{item.sub_type}</td>
+                    <td className="font-mono text-xs">{item.sku_code}</td>
                     <td className="font-semibold text-text-primary">{item.description}</td>
-                    <td className="text-text-muted italic text-xs">{item.remarks || '—'}</td>
+                    <td className="text-text-muted italic text-xs">{item.notes || '—'}</td>
                     <td>{item.unit}</td>
-                    <td className="font-mono font-semibold text-text-primary">{formatINR(item.rate)}</td>
-                    <td>{(item.gst_pct * 100).toFixed(0)}%</td>
+                    <td className="font-mono font-semibold text-text-primary">{formatINR(item.default_rate)}</td>
+                    <td>-</td>
                     <td>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${item.org_id ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
                         {item.org_id ? 'Org' : 'Global'}
@@ -437,20 +439,20 @@ export default function AccessoriesMasterPage() {
             <form onSubmit={handleSave} className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">BOM Section *</label>
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">BOM Category *</label>
                   <Select
-                    value={draft.section}
-                    onChange={(val) => setDraft({ ...draft, section: val as any })}
+                    value={draft.category_id}
+                    onChange={(val) => setDraft({ ...draft, category_id: val as any })}
                     options={SECTION_OPTIONS}
                     className="w-full"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Sub Type Identifier *</label>
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">SKU Code *</label>
                   <input
                     type="text" required
-                    value={draft.sub_type}
-                    onChange={(e) => setDraft({ ...draft, sub_type: e.target.value.toUpperCase() })}
+                    value={draft.sku_code}
+                    onChange={(e) => setDraft({ ...draft, sku_code: e.target.value.toUpperCase() })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
                     placeholder="e.g. ACDB, GI_STRIP"
                   />
@@ -466,11 +468,11 @@ export default function AccessoriesMasterPage() {
                   />
                 </div>
                 <div className="space-y-1 col-span-2">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Technical Specifications Remarks</label>
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Technical Notes</label>
                   <input
                     type="text"
-                    value={draft.remarks}
-                    onChange={(e) => setDraft({ ...draft, remarks: e.target.value })}
+                    value={draft.notes}
+                    onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
                     placeholder="e.g. 10SWG copper wire, 1kg compound rod"
                   />
@@ -494,23 +496,32 @@ export default function AccessoriesMasterPage() {
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Base Cost Rate (INR) *</label>
                   <input
                     type="number" required min={0} step={0.01}
-                    value={draft.rate}
-                    onChange={(e) => setDraft({ ...draft, rate: parseFloat(e.target.value) })}
+                    value={draft.default_rate}
+                    onChange={(e) => setDraft({ ...draft, default_rate: parseFloat(e.target.value) })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
                   />
                 </div>
                 <div className="space-y-1 col-span-2">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Standard GST Slabs *</label>
-                  <Select
-                    value={String(draft.gst_pct)}
-                    onChange={(val) => setDraft({ ...draft, gst_pct: parseFloat(val) })}
-                    options={[
-                      { value: '0.18', label: '18% GST (Cables, Protection, Earthing)' },
-                      { value: '0.12', label: '12% GST (Alternative slabs)' },
-                      { value: '0.05', label: '5% GST (Solar panels standard)' }
-                    ]}
-                    className="w-full"
-                  />
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-text-primary">
+                      <input
+                        type="checkbox"
+                        checked={draft.is_survey_dependent}
+                        onChange={(e) => setDraft({ ...draft, is_survey_dependent: e.target.checked })}
+                        className="w-4 h-4"
+                      />
+                      Is Survey Dependent?
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-semibold text-text-primary">
+                      <input
+                        type="checkbox"
+                        checked={draft.civil_required_only}
+                        onChange={(e) => setDraft({ ...draft, civil_required_only: e.target.checked })}
+                        className="w-4 h-4"
+                      />
+                      Civil Required Only?
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -538,7 +549,7 @@ export default function AccessoriesMasterPage() {
       <HistoryDrawer
         isOpen={historyOpen}
         onClose={() => setHistoryOpen(false)}
-        entityTable="eq_bom_items"
+        entityTable="bom_template_items"
         title="Accessories Catalog"
       />
 

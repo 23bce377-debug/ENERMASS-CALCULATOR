@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidateTag } from 'next/cache';
-import { CACHE_TAG, orgCacheKey } from '@/lib/cache/masterCache';
+import { CACHE_TAG, orgCacheKey, invalidateMasterCache } from '@/lib/cache/masterCache';
 import { invalidateCacheKeys } from '@/lib/cache/redisCache';
 import { createClient } from '@/lib/supabase/server';
 
@@ -55,6 +55,7 @@ export async function revalidateMasterCache(
       `erp:bootstrap:${targetOrgId}`,
       `category_margins:org:${targetOrgId}`
     );
+    await invalidateMasterCache(targetOrgId);
   }
 
   // Only invalidate global keys when explicitly requested (super-admin action)
@@ -66,5 +67,6 @@ export async function revalidateMasterCache(
       'state_rules:all',
       'subsidy_schemes:active'
     );
+    await invalidateMasterCache(null);
   }
 }

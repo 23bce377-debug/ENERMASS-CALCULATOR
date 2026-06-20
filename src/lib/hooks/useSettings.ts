@@ -551,7 +551,7 @@ export function useSettings() {
       const equipmentRates = settings.currentEquipmentRates;
 
       const { data: bomItems } = await supabase
-        .from('eq_bom_items')
+        .from('bom_template_items')
         .select('id, description')
         .or(`org_id.eq.${orgId},org_id.is.null`);
 
@@ -563,10 +563,10 @@ export function useSettings() {
             const bomItemId = descToId.get(desc);
             if (!bomItemId) return;
             const { error: eqError } = await supabase
-              .from('eq_bom_items')
-              .update({ selling_price: val.rate, updated_at: new Date().toISOString() })
+              .from('bom_template_items')
+              .update({ default_rate: val.rate })
               .eq('id', bomItemId);
-            if (eqError) console.warn(`[commitRateMaster] eq_bom_items update error for ${bomItemId}:`, eqError.message);
+            if (eqError) console.warn(`[commitRateMaster] bom_template_items update error for ${bomItemId}:`, eqError.message);
           });
         await Promise.all(updatePromises);
       }

@@ -76,7 +76,7 @@ export const GET = withAuth(async (request, context) => {
       ladderTemplatesRes,
       structureComponentMasterRes
     ] = await Promise.all([
-      applySyncFilter(supabase.from('eq_bom_items').select('*').eq('is_active', true).limit(bomLimit)),
+      applySyncFilter(supabase.from('bom_template_items').select('*').limit(bomLimit)),
       applySyncFilter(supabase.from('structure_accessory_rates').select('*').eq('is_active', true)),
       applySyncFilter(supabase.from('structure_material_rates').select('*')),
       applySyncFilter(supabase.from('structure_templates').select('*')),

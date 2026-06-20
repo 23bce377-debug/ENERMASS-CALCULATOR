@@ -2,6 +2,8 @@ import { Client } from 'pg';
 import * as crypto from 'crypto';
 import { calculateSystem, type CalcInput, type CalcResult } from './calculator';
 import { TAX_CONSTANTS } from '@/lib/tax-constants';
+import { getCachedMasterData } from '@/lib/cache/masterCache';
+import { resolveEffectiveRate, resolveEffectiveMargin } from './overrideResolver';
 
 function getUuid(namespace: string, key: string): string {
   const hash = crypto.createHash('sha1').update(`${namespace}:${key}`).digest('hex');
@@ -40,6 +42,7 @@ export interface DbCalculatorInput {
   state: string; // state name like 'Gujarat' or state code GJ
   capacity?: number; // capacity override in kW
   pricingContext?: PricingContext;
+  orgId?: string | null;
 }
 
 export interface DbCalculatorOutput {
@@ -112,7 +115,10 @@ export async function calculateSystemFromDb(
     systemId = getUuid('systems', systemId);
   }
 
-  // 1. Fetch system template
+  // Fetch Cached Master Data scoped by orgId
+  const masterData = await getCachedMasterData(input.orgId ?? null);
+
+  // 1. Fetch system template from database
   const sysRes = await client.query(
     'SELECT * FROM systems WHERE id = $1 LIMIT 1',
     [systemId]
@@ -125,7 +131,7 @@ export async function calculateSystemFromDb(
   // Resolve capacity
   const capacity = input.capacity !== undefined ? Number(input.capacity) : Number(system.capacity_kw);
 
-  // 2. Fetch state rules
+  // 2. Fetch state rules from database
   const stateRes = await client.query(
     'SELECT * FROM state_rules WHERE state_name = $1 OR state_code = $1 LIMIT 1',
     [input.state]
@@ -135,102 +141,79 @@ export async function calculateSystemFromDb(
   }
   const stateRule = stateRes.rows[0];
 
-  // 3. Fetch system items junction rows
+  // 3. Fetch system items junction rows from database
   const itemsRes = await client.query(
-    `SELECT
-      si.*,
-      (p.selling_price / p.wattage_w) as panel_rate_per_watt, p.gst_pct as panel_gst_pct, p.wattage_w as panel_wattage_w,
-      inv.selling_price as inverter_rate, inv.gst_pct as inverter_gst_pct,
-      bat.selling_price as battery_rate, bat.gst_pct as battery_gst_pct,
-      sm.selling_price as solar_meter_rate, sm.gst_pct as solar_meter_gst_pct,
-      nm.selling_price as net_meter_rate, nm.gst_pct as net_meter_gst_pct,
-      la.selling_price as la_rate, la.gst_pct as la_gst_pct,
-      struct.name as struct_name, struct.material as struct_material, struct.roof_mount_type as struct_roof_mount_type,
-      struct.selling_price as struct_flat_rate, struct.per_watt_rate as struct_per_watt_rate, struct.gst_pct as struct_gst_pct,
-      struct.raw_material_rate as struct_raw_material_rate, struct.fabrication_rate as struct_fabrication_rate, struct.galvanizing_rate as struct_galvanizing_rate,
-      struct.base_weight_kg as struct_base_weight_kg, struct.wastage_pct as struct_wastage_pct, struct.fastener_weight_pct as struct_fastener_weight_pct,
-      bom.selling_price as bom_rate, bom.gst_pct as bom_gst_pct,
-      comm.selling_price as comm_rate, comm.gst_pct as comm_gst_pct,
-      scm.selling_price as structure_component_rate, scm.gst_pct as structure_component_gst_pct
-    FROM system_items si
-    LEFT JOIN eq_panels p ON si.panel_id = p.id
-    LEFT JOIN eq_inverters inv ON si.inverter_id = inv.id
-    LEFT JOIN eq_batteries bat ON si.battery_id = bat.id
-    LEFT JOIN eq_meters sm ON si.solar_meter_id = sm.id
-    LEFT JOIN eq_meters nm ON si.net_meter_id = nm.id
-    LEFT JOIN eq_lightning_arresters la ON si.la_id = la.id
-    LEFT JOIN eq_mounting_structures struct ON si.structure_id = struct.id
-    LEFT JOIN eq_bom_items bom ON si.bom_item_id = bom.id
-    LEFT JOIN eq_communication_devices comm ON si.comm_device_id = comm.id
-    LEFT JOIN structure_component_master scm ON si.structure_component_id = scm.id
-    WHERE si.system_id = $1
-    ORDER BY si.sort_order ASC`,
+    `SELECT * FROM system_items WHERE system_id = $1 ORDER BY sort_order ASC`,
     [system.id]
   );
 
-  // Fetch all active master equipment records (exactly like the frontend store has them cached)
-  const [
-    pRes, invRes, batRes, mRes, laRes, sRes, wlRes, multRes,
-    svRes, smrRes, stRes, stiRes, wtRes, ltRes, sarRes
-  ] = await Promise.all([
-    client.query('SELECT * FROM eq_panels WHERE is_active = true'),
-    client.query('SELECT * FROM eq_inverters WHERE is_active = true'),
-    client.query('SELECT * FROM eq_batteries WHERE is_active = true'),
-    client.query('SELECT * FROM eq_meters WHERE is_active = true'),
-    client.query('SELECT * FROM eq_lightning_arresters WHERE is_active = true'),
-    client.query('SELECT * FROM eq_mounting_structures WHERE is_active = true'),
-    client.query('SELECT * FROM structure_weight_lookup'),
-    client.query('SELECT orientation, multiplier FROM eq_orientation_multipliers'),
-    client.query('SELECT * FROM vendors WHERE is_structure_vendor = true'),
-    client.query('SELECT * FROM structure_material_rates'),
-    client.query('SELECT * FROM structure_templates'),
-    client.query('SELECT * FROM structure_template_items'),
-    client.query('SELECT * FROM walkway_templates'),
-    client.query('SELECT * FROM ladder_templates'),
-    client.query('SELECT * FROM structure_accessory_rates WHERE is_active = true')
+  // 4. Fetch minor tables not stored in master cache (comm devices and structure component master)
+  const [commRes, scmRes] = await Promise.all([
+    client.query('SELECT * FROM eq_communication_devices WHERE is_active = true'),
+    client.query('SELECT * FROM structure_component_master WHERE is_active = true')
   ]);
+  const dbCommDevices = commRes.rows;
+  const dbStructureComponentMasters = scmRes.rows;
 
-  const dbPanels = pRes.rows.map(p => ({
+  // Build rate overrides maps
+  const rateMasterMap: Record<string, { rate: number; active: boolean }> = {};
+  if (masterData.rateMaster) {
+    masterData.rateMaster.forEach(r => {
+      rateMasterMap[r.item_name] = { rate: r.override_rate, active: r.is_active };
+    });
+  }
+
+  const orgCategoryMargins: Record<string, number> = {};
+  if (masterData.categoryMargins) {
+    masterData.categoryMargins.forEach(m => {
+      orgCategoryMargins[m.category] = m.default_margin_pct;
+    });
+  }
+
+  const stateRateOverrides: Record<string, number> = {};
+
+  // Build cached equipment arrays
+  const dbPanels = masterData.panels.map(p => ({
     id: p.id,
     brand: p.brand,
     model: p.model,
     wattage: Number(p.wattage_w),
-    ratePerWatt: Number(p.rate_per_watt || (Number(p.selling_price) / Number(p.wattage_w))),
+    ratePerWatt: Number(p.rate_per_watt),
     gst_pct: Number(p.gst_pct)
   }));
 
-  const dbInverters = invRes.rows.map(inv => ({
+  const dbInverters = masterData.inverters.map(inv => ({
     id: inv.id,
     brand: inv.brand,
     model: inv.model,
-    rate: Number(inv.selling_price || inv.rate),
+    rate: Number(inv.rate),
     capacityKW: Number(inv.capacity_kw),
     gst_pct: Number(inv.gst_pct)
   }));
 
-  const dbBatteries = batRes.rows.map(bat => ({
+  const dbBatteries = masterData.batteries.map(bat => ({
     id: bat.id,
     brand: bat.brand,
     model: bat.model,
-    rate: Number(bat.selling_price || bat.rate),
+    rate: Number(bat.rate),
     gst_pct: Number(bat.gst_pct)
   }));
 
-  const dbMeters = mRes.rows.map(m => ({
+  const dbMeters = masterData.meters.map(m => ({
     id: m.id,
     brand: m.brand,
     model: m.model,
-    rate: Number(m.selling_price || m.rate),
+    rate: Number(m.selling_price),
     gst_pct: Number(m.gst_pct),
     description: m.description || `${m.brand || ''} ${m.model || ''}`.trim(),
     meter_type: m.meter_type
   }));
 
-  const dbLAs = laRes.rows.map(la => ({
+  const dbLAs = masterData.lightningArresters.map(la => ({
     id: la.id,
     brand: la.brand,
     model: la.model,
-    rate: Number(la.selling_price || la.rate),
+    rate: Number(la.selling_price),
     gst_pct: Number(la.gst_pct),
     description: la.description || `${la.brand || ''} ${la.model || ''}`.trim()
   }));
@@ -255,13 +238,14 @@ export async function calculateSystemFromDb(
   const finalNetMeterId = selectedNetMeterId || dbDefaultNetMeterId;
   const finalLAId = selectedLAId || dbDefaultLAId;
 
-  const dbStructures = sRes.rows.map(s => ({
+  const dbStructures = masterData.structures.map(s => ({
     id: s.id,
     name: s.name,
     material: s.material,
     roof_mount_type: s.roof_mount_type,
-    flat_rate: s.flat_rate !== undefined ? s.flat_rate : s.selling_price,
-    selling_price: s.selling_price || s.flat_rate,
+    // DB column is selling_price; expose as both flat_rate (for calculator compat) and selling_price
+    flat_rate: s.selling_price !== null && s.selling_price !== undefined ? s.selling_price : null,
+    selling_price: s.selling_price,
     per_watt_rate: s.per_watt_rate,
     gst_pct: s.gst_pct,
     raw_material_rate: s.raw_material_rate,
@@ -273,78 +257,83 @@ export async function calculateSystemFromDb(
     rate_per_kg: s.rate_per_kg
   }));
 
-  const dbWeightLookups = wlRes.rows.map(w => ({
+  const dbWeightLookups = masterData.weightLookups.map(w => ({
     id: w.id,
     structure_id: w.structure_id,
     capacity_kw_min: Number(w.capacity_kw_min),
     capacity_kw_max: Number(w.capacity_kw_max),
-    panel_qty: w.panel_qty,
-    weight_per_panel_kg: Number(w.weight_per_panel_kg),
-    bracket_fixed_weight: Number(w.bracket_fixed_weight),
     total_weight_kg: Number(w.total_weight_kg)
   }));
 
   const dbOrientationMultipliers: Record<string, number> = {};
-  multRes.rows.forEach(r => {
+  masterData.orientationMultipliers.forEach(r => {
     dbOrientationMultipliers[r.orientation] = Number(r.multiplier);
   });
 
   const projectType = input.pricingContext?.projectType || 'residential';
-  const targetMarginPct = input.pricingContext?.targetMarginPct !== undefined
+  
+  // Resolve Target Margin using precedence: Org Override (via resolveEffectiveMargin) -> Global Default
+  const inputMargin = input.pricingContext?.targetMarginPct !== undefined
     ? Number(input.pricingContext.targetMarginPct)
     : Number(system.target_margin_pct);
 
+  const resolvedMargin = resolveEffectiveMargin(
+    system.category,
+    inputMargin,
+    orgCategoryMargins
+  );
+  const targetMarginPct = resolvedMargin.marginPct;
+
   const gstOnOutput = Number(stateRule.gst_on_output);
 
-  // Load schemes and slabs
+  // Load schemes and slabs from cached masterData
   let slabs: any[] = [];
   let maxCapacity = undefined;
   let schemeName = undefined;
 
   if (projectType === 'residential') {
-    const schemeRes = await client.query(
-      `SELECT * FROM calculation_schemes 
-       WHERE is_active = true AND applies_to = 'residential' LIMIT 1`
-    );
-
-    if (schemeRes.rows.length > 0) {
-      const scheme = schemeRes.rows[0];
+    const scheme = masterData.schemes.find(s => s.applies_to === 'residential');
+    if (scheme) {
       schemeName = scheme.name;
 
-      const overrideRes = await client.query(
-        `SELECT * FROM state_scheme_overrides 
-         WHERE state_id = $1 AND scheme_id = $2 AND is_active = true LIMIT 1`,
-        [stateRule.id, scheme.id]
-      );
-      const override = overrideRes.rows[0];
-
+      const override = masterData.schemeOverrides.find(o => o.scheme_id === scheme.id && o.state_id === stateRule.id);
       maxCapacity = override && override.max_absolute_override !== null
         ? Number(override.max_absolute_override)
         : Number(scheme.max_capacity_kw);
 
-      const slabsRes = await client.query(
-        `SELECT * FROM scheme_slabs WHERE scheme_id = $1 ORDER BY slab_index ASC`,
-        [scheme.id]
-      );
-      slabs = slabsRes.rows;
+      slabs = masterData.slabs
+        .filter(s => s.scheme_id === scheme.id)
+        .sort((a, b) => a.slab_index - b.slab_index);
     }
   }
 
   // Construct generic system items for matching and fallback
   const systemItems = itemsRes.rows.map(item => {
-    const descUpper = item.description.toUpperCase();
     let rate = 0;
     let gstPct: any = TAX_CONSTANTS.COMMERCIAL_GST_RATE;
     
     if (item.bom_item_id) {
-      rate = Number(item.bom_rate || 0);
-      gstPct = Number(item.bom_gst_pct || TAX_CONSTANTS.COMMERCIAL_GST_RATE);
+      const bom = masterData.bomTemplateItems.find(x => x.id === item.bom_item_id);
+      if (bom) {
+        // Apply strict precedence: Org Override -> State Override -> Category Override -> Global Default
+        const resolved = resolveEffectiveRate(
+          item.description,
+          bom.default_rate ?? 0,
+          undefined,
+          rateMasterMap,
+          stateRateOverrides
+        );
+        rate = resolved.rate;
+        gstPct = 0.18; // default GST for template items
+      }
     } else if (item.comm_device_id) {
-      rate = Number(item.comm_rate || 0);
-      gstPct = Number(item.comm_gst_pct || 0.12);
+      const comm = dbCommDevices.find(c => c.id === item.comm_device_id);
+      rate = comm ? Number(comm.selling_price) : 0;
+      gstPct = comm ? Number(comm.gst_pct) : 0.12;
     } else if (item.structure_component_id) {
-      rate = Number(item.structure_component_rate || 0);
-      gstPct = Number(item.structure_component_gst_pct || TAX_CONSTANTS.COMMERCIAL_GST_RATE);
+      const scm = dbStructureComponentMasters.find(s => s.id === item.structure_component_id);
+      rate = scm ? Number(scm.selling_price) : 0;
+      gstPct = scm ? Number(scm.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
     }
     
     return {
@@ -383,6 +372,12 @@ export async function calculateSystemFromDb(
   const selectedInverterMix = selectedInverterId ? { [selectedInverterId]: Number(system.inverter_qty || 1) } : {};
   const selectedBatteryMix = selectedBatteryId ? { [selectedBatteryId]: Number(system.battery_qty || 1) } : {};
   const panelMix = selectedPanelId ? { [selectedPanelId]: Number(system.panel_qty || system.panel_qty || 0) } : {};
+
+  // Resolve grid tariff and inflation rate overrides from app settings
+  const resolvedGridTariff = masterData.appSettings?.default_grid_tariff_inr ?? Number(stateRule.grid_tariff_inr);
+  const resolvedInflation = masterData.appSettings?.electricity_inflation_pct 
+    ? (masterData.appSettings.electricity_inflation_pct / 100) 
+    : 0.05;
 
   // Invoke the single source of truth pure function calculateSystem
   const calcResult: CalcResult = calculateSystem({
@@ -427,13 +422,17 @@ export async function calculateSystemFromDb(
     walkwayLengthM: sel.walkwayLengthM,
     ladderLengthM: sel.ladderLengthM,
 
-    dbStructureVendors: svRes.rows,
-    dbStructureAccessoryRates: sarRes.rows,
-    dbStructureMaterialRates: smrRes.rows,
-    dbStructureTemplates: stRes.rows,
-    dbStructureTemplateItems: stiRes.rows,
-    dbWalkwayTemplates: wtRes.rows,
-    dbLadderTemplates: ltRes.rows
+    dbStructureVendors: masterData.structureVendors,
+    dbStructureAccessoryRates: masterData.structureAccessoryRates,
+    dbStructureMaterialRates: masterData.structureMaterialRates,
+    dbStructureTemplates: masterData.structureTemplates,
+    dbStructureTemplateItems: masterData.structureTemplateItems,
+    dbWalkwayTemplates: masterData.walkwayTemplates,
+    dbLadderTemplates: masterData.ladderTemplates,
+
+    gridTariffPerKWh: resolvedGridTariff,
+    electricityInflationRate: resolvedInflation,
+    rateMaster: rateMasterMap
   });
 
   // Map BOM line results and assign parent section names
@@ -475,13 +474,13 @@ export async function calculateSystemFromDb(
   // Re-generate structure requirements object
   let structureRequirements = undefined;
   if (sel.structureVendorId && sel.structureMaterialType) {
-    const vendor = svRes.rows.find(v => v.id === sel.structureVendorId);
+    const vendor = masterData.structureVendors.find(v => v.id === sel.structureVendorId);
     const vendorName = vendor ? vendor.name : 'Unknown';
-    const rateRow = smrRes.rows.find(r => r.vendor_id === sel.structureVendorId && r.material_type === sel.structureMaterialType);
+    const rateRow = masterData.structureMaterialRates.find(r => r.vendor_id === sel.structureVendorId && r.material_type === sel.structureMaterialType);
     const ratePerKg = rateRow ? Number(rateRow.rate_per_kg) : 0;
     
     // Find closest template
-    const templates = stRes.rows.filter(t => t.structure_type === sel.structureMaterialType);
+    const templates = masterData.structureTemplates.filter(t => t.structure_type === sel.structureMaterialType);
     let templateName = 'Unknown Template';
     let totalWeight = 0;
     let rafterWeight = 0;
@@ -492,7 +491,7 @@ export async function calculateSystemFromDb(
       );
       templateName = `${template.capacity_kw}kW ${template.structure_type}`;
       
-      const templateItems = stiRes.rows.filter(item => 
+      const templateItems = masterData.structureTemplateItems.filter(item => 
         item.template_id === template.id &&
         (item.vendor_id === null || item.vendor_id === sel.structureVendorId)
       );

@@ -7,3 +7,5 @@ export * from './master';
 export * from './workflow';
 export * from './governance';
 export * from './export';
+export * from './bom';
+export * from './inventory';

@@ -82,7 +82,7 @@ export const GET = withAuth(async (request, context) => {
         ladderTemplatesRes,
         structureComponentMasterRes
       ] = await Promise.all([
-        safeQuery(supabase.from('eq_bom_items').select('*').eq('is_active', true).limit(bomLimit)),
+        safeQuery(supabase.from('bom_template_items').select('*').limit(bomLimit)),
         safeQuery(supabase.from('structure_accessory_rates').select('*').eq('is_active', true)),
         safeQuery(supabase.from('structure_material_rates').select('*')),
         safeQuery(supabase.from('structure_templates').select('*')),

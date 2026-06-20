@@ -562,18 +562,22 @@ export interface Database {
       bom_categories: {
         Row: {
           id: string
+          /** Added by migration 202606200002 — null means global/shared category */
+          org_id: string | null
           name: string
           display_order: number
           is_optional: boolean
         }
         Insert: {
           id?: string
+          org_id?: string | null
           name: string
           display_order: number
           is_optional?: boolean
         }
         Update: {
           id?: string
+          org_id?: string | null
           name?: string
           display_order?: number
           is_optional?: boolean
@@ -583,6 +587,8 @@ export interface Database {
       bom_template_items: {
         Row: {
           id: string
+          /** Added by migration 202606200002 — null means global/shared template item */
+          org_id: string | null
           category_id: string
           sku_code: string
           description: string
@@ -597,6 +603,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          org_id?: string | null
           category_id: string
           sku_code: string
           description: string
@@ -611,6 +618,7 @@ export interface Database {
         }
         Update: {
           id?: string
+          org_id?: string | null
           category_id?: string
           sku_code?: string
           description?: string
@@ -2686,6 +2694,8 @@ export interface Database {
       inventory_movements: {
         Row: {
           id: string
+          /** Added by migration 202606200003 — tenant isolation for ledger queries */
+          org_id: string
           item_id: string
           project_id: string
           from_state: string | null
@@ -2702,6 +2712,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          org_id: string
           item_id: string
           project_id: string
           from_state?: string | null
@@ -2716,22 +2727,13 @@ export interface Database {
           notes?: string | null
           created_at?: string
         }
-        Update: {
-          id?: string
-          item_id?: string
-          project_id?: string
-          from_state?: string | null
-          to_state?: string
-          quantity?: number
-          moved_by?: string | null
-          moved_at?: string
-          vehicle_number?: string | null
-          driver_contact?: string | null
-          site_received_by?: string | null
-          site_received_at?: string | null
-          notes?: string | null
-          created_at?: string
-        }
+        /**
+         * inventory_movements is an APPEND-ONLY ledger.
+         * The database trigger trg_inventory_immutable prevents UPDATE and DELETE.
+         * This type intentionally has no mutable fields to enforce that constraint
+         * at the TypeScript layer too.
+         */
+        Update: never
         Relationships: []
       }
       inventory_summary: {

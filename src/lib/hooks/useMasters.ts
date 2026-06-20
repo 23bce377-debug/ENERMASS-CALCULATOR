@@ -47,9 +47,9 @@ async function logAudit(
 
 function getEntityTable(entity: string): string {
   if (entity === 'vendors') return 'vendors';
-  if (entity === 'pricing') return 'eq_bom_items';
+  if (entity === 'pricing') return 'bom_template_items';
   if (entity === 'subsidy') return 'calculation_schemes';
-  if (entity === 'accessories') return 'eq_bom_items';
+  if (entity === 'accessories') return 'bom_template_items';
   if (entity === 'structures') return 'eq_mounting_structures';
   return `eq_${entity}`;
 }

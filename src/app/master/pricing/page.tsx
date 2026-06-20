@@ -74,9 +74,8 @@ export default function PricingMasterPage() {
     queryKey: ['bom-items-pricing'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('eq_bom_items')
-        .select('*')
-        .eq('is_active', true);
+        .from('bom_template_items')
+        .select('*');
       if (error) throw error;
       return data || [];
     }
@@ -90,7 +89,7 @@ export default function PricingMasterPage() {
       
       // Select bom items
       const { data: boms, error: bomError } = await supabase
-        .from('eq_bom_items')
+        .from('bom_template_items')
         .select('*')
         .or(`org_id.eq.${orgId},org_id.is.null`);
 
@@ -99,7 +98,7 @@ export default function PricingMasterPage() {
       // Group by description (or section+sub_type) and prefer org_id if present to override global ones
       const map = new Map<string, any>();
       for (const b of boms || []) {
-        const key = `${b.section}:${b.sub_type}`;
+        const key = `${b.category_id}:${b.sku_code}`;
         const existing = map.get(key);
         if (!existing || b.org_id) {
           map.set(key, b);
@@ -113,12 +112,12 @@ export default function PricingMasterPage() {
         return {
           id: b.id,
           bom_item_id: b.id,
-          override_rate: b.selling_price || 0,
+          override_rate: b.default_rate || 0,
           is_active: b.is_active,
           bom_description: b.description || 'BOM Item',
-          bom_section: b.section || 'Accessories',
+          bom_section: b.category_id || 'Accessories',
           bom_unit: b.unit || 'Nos',
-          bom_default_rate: b.buy_price || 0,
+          bom_default_rate: b.default_rate || 0,
           is_override: b.org_id !== null,
         } as any;
       });
@@ -134,27 +133,25 @@ export default function PricingMasterPage() {
       
       // Get the metadata of the target global BOM item
       const { data: targetItem, error: fetchError } = await supabase
-        .from('eq_bom_items')
+        .from('bom_template_items')
         .select('*')
         .eq('id', payload.bom_item_id)
         .single();
       if (fetchError) throw fetchError;
 
-      // Insert organization override in eq_bom_items
+      // Insert organization override in bom_template_items
       const { data, error } = await supabase
-        .from('eq_bom_items')
+        .from('bom_template_items')
         .insert({
           org_id: orgId,
-          section: targetItem.section,
-          sub_type: targetItem.sub_type,
+          category_id: targetItem.category_id,
+          sku_code: targetItem.sku_code,
           description: targetItem.description,
-          remarks: targetItem.remarks,
+          notes: targetItem.notes,
           unit: targetItem.unit,
-          buy_price: targetItem.buy_price,
-          selling_price: payload.override_rate,
-          gst_pct: targetItem.gst_pct,
-          is_active: true,
-          updated_at: new Date().toISOString()
+          default_rate: payload.override_rate,
+          is_survey_dependent: targetItem.is_survey_dependent,
+          civil_required_only: targetItem.civil_required_only,
         })
         .select()
         .single();
@@ -172,10 +169,9 @@ export default function PricingMasterPage() {
     mutationFn: async ({ id, override_rate }: { id: string; override_rate: number }) => {
       const { userId } = await getOrgContext();
       const { data, error } = await supabase
-        .from('eq_bom_items')
+        .from('bom_template_items')
         .update({
-          selling_price: override_rate,
-          updated_at: new Date().toISOString()
+          default_rate: override_rate,
         })
         .eq('id', id)
         .select()
@@ -194,7 +190,7 @@ export default function PricingMasterPage() {
     mutationFn: async (id: string) => {
       const { orgId } = await getOrgContext();
       const { error } = await supabase
-        .from('eq_bom_items')
+        .from('bom_template_items')
         .delete()
         .eq('id', id)
         .eq('org_id', orgId); // Safe deletion: only delete their org row
@@ -253,30 +249,28 @@ export default function PricingMasterPage() {
           // Create override
           const { orgId } = await getOrgContext();
           const { data: targetItem } = await supabase
-            .from('eq_bom_items')
+            .from('bom_template_items')
             .select('*')
             .eq('id', row.bom_item_id)
             .single();
           if (targetItem) {
-            await supabase.from('eq_bom_items').insert({
+            await supabase.from('bom_template_items').insert({
               org_id: orgId,
-              section: targetItem.section,
-              sub_type: targetItem.sub_type,
+              category_id: targetItem.category_id,
+              sku_code: targetItem.sku_code,
               description: targetItem.description,
-              remarks: targetItem.remarks,
+              notes: targetItem.notes,
               unit: targetItem.unit,
-              buy_price: targetItem.buy_price,
-              selling_price: newRate,
-              gst_pct: targetItem.gst_pct,
-              is_active: true,
-              updated_at: new Date().toISOString()
+              default_rate: newRate,
+              is_survey_dependent: targetItem.is_survey_dependent,
+              civil_required_only: targetItem.civil_required_only,
             });
           }
         } else {
           // Update override
           await supabase
-            .from('eq_bom_items')
-            .update({ selling_price: newRate, updated_at: new Date().toISOString() })
+            .from('bom_template_items')
+            .update({ default_rate: newRate })
             .eq('id', id);
         }
       });
@@ -515,7 +509,7 @@ export default function PricingMasterPage() {
                     { value: '', label: 'Select a component...', disabled: true },
                     ...(bomItems || []).map((item: any) => ({
                       value: item.id,
-                      label: `${item.description} (${item.unit}) — Baseline: ₹${item.buy_price}`
+                      label: `${item.description} (${item.unit}) — Baseline: ₹${item.default_rate}`
                     }))
                   ]}
                   className="w-full"
@@ -641,7 +635,7 @@ export default function PricingMasterPage() {
       <HistoryDrawer
         isOpen={historyOpen}
         onClose={() => setHistoryOpen(false)}
-        entityTable="eq_bom_items"
+        entityTable="bom_template_items"
         title="Rate Master Pricing"
       />
     </div>

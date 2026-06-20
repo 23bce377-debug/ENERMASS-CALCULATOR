@@ -65,7 +65,7 @@ export async function getPresetWithComponents(presetId: string) {
     supabase.from('eq_meters').select('id, brand, model, selling_price'),
     supabase.from('eq_lightning_arresters').select('id, brand, model, selling_price'),
     supabase.from('eq_mounting_structures').select('id, name, selling_price'),
-    supabase.from('eq_bom_items').select('id, description, selling_price'),
+    supabase.from('bom_template_items').select('id, description, default_rate'),
     supabase.from('eq_communication_devices').select('id, brand, model, selling_price'),
     supabase.from('structure_component_master').select('id, name, selling_price'),
   ]);
@@ -158,7 +158,7 @@ export async function getPresetWithComponents(presetId: string) {
       catalogType = 'bom_template';
       const bom = bomItems.find((x: any) => x.id === item.bom_item_id);
       if (bom) {
-        unitRate = Number(bom.selling_price || 0);
+        unitRate = Number(bom.default_rate || 0);
       }
     } else if (item.comm_device_id) {
       category = 'accessory';
@@ -333,7 +333,7 @@ export async function getCatalogItems(category: string, search?: string) {
 
     if (!section) return [];
 
-    let query = supabase.from('eq_bom_items').select('*').eq('section' as any, section);
+    let query = supabase.from('bom_template_items').select('*').eq('category_id' as any, section);
     if (search) {
       query = query.ilike('description', `%${search}%`);
     }
@@ -347,7 +347,7 @@ export async function getCatalogItems(category: string, search?: string) {
       model: '',
       unit: item.unit || 'units',
       defaultQty: 1,
-      defaultRate: Number(item.selling_price || 0),
+      defaultRate: Number(item.default_rate || 0),
       isSurveyDependent: false,
     }));
   }

@@ -60,7 +60,7 @@ const CARDS = [
     desc: 'Standardize ACDB, DCDB boxes, earthing rods, solar cabling, and transport logs.',
     icon: <Package size={24} className="text-sky-500" />,
     entity: 'accessories',
-    table: 'eq_bom_items',
+    table: 'bom_template_items',
   },
   {
     href: '/master/vendors',
@@ -76,7 +76,7 @@ const CARDS = [
     desc: 'View unified equipment catalog rates and set baseline override parameters.',
     icon: <Tag size={24} className="text-rose-500" />,
     entity: 'pricing',
-    table: 'eq_bom_items',
+    table: 'rate_master',
   },
   {
     href: '/master/subsidy',
@@ -126,9 +126,9 @@ export default function MastersDashboardPage() {
         fetchCount('eq_inverters').then(c => countsMap.inverters = c),
         fetchCount('eq_batteries').then(c => countsMap.batteries = c),
         fetchCount('eq_mounting_structures').then(c => countsMap.structures = c),
-        fetchCount('eq_bom_items').then(c => countsMap.accessories = c),
+        fetchCount('bom_template_items').then(c => countsMap.accessories = c),
         fetchCount('vendors', true).then(c => countsMap.vendors = c),
-        fetchCount('eq_bom_items', true).then(c => countsMap.pricing = c),
+        fetchCount('rate_master', true).then(c => countsMap.pricing = c),
         fetchCount('calculation_schemes').then(c => countsMap.subsidy = c),
       ]);
 

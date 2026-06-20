@@ -15,7 +15,7 @@ CREATE INDEX IF NOT EXISTS idx_system_items_system ON system_items(system_id, so
 
 -- Quote performance
 CREATE INDEX IF NOT EXISTS idx_quotes_org_status ON quotes(org_id, status, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_quotes_project ON quotes(project_id) WHERE project_id IS NOT NULL;
+-- CREATE INDEX IF NOT EXISTS idx_quotes_project ON quotes(project_id) WHERE project_id IS NOT NULL; (project_id does not exist on quotes)
 
 -- Inventory performance
 CREATE INDEX IF NOT EXISTS idx_inventory_movements_date ON inventory_movements(org_id, created_at DESC);

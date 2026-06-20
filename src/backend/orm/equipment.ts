@@ -30,9 +30,6 @@ export type StructureWeightLookupRow = Database['public']['Tables']['structure_w
 export type StructureWeightLookupInsert = Database['public']['Tables']['structure_weight_lookup']['Insert'];
 export type StructureWeightLookupUpdate = Database['public']['Tables']['structure_weight_lookup']['Update'];
 
-export type EqBomItemRow = Database['public']['Tables']['eq_bom_items']['Row'];
-export type EqBomItemInsert = Database['public']['Tables']['eq_bom_items']['Insert'];
-export type EqBomItemUpdate = Database['public']['Tables']['eq_bom_items']['Update'];
 
 export type EqCommunicationDeviceRow = Database['public']['Tables']['eq_communication_devices']['Row'];
 export type EqCommunicationDeviceInsert = Database['public']['Tables']['eq_communication_devices']['Insert'];
@@ -261,39 +258,6 @@ export const StructureWeightLookupORM = {
   }
 };
 
-export const BomItemORM = {
-  async getAll(orgId?: string) {
-    const query = supabase.from('eq_bom_items').select('*');
-    if (orgId) {
-      query.or(`org_id.eq.${orgId},org_id.is.null`);
-    } else {
-      query.is('org_id', null);
-    }
-    const { data, error } = await query;
-    if (error) throw error;
-    return data;
-  },
-  async getById(id: string) {
-    const { data, error } = await supabase.from('eq_bom_items').select('*').eq('id', id).maybeSingle();
-    if (error) throw error;
-    return data;
-  },
-  async create(item: EqBomItemInsert) {
-    const { data, error } = await supabase.from('eq_bom_items').insert(item).select().maybeSingle();
-    if (error) throw error;
-    return data;
-  },
-  async update(id: string, updates: EqBomItemUpdate) {
-    const { data, error } = await supabase.from('eq_bom_items').update(updates).eq('id', id).select().maybeSingle();
-    if (error) throw error;
-    return data;
-  },
-  async delete(id: string) {
-    const { error } = await supabase.from('eq_bom_items').delete().eq('id', id);
-    if (error) throw error;
-    return true;
-  }
-};
 
 export const CommunicationDeviceORM = {
   async getAll(orgId?: string) {
@@ -523,9 +487,9 @@ export const StructureComponentVendorRatesORM = {
  */
 export const RateMasterORM = {
   async getAll(orgId: string) {
-    const { data, error } = await (supabase as any).from('rate_master').select('*, eq_bom_items(description, section, unit, gst_pct)').eq('org_id', orgId).eq('is_active', true);
+    const { data, error } = await (supabase as any).from('rate_master').select('*, bom_template_items(description, category_id, unit)').eq('org_id', orgId).eq('is_active', true);
     if (error) throw error;
-    return data as Array<{ id: string; org_id: string; bom_item_id: string | null; item_name: string; override_rate: number; is_active: boolean; created_at: string; updated_at: string; eq_bom_items: { description: string; section: string; unit: string; gst_pct: number } | null; }>;
+    return data as Array<{ id: string; org_id: string; bom_item_id: string | null; item_name: string; override_rate: number; is_active: boolean; created_at: string; updated_at: string; bom_template_items: { description: string; category_id: string; unit: string; } | null; }>;
   },
   async asRateMasterDict(orgId: string): Promise<Record<string, { rate: number; active: boolean }>> {
     const rows = await RateMasterORM.getAll(orgId);
