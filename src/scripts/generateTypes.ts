@@ -17,7 +17,7 @@ function pgTypeToTs(dataType: string, udtName: string, isArray: boolean): string
   const cleanType = dataType.toLowerCase();
   const cleanUdt = udtName.toLowerCase();
   
-  if (['uuid', 'text', 'varchar', 'character varying', 'character', 'date', 'timestamp', 'timestamp with time zone', 'timestamp without time zone', 'time', 'time without time zone', 'interval'].some(t => cleanType.includes(t) || cleanUdt.includes(t))) {
+  if (['uuid', 'text', 'varchar', 'character varying', 'character', 'date', 'timestamp', 'timestamp with time zone', 'timestamp without time zone', 'time', 'time without time zone', 'interval', 'inet', 'cidr', 'macaddr', 'macaddr8'].some(t => cleanType.includes(t) || cleanUdt.includes(t))) {
     typeStr = 'string';
   } else if (['integer', 'int', 'bigint', 'smallint', 'numeric', 'real', 'double precision', 'decimal'].some(t => cleanType.includes(t) || cleanUdt.includes(t))) {
     typeStr = 'number';

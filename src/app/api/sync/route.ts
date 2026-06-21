@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { withAuth } from '@/lib/api/wrappers';
+import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 
 export const dynamic = 'force-dynamic';
 
-export const GET = withAuth(async (request, context) => {
-  const { orgId } = context.auth;
+export const GET = withLicensedApiRoute(async (request, context) => {
+  const { orgId } = context.session;
   if (!orgId) {
     return NextResponse.json({ error: 'Unauthorized: No org_id associated with profile' }, { status: 401 });
   }
@@ -138,4 +138,7 @@ export const GET = withAuth(async (request, context) => {
     console.error('[GET /api/sync] Error:', err);
     return NextResponse.json({ error: err.message || 'Internal server error during sync load' }, { status: 500 });
   }
+}, {
+  feature: 'master_data',
+  roles: ['owner', 'admin', 'manager', 'staff'],
 });

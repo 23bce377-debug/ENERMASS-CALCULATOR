@@ -9,7 +9,14 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-const DATABASE_URL = 'postgresql://postgres.xjdqpwmizmfkcdcgcxqv:9BTkCoHcgWtYvE36@aws-1-ap-south-1.pooler.supabase.com:6543/postgres';
+require('dotenv').config({ path: '.env.local' });
+
+const DATABASE_URL = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
+
+if (!DATABASE_URL) {
+  console.error('DATABASE_URL, SUPABASE_DB_URL, or POSTGRES_URL must be set.');
+  process.exit(1);
+}
 
 /**
  * Split SQL into individual statements, respecting:

@@ -476,18 +476,21 @@ export interface Database {
           name: string
           display_order: number
           is_optional: boolean
+          org_id: string | null
         }
         Insert: {
           id?: string
           name: string
           display_order: number
           is_optional?: boolean
+          org_id?: string | null
         }
         Update: {
           id?: string
           name?: string
           display_order?: number
           is_optional?: boolean
+          org_id?: string | null
         }
         Relationships: []
       }
@@ -505,6 +508,7 @@ export interface Database {
           is_survey_dependent: boolean
           civil_required_only: boolean
           notes: string | null
+          org_id: string | null
         }
         Insert: {
           id?: string
@@ -519,6 +523,7 @@ export interface Database {
           is_survey_dependent?: boolean
           civil_required_only?: boolean
           notes?: string | null
+          org_id?: string | null
         }
         Update: {
           id?: string
@@ -533,6 +538,7 @@ export interface Database {
           is_survey_dependent?: boolean
           civil_required_only?: boolean
           notes?: string | null
+          org_id?: string | null
         }
         Relationships: []
       }
@@ -986,6 +992,126 @@ export interface Database {
         }
         Relationships: []
       }
+      device_challenges: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          device_id: string
+          nonce: string
+          status: string
+          created_at: string
+          expires_at: string
+          used_at: string | null
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          device_id: string
+          nonce: string
+          status?: string
+          created_at?: string
+          expires_at: string
+          used_at?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          device_id?: string
+          nonce?: string
+          status?: string
+          created_at?: string
+          expires_at?: string
+          used_at?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      device_reset_requests: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          old_device_id: string | null
+          requested_device_info: Json
+          status: string
+          requested_at: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          old_device_id?: string | null
+          requested_device_info?: Json
+          status?: string
+          requested_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          old_device_id?: string | null
+          requested_device_info?: Json
+          status?: string
+          requested_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+        }
+        Relationships: []
+      }
+      device_sessions: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          device_id: string
+          session_token_hash: string
+          ip_address: string | null
+          user_agent: string | null
+          status: string
+          created_at: string
+          last_seen_at: string
+          expires_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          device_id: string
+          session_token_hash: string
+          ip_address?: string | null
+          user_agent?: string | null
+          status?: string
+          created_at?: string
+          last_seen_at?: string
+          expires_at: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          device_id?: string
+          session_token_hash?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          status?: string
+          created_at?: string
+          last_seen_at?: string
+          expires_at?: string
+        }
+        Relationships: []
+      }
       draft_quotes: {
         Row: {
           id: string
@@ -1100,39 +1226,6 @@ export interface Database {
         }
         Relationships: []
       }
-      epc_project_milestones: {
-        Row: {
-          id: string
-          project_id: string
-          milestone: Database['public']['Enums']['milestone_type']
-          target_date: string
-          actual_date: string | null
-          status: string
-          completed_by: string | null
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          project_id: string
-          milestone: Database['public']['Enums']['milestone_type']
-          target_date: string
-          actual_date?: string | null
-          status?: string
-          completed_by?: string | null
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          project_id?: string
-          milestone?: Database['public']['Enums']['milestone_type']
-          target_date?: string
-          actual_date?: string | null
-          status?: string
-          completed_by?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       epc_projects: {
         Row: {
           id: string
@@ -1148,6 +1241,7 @@ export interface Database {
           created_at: string
           updated_at: string
           version: number
+          project_notes: string | null
         }
         Insert: {
           id?: string
@@ -1163,6 +1257,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           version?: number
+          project_notes?: string | null
         }
         Update: {
           id?: string
@@ -1178,63 +1273,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           version?: number
-        }
-        Relationships: []
-      }
-      epc_site_surveys: {
-        Row: {
-          id: string
-          project_id: string
-          surveyor_id: string | null
-          surveyed_at: string | null
-          roof_mount_type: Database['public']['Enums']['roof_mount_type']
-          tilt_angle_deg: number | null
-          usable_area_sqft: number | null
-          roof_load_capacity_kgm2: number | null
-          distribution_distance_m: number | null
-          shading_percentage: number | null
-          solar_access_pct: number | null
-          survey_notes: string | null
-          gps_lat: number | null
-          gps_lng: number | null
-          created_at: string
-          status: Database['public']['Enums']['site_survey_status']
-        }
-        Insert: {
-          id?: string
-          project_id: string
-          surveyor_id?: string | null
-          surveyed_at?: string | null
-          roof_mount_type?: Database['public']['Enums']['roof_mount_type']
-          tilt_angle_deg?: number | null
-          usable_area_sqft?: number | null
-          roof_load_capacity_kgm2?: number | null
-          distribution_distance_m?: number | null
-          shading_percentage?: number | null
-          solar_access_pct?: number | null
-          survey_notes?: string | null
-          gps_lat?: number | null
-          gps_lng?: number | null
-          created_at?: string
-          status?: Database['public']['Enums']['site_survey_status']
-        }
-        Update: {
-          id?: string
-          project_id?: string
-          surveyor_id?: string | null
-          surveyed_at?: string | null
-          roof_mount_type?: Database['public']['Enums']['roof_mount_type']
-          tilt_angle_deg?: number | null
-          usable_area_sqft?: number | null
-          roof_load_capacity_kgm2?: number | null
-          distribution_distance_m?: number | null
-          shading_percentage?: number | null
-          solar_access_pct?: number | null
-          survey_notes?: string | null
-          gps_lat?: number | null
-          gps_lng?: number | null
-          created_at?: string
-          status?: Database['public']['Enums']['site_survey_status']
+          project_notes?: string | null
         }
         Relationships: []
       }
@@ -1302,6 +1341,7 @@ export interface Database {
           imported_at: string | null
           imported_by: string | null
           buy_price: number
+          rate: number | null
         }
         Insert: {
           id?: string
@@ -1327,6 +1367,7 @@ export interface Database {
           imported_at?: string | null
           imported_by?: string | null
           buy_price?: number
+          rate?: number | null
         }
         Update: {
           id?: string
@@ -1352,10 +1393,11 @@ export interface Database {
           imported_at?: string | null
           imported_by?: string | null
           buy_price?: number
+          rate?: number | null
         }
         Relationships: []
       }
-      eq_bom_items: {
+      eq_bom_items_deprecated: {
         Row: {
           id: string
           org_id: string | null
@@ -1514,6 +1556,7 @@ export interface Database {
           imported_at: string | null
           imported_by: string | null
           buy_price: number
+          rate: number | null
         }
         Insert: {
           id?: string
@@ -1538,6 +1581,7 @@ export interface Database {
           imported_at?: string | null
           imported_by?: string | null
           buy_price?: number
+          rate?: number | null
         }
         Update: {
           id?: string
@@ -1562,6 +1606,7 @@ export interface Database {
           imported_at?: string | null
           imported_by?: string | null
           buy_price?: number
+          rate?: number | null
         }
         Relationships: []
       }
@@ -1849,6 +1894,7 @@ export interface Database {
           imported_by: string | null
           buy_price: number
           selling_price: number
+          rate_per_watt: number | null
         }
         Insert: {
           id?: string
@@ -1872,6 +1918,7 @@ export interface Database {
           imported_by?: string | null
           buy_price?: number
           selling_price?: number
+          rate_per_watt?: number | null
         }
         Update: {
           id?: string
@@ -1895,6 +1942,7 @@ export interface Database {
           imported_by?: string | null
           buy_price?: number
           selling_price?: number
+          rate_per_watt?: number | null
         }
         Relationships: []
       }
@@ -2592,6 +2640,7 @@ export interface Database {
           site_received_at: string | null
           notes: string | null
           created_at: string
+          org_id: string | null
         }
         Insert: {
           id?: string
@@ -2608,6 +2657,7 @@ export interface Database {
           site_received_at?: string | null
           notes?: string | null
           created_at?: string
+          org_id?: string | null
         }
         Update: {
           id?: string
@@ -2624,6 +2674,7 @@ export interface Database {
           site_received_at?: string | null
           notes?: string | null
           created_at?: string
+          org_id?: string | null
         }
         Relationships: []
       }
@@ -2683,6 +2734,51 @@ export interface Database {
           length_m?: number
           cost?: number
           cost_per_meter?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      license_events: {
+        Row: {
+          id: string
+          org_id: string | null
+          user_id: string | null
+          entity_type: string
+          entity_id: string | null
+          event_type: string
+          event_data: Json
+          actor_user_id: string | null
+          actor_role: string | null
+          ip_address: string | null
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id?: string | null
+          user_id?: string | null
+          entity_type: string
+          entity_id?: string | null
+          event_type: string
+          event_data?: Json
+          actor_user_id?: string | null
+          actor_role?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string | null
+          user_id?: string | null
+          entity_type?: string
+          entity_id?: string | null
+          event_type?: string
+          event_data?: Json
+          actor_user_id?: string | null
+          actor_role?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
           created_at?: string
         }
         Relationships: []
@@ -2799,6 +2895,81 @@ export interface Database {
           estimated_completion_date?: string | null
           notes?: string | null
           last_updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      org_members: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          role: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          role?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          role?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      org_subscriptions: {
+        Row: {
+          id: string
+          org_id: string
+          plan_id: string
+          status: string
+          seat_limit: number
+          billing_cycle: string
+          current_period_start: string | null
+          current_period_end: string | null
+          trial_ends_at: string | null
+          cancelled_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          plan_id: string
+          status?: string
+          seat_limit?: number
+          billing_cycle?: string
+          current_period_start?: string | null
+          current_period_end?: string | null
+          trial_ends_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          plan_id?: string
+          status?: string
+          seat_limit?: number
+          billing_cycle?: string
+          current_period_start?: string | null
+          current_period_end?: string | null
+          trial_ends_at?: string | null
+          cancelled_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -3448,6 +3619,7 @@ export interface Database {
           role: string
           phone: string | null
           is_active: boolean
+          is_super_admin: boolean
           created_at: string
           updated_at: string
         }
@@ -3458,6 +3630,7 @@ export interface Database {
           role?: string
           phone?: string | null
           is_active?: boolean
+          is_super_admin?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -3468,6 +3641,7 @@ export interface Database {
           role?: string
           phone?: string | null
           is_active?: boolean
+          is_super_admin?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -4580,6 +4754,84 @@ export interface Database {
         }
         Relationships: []
       }
+      subscription_payments: {
+        Row: {
+          id: string
+          org_id: string
+          subscription_id: string
+          amount: number
+          currency: string
+          payment_status: string
+          payment_method: string
+          invoice_number: string | null
+          paid_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          subscription_id: string
+          amount: number
+          currency?: string
+          payment_status?: string
+          payment_method?: string
+          invoice_number?: string | null
+          paid_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          subscription_id?: string
+          amount?: number
+          currency?: string
+          payment_status?: string
+          payment_method?: string
+          invoice_number?: string | null
+          paid_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          id: string
+          name: string
+          code: string
+          monthly_price: number
+          yearly_price: number
+          seat_limit: number
+          features: Json
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          code: string
+          monthly_price?: number
+          yearly_price?: number
+          seat_limit?: number
+          features?: Json
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          code?: string
+          monthly_price?: number
+          yearly_price?: number
+          seat_limit?: number
+          features?: Json
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sys_approval_history: {
         Row: {
           id: string
@@ -5384,6 +5636,54 @@ export interface Database {
         }
         Relationships: []
       }
+      user_devices: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          device_install_id: string
+          public_key: string
+          fingerprint_hash: string
+          device_name: string | null
+          browser: string | null
+          os: string | null
+          status: string
+          first_seen_at: string
+          last_seen_at: string
+          revoked_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          device_install_id: string
+          public_key: string
+          fingerprint_hash: string
+          device_name?: string | null
+          browser?: string | null
+          os?: string | null
+          status?: string
+          first_seen_at?: string
+          last_seen_at?: string
+          revoked_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          device_install_id?: string
+          public_key?: string
+          fingerprint_hash?: string
+          device_name?: string | null
+          browser?: string | null
+          os?: string | null
+          status?: string
+          first_seen_at?: string
+          last_seen_at?: string
+          revoked_at?: string | null
+        }
+        Relationships: []
+      }
       vendor_payments: {
         Row: {
           id: string
@@ -5782,6 +6082,311 @@ export interface Database {
           vendor_name: string | null
           total_orders: number | null
           avg_delay_days: number | null
+        }
+        Relationships: []
+      }
+      vw_merged_batteries: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          brand: string | null
+          model: string | null
+          capacity_kwh: number | null
+          voltage_v: number | null
+          chemistry: Database['public']['Enums']['battery_chemistry'] | null
+          dod_pct: number | null
+          selling_price: number | null
+          gst_pct: number | null
+          description: string | null
+          is_active: boolean | null
+          is_custom: boolean | null
+          version: number | null
+          created_at: string | null
+          updated_at: string | null
+          import_batch_id: string | null
+          source_file: string | null
+          sheet_name: string | null
+          row_number: number | null
+          imported_at: string | null
+          imported_by: string | null
+          buy_price: number | null
+        }
+        Relationships: []
+      }
+      vw_merged_bom_items: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          section: Database['public']['Enums']['bom_section'] | null
+          sub_type: string | null
+          description: string | null
+          remarks: string | null
+          unit: string | null
+          selling_price: number | null
+          gst_pct: number | null
+          is_active: boolean | null
+          version: number | null
+          created_at: string | null
+          updated_at: string | null
+          import_batch_id: string | null
+          source_file: string | null
+          sheet_name: string | null
+          row_number: number | null
+          imported_at: string | null
+          imported_by: string | null
+          buy_price: number | null
+        }
+        Relationships: []
+      }
+      vw_merged_communication_devices: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          brand: string | null
+          model: string | null
+          compatible_inverter_brand: string | null
+          selling_price: number | null
+          gst_pct: number | null
+          description: string | null
+          is_active: boolean | null
+          version: number | null
+          created_at: string | null
+          updated_at: string | null
+          import_batch_id: string | null
+          source_file: string | null
+          sheet_name: string | null
+          row_number: number | null
+          imported_at: string | null
+          imported_by: string | null
+          buy_price: number | null
+        }
+        Relationships: []
+      }
+      vw_merged_inverters: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          brand: string | null
+          model: string | null
+          capacity_kw: number | null
+          inverter_type: Database['public']['Enums']['inverter_type'] | null
+          phases: number | null
+          selling_price: number | null
+          gst_pct: number | null
+          description: string | null
+          is_active: boolean | null
+          is_custom: boolean | null
+          version: number | null
+          created_at: string | null
+          updated_at: string | null
+          import_batch_id: string | null
+          source_file: string | null
+          sheet_name: string | null
+          row_number: number | null
+          imported_at: string | null
+          imported_by: string | null
+          buy_price: number | null
+        }
+        Relationships: []
+      }
+      vw_merged_lightning_arresters: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          la_type: Database['public']['Enums']['la_type'] | null
+          brand: string | null
+          model: string | null
+          max_capacity_kw: number | null
+          selling_price: number | null
+          gst_pct: number | null
+          description: string | null
+          is_active: boolean | null
+          version: number | null
+          created_at: string | null
+          updated_at: string | null
+          import_batch_id: string | null
+          source_file: string | null
+          sheet_name: string | null
+          row_number: number | null
+          imported_at: string | null
+          imported_by: string | null
+          buy_price: number | null
+        }
+        Relationships: []
+      }
+      vw_merged_meters: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          meter_type: Database['public']['Enums']['meter_type'] | null
+          brand: string | null
+          model: string | null
+          phases: number | null
+          is_smart: boolean | null
+          selling_price: number | null
+          gst_pct: number | null
+          description: string | null
+          is_active: boolean | null
+          version: number | null
+          created_at: string | null
+          updated_at: string | null
+          import_batch_id: string | null
+          source_file: string | null
+          sheet_name: string | null
+          row_number: number | null
+          imported_at: string | null
+          imported_by: string | null
+          buy_price: number | null
+        }
+        Relationships: []
+      }
+      vw_merged_mounting_structures: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          name: string | null
+          material: Database['public']['Enums']['structure_material'] | null
+          roof_mount_type: Database['public']['Enums']['roof_mount_type'] | null
+          elevation_height_mm: number | null
+          raw_material_rate: number | null
+          fabrication_rate: number | null
+          galvanizing_rate: number | null
+          rate_per_kg: number | null
+          wastage_pct: number | null
+          fastener_weight_pct: number | null
+          base_weight_kg: number | null
+          selling_price: number | null
+          gst_pct: number | null
+          description: string | null
+          is_active: boolean | null
+          is_custom: boolean | null
+          version: number | null
+          created_at: string | null
+          updated_at: string | null
+          import_batch_id: string | null
+          source_file: string | null
+          sheet_name: string | null
+          row_number: number | null
+          imported_at: string | null
+          imported_by: string | null
+          per_watt_rate: number | null
+          buy_price: number | null
+        }
+        Relationships: []
+      }
+      vw_merged_panels: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          brand: string | null
+          model: string | null
+          wattage_w: number | null
+          panel_type: string | null
+          gst_pct: number | null
+          description: string | null
+          is_active: boolean | null
+          is_custom: boolean | null
+          version: number | null
+          created_at: string | null
+          updated_at: string | null
+          import_batch_id: string | null
+          source_file: string | null
+          sheet_name: string | null
+          row_number: number | null
+          imported_at: string | null
+          imported_by: string | null
+          buy_price: number | null
+          selling_price: number | null
+        }
+        Relationships: []
+      }
+      vw_merged_structure_accessory_rates: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          item_name: string | null
+          item_aliases: string[] | null
+          unit: string | null
+          rate: number | null
+          gst_pct: number | null
+          is_active: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      vw_merged_structure_addons: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          name: string | null
+          material: string | null
+          unit: string | null
+          rate_per_unit: number | null
+          buy_price: number | null
+          gst_pct: number | null
+          is_active: boolean | null
+          notes: string | null
+          created_at: string | null
+        }
+        Relationships: []
+      }
+      vw_merged_structure_component_master: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          name: string | null
+          type: string | null
+          weight_per_meter: number | null
+          material: string | null
+          selling_price: number | null
+          buy_price: number | null
+          gst_pct: number | null
+          is_active: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      vw_merged_structure_components: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          structure_id: string | null
+          category: string | null
+          name: string | null
+          description: string | null
+          unit: string | null
+          selling_price: number | null
+          buy_price: number | null
+          gst_pct: number | null
+          is_active: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      vw_merged_systems: {
+        Row: {
+          id: string | null
+          org_id: string | null
+          name: string | null
+          category: Database['public']['Enums']['system_category'] | null
+          capacity_kw: number | null
+          panel_wattage_w: number | null
+          panel_qty: number | null
+          target_margin_pct: number | null
+          is_active: boolean | null
+          is_custom: boolean | null
+          version: number | null
+          created_at: string | null
+          updated_at: string | null
+          import_batch_id: string | null
+          source_file: string | null
+          sheet_name: string | null
+          row_number: number | null
+          imported_at: string | null
+          imported_by: string | null
         }
         Relationships: []
       }

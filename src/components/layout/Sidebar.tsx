@@ -18,6 +18,7 @@ import {
   Building2,
   Wrench,
   Users,
+  Shield,
 } from 'lucide-react';
 import { useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase/client';
@@ -131,8 +132,18 @@ function UserAvatarChip({ collapsed }: { collapsed: boolean }) {
 
 // --- Desktop Sidebar --------------------------------------------------------
 
-export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (v: boolean) => void }) {
+export function Sidebar({ collapsed, setCollapsed, isSuperAdmin }: { collapsed: boolean; setCollapsed: (v: boolean) => void; isSuperAdmin?: boolean }) {
   const pathname = usePathname();
+
+  const displayNavItems = [...NAV_ITEMS];
+  if (isSuperAdmin) {
+    displayNavItems.push({
+      href: '/super-admin/orgs',
+      label: 'Master Control',
+      icon: <Shield size={18} className="text-amber-500" />,
+      mobileVisible: false,
+    });
+  }
 
   const handleLogout = async () => {
     try { await supabase.auth.signOut(); }
@@ -175,7 +186,7 @@ export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCo
       {/* Nav */}
       <nav className={['flex-1 py-3 overflow-y-auto', collapsed ? 'px-2' : 'px-2.5'].join(' ')}>
         <div className="space-y-0.5">
-          {NAV_ITEMS.map((item) => {
+          {displayNavItems.map((item) => {
             const isActive = pathname === item.href ||
               (item.href !== '/' && pathname.startsWith(item.href));
 

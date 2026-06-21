@@ -3557,6 +3557,7 @@ export interface Database {
           role: string
           phone: string | null
           is_active: boolean
+          is_super_admin: boolean
           created_at: string
           updated_at: string
         }
@@ -3567,6 +3568,7 @@ export interface Database {
           role?: string
           phone?: string | null
           is_active?: boolean
+          is_super_admin?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -3577,12 +3579,403 @@ export interface Database {
           role?: string
           phone?: string | null
           is_active?: boolean
+          is_super_admin?: boolean
           created_at?: string
           updated_at?: string
         }
         Relationships: []
       }
+      // ─── SaaS / Licensing Tables ──────────────────────────────────────────────
+      activation_keys: {
+        Row: {
+          id: string
+          org_id: string
+          key_hash: string
+          key_encrypted: string
+          key_prefix: string
+          status: 'unused' | 'activated' | 'revoked' | 'expired'
+          activated_by: string | null
+          activated_at: string | null
+          device_id: string | null
+          batch_id: string | null
+          created_by: string
+          expires_at: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          key_hash: string
+          key_encrypted: string
+          key_prefix: string
+          status?: 'unused' | 'activated' | 'revoked' | 'expired'
+          activated_by?: string | null
+          activated_at?: string | null
+          device_id?: string | null
+          batch_id?: string | null
+          created_by: string
+          expires_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          key_hash?: string
+          key_encrypted?: string
+          key_prefix?: string
+          status?: 'unused' | 'activated' | 'revoked' | 'expired'
+          activated_by?: string | null
+          activated_at?: string | null
+          device_id?: string | null
+          batch_id?: string | null
+          created_by?: string
+          expires_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      password_reset_requests: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          status: 'pending_admin_approval' | 'approved' | 'rejected' | 'link_sent' | 'completed' | 'expired'
+          requested_at: string
+          approved_by: string | null
+          approved_at: string | null
+          rejected_by: string | null
+          rejected_at: string | null
+          link_sent_at: string | null
+          completed_at: string | null
+          expires_at: string
+          ip_address: string | null
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          status?: 'pending_admin_approval' | 'approved' | 'rejected' | 'link_sent' | 'completed' | 'expired'
+          requested_at?: string
+          approved_by?: string | null
+          approved_at?: string | null
+          rejected_by?: string | null
+          rejected_at?: string | null
+          link_sent_at?: string | null
+          completed_at?: string | null
+          expires_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          status?: 'pending_admin_approval' | 'approved' | 'rejected' | 'link_sent' | 'completed' | 'expired'
+          requested_at?: string
+          approved_by?: string | null
+          approved_at?: string | null
+          rejected_by?: string | null
+          rejected_at?: string | null
+          link_sent_at?: string | null
+          completed_at?: string | null
+          expires_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          id: string
+          name: string
+          code: string
+          monthly_price: number
+          yearly_price: number
+          seat_limit: number
+          features: Json
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          code: string
+          monthly_price?: number
+          yearly_price?: number
+          seat_limit?: number
+          features?: Json
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          code?: string
+          monthly_price?: number
+          yearly_price?: number
+          seat_limit?: number
+          features?: Json
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      org_subscriptions: {
+        Row: {
+          id: string
+          org_id: string
+          plan_id: string
+          status: string
+          seat_limit: number
+          billing_cycle: string
+          current_period_start: string | null
+          current_period_end: string | null
+          trial_ends_at: string | null
+          cancelled_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          plan_id: string
+          status?: string
+          seat_limit?: number
+          billing_cycle?: string
+          current_period_start?: string | null
+          current_period_end?: string | null
+          trial_ends_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          plan_id?: string
+          status?: string
+          seat_limit?: number
+          billing_cycle?: string
+          current_period_start?: string | null
+          current_period_end?: string | null
+          trial_ends_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      org_members: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          role: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          role?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          role?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_devices: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          device_secret_hash: string | null
+          device_name: string | null
+          browser: string | null
+          os: string | null
+          status: string
+          first_seen_at: string
+          last_seen_at: string
+          revoked_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          device_secret_hash?: string | null
+          device_name?: string | null
+          browser?: string | null
+          os?: string | null
+          status?: string
+          first_seen_at?: string
+          last_seen_at?: string
+          revoked_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          device_secret_hash?: string | null
+          device_name?: string | null
+          browser?: string | null
+          os?: string | null
+          status?: string
+          first_seen_at?: string
+          last_seen_at?: string
+          revoked_at?: string | null
+        }
+        Relationships: []
+      }
+      device_reset_requests: {
+        Row: {
+          id: string
+          org_id: string
+          user_id: string
+          old_device_id: string | null
+          requested_device_info: Json
+          status: string
+          requested_at: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          user_id: string
+          old_device_id?: string | null
+          requested_device_info?: Json
+          status?: string
+          requested_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          user_id?: string
+          old_device_id?: string | null
+          requested_device_info?: Json
+          status?: string
+          requested_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+        }
+        Relationships: []
+      }
+      subscription_payments: {
+        Row: {
+          id: string
+          org_id: string
+          subscription_id: string
+          amount: number
+          currency: string
+          payment_status: string
+          payment_method: string
+          invoice_number: string | null
+          paid_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          subscription_id: string
+          amount: number
+          currency?: string
+          payment_status?: string
+          payment_method?: string
+          invoice_number?: string | null
+          paid_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          subscription_id?: string
+          amount?: number
+          currency?: string
+          payment_status?: string
+          payment_method?: string
+          invoice_number?: string | null
+          paid_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      license_events: {
+        Row: {
+          id: string
+          org_id: string | null
+          user_id: string | null
+          entity_type: string
+          entity_id: string | null
+          event_type: string
+          event_data: Json
+          actor_user_id: string | null
+          actor_role: string | null
+          ip_address: string | null
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id?: string | null
+          user_id?: string | null
+          entity_type: string
+          entity_id?: string | null
+          event_type: string
+          event_data?: Json
+          actor_user_id?: string | null
+          actor_role?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string | null
+          user_id?: string | null
+          entity_type?: string
+          entity_id?: string | null
+          event_type?: string
+          event_data?: Json
+          actor_user_id?: string | null
+          actor_role?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      // ─── End SaaS Tables ─────────────────────────────────────────────────────
       quote_additional_costs: {
+
         Row: {
           id: string
           quote_id: string

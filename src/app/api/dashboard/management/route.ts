@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { withAuth } from '@/lib/api/wrappers';
+import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 
 export const dynamic = 'force-dynamic';
 
-export const GET = withAuth(async (request, context) => {
+export const GET = withLicensedApiRoute(async (request, context) => {
   try {
-    const { orgId } = context.auth;
+    const orgId = context.session.orgId;
     const supabase = await createClient();
 
     // 1. Total Revenue (YTD) - from quotes
@@ -55,4 +55,7 @@ export const GET = withAuth(async (request, context) => {
     console.error('[GET /api/dashboard/management] Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}, {
+  feature: 'erp',
+  roles: ['owner', 'admin', 'manager'],
 });

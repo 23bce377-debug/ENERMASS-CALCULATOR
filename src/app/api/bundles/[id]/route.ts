@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { BundlePresetORM } from '@/backend/orm/bundle';
 import { z } from 'zod';
 
-import { withAuth } from '@/lib/api/wrappers';
+import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,10 +16,12 @@ const BundleUpdateSchema = z.object({
   items: z.array(z.any()).optional()
 });
 
-export const GET = withAuth(async (request, context) => {
+type BundleRouteContext = { params: Promise<{ id: string }> };
+
+export const GET = withLicensedApiRoute<BundleRouteContext>(async (_request, context) => {
   try {
-    const { orgId } = context.auth;
-    const { id } = await context.params;
+    const { orgId } = context.session;
+    const { id } = await context.route.params;
     const preset = await BundlePresetORM.getById(id);
 
     // Verify tenant ownership
@@ -32,12 +34,16 @@ export const GET = withAuth(async (request, context) => {
     console.error('[GET /api/bundles/[id]] Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}, {
+  feature: 'inventory',
+  roles: ['owner', 'admin', 'manager'],
 });
 
-export const PUT = withAuth(async (request, context) => {
+export const PUT = withLicensedApiRoute<BundleRouteContext>(async (request, context) => {
   try {
-    const { orgId, role } = context.auth;
-    const { id } = await context.params;
+    const { orgId } = context.session;
+    const role = context.session.member.role;
+    const { id } = await context.route.params;
     const preset = await BundlePresetORM.getById(id);
 
     // Verify tenant ownership
@@ -76,12 +82,16 @@ export const PUT = withAuth(async (request, context) => {
     console.error('[PUT /api/bundles/[id]] Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}, {
+  feature: 'inventory',
+  roles: ['owner', 'admin'],
 });
 
-export const DELETE = withAuth(async (request, context) => {
+export const DELETE = withLicensedApiRoute<BundleRouteContext>(async (_request, context) => {
   try {
-    const { orgId, role } = context.auth;
-    const { id } = await context.params;
+    const { orgId } = context.session;
+    const role = context.session.member.role;
+    const { id } = await context.route.params;
     const preset = await BundlePresetORM.getById(id);
 
     // Verify tenant ownership
@@ -99,4 +109,7 @@ export const DELETE = withAuth(async (request, context) => {
     console.error('[DELETE /api/bundles/[id]] Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}, {
+  feature: 'inventory',
+  roles: ['owner', 'admin'],
 });

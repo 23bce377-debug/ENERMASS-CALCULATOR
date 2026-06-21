@@ -1,15 +1,35 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GET } from '../src/app/api/master/route';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getCachedMasterData } from '../src/lib/cache/masterCache';
 
-// Define hoisted mocks to prevent hoisting ReferenceErrors in Vitest
-const { mockGetUser, mockSelect, mockSingle } = vi.hoisted(() => ({
-  mockGetUser: vi.fn(),
-  mockSelect: vi.fn(),
-  mockSingle: vi.fn()
+const routeAuth = vi.hoisted(() => ({
+  shouldReject: false,
+  sessionOrgId: 'org-abc-123',
 }));
 
-// Mock getCachedMasterData
+vi.mock('@/lib/auth/withLicensedApiRoute', () => ({
+  withLicensedApiRoute: vi.fn((handler) => {
+    return async (request: Request, route: unknown) => {
+      if (routeAuth.shouldReject) {
+        return Response.json(
+          {
+            error: 'AuthenticationRequiredError',
+            message: 'Please sign in to continue.',
+            redirectTo: '/login',
+          },
+          { status: 401 }
+        );
+      }
+
+      return handler(request, {
+        route,
+        session: {
+          orgId: routeAuth.sessionOrgId,
+        },
+      });
+    };
+  }),
+}));
+
 vi.mock('../src/lib/cache/masterCache', () => ({
   getCachedMasterData: vi.fn().mockResolvedValue({
     etag: 'mock-etag',
@@ -17,63 +37,35 @@ vi.mock('../src/lib/cache/masterCache', () => ({
     version: '3.0.0',
     panels: [],
     inverters: [],
-    batteries: []
+    batteries: [],
   }),
-  CACHE_VERSION: '3.0.0'
+  CACHE_VERSION: '3.0.0',
 }));
 
-// Mock Supabase Server client using hoisted mocks
-vi.mock('../src/lib/supabase/server', () => ({
-  createClient: vi.fn().mockResolvedValue({
-    auth: {
-      getUser: mockGetUser
-    },
-    from: mockSelect
-  })
-}));
+import { GET } from '../src/app/api/master/route';
 
-describe('Master API Route Security (Blocker 2)', () => {
+describe('Master API route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSelect.mockReturnValue({
-      select: mockSelect,
-      eq: mockSelect,
-      single: mockSingle
-    });
+    routeAuth.shouldReject = false;
+    routeAuth.sessionOrgId = 'org-abc-123';
   });
 
-  it('rejects unauthenticated requests with 401', async () => {
-    // Mock user profile as null (not logged in)
-    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+  it('rejects unauthenticated direct API requests before route logic runs', async () => {
+    routeAuth.shouldReject = true;
 
-    const req = new Request('http://localhost:3000/api/master');
-    const res = await GET(req, { params: {} });
+    const res = await GET(new Request('http://localhost:3000/api/master'), { params: {} });
 
     expect(res.status).toBe(401);
-    const body = await res.json();
-    expect(body.error).toBe('Unauthorized');
+    await expect(res.json()).resolves.toMatchObject({
+      error: 'AuthenticationRequiredError',
+      redirectTo: '/login',
+    });
+    expect(getCachedMasterData).not.toHaveBeenCalled();
   });
 
-  it('rejects request if user profile org mapping does not exist', async () => {
-    // Mock user exists, but profile lookup fails or has no org
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
-    mockSingle.mockResolvedValue({ data: null, error: new Error('Profile not found') });
-
-    const req = new Request('http://localhost:3000/api/master');
-    const res = await GET(req, { params: {} });
-
-    expect(res.status).toBe(404);
-    const body = await res.json();
-    expect(body.error).toBe('Org profile not found');
-  });
-
-  it('accepts authenticated requests and scopes getCachedMasterData to the user org_id', async () => {
-    // Mock successful authentication
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
-    mockSingle.mockResolvedValue({ data: { org_id: 'org-abc-123', role: 'sales_exec' }, error: null });
-
-    const req = new Request('http://localhost:3000/api/master');
-    const res = await GET(req, { params: {} });
+  it('accepts licensed requests and scopes getCachedMasterData to the session org', async () => {
+    const res = await GET(new Request('http://localhost:3000/api/master'), { params: {} });
 
     expect(res.status).toBe(200);
     expect(getCachedMasterData).toHaveBeenCalledWith('org-abc-123');
@@ -84,17 +76,19 @@ describe('Master API Route Security (Blocker 2)', () => {
   });
 
   it('ignores any client-supplied org_id query parameter', async () => {
-    // Mock successful authentication with org-abc-123
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
-    mockSingle.mockResolvedValue({ data: { org_id: 'org-abc-123', role: 'sales_exec' }, error: null });
-
-    // Client attempts to supply query param ?org_id=attacker-org
-    const req = new Request('http://localhost:3000/api/master?org_id=attacker-org');
-    const res = await GET(req, { params: {} });
+    const res = await GET(new Request('http://localhost:3000/api/master?org_id=attacker-org'), { params: {} });
 
     expect(res.status).toBe(200);
-    // Should still resolve using org-abc-123 exclusively
+    expect(getCachedMasterData).toHaveBeenCalledWith('org-abc-123');
+    expect(getCachedMasterData).not.toHaveBeenCalledWith('attacker-org');
+  });
+
+  it('ignores any client-supplied orgId query parameter', async () => {
+    const res = await GET(new Request('http://localhost:3000/api/master?orgId=attacker-org'), { params: {} });
+
+    expect(res.status).toBe(200);
     expect(getCachedMasterData).toHaveBeenCalledWith('org-abc-123');
     expect(getCachedMasterData).not.toHaveBeenCalledWith('attacker-org');
   });
 });
+

@@ -15,25 +15,22 @@
  * - Client should treat ETag as the canonical freshness signal.
  *
  * Security:
- * - org_id is resolved exclusively from the authenticated session via withAuth.
+ * - org_id is resolved exclusively from the licensed session guard.
  * - The ?org_id= query param is NOT honoured — it is ignored entirely.
  * - A valid session with a profile.org_id is required or the request is rejected 401.
  */
 
 import { NextResponse } from 'next/server';
 import { getCachedMasterData, CACHE_VERSION } from '@/lib/cache/masterCache';
-import { withAuth } from '@/lib/api/wrappers';
+import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 
 export const runtime = 'nodejs';
 // Opt out of full route caching — we manage our own SWR at the function level
 export const dynamic = 'force-dynamic';
 
-export const GET = withAuth(async (request, context) => {
+export const GET = withLicensedApiRoute(async (request, context) => {
   try {
-    const orgId = context.auth.orgId;
-    if (!orgId) {
-      return NextResponse.json({ error: 'Unauthorized: No org_id associated with profile' }, { status: 401 });
-    }
+    const orgId = context.session.orgId;
 
     const data = await getCachedMasterData(orgId);
 
@@ -79,4 +76,7 @@ export const GET = withAuth(async (request, context) => {
       { status: 500 }
     );
   }
+}, {
+  feature: 'calculator',
+  roles: ['owner', 'admin', 'manager', 'staff', 'viewer'],
 });

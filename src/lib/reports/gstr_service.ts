@@ -32,7 +32,7 @@ export async function getGSTR3BDataFromLedger(orgId: string, startDate: string, 
 
   // Fetches ITC from '1400' (GST Input) and Output Liability from '2100' (GST Output)
   // Grouped by IGST, CGST, SGST.
-  const { data, error } = await supabase.rpc('get_gstr3b_summary', {
+  const { data, error } = await (supabase as any).rpc('get_gstr3b_summary', {
     p_org_id: orgId,
     p_period_start: startDate,
     p_period_end: endDate

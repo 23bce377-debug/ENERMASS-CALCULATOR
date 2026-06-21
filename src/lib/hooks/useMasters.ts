@@ -51,6 +51,7 @@ function getEntityTable(entity: string): string {
   if (entity === 'subsidy') return 'calculation_schemes';
   if (entity === 'accessories') return 'bom_template_items';
   if (entity === 'structures') return 'eq_mounting_structures';
+  if (entity === 'bom_categories') return 'bom_categories';
   return `eq_${entity}`;
 }
 
@@ -126,7 +127,7 @@ export function useMasterQuery<T>(entity: string, options?: any) {
         }
       }
 
-      if (entity !== 'pricing' && entity !== 'vendors') {
+      if (entity !== 'pricing' && entity !== 'vendors' && entity !== 'bom_categories') {
         query = query.eq('is_active', true);
       }
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withAuth } from '@/lib/api/wrappers';
+import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 import { getOrSetCache } from '@/lib/cache/redisCache';
 import { z } from 'zod';
 
@@ -10,11 +10,8 @@ const bootstrapQuerySchema = z.object({
 
 export const dynamic = 'force-dynamic';
 
-export const GET = withAuth(async (request, context) => {
-  const { orgId } = context.auth;
-  if (!orgId) {
-    return NextResponse.json({ error: 'Unauthorized: No org_id associated with profile' }, { status: 401 });
-  }
+export const GET = withLicensedApiRoute(async (request, context) => {
+  const orgId = context.session.orgId;
 
   const { searchParams } = new URL(request.url);
   const parseResult = bootstrapQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
@@ -67,8 +64,8 @@ export const GET = withAuth(async (request, context) => {
         safeQuery(supabase.from('inventory_summary').select('*').eq('org_id', orgId).limit(invLimit)),
         safeQuery(supabase.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true })),
         safeQuery(supabase.from('systems').select('*, system_items(*)').eq('is_active', true).order('capacity_kw', { ascending: true })),
-        safeQuery(supabase.from('tax_hsn_sac').select('*').eq('is_active', true)),
-        safeQuery(supabase.from('tax_gst_rates').select('*'))
+        safeQuery((supabase as any).from('tax_hsn_sac').select('*').eq('is_active', true)),
+        safeQuery((supabase as any).from('tax_gst_rates').select('*'))
       ]);
 
       // Chunk 4: Heavy BOM & Structural Templates
@@ -137,4 +134,7 @@ export const GET = withAuth(async (request, context) => {
     console.error('[GET /api/erp/bootstrap] Error:', err);
     return NextResponse.json({ error: err.message || 'Internal server error during bootstrap load' }, { status: 500 });
   }
+}, {
+  feature: 'erp',
+  roles: ['owner', 'admin', 'manager', 'staff'],
 });

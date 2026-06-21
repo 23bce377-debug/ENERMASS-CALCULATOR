@@ -27,6 +27,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [loadingSession, setLoadingSession] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const publicRoutes = useMemo(() => new Set([
+    '/login',
+    '/signup',
+    '/activate',
+    '/forgot-password',
+    '/device-blocked',
+    '/device-reset-request',
+    '/subscription-expired',
+    '/unauthorized',
+  ]), []);
+  const isPublicRoute = publicRoutes.has(pathname);
+  const shouldBootstrapMasterData = useMemo(() => {
+    const bootstrapPrefixes = [
+      '/calculator',
+      '/systems',
+      '/quotes',
+      '/acquisition',
+      '/earnings',
+      '/rate-master',
+      '/master',
+      '/presets',
+      '/dashboard',
+      '/dashboards',
+      '/erp',
+      '/inventory',
+      '/projects',
+      '/reports',
+    ];
+
+    return bootstrapPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  }, [pathname]);
 
   useEffect(() => {
     let mounted = true;
@@ -35,11 +67,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_super_admin, is_active')
+            .eq('id', session.user.id)
+            .maybeSingle();
           if (mounted) {
             setIsAuthenticated(true);
+            setIsSuperAdmin(profile?.is_active !== false && (profile?.is_super_admin ?? false));
           }
         } else {
-          if (pathname !== '/login') {
+          if (!isPublicRoute) {
             router.replace('/login');
           }
         }
@@ -56,19 +94,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setIsAuthenticated(true);
-        if (pathname === '/login') {
-          router.replace('/calculator');
-        }
+        supabase
+          .from('profiles')
+          .select('is_super_admin, is_active')
+          .eq('id', session.user.id)
+          .maybeSingle()
+          .then(({ data }) => setIsSuperAdmin(data?.is_active !== false && (data?.is_super_admin ?? false)));
       } else {
         setIsAuthenticated(false);
-        if (pathname !== '/login') {
+        setIsSuperAdmin(false);
+        if (!isPublicRoute) {
           router.replace('/login');
         }
       }
       setLoadingSession(false);
     });
 
-    if (pathname === '/login') {
+    if (isPublicRoute) {
       setLoadingSession(false);
     } else {
       checkSession();
@@ -78,13 +120,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [pathname, router]);
+  }, [isPublicRoute, pathname, router]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && shouldBootstrapMasterData) {
       fetchMasterData();
     }
-  }, [isAuthenticated, fetchMasterData]);
+  }, [isAuthenticated, shouldBootstrapMasterData, fetchMasterData]);
 
   const systemName = useMemo(() => {
     if (!selectedSystemId) return null;
@@ -176,7 +218,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const isLoginPage = pathname === '/login';
+  const isLoginPage = isPublicRoute;
 
   if (isLoginPage) {
     return (
@@ -203,7 +245,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <ToastProvider>
       <ConfirmProvider>
         {/* Desktop sidebar */}
-        <Sidebar collapsed={sidebarCollapsed} setCollapsed={handleSetSidebarCollapsed} />
+        <Sidebar collapsed={sidebarCollapsed} setCollapsed={handleSetSidebarCollapsed} isSuperAdmin={isSuperAdmin} />
 
         {/* Main area — responsive offset based on sidebar state */}
         <div className={`flex flex-col min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'md:ml-[62px]' : 'md:ml-[228px]'}`}>

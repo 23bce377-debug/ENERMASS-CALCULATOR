@@ -15,7 +15,7 @@ export interface GstRateInfo {
 export async function getGstRateForHsnSac(orgId: string, hsnSacCode: string, date: string = new Date().toISOString().split('T')[0]): Promise<GstRateInfo> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('tax_hsn_sac')
     .select(`
       code,

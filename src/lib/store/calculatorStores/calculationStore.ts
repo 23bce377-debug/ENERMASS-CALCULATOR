@@ -410,7 +410,7 @@ export const createCalculationSlice: StateCreator<
 
   fetchMasterData: async () => {
     try {
-      const bootstrapRes = await fetch('/api/erp/bootstrap', { cache: 'no-store' });
+      const bootstrapRes = await fetch('/api/erp/bootstrap', { cache: 'no-store', credentials: 'include' });
       if (!bootstrapRes.ok) throw new Error(`/api/erp/bootstrap returned ${bootstrapRes.status}`);
       const bootstrap = await bootstrapRes.json() as any;
 

@@ -44,7 +44,7 @@ export async function postJournalEntry(orgId: string, payload: JournalEntryPaylo
   const supabase = await createClient();
 
   // The database RPC will enforce transaction safety, balancing, and org scoping.
-  const { data: entryId, error } = await supabase.rpc('create_journal_entry', {
+  const { data: entryId, error } = await (supabase as any).rpc('create_journal_entry', {
     p_org_id: orgId,
     p_entry_date: payload.entry_date,
     p_reference_no: payload.reference_no || null,

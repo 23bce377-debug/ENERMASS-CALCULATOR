@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { withAuth } from '@/lib/api/wrappers';
+import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 import { z } from 'zod';
 
 const analyticsQuerySchema = z.object({
@@ -9,9 +9,9 @@ const analyticsQuerySchema = z.object({
 
 export const dynamic = 'force-dynamic';
 
-export const GET = withAuth(async (request, context) => {
+export const GET = withLicensedApiRoute(async (request, context) => {
   try {
-    const { orgId } = context.auth;
+    const { orgId } = context.session;
     const { searchParams } = new URL(request.url);
     const parseResult = analyticsQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
     if (!parseResult.success) {
@@ -101,6 +101,9 @@ export const GET = withAuth(async (request, context) => {
     console.error('[GET /api/procurement/analytics] Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}, {
+  feature: 'inventory',
+  roles: ['owner', 'admin', 'manager'],
 });
 
 function formatINR(value: number): string {
@@ -110,4 +113,3 @@ function formatINR(value: number): string {
     maximumFractionDigits: 0
   }).format(value);
 }
-

@@ -3,7 +3,7 @@
 import { revalidateTag } from 'next/cache';
 import { CACHE_TAG, orgCacheKey, invalidateMasterCache } from '@/lib/cache/masterCache';
 import { invalidateCacheKeys } from '@/lib/cache/redisCache';
-import { createClient } from '@/lib/supabase/server';
+import { requireLicensedPage } from '@/lib/auth/requireLicensedPage';
 
 /**
  * Invalidates both the Next.js cache and the server-side Redis cache keys.
@@ -20,30 +20,17 @@ export async function revalidateMasterCache(
   orgId?: string,
   invalidateGlobal = false
 ): Promise<void> {
+  void orgId;
+
   // Always revalidate the Next.js tag (page-level caching)
   revalidateTag(CACHE_TAG, 'max');
 
-  let targetOrgId = orgId;
-
-  // Auto-resolve org from session if not provided
-  if (!targetOrgId) {
-    try {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = (await supabase
-          .from('profiles')
-          .select('org_id')
-          .eq('id', user.id)
-          .single()) as any;
-        if (profile?.org_id) {
-          targetOrgId = profile.org_id;
-        }
-      }
-    } catch (err) {
-      console.error('Failed to resolve user org_id for cache invalidation:', err);
-    }
-  }
+  const session = await requireLicensedPage({
+    feature: 'calculator',
+    roles: ['owner', 'admin', 'manager', 'staff'],
+  });
+  const targetOrgId = session.orgId;
+  const canInvalidateGlobal = invalidateGlobal && session.permissions.canManageOrg;
 
   // FIX SC-08: Invalidate ONLY this org's scoped cache keys
   if (targetOrgId) {
@@ -59,7 +46,7 @@ export async function revalidateMasterCache(
   }
 
   // Only invalidate global keys when explicitly requested (super-admin action)
-  if (invalidateGlobal) {
+  if (canInvalidateGlobal) {
     await invalidateCacheKeys(
       'eq:global:panels:active',
       'eq:global:inverters:active',

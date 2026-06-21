@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { withAuth } from '@/lib/api/wrappers';
+import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 import { journalEntrySchema, postJournalEntry } from '@/lib/finance/ledger';
 
-export const POST = withAuth(async (request, context) => {
-  const { orgId } = context.auth;
+export const POST = withLicensedApiRoute(async (request, context) => {
+  const { orgId } = context.session;
   if (!orgId) {
     return NextResponse.json({ error: 'Unauthorized: No org_id associated with profile' }, { status: 401 });
   }
@@ -36,4 +36,7 @@ export const POST = withAuth(async (request, context) => {
       message: error.message
     }, { status: 500 });
   }
+}, {
+  feature: 'erp',
+  roles: ['owner', 'admin'],
 });

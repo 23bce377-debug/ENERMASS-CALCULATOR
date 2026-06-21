@@ -19,6 +19,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import { getOrgContext } from '@/lib/hooks/useMasters';
+import { useSubscription } from '@/lib/hooks/useSubscription';
+import { UpgradePrompt } from '@/components/saas/UpgradePrompt';
 
 // Master data card specifications
 const CARDS = [
@@ -89,6 +91,8 @@ const CARDS = [
 ];
 
 export default function MastersDashboardPage() {
+  const { isFeatureEnabled, isLoading } = useSubscription();
+
   // 1. Fetch counts for dashboard indicators
   const { data: counts } = useQuery({
     queryKey: ['masters', 'dashboard', 'counts'],
@@ -165,6 +169,11 @@ export default function MastersDashboardPage() {
       return data || [];
     }
   });
+
+  if (isLoading) return null;
+  if (!isFeatureEnabled('master_data')) {
+    return <UpgradePrompt featureName="Master Data Directory" />;
+  }
 
   return (
     <div className="space-y-6">

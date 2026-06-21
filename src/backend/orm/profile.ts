@@ -8,7 +8,7 @@ export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 export const ProfileORM = {
   async getById(id: string) {
     if (typeof window !== 'undefined') {
-      const res = await fetch(`/api/profile?id=${encodeURIComponent(id)}`);
+      const res = await fetch(`/api/profile?id=${encodeURIComponent(id)}`, { credentials: 'include' });
       if (!res.ok) {
         throw new Error(`Failed to fetch user profile: ${res.status}`);
       }
@@ -49,6 +49,7 @@ export const ProfileORM = {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
+        credentials: 'include',
       });
       if (!res.ok) {
         throw new Error(`Failed to update user profile: ${res.status}`);

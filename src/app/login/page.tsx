@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
+import { DeviceClientError, registerOrVerifyDevice } from '@/lib/device/deviceClient';
 import { Shield, Mail, Lock, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -14,16 +15,37 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(true);
 
+  const redirectForDeviceError = (error: unknown) => {
+    if (error instanceof DeviceClientError) {
+      if (error.redirectTo) {
+        const reason = 'device';
+        router.replace(`${error.redirectTo}?reason=${encodeURIComponent(reason)}`);
+        return;
+      }
+      toast(error.message, 'error');
+      return;
+    }
+
+    toast(error instanceof Error ? error.message : 'Device verification failed. Please try again.', 'error');
+  };
+
+  const completeDeviceLogin = async () => {
+    await registerOrVerifyDevice();
+    toast('Logged in successfully!', 'success');
+    router.replace('/calculator');
+  };
+
   useEffect(() => {
     // Check if already logged in
     async function checkSession() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          router.replace('/calculator');
+          await completeDeviceLogin();
         }
       } catch (err) {
         console.error('Error checking session:', err);
+        redirectForDeviceError(err);
       } finally {
         setVerifying(false);
       }
@@ -48,11 +70,10 @@ export default function LoginPage() {
       if (error) {
         toast(error.message, 'error');
       } else if (data.session) {
-        toast('Logged in successfully!', 'success');
-        router.replace('/calculator');
+        await completeDeviceLogin();
       }
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'Login failed. Please try again.', 'error');
+      redirectForDeviceError(err);
     } finally {
       setLoading(false);
     }
@@ -159,8 +180,22 @@ export default function LoginPage() {
         </form>
 
         {/* Footer info */}
-        <div className="px-8 py-4 bg-surface-hover/30 border-t border-border/40 text-center">
-          <p className="text-[10px] font-semibold text-text-muted uppercase tracking-widest">
+        <div className="px-8 py-4 bg-surface-hover/30 border-t border-border/40 text-center space-y-2">
+          <button
+            type="button"
+            onClick={() => router.push('/forgot-password')}
+            className="block w-full text-[10px] text-text-muted hover:text-accent transition-colors"
+          >
+            Forgot your password?
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/activate')}
+            className="block w-full text-[10px] text-text-muted hover:text-accent transition-colors"
+          >
+            Have an activation key? <span className="text-accent">Activate here</span>
+          </button>
+          <p className="text-[10px] font-semibold text-text-muted uppercase tracking-widest pt-1">
             Protected Terminal · Pitbull Corporations
           </p>
         </div>

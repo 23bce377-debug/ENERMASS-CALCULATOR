@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { getCurrentOrgId } from '@/lib/db/orgContext';
+import { requireLicensedPage } from '@/lib/auth/requireLicensedPage';
 
 export async function saveDraftQuote(params: {
   draftId: string | null;
@@ -10,11 +10,12 @@ export async function saveDraftQuote(params: {
   systemKw: number;
   estimatedTotal: number;
 }) {
+  const session = await requireLicensedPage({
+    feature: 'calculator',
+    roles: ['owner', 'admin', 'manager', 'staff'],
+  });
+  const { orgId, user } = session;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthenticated");
-
-  const orgId = await getCurrentOrgId();
 
   if (params.draftId) {
     const { error } = await supabase

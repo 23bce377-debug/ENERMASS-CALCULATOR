@@ -1,7 +1,15 @@
+/**
+ * /api/debug — Disabled in all environments.
+ *
+ * This route previously exposed raw DB data without authentication.
+ * It has been locked down to prevent accidental data exposure.
+ * Monitoring and debugging should be done via /api/erp/health (authenticated).
+ */
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/client';
 
 export async function GET() {
-  const { data, error } = await supabase.from('vendors').select('*');
-  return NextResponse.json({ data, error });
+  return NextResponse.json(
+    { error: 'Forbidden', message: 'Debug endpoint is disabled.' },
+    { status: 403 }
+  );
 }

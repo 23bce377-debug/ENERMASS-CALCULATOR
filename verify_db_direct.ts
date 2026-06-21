@@ -1,8 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
+}
+
 const supabase = createClient(
-  'https://xjdqpwmizmfkcdcgcxqv.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqZHFwd21pem1ma2NkY2djeHF2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTk1NTM1NCwiZXhwIjoyMDk1NTMxMzU0fQ.kvGHH_cGCod6e_izeQ6kIwsZtEcM4oq7_NvyQBbec5s'
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xjdqpwmizmfkcdcgcxqv.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 async function verifyCacheLoad() {

@@ -43,20 +43,9 @@ interface BomItem {
   is_survey_dependent: boolean;
 }
 
-const SECTION_OPTIONS = [
-  { value: 'solar_panels', label: 'Solar Panels' },
-  { value: 'power_electronics', label: 'Power Electronics' },
-  { value: 'metering', label: 'Metering' },
-  { value: 'mounting_structure', label: 'Mounting Structure' },
-  { value: 'electrical_protection', label: 'Electrical Protection' },
-  { value: 'earthing', label: 'Earthing Systems' },
-  { value: 'cabling', label: 'Cabling' },
-  { value: 'wiring', label: 'Wiring Devices' },
-  { value: 'services', label: 'Installation & Services' },
-];
-
 export default function AccessoriesMasterPage() {
   const { data: items, isLoading } = useMasterQuery<BomItem>('accessories');
+  const { data: categories } = useMasterQuery<{id: string, name: string}>('bom_categories');
   const createMutation = useMasterCreateMutation<BomItem>('accessories');
   const updateMutation = useMasterUpdateMutation<BomItem>('accessories');
   const deleteMutation = useMasterDeleteMutation('accessories');
@@ -88,9 +77,13 @@ export default function AccessoriesMasterPage() {
     civil_required_only: false,
   });
 
+  const sectionOptions = useMemo(() => {
+    return (categories || []).map(c => ({ value: c.id, label: c.name }));
+  }, [categories]);
+
   // Bulk Edit Schema
-  const bulkEditFields: FieldSchema[] = [
-    { name: 'category_id', label: 'BOM Category', type: 'select', options: SECTION_OPTIONS },
+  const bulkEditFields: FieldSchema[] = useMemo(() => [
+    { name: 'category_id', label: 'BOM Category', type: 'select', options: sectionOptions },
     { name: 'unit', label: 'Standard Unit', type: 'select', options: [
       { value: 'Nos', label: 'Nos / Units' },
       { value: 'Mtr', label: 'Meters' },
@@ -103,7 +96,7 @@ export default function AccessoriesMasterPage() {
       { value: 'true', label: 'Yes' },
       { value: 'false', label: 'No' }
     ]},
-  ];
+  ], [sectionOptions]);
 
   // ─── Filter & Search Logic ──────────────────────────────────────────────────
   
@@ -142,7 +135,7 @@ export default function AccessoriesMasterPage() {
   const handleOpenAdd = () => {
     setEditingItem(null);
     setDraft({
-      category_id: 'electrical_protection',
+      category_id: sectionOptions.length > 0 ? sectionOptions[0].value : '' as any,
       sku_code: '',
       description: '',
       notes: '',
@@ -236,7 +229,7 @@ export default function AccessoriesMasterPage() {
       const rawData = await importFromExcel(file);
       
       const parsedRows = rawData.map((row: any) => ({
-        category_id: row.Category || row.category_id || row.Section || row.section || 'electrical_protection',
+        category_id: row.Category || row.category_id || row.Section || row.section || (categories?.[0]?.id ?? 'electrical_protection'),
         sku_code: row['SKU Code'] || row.sku_code || row['Sub Type'] || row.sub_type || 'ACCESSORY',
         description: row.Description || row.description,
         notes: row.Notes || row.notes || row.Remarks || row.remarks || '',
@@ -295,7 +288,7 @@ export default function AccessoriesMasterPage() {
             onChange={(val) => setSectionFilter(val === 'all' ? '' : val)}
             options={[
               { value: 'all', label: 'All BOM Sections' },
-              ...SECTION_OPTIONS
+              ...sectionOptions
             ]}
             className="w-48 text-xs text-text-secondary"
           />
@@ -385,7 +378,7 @@ export default function AccessoriesMasterPage() {
                       </button>
                     </td>
                     <td className="capitalize font-semibold text-text-secondary">
-                      {item.category_id.replace(/_/g, ' ')}
+                      {categories?.find(c => c.id === item.category_id)?.name || item.category_id.replace(/_/g, ' ')}
                     </td>
                     <td className="font-mono text-xs">{item.sku_code}</td>
                     <td className="font-semibold text-text-primary">{item.description}</td>
@@ -443,7 +436,7 @@ export default function AccessoriesMasterPage() {
                   <Select
                     value={draft.category_id}
                     onChange={(val) => setDraft({ ...draft, category_id: val as any })}
-                    options={SECTION_OPTIONS}
+                    options={sectionOptions}
                     className="w-full"
                   />
                 </div>

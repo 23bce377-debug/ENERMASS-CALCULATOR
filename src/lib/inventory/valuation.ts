@@ -30,7 +30,7 @@ export async function consumeInventoryFIFO(
   const supabase = await createClient();
 
   // 1. Fetch available layers in FIFO order (oldest received_date first)
-  const { data: layers, error: layersError } = await supabase
+  const { data: layers, error: layersError } = await (supabase as any)
     .from('inv_cost_layers')
     .select('id, remaining_qty, unit_cost')
     .eq('org_id', orgId)
@@ -91,7 +91,7 @@ export async function commitInventoryConsumption(
 
   for (const layer of consumption.layersConsumed) {
     // Deduct from layer
-    await supabase.rpc('decrement_layer_qty', {
+    await (supabase as any).rpc('decrement_layer_qty', {
       p_layer_id: layer.layerId,
       p_qty: layer.qtyConsumed
     });

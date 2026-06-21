@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { BundlePresetORM } from '@/backend/orm/bundle';
-import { withAuth, withRole } from '@/lib/api/wrappers';
+import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 import { z } from 'zod';
 
 const createBundleSchema = z.object({
@@ -25,14 +25,17 @@ const BundleCreateSchema = z.object({
   items: z.array(z.any()).optional().default([])
 });
 
-export const GET = withAuth(async (request, context) => {
-  const { orgId } = context.auth;
+export const GET = withLicensedApiRoute(async (_request, context) => {
+  const { orgId } = context.session;
   const presets = await BundlePresetORM.getAll(orgId);
   return NextResponse.json(presets);
+}, {
+  feature: 'inventory',
+  roles: ['owner', 'admin', 'manager'],
 });
 
-export const POST = withRole(['owner', 'admin'], async (request, context) => {
-  const { orgId, userId } = context.auth;
+export const POST = withLicensedApiRoute(async (request, context) => {
+  const { orgId, user } = context.session;
   const body = await request.json();
   
   const parsed = BundleCreateSchema.safeParse(body);
@@ -52,12 +55,14 @@ export const POST = withRole(['owner', 'admin'], async (request, context) => {
       allocation_strategy,
       notes,
       gst_pct,
-      created_by: userId,
+      created_by: user.id,
       is_active: true
     },
     items
   );
 
   return NextResponse.json(newPreset, { status: 201 });
+}, {
+  feature: 'inventory',
+  roles: ['owner', 'admin'],
 });
-
