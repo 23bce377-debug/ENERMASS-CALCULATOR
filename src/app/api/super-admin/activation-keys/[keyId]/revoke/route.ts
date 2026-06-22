@@ -17,7 +17,7 @@ export async function POST(request: Request, context: RouteContext) {
     const session = await requireSuperAdminSession();
     const { keyId } = await context.params;
 
-    const limited = enforceRateLimit(request, {
+    const limited = await enforceRateLimit(request, {
       keyPrefix: 'sa-key-revoke',
       userId: session.user.id,
       limit: 30,

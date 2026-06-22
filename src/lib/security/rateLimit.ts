@@ -1,6 +1,15 @@
 import 'server-only';
 
 import { NextResponse } from 'next/server';
+import { redis } from '@/lib/cache/redis';
+
+const isProduction = process.env.NODE_ENV === 'production';
+const isRedisActive = !!(process.env.UPSTASH_REDIS_REST_URL && 
+                     !process.env.UPSTASH_REDIS_REST_URL.includes('your-database-name'));
+
+if (isProduction && !isRedisActive) {
+  throw new Error('CRITICAL: Upstash Redis is not configured. Redis is MANDATORY in production environments.');
+}
 
 interface Bucket {
   count: number;
@@ -21,7 +30,27 @@ export function requestIpForRateLimit(request: Request) {
     'unknown-ip';
 }
 
-export function checkRateLimit(options: RateLimitOptions, now = Date.now()) {
+export async function checkRateLimit(options: RateLimitOptions, now = Date.now()) {
+  if (isRedisActive) {
+    try {
+      const key = `rl:${options.key}`;
+      const current = await redis.get<number>(key);
+      if (current === null) {
+        await redis.set(key, 1, { ex: Math.ceil(options.windowMs / 1000) });
+        return { allowed: true, remaining: options.limit - 1, resetAt: now + options.windowMs };
+      }
+      if (Number(current) >= options.limit) {
+        const ttl = await redis.ttl(key);
+        return { allowed: false, remaining: 0, resetAt: now + (ttl * 1000) };
+      }
+      const newCount = await redis.incr(key);
+      const ttl = await redis.ttl(key);
+      return { allowed: true, remaining: options.limit - newCount, resetAt: now + (ttl * 1000) };
+    } catch (err) {
+      console.error('[RateLimit] Redis error, falling back to memory:', err);
+    }
+  }
+
   const existing = buckets.get(options.key);
   if (!existing || existing.resetAt <= now) {
     buckets.set(options.key, { count: 1, resetAt: now + options.windowMs });
@@ -44,8 +73,8 @@ export function rateLimitResponse(resetAt: number) {
   );
 }
 
-export function enforceRateLimit(request: Request, options: Omit<RateLimitOptions, 'key'> & { keyPrefix: string; userId?: string }) {
+export async function enforceRateLimit(request: Request, options: Omit<RateLimitOptions, 'key'> & { keyPrefix: string; userId?: string }) {
   const key = `${options.keyPrefix}:${options.userId ?? 'anonymous'}:${requestIpForRateLimit(request)}`;
-  const result = checkRateLimit({ key, limit: options.limit, windowMs: options.windowMs });
+  const result = await checkRateLimit({ key, limit: options.limit, windowMs: options.windowMs });
   return result.allowed ? null : rateLimitResponse(result.resetAt);
 }

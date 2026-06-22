@@ -8,14 +8,14 @@ import {
   MembershipMissingError,
   SaasError,
   UnauthorizedRoleError,
-  assertActiveSubscription,
-  assertFeatureAccess,
-  registerDevice,
-} from '@/lib/saas';
+} from '@/lib/saas/errors';
+import { assertActiveSubscription } from '@/lib/saas/services/subscriptionService';
+import { assertFeatureAccess } from '@/lib/saas/services/featureAccessService';
+import { registerDevice } from '@/lib/saas/services/deviceService';
 import crypto from 'node:crypto';
 import { UserDeviceRepository } from '@/lib/saas/repositories';
 import { logLicenseEvent } from '@/lib/saas/services/licenseAuditService';
-import type { OrgMember, OrgMemberRole, OrgSubscription, UserDevice } from '@/lib/saas';
+import type { OrgMember, OrgMemberRole, OrgSubscription, UserDevice } from '@/lib/saas/types';
 import type { Database } from '@/lib/types/schema.types';
 
 export type LicensedOrg = Database['public']['Tables']['organisations']['Row'];

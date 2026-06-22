@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { jsonForManagementError, parseJson } from '@/lib/saas/managementApi';
-import { createPlanAsSuperAdmin, listSuperAdminPlans, requireSuperAdminSession } from '@/lib/saas';
+import { createPlanAsSuperAdmin, listSuperAdminPlans, requireSuperAdminSession } from '@/lib/saas/services/managementService';
 
 export async function GET() {
   try {

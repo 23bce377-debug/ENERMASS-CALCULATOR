@@ -53,6 +53,8 @@ export interface DevicePayload {
   deviceName?: string | null;
   browser?: string | null;
   os?: string | null;
+  publicKey?: string | null;
+  fingerprintHash?: string | null;
 }
 
 export interface DeviceInfo {

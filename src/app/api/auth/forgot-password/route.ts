@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit, rateLimitResponse, requestIpForRateLimit } from '@/lib/security/rateLimit';
-import { requestPasswordReset } from '@/lib/saas/services/passwordResetService';
+import { createAdminClient } from '@/lib/supabase/server';
 
 /**
  * POST /api/auth/forgot-password
@@ -10,7 +10,7 @@ import { requestPasswordReset } from '@/lib/saas/services/passwordResetService';
  */
 export async function POST(request: Request) {
   const ip = requestIpForRateLimit(request);
-  const rl = checkRateLimit({ key: `forgot-password:${ip}`, limit: 3, windowMs: 15 * 60 * 1000 });
+  const rl = await checkRateLimit({ key: `forgot-password:${ip}`, limit: 3, windowMs: 15 * 60 * 1000 });
   if (!rl.allowed) return rateLimitResponse(rl.resetAt);
 
   try {
@@ -21,18 +21,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Email is required.' }, { status: 400 });
     }
 
-    const result = await requestPasswordReset(email, {
-      ipAddress: ip,
-      userAgent: request.headers.get('user-agent') ?? null,
+    const adminClient = createAdminClient();
+    const redirectTo = `${new URL(request.url).origin}/profile?recovery=true`;
+    
+    const { error: emailError } = await adminClient.auth.resetPasswordForEmail(email, {
+      redirectTo,
     });
 
-    // Always return 200 to prevent email enumeration
-    const message = result.success ? result.message : 'If an account with this email exists, your admin has been notified.';
-    return NextResponse.json({ success: true, message });
-  } catch {
+    if (emailError) {
+      console.error('[ForgotPassword] Reset password error:', emailError.message);
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'If an account with this email exists, your admin has been notified.',
+      message: 'If an account with this email exists, a password reset link has been sent.',
+    });
+  } catch (err) {
+    return NextResponse.json({
+      success: true,
+      message: 'If an account with this email exists, a password reset link has been sent.',
     });
   }
 }

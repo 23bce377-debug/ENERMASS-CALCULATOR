@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { approveDeviceReset, requireSuperAdminSession } from '@/lib/saas';
+import { requireSuperAdminSession } from '@/lib/saas/services/managementService';
+import { approveDeviceReset } from '@/lib/saas/services/deviceResetService';
 import { jsonForManagementError } from '@/lib/saas/managementApi';
 import {
   adminResetPayloadSchema,

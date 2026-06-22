@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { createAdminClient, createClient } from '@/lib/supabase/server';
-import { z } from 'zod';
+import z from 'zod';
 import type {
   ActivationKey,
   BillingCycle,
@@ -221,11 +221,15 @@ export class OrgSubscriptionRepository extends RepositoryBase<'org_subscriptions
   async getActiveByOrgId(orgId: string): Promise<OrgSubscription | null> {
     uuidSchema.parse(orgId);
     const client = await this.client();
+    const now = new Date();
+    // Allow up to a 3-day grace window when querying active subscriptions from the DB
+    const graceCutoff = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await (client as any)
       .from('org_subscriptions')
       .select('*')
       .eq('org_id', orgId)
       .in('status', ['trialing', 'active', 'past_due'])
+      .or(`current_period_end.is.null,current_period_end.gte.${graceCutoff}`)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -335,6 +339,8 @@ const devicePayloadSchema = z.object({
   deviceName: z.string().nullable().optional(),
   browser: z.string().nullable().optional(),
   os: z.string().nullable().optional(),
+  publicKey: z.string().nullable().optional(),
+  fingerprintHash: z.string().nullable().optional(),
 });
 
 export class UserDeviceRepository extends RepositoryBase<'user_devices'> {
@@ -367,6 +373,8 @@ export class UserDeviceRepository extends RepositoryBase<'user_devices'> {
       device_name: payload.deviceName ?? null,
       browser: payload.browser ?? null,
       os: payload.os ?? null,
+      public_key: payload.publicKey ?? null,
+      fingerprint_hash: payload.fingerprintHash ?? null,
       status: 'active',
     } as TableInsert<'user_devices'>);
   }
@@ -378,6 +386,8 @@ export class UserDeviceRepository extends RepositoryBase<'user_devices'> {
       device_name: payload.deviceName,
       browser: payload.browser,
       os: payload.os,
+      public_key: payload.publicKey,
+      fingerprint_hash: payload.fingerprintHash,
       status: payload.status,
       last_seen_at: new Date().toISOString(),
     } as TableUpdate<'user_devices'>);
@@ -583,7 +593,7 @@ export class ActivationKeyRepository extends RepositoryBase<'activation_keys'> {
     const client = await this.client();
     const { data, error } = await (client as any)
       .from('activation_keys')
-      .select('id, org_id, key_prefix, status, activated_by, activated_at, device_id, batch_id, created_by, expires_at, revoked_at, created_at, updated_at')
+      .select('id, org_id, key_prefix, status, activated_by, activated_at, device_id, batch_id, created_by, expires_at, revoked_at, created_at, updated_at, key_version')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
     if (error) throwDbError('Failed to list activation keys for org', error);
@@ -595,7 +605,7 @@ export class ActivationKeyRepository extends RepositoryBase<'activation_keys'> {
     const offset = (page - 1) * limit;
     const { data, error } = await (client as any)
       .from('activation_keys')
-      .select('id, org_id, key_prefix, status, activated_by, activated_at, device_id, batch_id, created_by, expires_at, revoked_at, created_at, updated_at')
+      .select('id, org_id, key_prefix, status, activated_by, activated_at, device_id, batch_id, created_by, expires_at, revoked_at, created_at, updated_at, key_version')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
     if (error) throwDbError('Failed to list all activation keys', error);

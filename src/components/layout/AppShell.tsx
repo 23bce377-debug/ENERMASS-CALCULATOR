@@ -92,6 +92,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     // Subscribe to auth state updates
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        router.push('/profile?recovery=true');
+        return;
+      }
+
       if (session) {
         setIsAuthenticated(true);
         supabase

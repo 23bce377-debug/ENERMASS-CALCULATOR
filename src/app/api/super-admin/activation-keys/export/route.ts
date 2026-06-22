@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireSuperAdminPageSession } from '@/lib/saas/managementPageGuards';
-import { listAllActivationKeys } from '@/lib/saas';
+import { listAllActivationKeys } from '@/lib/saas/services/activationKeyService';
 
 /**
  * GET /api/super-admin/activation-keys/export

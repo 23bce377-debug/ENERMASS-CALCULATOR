@@ -13,7 +13,7 @@ import {
   tdClass,
   thClass,
 } from '@/components/saas/ManagementUi';
-import { listSuperAdminOrgs } from '@/lib/saas';
+import { listSuperAdminOrgs } from '@/lib/saas/services/managementService';
 import { requireSuperAdminPageSession } from '@/lib/saas/managementPageGuards';
 import { createOrgAction } from '../actions';
 import Link from 'next/link';

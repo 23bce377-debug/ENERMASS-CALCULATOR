@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { ProfileORM } from '@/backend/orm/profile';
 import { useToast } from '@/components/ui/Toast';
@@ -69,6 +69,8 @@ const inputCls = `w-full px-4 py-2.5 rounded-lg bg-background border border-bord
 
 export default function ProfilePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isRecovery = searchParams.get('recovery') === 'true';
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -86,7 +88,7 @@ export default function ProfilePage() {
   const [orgId, setOrgId] = useState('');
 
   // Password change
-  const [showPwSection, setShowPwSection] = useState(false);
+  const [showPwSection, setShowPwSection] = useState(isRecovery);
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
@@ -124,21 +126,32 @@ export default function ProfilePage() {
       }
     }
     load();
-  }, [router]);
+    if (isRecovery) {
+      setShowPwSection(true);
+    }
+  }, [router, isRecovery]);
 
   // Password strength meter
   useEffect(() => {
     if (!newPw) { setPwStrength(0); setPwMsg(''); return; }
     let score = 0;
-    if (newPw.length >= 8) score++;
+    if (newPw.length >= 12) score++;
+    if (/[a-z]/.test(newPw)) score++;
     if (/[A-Z]/.test(newPw)) score++;
     if (/[0-9]/.test(newPw)) score++;
     if (/[^A-Za-z0-9]/.test(newPw)) score++;
     setPwStrength(score);
-    setPwMsg(['Too short', 'Weak', 'Fair', 'Good', 'Strong'][score]);
+    setPwMsg(['Very Weak', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'][score]);
   }, [newPw]);
 
-  const pwStrengthColor = ['', 'bg-error', 'bg-warning', 'bg-yellow-400', 'bg-success'];
+  const pwStrengthColor = [
+    '',
+    'bg-error',        // 1: Weak
+    'bg-error',        // 2: Fair (still weak / below standard)
+    'bg-warning',      // 3: Good
+    'bg-yellow-400',   // 4: Strong
+    'bg-success',      // 5: Very Strong
+  ];
 
   // Save profile
   async function handleSaveProfile() {
@@ -163,15 +176,17 @@ export default function ProfilePage() {
   async function handleChangePassword() {
     if (!newPw) { toast('Enter a new password', 'error'); return; }
     if (newPw !== confirmPw) { toast('Passwords do not match', 'error'); return; }
-    if (pwStrength < 2) { toast('Password is too weak', 'error'); return; }
+    if (newPw.length < 12) { toast('Password must be at least 12 characters long', 'error'); return; }
 
     setChangingPassword(true);
     try {
-      // Re-authenticate first
-      const { error: signInErr } = await supabase.auth.signInWithPassword({
-        email, password: currentPw
-      });
-      if (signInErr) { toast('Current password is incorrect', 'error'); return; }
+      if (!isRecovery) {
+        // Re-authenticate first
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email, password: currentPw
+        });
+        if (signInErr) { toast('Current password is incorrect', 'error'); return; }
+      }
 
       const { error } = await supabase.auth.updateUser({ password: newPw });
       if (error) throw error;
@@ -179,6 +194,9 @@ export default function ProfilePage() {
       toast('Password changed successfully ✓', 'success');
       setCurrentPw(''); setNewPw(''); setConfirmPw('');
       setShowPwSection(false);
+      if (isRecovery) {
+        router.replace('/profile');
+      }
     } catch (err: any) {
       toast(`Password change failed: ${err.message}`, 'error');
     } finally {
@@ -336,17 +354,19 @@ export default function ProfilePage() {
             </button>
           ) : (
             <div className="space-y-4 animate-fade-in">
-              <Field label="Current Password">
-                <input
-                  id="profile-current-password"
-                  type="password"
-                  value={currentPw}
-                  onChange={(e) => setCurrentPw(e.target.value)}
-                  placeholder="Your current password"
-                  className={inputCls}
-                  autoComplete="current-password"
-                />
-              </Field>
+              {!isRecovery && (
+                <Field label="Current Password">
+                  <input
+                    id="profile-current-password"
+                    type="password"
+                    value={currentPw}
+                    onChange={(e) => setCurrentPw(e.target.value)}
+                    placeholder="Your current password"
+                    className={inputCls}
+                    autoComplete="current-password"
+                  />
+                </Field>
+              )}
 
               <Field label="New Password">
                 <div className="relative">
@@ -355,7 +375,7 @@ export default function ProfilePage() {
                     type={showNewPw ? 'text' : 'password'}
                     value={newPw}
                     onChange={(e) => setNewPw(e.target.value)}
-                    placeholder="Min 8 characters"
+                    placeholder="Min 12 characters"
                     className={`${inputCls} pr-10`}
                     autoComplete="new-password"
                   />
@@ -371,7 +391,7 @@ export default function ProfilePage() {
                 {newPw && (
                   <div className="mt-2 space-y-1">
                     <div className="flex gap-1">
-                      {[1, 2, 3, 4].map((i) => (
+                      {[1, 2, 3, 4, 5].map((i) => (
                         <div key={i}
                           className={`h-1 flex-1 rounded-full transition-all duration-300
                             ${i <= pwStrength ? pwStrengthColor[pwStrength] : 'bg-border'}`}
@@ -379,8 +399,9 @@ export default function ProfilePage() {
                       ))}
                     </div>
                     <p className={`text-xs font-medium ${
-                      pwStrength <= 1 ? 'text-error' : pwStrength === 2 ? 'text-warning' :
-                      pwStrength === 3 ? 'text-yellow-400' : 'text-success'
+                      pwStrength <= 2 ? 'text-error' :
+                      pwStrength === 3 ? 'text-warning' :
+                      pwStrength === 4 ? 'text-yellow-400' : 'text-success'
                     }`}>{pwMsg}</p>
                   </div>
                 )}
@@ -418,7 +439,7 @@ export default function ProfilePage() {
                 <button
                   id="btn-confirm-password-change"
                   onClick={handleChangePassword}
-                  disabled={changingPassword || !currentPw || !newPw || newPw !== confirmPw}
+                  disabled={changingPassword || (!isRecovery && !currentPw) || !newPw || newPw !== confirmPw}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-lg
                     bg-accent text-background text-sm font-semibold
                     hover:bg-accent-hover transition-all cursor-pointer

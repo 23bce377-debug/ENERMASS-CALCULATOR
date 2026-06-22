@@ -151,6 +151,193 @@ async function postJson<T>(url: string, body: unknown, env: DeviceClientEnvironm
   return await response.json() as T;
 }
 
+class DeviceKeyStore {
+  private dbName = 'enermass-device-db';
+  private storeName = 'keys';
+
+  private getDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      if (typeof indexedDB === 'undefined') {
+        reject(new Error('IndexedDB is not available'));
+        return;
+      }
+      const request = indexedDB.open(this.dbName, 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          db.createObjectStore(this.storeName);
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getKeyPair(): Promise<CryptoKeyPair | null> {
+    try {
+      const db = await this.getDB();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(this.storeName, 'readonly');
+        const store = transaction.objectStore(this.storeName);
+        const request = store.get('device-keypair');
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  async setKeyPair(keyPair: CryptoKeyPair): Promise<void> {
+    try {
+      const db = await this.getDB();
+      return new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(this.storeName, 'readwrite');
+        const store = transaction.objectStore(this.storeName);
+        const request = store.put(keyPair, 'device-keypair');
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    } catch {
+      // noop
+    }
+  }
+
+  async getDeviceToken(): Promise<string | null> {
+    try {
+      const db = await this.getDB();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(this.storeName, 'readonly');
+        const store = transaction.objectStore(this.storeName);
+        const request = store.get('device-token');
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  async setDeviceToken(token: string): Promise<void> {
+    try {
+      const db = await this.getDB();
+      return new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(this.storeName, 'readwrite');
+        const store = transaction.objectStore(this.storeName);
+        const request = store.put(token, 'device-token');
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    } catch {
+      // noop
+    }
+  }
+
+  async clear(): Promise<void> {
+    try {
+      const db = await this.getDB();
+      return new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(this.storeName, 'readwrite');
+        const store = transaction.objectStore(this.storeName);
+        store.delete('device-keypair');
+        store.delete('device-token');
+        resolve();
+      });
+    } catch {
+      // noop
+    }
+  }
+}
+
+const keyStore = new DeviceKeyStore();
+
+export async function getOrCreateDeviceKeyPair(): Promise<{ publicKeyJwk: string; keyPair: CryptoKeyPair }> {
+  let keyPair = await keyStore.getKeyPair();
+  if (!keyPair) {
+    keyPair = await window.crypto.subtle.generateKey(
+      {
+        name: 'ECDSA',
+        namedCurve: 'P-256'
+      },
+      false, // non-extractable!
+      ['sign', 'verify']
+    );
+    await keyStore.setKeyPair(keyPair);
+  }
+
+  const publicKeyJwkObj = await window.crypto.subtle.exportKey('jwk', keyPair.publicKey);
+  return {
+    publicKeyJwk: JSON.stringify(publicKeyJwkObj),
+    keyPair
+  };
+}
+
+export async function signChallenge(challengeStr: string, keyPair: CryptoKeyPair): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(challengeStr);
+  const signatureBuffer = await window.crypto.subtle.sign(
+    {
+      name: 'ECDSA',
+      hash: { name: 'SHA-256' }
+    },
+    keyPair.privateKey,
+    data
+  );
+  return btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
+}
+
+export function generateClientFingerprint(): string {
+  if (typeof window === 'undefined') return 'server';
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    let canvasData = '';
+    if (ctx) {
+      canvas.width = 200;
+      canvas.height = 50;
+      ctx.textBaseline = 'top';
+      ctx.font = "14px 'Arial'";
+      ctx.fillStyle = '#f60';
+      ctx.fillRect(125, 1, 62, 20);
+      ctx.fillStyle = '#069';
+      ctx.fillText('EnerMass, 2026! ❄', 2, 2);
+      ctx.strokeStyle = 'rgba(0, 102, 153, 0.7)';
+      ctx.strokeText('EnerMass, 2026! ❄', 2, 2);
+      canvasData = canvas.toDataURL();
+    }
+
+    const fingerprintParts = [
+      canvasData,
+      navigator.userAgent,
+      navigator.language,
+      screen.width + 'x' + screen.height,
+      screen.colorDepth,
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+      navigator.hardwareConcurrency ?? '',
+      (navigator as any).deviceMemory ?? ''
+    ];
+
+    const str = fingerprintParts.join('|');
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash).toString(16);
+  } catch (e) {
+    return 'fallback-fingerprint';
+  }
+}
+
+export async function clearLocalDeviceKeys(): Promise<void> {
+  await keyStore.clear();
+}
+
+export async function saveDeviceToken(token: string): Promise<void> {
+  await keyStore.setDeviceToken(token);
+}
+
 export async function registerOrVerifyDevice(env: DeviceClientEnvironment = {}) {
   const nav = getNavigator(env);
   if (nav?.cookieEnabled === false) {
@@ -162,12 +349,33 @@ export async function registerOrVerifyDevice(env: DeviceClientEnvironment = {}) 
   }
 
   const metadata = collectSafeDeviceMetadata(env);
+  const fingerprintHash = generateClientFingerprint();
+  const { publicKeyJwk, keyPair } = await getOrCreateDeviceKeyPair();
+  const deviceToken = await keyStore.getDeviceToken();
+  
+  const challenge = {
+    timestamp: Date.now(),
+    random: Math.random().toString(36).substring(2)
+  };
+  const challengeStr = JSON.stringify(challenge);
+  const signature = await signChallenge(challengeStr, keyPair);
 
-  return postJson('/api/devices/verify', {
+  const res = await postJson<{ device: { id: string; status: string }; deviceToken?: string }>('/api/devices/verify', {
     device_name: metadata.deviceName,
     browser: metadata.browser,
     os: metadata.os,
+    fingerprint_hash: fingerprintHash,
+    public_key: publicKeyJwk,
+    challenge_str: challengeStr,
+    signature: signature,
+    device_token: deviceToken
   }, env);
+
+  if (res.deviceToken) {
+    await keyStore.setDeviceToken(res.deviceToken);
+  }
+
+  return res;
 }
 
 export async function requestDeviceReset(input: { deviceName?: string; reason?: string }, env: DeviceClientEnvironment = {}) {

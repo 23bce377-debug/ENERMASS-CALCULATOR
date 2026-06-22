@@ -13,7 +13,7 @@ import {
   tdClass,
   thClass,
 } from '@/components/saas/ManagementUi';
-import { listOrgActivationKeys, countOrgActivationKeys } from '@/lib/saas';
+import { listOrgActivationKeys, countOrgActivationKeys } from '@/lib/saas/services/activationKeyService';
 import { requireOrgAdminPageSession } from '@/lib/saas/managementPageGuards';
 
 export default async function OrgActivationKeysPage() {

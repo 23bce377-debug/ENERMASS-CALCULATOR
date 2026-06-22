@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { jsonForManagementError, parseJson } from '@/lib/saas/managementApi';
-import { changeOrgUserRoleAsAdmin, disableOrgUserAsAdmin, requireOrgManagementSession, type OrgMemberRole } from '@/lib/saas';
+import { changeOrgUserRoleAsAdmin, disableOrgUserAsAdmin, requireOrgManagementSession } from '@/lib/saas/services/managementService';
+import type { OrgMemberRole } from '@/lib/saas/types';
 
 export async function PATCH(request: Request, context: { params: Promise<{ memberId: string }> }) {
   try {

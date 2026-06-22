@@ -16,11 +16,20 @@ const REQUIRED_SECRETS = [
 export function validateEnv() {
   console.log('--- Environment Verification ---');
   let missing = false;
+  const isProduction = process.env.NODE_ENV === 'production';
+
   for (const secret of REQUIRED_SECRETS) {
     const value = process.env[secret];
-    if (!value) {
-      console.error(`❌ Missing environment variable: ${secret}`);
-      missing = true;
+    const isRedisSecret = secret.startsWith('UPSTASH_REDIS');
+    const isInvalid = !value || (isRedisSecret && (value.includes('your-database-name') || value === 'your-rest-token'));
+
+    if (isInvalid) {
+      if (isRedisSecret && !isProduction) {
+        console.warn(`⚠️ Warning: ${secret} is not fully configured. Rate limiting will fall back to in-memory.`);
+      } else {
+        console.error(`❌ Invalid or missing required environment variable: ${secret}`);
+        missing = true;
+      }
     } else {
       // Print masked secret
       const masked = value.length > 8 
@@ -31,7 +40,7 @@ export function validateEnv() {
   }
 
   if (missing) {
-    throw new Error('Environment validation failed: Missing required secrets.');
+    throw new Error('Environment validation failed: Missing or invalid required secrets.');
   }
   console.log('✅ All required environment secrets are present.');
 }

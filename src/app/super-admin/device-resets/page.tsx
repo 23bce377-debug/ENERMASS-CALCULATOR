@@ -13,7 +13,7 @@ import {
   tdClass,
   thClass,
 } from '@/components/saas/ManagementUi';
-import { listSuperAdminDeviceResets } from '@/lib/saas';
+import { listSuperAdminDeviceResets } from '@/lib/saas/services/managementService';
 import { requireSuperAdminPageSession } from '@/lib/saas/managementPageGuards';
 import { approveDeviceResetAsSuperAdminAction, rejectDeviceResetAsSuperAdminAction } from '../actions';
 import { Check, X } from 'lucide-react';

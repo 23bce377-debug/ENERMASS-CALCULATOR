@@ -11,7 +11,7 @@ import {
   tdClass,
   thClass,
 } from '@/components/saas/ManagementUi';
-import { listOrgDevices } from '@/lib/saas';
+import { listOrgDevices } from '@/lib/saas/services/managementService';
 import { requireOrgAdminPageSession } from '@/lib/saas/managementPageGuards';
 import Link from 'next/link';
 import { revokeOrgDeviceAction } from '../saasActions';

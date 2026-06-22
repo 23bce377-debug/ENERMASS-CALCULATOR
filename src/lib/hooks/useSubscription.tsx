@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import type { SubscriptionPlan, OrgSubscription, FeatureMap, SeatUsage } from '@/lib/saas';
+import type { SubscriptionPlan, OrgSubscription, FeatureMap, SeatUsage } from '@/lib/saas/types';
 
 interface SubscriptionContextState {
   plan: SubscriptionPlan | null;

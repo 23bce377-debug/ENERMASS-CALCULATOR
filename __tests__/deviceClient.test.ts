@@ -45,17 +45,21 @@ describe('device client identity (simplified)', () => {
       fetch: mockFetch,
     });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      '/api/devices/verify',
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({
-          device_name: 'Windows - Chrome',
-          browser: 'Chrome',
-          os: 'Windows',
-        }),
-      })
-    );
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, options] = mockFetch.mock.calls[0];
+    expect(url).toBe('/api/devices/verify');
+    expect(options.method).toBe('POST');
+    expect(options.credentials).toBe('include');
+    expect(options.headers).toEqual({ 'content-type': 'application/json' });
+    
+    const parsedBody = JSON.parse(options.body);
+    expect(parsedBody.device_name).toBe('Windows - Chrome');
+    expect(parsedBody.browser).toBe('Chrome');
+    expect(parsedBody.os).toBe('Windows');
+    expect(parsedBody.fingerprint_hash).toBeDefined();
+    expect(parsedBody.public_key).toBeDefined();
+    expect(parsedBody.challenge_str).toBeDefined();
+    expect(parsedBody.signature).toBeDefined();
     expect(res).toEqual({ device: { id: 'device-1', status: 'active' } });
   });
 

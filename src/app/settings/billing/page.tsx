@@ -10,7 +10,7 @@ import {
   formatDate,
   orgAdminTabs,
 } from '@/components/saas/ManagementUi';
-import { getBillingOverview } from '@/lib/saas';
+import { getBillingOverview } from '@/lib/saas/services/managementService';
 import { requireOrgAdminPageSession } from '@/lib/saas/managementPageGuards';
 
 export default async function BillingPage() {

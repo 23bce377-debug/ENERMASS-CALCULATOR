@@ -3,7 +3,7 @@ import { requireSuperAdminSession } from '@/lib/saas/services/managementService'
 import { generateActivationKeys } from '@/lib/saas/services/activationKeyService';
 import { enforceRateLimit } from '@/lib/security/rateLimit';
 import { jsonForManagementError } from '@/lib/saas/managementApi';
-import { z } from 'zod';
+import z from 'zod';
 
 const schema = z.object({
   orgId: z.string().uuid(),
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   try {
     const session = await requireSuperAdminSession();
 
-    const limited = enforceRateLimit(request, {
+    const limited = await enforceRateLimit(request, {
       keyPrefix: 'sa-key-generate',
       userId: session.user.id,
       limit: 20,

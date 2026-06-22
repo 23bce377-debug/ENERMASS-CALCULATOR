@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { jsonForManagementError, parseJson } from '@/lib/saas/managementApi';
-import { inviteOrgUserAsAdmin, listOrgUsers, requireOrgManagementSession, type OrgMemberRole } from '@/lib/saas';
+import { inviteOrgUserAsAdmin, listOrgUsers, requireOrgManagementSession } from '@/lib/saas/services/managementService';
+import type { OrgMemberRole } from '@/lib/saas/types';
 
 export async function GET() {
   try {

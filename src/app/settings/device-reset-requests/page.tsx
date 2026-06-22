@@ -11,7 +11,7 @@ import {
   tdClass,
   thClass,
 } from '@/components/saas/ManagementUi';
-import { listOrgDeviceResetRequests } from '@/lib/saas';
+import { listOrgDeviceResetRequests } from '@/lib/saas/services/managementService';
 import { requireOrgAdminPageSession } from '@/lib/saas/managementPageGuards';
 import { approveOrgDeviceResetAction, rejectOrgDeviceResetAction } from '../saasActions';
 

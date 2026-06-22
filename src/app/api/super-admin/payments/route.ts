@@ -4,9 +4,8 @@ import {
   listSuperAdminPayments,
   recordManualPaymentAsSuperAdmin,
   requireSuperAdminSession,
-  type PaymentMethod,
-  type PaymentStatus,
-} from '@/lib/saas';
+} from '@/lib/saas/services/managementService';
+import type { PaymentMethod, PaymentStatus } from '@/lib/saas/types';
 
 export async function GET() {
   try {

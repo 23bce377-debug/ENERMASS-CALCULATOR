@@ -3593,6 +3593,7 @@ export interface Database {
           key_hash: string
           key_encrypted: string
           key_prefix: string
+          key_version: number
           status: 'unused' | 'activated' | 'revoked' | 'expired'
           activated_by: string | null
           activated_at: string | null
@@ -3611,6 +3612,7 @@ export interface Database {
           key_hash: string
           key_encrypted: string
           key_prefix: string
+          key_version?: number
           status?: 'unused' | 'activated' | 'revoked' | 'expired'
           activated_by?: string | null
           activated_at?: string | null
@@ -3629,6 +3631,7 @@ export interface Database {
           key_hash?: string
           key_encrypted?: string
           key_prefix?: string
+          key_version?: number
           status?: 'unused' | 'activated' | 'revoked' | 'expired'
           activated_by?: string | null
           activated_at?: string | null
@@ -3824,6 +3827,7 @@ export interface Database {
           first_seen_at: string
           last_seen_at: string
           revoked_at: string | null
+          public_key: string | null
         }
         Insert: {
           id?: string
@@ -3837,6 +3841,7 @@ export interface Database {
           first_seen_at?: string
           last_seen_at?: string
           revoked_at?: string | null
+          public_key?: string | null
         }
         Update: {
           id?: string
@@ -3850,6 +3855,7 @@ export interface Database {
           first_seen_at?: string
           last_seen_at?: string
           revoked_at?: string | null
+          public_key?: string | null
         }
         Relationships: []
       }

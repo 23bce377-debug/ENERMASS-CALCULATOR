@@ -94,7 +94,7 @@ export async function assertActiveSubscription(
   const subscriptionPaymentRepository = deps.subscriptionPaymentRepository ?? new SubscriptionPaymentRepository();
   const audit = deps.audit ?? logLicenseEvent;
   const now = deps.now?.() ?? new Date();
-  const graceDays = deps.graceDays ?? 0;
+  const graceDays = deps.graceDays ?? 3;
 
   const subscription = await orgSubscriptionRepository.getActiveByOrgId(orgId);
   const payments = subscription ? await subscriptionPaymentRepository.listByOrgId(orgId) : [];

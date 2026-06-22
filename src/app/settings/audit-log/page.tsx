@@ -9,7 +9,7 @@ import {
   thClass,
   orgAdminTabs,
 } from '@/components/saas/ManagementUi';
-import { listLicenseEventsByOrg } from '@/lib/saas';
+import { listLicenseEventsByOrg } from '@/lib/saas/services/licenseAuditService';
 import { requireOrgAdminPageSession } from '@/lib/saas/managementPageGuards';
 
 // Human-readable labels for event types

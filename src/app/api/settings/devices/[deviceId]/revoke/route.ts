@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { jsonForManagementError } from '@/lib/saas/managementApi';
-import { requireOrgManagementSession, revokeOrgDeviceAsAdmin } from '@/lib/saas';
+import { requireOrgManagementSession, revokeOrgDeviceAsAdmin } from '@/lib/saas/services/managementService';
 
 export async function POST(_request: Request, context: { params: Promise<{ deviceId: string }> }) {
   try {

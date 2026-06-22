@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { SaasError } from '@/lib/saas';
+import { SaasError } from '@/lib/saas/errors';
 
 export const deviceResetRequestPayloadSchema = z.object({
   device_name: z.string().min(1).nullable().optional(),

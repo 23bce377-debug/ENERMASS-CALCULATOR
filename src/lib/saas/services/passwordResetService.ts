@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/server';
-import { z } from 'zod';
+import z from 'zod';
 import { OrgMemberRepository, PasswordResetRequestRepository } from '../repositories';
 import { logLicenseEvent } from './licenseAuditService';
 import type { PasswordResetRequest } from '../types';

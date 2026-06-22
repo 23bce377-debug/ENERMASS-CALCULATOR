@@ -99,6 +99,7 @@ function mkDevice(overrides: Partial<UserDevice> = {}): UserDevice {
     first_seen_at: '2026-06-01T00:00:00.000Z',
     last_seen_at: '2026-06-01T00:00:00.000Z',
     revoked_at: null,
+    public_key: null,
     ...overrides,
   };
 }
@@ -344,10 +345,10 @@ describe('master-control data hardening', () => {
       'utf8'
     );
 
-    const seatCheckIndex = activationKeySource.indexOf('await assertSeatAvailable(key.org_id)');
+    const seatCheckIndex = activationKeySource.indexOf('await assertSeatAvailableForActivation(key.org_id)');
     const createUserIndex = activationKeySource.indexOf('auth.admin.createUser');
 
-    expect(activationKeySource).toContain("import { assertSeatAvailable } from './seatService'");
+    expect(activationKeySource).toContain("import { assertSeatAvailableForActivation } from './seatService'");
     expect(seatCheckIndex).toBeGreaterThan(-1);
     expect(createUserIndex).toBeGreaterThan(-1);
     expect(seatCheckIndex).toBeLessThan(createUserIndex);

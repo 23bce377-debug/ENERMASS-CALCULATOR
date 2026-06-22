@@ -15,11 +15,14 @@ const KEY_ENTROPY_BYTES = 10; // 80 bits → ~1.2e24 possibilities
 // Base32 alphabet (no ambiguous chars: no 0/O, 1/I/L)
 const BASE32_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-function getEncryptionKey(): Buffer {
-  const secret = process.env.ACTIVATION_KEY_ENCRYPTION_SECRET;
+const CURRENT_VERSION = Number(process.env.ACTIVATION_KEY_CURRENT_VERSION || '1');
+
+function getEncryptionKey(version: number = 1): Buffer {
+  const secretVarName = version === 1 ? 'ACTIVATION_KEY_ENCRYPTION_SECRET' : `ACTIVATION_KEY_ENCRYPTION_SECRET_V${version}`;
+  const secret = process.env[secretVarName] || process.env.ACTIVATION_KEY_ENCRYPTION_SECRET;
   if (!secret || secret.length !== 64) {
     throw new Error(
-      'ACTIVATION_KEY_ENCRYPTION_SECRET must be a 64-character hex string. ' +
+      `${secretVarName} must be a 64-character hex string. ` +
       'Generate one with: openssl rand -hex 32'
     );
   }
@@ -103,8 +106,8 @@ export function isValidKeyFormat(raw: string): boolean {
  * Returns base64(iv || ciphertext || authTag).
  * The raw key is NEVER stored — only this ciphertext.
  */
-export function encryptActivationKey(rawKey: string): string {
-  const encKey = getEncryptionKey();
+export function encryptActivationKey(rawKey: string, version: number = CURRENT_VERSION): string {
+  const encKey = getEncryptionKey(version);
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, encKey, iv, { authTagLength: AUTH_TAG_LENGTH });
 
@@ -123,8 +126,8 @@ export function encryptActivationKey(rawKey: string): string {
  * This should ONLY be called by super admin endpoints.
  * Returns the raw key string.
  */
-export function decryptActivationKey(encrypted: string): string {
-  const encKey = getEncryptionKey();
+export function decryptActivationKey(encrypted: string, version: number = 1): string {
+  const encKey = getEncryptionKey(version);
   const combined = Buffer.from(encrypted, 'base64');
 
   const iv = combined.subarray(0, IV_LENGTH);

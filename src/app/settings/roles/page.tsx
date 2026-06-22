@@ -12,7 +12,7 @@ import {
   tdClass,
   thClass,
 } from '@/components/saas/ManagementUi';
-import { listOrgUsers } from '@/lib/saas';
+import { listOrgUsers } from '@/lib/saas/services/managementService';
 import { requireOrgAdminPageSession } from '@/lib/saas/managementPageGuards';
 import { changeOrgUserRoleAction } from '../saasActions';
 

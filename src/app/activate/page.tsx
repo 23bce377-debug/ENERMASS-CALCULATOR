@@ -129,6 +129,11 @@ export default function ActivatePage() {
     return 'Unknown OS';
   }
 
+  // WebAuthn state
+  const [webauthnChallenge, setWebauthnChallenge] = useState<string | null>(null);
+  const [rpName, setRpName] = useState<string>('Enermass SaaS');
+  const [rpId, setRpId] = useState<string>('localhost');
+
   // ── Step 1: Validate Key ───────────────────────────────────────────────────
   const handleValidateKey = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,10 +146,21 @@ export default function ActivatePage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ key: rawKey.trim() }),
       });
-      const data = await res.json() as { valid: boolean; orgId?: string; orgName?: string; reason?: string };
+      const data = await res.json() as {
+        valid: boolean;
+        orgId?: string;
+        orgName?: string;
+        reason?: string;
+        challenge?: string;
+        rpName?: string;
+        rpId?: string;
+      };
 
-      if (data.valid && data.orgId) {
+      if (data.valid && data.orgId && data.challenge) {
         setOrgInfo({ orgId: data.orgId, orgName: data.orgName ?? 'Your Organisation' });
+        setWebauthnChallenge(data.challenge);
+        setRpName(data.rpName ?? 'Enermass SaaS');
+        setRpId(data.rpId ?? window.location.hostname);
         setStep('registration');
       } else {
         toast(data.reason ?? 'Invalid activation key. Please check and try again.', 'error');
@@ -173,6 +189,82 @@ export default function ActivatePage() {
     const deviceInfo = getDeviceInfo();
 
     try {
+      let webauthnRegistration = null;
+      if (webauthnChallenge) {
+        try {
+          // Convert base64url challenge to Uint8Array
+          const base64 = webauthnChallenge.replace(/-/g, '+').replace(/_/g, '/');
+          const binaryChallenge = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+
+          const userIdBytes = new Uint8Array(16);
+          window.crypto.getRandomValues(userIdBytes);
+
+          const credential = await navigator.credentials.create({
+            publicKey: {
+              challenge: binaryChallenge,
+              rp: { name: rpName, id: rpId },
+              user: {
+                id: userIdBytes,
+                name: email.trim(),
+                displayName: fullName.trim(),
+              },
+              pubKeyCredParams: [
+                { alg: -7, type: 'public-key' },  // ES256
+                { alg: -257, type: 'public-key' } // RS256
+              ],
+              timeout: 60000,
+              attestation: 'none',
+              authenticatorSelection: {
+                userVerification: 'preferred',
+                residentKey: 'preferred',
+                requireResidentKey: false,
+              }
+            }
+          }) as PublicKeyCredential;
+
+          if (!credential) {
+            throw new Error('Passkey creation was cancelled or failed.');
+          }
+
+          const bufferToBase64Url = (buffer: ArrayBuffer) => {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary)
+              .replace(/\+/g, '-')
+              .replace(/\//g, '_')
+              .replace(/=/g, '');
+          };
+
+          const response = credential.response as AuthenticatorAttestationResponse;
+          webauthnRegistration = {
+            id: credential.id,
+            rawId: bufferToBase64Url(credential.rawId),
+            clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+            attestationObject: bufferToBase64Url(response.attestationObject),
+          };
+        } catch (err: any) {
+          console.error('WebAuthn registration failed:', err);
+          toast(err.message || 'Passkey/WebAuthn registration failed. A passkey is required.', 'error');
+          setRegistering(false);
+          return;
+        }
+      } else {
+        toast('WebAuthn challenge was not generated. Please try validating your key again.', 'error');
+        setRegistering(false);
+        return;
+      }
+
+      let fingerprintHash = null;
+      try {
+        const { generateClientFingerprint } = await import('@/lib/device/deviceClient');
+        fingerprintHash = generateClientFingerprint();
+      } catch (err) {
+        console.error('Failed to generate fingerprint:', err);
+      }
+
       const res = await fetch('/api/activation/redeem', {
         method: 'POST',
         credentials: 'include',
@@ -183,13 +275,23 @@ export default function ActivatePage() {
           email: email.trim(),
           password,
           phone: phone.trim() || null,
+          fingerprint_hash: fingerprintHash,
+          webauthn_registration: webauthnRegistration,
           ...deviceInfo,
         }),
       });
 
-      const data = await res.json() as { success: boolean; role?: 'owner' | 'staff'; message?: string };
+      const data = await res.json() as { success: boolean; role?: 'owner' | 'staff'; deviceToken?: string; message?: string };
 
       if (data.success) {
+        if (data.deviceToken) {
+          try {
+            const { saveDeviceToken } = await import('@/lib/device/deviceClient');
+            await saveDeviceToken(data.deviceToken);
+          } catch (err) {
+            console.error('Failed to store device token in IndexedDB on activation:', err);
+          }
+        }
         setAssignedRole(data.role ?? 'staff');
         setStep('success');
       } else {

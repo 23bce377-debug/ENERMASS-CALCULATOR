@@ -5,7 +5,7 @@ import {
   type AuthenticatedOrgSession,
   type RequireAuthenticatedOrgSessionDeps,
 } from './requireLicensedSession';
-import type { OrgMemberRole } from '@/lib/saas';
+import type { OrgMemberRole } from '@/lib/saas/types';
 
 export interface AuthenticatedOrgApiContext<RouteContext extends object = { params?: unknown }> {
   session: AuthenticatedOrgSession;

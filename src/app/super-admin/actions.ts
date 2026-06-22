@@ -1,6 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import z from 'zod';
+import type { ZodIssue } from 'zod';
 import {
   assignPlanAsSuperAdmin,
   approveOrgDeviceResetAsAdmin,
@@ -14,11 +16,13 @@ import {
   requireSuperAdminSession,
   setSubscriptionSeatLimitAsSuperAdmin,
   updatePlanFeaturesAsSuperAdmin,
-  type BillingCycle,
-  type PaymentMethod,
-  type PaymentStatus,
-  type SubscriptionStatus,
-} from '@/lib/saas';
+} from '@/lib/saas/services/managementService';
+import type {
+  BillingCycle,
+  PaymentMethod,
+  PaymentStatus,
+  SubscriptionStatus,
+} from '@/lib/saas/types';
 
 export interface SuperAdminActionState {
   ok: boolean;
@@ -40,6 +44,9 @@ function jsonValue(raw: string) {
 }
 
 function messageForError(error: unknown) {
+  if (error instanceof z.ZodError) {
+    return error.issues.map((e: ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(', ');
+  }
   if (error && typeof error === 'object' && 'userMessage' in error && typeof error.userMessage === 'string') {
     return error.userMessage;
   }

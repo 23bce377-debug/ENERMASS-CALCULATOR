@@ -2,7 +2,7 @@ import 'server-only';
 
 import crypto from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/server';
-import { z } from 'zod';
+import z from 'zod';
 import { ActivationKeyRepository, OrgMemberRepository, UserDeviceRepository } from '../repositories';
 import {
   encryptActivationKey,
@@ -15,7 +15,9 @@ import {
 import { logLicenseEvent } from './licenseAuditService';
 import type { ActivationKey } from '../types';
 import { profilesByUserId, userEmailsById } from './userDirectory';
-import { assertSeatAvailable } from './seatService';
+import { assertSeatAvailableForActivation } from './seatService';
+
+const CURRENT_VERSION = Number(process.env.ACTIVATION_KEY_CURRENT_VERSION || '1');
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 // Note: Super admin auth is determined exclusively by profiles.is_super_admin.
@@ -58,6 +60,8 @@ const redeemKeySchema = z.object({
   deviceName: z.string().optional().nullable(),
   browser: z.string().optional().nullable(),
   os: z.string().optional().nullable(),
+  publicKey: z.string().optional().nullable(),
+  fingerprintHash: z.string().optional().nullable(),
 });
 
 // ─── Exported Types ───────────────────────────────────────────────────────────
@@ -104,6 +108,7 @@ export interface MaskedKeyItem {
   revoked_at: string | null;
   created_at: string;
   updated_at: string;
+  key_version: number;
 }
 
 // ─── Generate Keys (Super Admin only) ────────────────────────────────────────
@@ -122,7 +127,7 @@ export async function generateActivationKeys(input: z.input<typeof generateKeysS
   for (let i = 0; i < payload.count; i++) {
     const rawKey = generateRawActivationKey();
     const hash = hashActivationKey(rawKey);
-    const encrypted = encryptActivationKey(rawKey);
+    const encrypted = encryptActivationKey(rawKey, CURRENT_VERSION);
     const prefix = keyPrefix(rawKey);
 
     const row = await repo.create({
@@ -134,6 +139,7 @@ export async function generateActivationKeys(input: z.input<typeof generateKeysS
       batch_id: batchId,
       created_by: payload.createdBy,
       expires_at: payload.expiresAt ?? null,
+      key_version: CURRENT_VERSION,
     });
 
     results.push({ id: row.id, rawKey, prefix });
@@ -229,7 +235,7 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
 
   // Activation keys are invitations, not extra capacity. Enforce the org seat
   // cap before creating the Supabase auth user or any related tenant records.
-  await assertSeatAvailable(key.org_id);
+  await assertSeatAvailableForActivation(key.org_id);
 
   // ── 2. Determine role (first owner or staff) ──────────────────────────────────
   const memberRepo = new OrgMemberRepository(createAdminClient);
@@ -241,7 +247,7 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
   const { data: authData, error: authError } = await (adminClient as any).auth.admin.createUser({
     email: payload.email,
     password: payload.password,
-    email_confirm: true,
+    email_confirm: false,
     user_metadata: {
       full_name: payload.fullName,
       org_id: key.org_id,
@@ -285,6 +291,8 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
       deviceName: payload.deviceName ?? 'Activation Device',
       browser: payload.browser ?? null,
       os: payload.os ?? null,
+      publicKey: payload.publicKey ?? null,
+      fingerprintHash: payload.fingerprintHash ?? null,
     });
 
     // ── 8. Mark key as activated ──────────────────────────────────────────────────

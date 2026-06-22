@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { jsonForManagementError } from '@/lib/saas/managementApi';
-import { listOrgDeviceResetRequests, requireOrgManagementSession } from '@/lib/saas';
+import { listOrgDeviceResetRequests, requireOrgManagementSession } from '@/lib/saas/services/managementService';
 
 export async function GET() {
   try {

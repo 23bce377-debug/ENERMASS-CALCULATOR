@@ -9,8 +9,8 @@ import {
   rejectOrgDeviceResetAsAdmin,
   requireOrgManagementSession,
   revokeOrgDeviceAsAdmin,
-  type OrgMemberRole,
-} from '@/lib/saas';
+} from '@/lib/saas/services/managementService';
+import type { OrgMemberRole } from '@/lib/saas/types';
 import { createAdminClient } from '@/lib/supabase/server';
 
 export interface ManagementActionState {
@@ -133,6 +133,40 @@ export async function resendInviteAction(formData: FormData): Promise<void> {
     });
     if (error) throw new Error(`Failed to resend invitation: ${error.message}`);
     refreshOrgAdminPages();
+    return;
+  } catch (error) {
+    throw new Error(messageForError(error));
+  }
+}
+
+export async function revokeSelfDeviceAction(formData: FormData): Promise<void> {
+  const { UserDeviceRepository } = await import('@/lib/saas/repositories');
+  try {
+    const session = await requireOrgManagementSession(['owner', 'admin', 'manager', 'staff', 'viewer']);
+    const deviceId = value(formData, 'deviceId');
+    if (!deviceId) throw new Error('Device ID is required.');
+
+    const deviceRepo = new UserDeviceRepository(createAdminClient);
+    const device = await deviceRepo.getById(deviceId);
+    if (!device) throw new Error('Device not found.');
+
+    if (device.user_id !== session.user.id) {
+      throw new Error('Unauthorized: You can only revoke your own devices.');
+    }
+
+    await deviceRepo.revoke(deviceId);
+
+    const { logLicenseEvent } = await import('@/lib/saas/services/licenseAuditService');
+    await logLicenseEvent({
+      orgId: session.orgId,
+      userId: session.user.id,
+      entityType: 'user_devices',
+      entityId: deviceId,
+      eventType: 'device_reset_rejected',
+      eventData: { action: 'self_device_revoked', deviceName: device.device_name },
+    });
+
+    revalidatePath('/settings/security');
     return;
   } catch (error) {
     throw new Error(messageForError(error));

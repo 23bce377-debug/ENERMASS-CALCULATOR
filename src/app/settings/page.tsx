@@ -10,7 +10,7 @@ import { revalidateMasterCache } from '@/app/actions/revalidateMasters';
 import {
   Settings as SettingsIcon, Percent, Zap, Building2,
   Download, Upload, RotateCcw, Check, ChevronDown, Sun, Moon,
-  CloudUpload, CloudDownload, Loader2, Cloud, RefreshCcw
+  CloudUpload, CloudDownload, Loader2, Cloud, RefreshCcw, Lock
 } from 'lucide-react';
 
 // ─── Section Wrapper ────────────────────────────────────────────────────────────
@@ -240,6 +240,21 @@ export default function SettingsPage() {
           </div>
           <Link href="/presets" className="shrink-0 px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background text-sm font-semibold transition-colors">
             Go to Presets
+          </Link>
+        </div>
+      </Section>
+
+      {/* Security */}
+      <Section title="Security & Session Management" icon={<Lock size={18} />}>
+        <div className="p-4 rounded-xl border border-dashed border-accent/30 bg-accent/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-accent mb-1">Active Devices & Passkeys</h3>
+            <p className="text-xs text-text-muted">
+              Manage your active devices, view registered cryptographic passkeys, or revoke device access.
+            </p>
+          </div>
+          <Link href="/settings/security" className="shrink-0 px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background text-sm font-semibold transition-colors">
+            Manage Security
           </Link>
         </div>
       </Section>

@@ -6,12 +6,15 @@ import {
   requireOrgManagementSession,
   requireSuperAdminSession,
   type ManagementSession,
-  type OrgMemberRole,
   type SuperAdminSession,
-} from '@/lib/saas';
+} from './services/managementService';
+import type { OrgMemberRole } from './types';
 
 function redirectFor(error: unknown) {
   if (error instanceof AuthenticationRequiredError) return '/login';
+  if (error instanceof Error && error.message === 'MFA_REQUIRED') {
+    return '/super-admin/mfa';
+  }
   if (error && typeof error === 'object' && 'redirectTo' in error && typeof error.redirectTo === 'string') {
     return error.redirectTo === '/dashboard' ? '/unauthorized' : error.redirectTo;
   }

@@ -67,6 +67,18 @@ vi.mock('@/lib/saas/services/deviceService', () => ({
   registerDevice: deviceServices.registerDevice,
 }));
 
+vi.mock('@/lib/saas/services/deviceResetService', () => ({
+  requestDeviceReset: deviceServices.requestDeviceReset,
+  approveDeviceReset: deviceServices.approveDeviceReset,
+  rejectDeviceReset: deviceServices.rejectDeviceReset,
+}));
+
+vi.mock('@/lib/saas/services/managementService', () => ({
+  requireSuperAdminSession: vi.fn(async () => ({
+    user: { id: routeAuth.userId },
+  })),
+}));
+
 vi.mock('@/lib/saas', () => ({
   registerDevice: deviceServices.registerDevice,
   requestDeviceReset: deviceServices.requestDeviceReset,
@@ -119,7 +131,8 @@ describe('device binding API routes (simplified)', () => {
 
     expect(response.status).toBe(200);
     const json = await response.json();
-    expect(json).toEqual({ device: { id: 'new-device-id', status: 'active' } });
+    expect(json.device).toEqual({ id: 'new-device-id', status: 'active' });
+    expect(json.deviceToken).toBeDefined();
     expect(deviceServices.registerDevice).toHaveBeenCalledWith(
       routeAuth.userId,
       routeAuth.orgId,

@@ -11,7 +11,8 @@ import {
   thClass,
   formatDateTime,
 } from '@/components/saas/ManagementUi';
-import { listAllActivationKeys, listSuperAdminOrgs } from '@/lib/saas';
+import { listAllActivationKeys } from '@/lib/saas/services/activationKeyService';
+import { listSuperAdminOrgs } from '@/lib/saas/services/managementService';
 import { requireSuperAdminPageSession } from '@/lib/saas/managementPageGuards';
 import { GenerateKeysModal } from '@/components/saas/GenerateKeysModal';
 import Link from 'next/link';

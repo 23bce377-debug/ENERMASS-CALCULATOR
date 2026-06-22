@@ -15,7 +15,7 @@ import {
   tdClass,
   thClass,
 } from '@/components/saas/ManagementUi';
-import { getBillingOverview, listOrgUsers, listOrgDevices } from '@/lib/saas';
+import { getBillingOverview, listOrgUsers, listOrgDevices } from '@/lib/saas/services/managementService';
 import { requireOrgAdminPageSession } from '@/lib/saas/managementPageGuards';
 import { changeOrgUserRoleAction, disableOrgUserAction, inviteOrgUserAction, resendInviteAction, revokeOrgDeviceAction } from '../saasActions';
 

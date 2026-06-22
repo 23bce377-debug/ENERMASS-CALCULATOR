@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withAuthenticatedOrgApiRoute } from '@/lib/auth/withAuthenticatedOrgApiRoute';
-import { getBillingOverview } from '@/lib/saas';
+import { getBillingOverview } from '@/lib/saas/services/managementService';
 
 export const GET = withAuthenticatedOrgApiRoute(async (request, context) => {
   try {

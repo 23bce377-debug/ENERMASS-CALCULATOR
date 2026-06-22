@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { jsonForManagementError, parseJson } from '@/lib/saas/managementApi';
-import { changeSubscriptionStatusAsSuperAdmin, requireSuperAdminSession, type SubscriptionStatus } from '@/lib/saas';
+import { changeSubscriptionStatusAsSuperAdmin, requireSuperAdminSession } from '@/lib/saas/services/managementService';
+import type { SubscriptionStatus } from '@/lib/saas/types';
 
 export async function PATCH(request: Request, context: { params: Promise<{ subscriptionId: string }> }) {
   try {

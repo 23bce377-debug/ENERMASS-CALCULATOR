@@ -1,7 +1,7 @@
 import 'server-only';
 
 import type { User } from '@supabase/supabase-js';
-import { z } from 'zod';
+import z from 'zod';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { AuthenticationRequiredError } from '@/lib/auth/requireLicensedSession';
 import { MembershipMissingError, SeatLimitReachedError, UnauthorizedRoleError } from '../errors';
@@ -122,7 +122,7 @@ const subscriptionStatusSchema = z.enum(['trialing', 'active', 'past_due', 'canc
 const billingCycleSchema = z.enum(['monthly', 'yearly', 'trial', 'manual']);
 const paymentStatusSchema = z.enum(['pending', 'paid', 'failed', 'refunded', 'cancelled']);
 const paymentMethodSchema = z.enum(['manual', 'bank_transfer', 'upi', 'cash', 'cheque', 'card']);
-const uuidSchema = z.string().uuid();
+const uuidSchema = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "Invalid UUID");
 
 function adminClient() {
   return createAdminClient();
@@ -179,6 +179,15 @@ export async function requireOrgManagementSession(
     throw new UnauthorizedRoleError({ orgId: member.org_id, userId: user.id, role, allowedRoles: roles });
   }
 
+  // Enforce MFA AAL2 for Org management actions
+  if (['owner', 'admin', 'manager'].includes(role)) {
+    const supabase = await createClient();
+    const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aalError || aalData?.currentLevel !== 'aal2') {
+      throw new Error('MFA_REQUIRED');
+    }
+  }
+
   const { data: org, error: orgError } = await (client as any)
     .from('organisations')
     .select('*')
@@ -199,6 +208,14 @@ export async function requireSuperAdminSession(): Promise<SuperAdminSession> {
   if (!(await isSuperAdmin(user))) {
     throw new UnauthorizedRoleError({ userId: user.id, role: user.app_metadata?.role ?? user.user_metadata?.role ?? null });
   }
+  
+  // Enforce MFA AAL2 for Super Admin actions
+  const supabase = await createClient();
+  const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aalError || aalData?.currentLevel !== 'aal2') {
+    throw new Error('MFA_REQUIRED');
+  }
+  
   return { user };
 }
 
@@ -672,6 +689,16 @@ export async function assignPlanAsSuperAdmin(input: {
     billingCycle: billingCycleSchema,
     status: subscriptionStatusSchema.optional(),
   }).parse(input);
+
+  const planRepo = new SubscriptionPlanRepository(adminClient);
+  const plan = await planRepo.getById(payload.planId);
+  if (!plan) {
+    throw new Error('Plan not found.');
+  }
+  if (payload.seatLimit > plan.seat_limit) {
+    throw new Error(`Subscription seat_limit ${payload.seatLimit} exceeds plan seat_limit ${plan.seat_limit}`);
+  }
+
   const repo = new OrgSubscriptionRepository(adminClient);
   const existing = await repo.getActiveByOrgId(payload.orgId);
   const now = new Date().toISOString();
@@ -697,8 +724,22 @@ export async function assignPlanAsSuperAdmin(input: {
 }
 
 export async function setSubscriptionSeatLimitAsSuperAdmin(subscriptionId: string, seatLimit: number) {
-  const subscription = await new OrgSubscriptionRepository(adminClient).update(subscriptionId, {
-    seat_limit: z.coerce.number().int().positive().parse(seatLimit),
+  const parsedLimit = z.coerce.number().int().positive().parse(seatLimit);
+  const subRepo = new OrgSubscriptionRepository(adminClient);
+  const existing = await subRepo.getById(subscriptionId);
+  if (!existing) {
+    throw new Error('Subscription not found.');
+  }
+  const plan = await new SubscriptionPlanRepository(adminClient).getById(existing.plan_id);
+  if (!plan) {
+    throw new Error('Plan not found.');
+  }
+  if (parsedLimit > plan.seat_limit) {
+    throw new Error(`Subscription seat_limit ${parsedLimit} exceeds plan seat_limit ${plan.seat_limit}`);
+  }
+
+  const subscription = await subRepo.update(subscriptionId, {
+    seat_limit: parsedLimit,
   });
   const usage = await safeSeatUsage(subscription.org_id, subscription);
   if (usage.overLimitBy > 0) {

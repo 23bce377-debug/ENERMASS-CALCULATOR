@@ -4,9 +4,8 @@ import {
   assignPlanAsSuperAdmin,
   listSuperAdminSubscriptions,
   requireSuperAdminSession,
-  type BillingCycle,
-  type SubscriptionStatus,
-} from '@/lib/saas';
+} from '@/lib/saas/services/managementService';
+import type { BillingCycle, SubscriptionStatus } from '@/lib/saas/types';
 
 export async function GET() {
   try {

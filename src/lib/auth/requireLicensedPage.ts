@@ -16,7 +16,7 @@ import {
   MembershipMissingError,
   SubscriptionExpiredError,
   UnauthorizedRoleError,
-} from '@/lib/saas';
+} from '@/lib/saas/errors';
 
 export interface LicensedPageOptions extends RequireLicensedSessionOptions {
   deps?: RequireLicensedSessionDeps;

@@ -36,8 +36,8 @@ const errorMetadata = {
   SubscriptionExpiredError: {
     statusCode: 402,
     redirectTo: '/settings/billing',
-    userMessage: 'Your subscription is not active. Please renew or contact an administrator.',
-    internalMessage: 'Subscription gate blocked access because the org has no valid active or trialing subscription.',
+    userMessage: 'Your subscription period has ended. Please record a payment or contact your administrator to extend it.',
+    internalMessage: 'Subscription period expired (current_period_end in past) and no paid payment found for current period.',
   },
   SeatLimitReachedError: {
     statusCode: 409,

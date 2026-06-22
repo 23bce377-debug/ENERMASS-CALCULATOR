@@ -1,8 +1,8 @@
 import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/server';
-import { z } from 'zod';
-import { OrgMemberRepository } from '../repositories';
+import z from 'zod';
+import { OrgMemberRepository, OrgSubscriptionRepository } from '../repositories';
 import { SeatLimitReachedError } from '../errors';
 import type { OrgMemberRole, SeatUsage } from '../types';
 import { logLicenseEvent } from './licenseAuditService';
@@ -77,6 +77,55 @@ export async function assertSeatAvailable(orgId: string, deps: SeatServiceDeps =
   return usage;
 }
 
+/**
+ * Checks seat availability during activation key redemption.
+ * Unlike `assertSeatAvailable`, this does NOT require an active subscription.
+ * The activation key itself is the authorization — we only enforce the seat cap
+ * if a subscription record exists. If no subscription exists at all (first user
+ * for a new org), the activation is allowed unconditionally.
+ */
+export async function assertSeatAvailableForActivation(orgId: string, deps: SeatServiceDeps = {}) {
+  const audit = deps.audit ?? logLicenseEvent;
+  const orgSubscriptionRepository = deps.orgSubscriptionRepository ?? new OrgSubscriptionRepository();
+  const orgMemberRepository = deps.orgMemberRepository ?? new OrgMemberRepository();
+
+  // Get the subscription WITHOUT asserting it's active — we just need the seat_limit
+  const subscription = await orgSubscriptionRepository.getActiveByOrgId(orgId);
+  const counts = await orgMemberRepository.countBillableSeats(orgId);
+  const usedSeats = counts.active + counts.invited;
+
+  // No subscription at all → allow (first user bootstrapping the org)
+  if (!subscription) {
+    return {
+      activeSeats: counts.active,
+      invitedSeats: counts.invited,
+      usedSeats,
+      seatLimit: 0,
+      overLimitBy: 0,
+    };
+  }
+
+  const seatLimit = subscription.seat_limit;
+
+  if (seatLimit > 0 && usedSeats >= seatLimit) {
+    await audit({
+      orgId,
+      entityType: 'org_subscription',
+      eventType: 'seat_limit_reached',
+      eventData: { activeSeats: counts.active, invitedSeats: counts.invited, usedSeats, seatLimit, overLimitBy: usedSeats - seatLimit } as unknown as Record<string, number>,
+    });
+    throw new SeatLimitReachedError({ orgId, usage: { activeSeats: counts.active, invitedSeats: counts.invited, usedSeats, seatLimit, overLimitBy: usedSeats - seatLimit } });
+  }
+
+  return {
+    activeSeats: counts.active,
+    invitedSeats: counts.invited,
+    usedSeats,
+    seatLimit,
+    overLimitBy: 0,
+  };
+}
+
 export async function inviteOrgUser(
   orgId: string,
   email: string,
@@ -132,6 +181,19 @@ export async function disableOrgUser(
   const orgMemberRepository = deps.orgMemberRepository ?? new OrgMemberRepository();
   const audit = deps.audit ?? logLicenseEvent;
   const member = await orgMemberRepository.disableByOrgAndUser(orgId, userId);
+
+  // Cascading revoke of all active user devices in this organization
+  try {
+    const client = createAdminClient();
+    await client
+      .from('user_devices')
+      .update({ status: 'revoked', revoked_at: new Date().toISOString() })
+      .eq('org_id', orgId)
+      .eq('user_id', userId)
+      .eq('status', 'active');
+  } catch (err) {
+    console.error(`[SeatService] Failed to cascading revoke devices for disabled user ${userId}:`, err);
+  }
 
   await audit({
     orgId,

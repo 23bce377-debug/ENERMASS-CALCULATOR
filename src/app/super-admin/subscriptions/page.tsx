@@ -15,7 +15,7 @@ import {
   tdClass,
   thClass,
 } from '@/components/saas/ManagementUi';
-import { listSuperAdminOrgs, listSuperAdminPlans, listSuperAdminSubscriptions } from '@/lib/saas';
+import { listSuperAdminOrgs, listSuperAdminPlans, listSuperAdminSubscriptions } from '@/lib/saas/services/managementService';
 import { requireSuperAdminPageSession } from '@/lib/saas/managementPageGuards';
 import {
   assignPlanAction,

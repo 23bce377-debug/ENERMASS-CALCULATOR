@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { jsonForManagementError, parseJson } from '@/lib/saas/managementApi';
-import { requireSuperAdminSession, setSubscriptionSeatLimitAsSuperAdmin } from '@/lib/saas';
+import { requireSuperAdminSession, setSubscriptionSeatLimitAsSuperAdmin } from '@/lib/saas/services/managementService';
 
 export async function PATCH(request: Request, context: { params: Promise<{ subscriptionId: string }> }) {
   try {

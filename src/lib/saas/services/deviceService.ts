@@ -46,6 +46,8 @@ export async function registerDevice(
       deviceName: devicePayload.deviceName ?? existing.device_name,
       browser: devicePayload.browser ?? existing.browser,
       os: devicePayload.os ?? existing.os,
+      publicKey: devicePayload.publicKey ?? (existing as any).public_key,
+      fingerprintHash: devicePayload.fingerprintHash ?? (existing as any).fingerprint_hash,
       status: 'active',
     });
     await audit({

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withAuthenticatedOrgApiRoute } from '@/lib/auth/withAuthenticatedOrgApiRoute';
-import { requestDeviceReset } from '@/lib/saas';
+import { requestDeviceReset } from '@/lib/saas/services/deviceResetService';
 import { enforceRateLimit } from '@/lib/security/rateLimit';
 import {
   jsonForDeviceError,
@@ -18,7 +18,7 @@ const resetPayloadSchema = z.object({
 
 export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
   try {
-    const limited = enforceRateLimit(request, { keyPrefix: 'device-reset-request', userId: context.session.user.id, limit: 5, windowMs: 60_000 });
+    const limited = await enforceRateLimit(request, { keyPrefix: 'device-reset-request', userId: context.session.user.id, limit: 5, windowMs: 60_000 });
     if (limited) return limited;
 
     const body = await parseJsonBody(request, resetPayloadSchema).catch(() => ({} as z.infer<typeof resetPayloadSchema>));

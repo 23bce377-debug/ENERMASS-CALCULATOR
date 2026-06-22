@@ -9,7 +9,7 @@ import {
   thClass,
   superAdminTabs,
 } from '@/components/saas/ManagementUi';
-import { listAllLicenseEventsAsSuperAdmin } from '@/lib/saas';
+import { listAllLicenseEventsAsSuperAdmin } from '@/lib/saas/services/licenseAuditService';
 import { requireSuperAdminPageSession } from '@/lib/saas/managementPageGuards';
 
 export default async function SuperAdminAuditLogPage() {

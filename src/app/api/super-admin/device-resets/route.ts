@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { jsonForManagementError } from '@/lib/saas/managementApi';
-import { listSuperAdminDeviceResets, requireSuperAdminSession } from '@/lib/saas';
+import { listSuperAdminDeviceResets, requireSuperAdminSession } from '@/lib/saas/services/managementService';
 
 export async function GET() {
   try {
