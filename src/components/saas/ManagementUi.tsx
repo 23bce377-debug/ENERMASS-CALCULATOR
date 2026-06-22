@@ -167,5 +167,6 @@ export const superAdminTabs = [
   { href: '/super-admin/payments', label: 'Payments' },
   { href: '/super-admin/activation-keys', label: 'Activation Keys' },
   { href: '/super-admin/device-resets', label: 'Device Resets' },
+  { href: '/super-admin/passwords', label: 'Passwords' },
   { href: '/super-admin/audit-log', label: 'Audit Log' },
 ];

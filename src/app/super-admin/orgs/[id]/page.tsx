@@ -10,6 +10,8 @@ import {
   tdClass,
   thClass,
   formatDateTime,
+  inputClass,
+  buttonClass,
 } from '@/components/saas/ManagementUi';
 import { getSuperAdminOrgDashboard } from '@/lib/saas/services/managementService';
 import { requireSuperAdminPageSession } from '@/lib/saas/managementPageGuards';
@@ -17,6 +19,7 @@ import { GenerateKeysModal } from '@/components/saas/GenerateKeysModal';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
+import { adminChangeUserRoleAction } from '../../actions';
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -130,9 +133,23 @@ export default async function SuperAdminOrgDetailsPage({ params }: { params: Pro
                           <div className="text-[11px] text-text-muted">{member.email ?? '—'}</div>
                         </td>
                         <td className={tdClass}>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-2 text-text-secondary border border-border">
-                            {member.role}
-                          </span>
+                          <form action={adminChangeUserRoleAction} className="flex gap-2 items-center">
+                            <input type="hidden" name="userId" value={member.user_id} />
+                            <select
+                              className={`${inputClass} !py-1 !px-2 !text-xs max-w-[110px]`}
+                              name="role"
+                              defaultValue={member.role ?? 'staff'}
+                            >
+                              <option value="owner" className="bg-surface text-text-primary">owner</option>
+                              <option value="admin" className="bg-surface text-text-primary">admin</option>
+                              <option value="manager" className="bg-surface text-text-primary">manager</option>
+                              <option value="staff" className="bg-surface text-text-primary">staff</option>
+                              <option value="viewer" className="bg-surface text-text-primary">viewer</option>
+                            </select>
+                            <button className={`${buttonClass} !py-1 !px-3 !text-xs`} type="submit">
+                              Save
+                            </button>
+                          </form>
                         </td>
                         <td className={tdClass}>
                           {device ? (

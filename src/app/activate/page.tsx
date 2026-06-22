@@ -5,13 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Shield, Key, User, Mail, Lock, Phone, ArrowRight, CheckCircle, XCircle, Loader2, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
-// Password complexity rules — mirrors server-side PASSWORD_RULES in activationKeyService.ts
 const PASSWORD_RULES = [
-  { test: (p: string) => p.length >= 12,           label: 'At least 12 characters' },
-  { test: (p: string) => /[A-Z]/.test(p),          label: 'Uppercase letter (A–Z)' },
-  { test: (p: string) => /[a-z]/.test(p),          label: 'Lowercase letter (a–z)' },
-  { test: (p: string) => /[0-9]/.test(p),          label: 'Number (0–9)' },
-  { test: (p: string) => /[^A-Za-z0-9]/.test(p),  label: 'Special character (!@#$…)' },
+  { test: (p: string) => p.length >= 8,            label: 'At least 8 characters' },
 ];
 
 function PasswordStrengthIndicator({ password }: { password: string }) {

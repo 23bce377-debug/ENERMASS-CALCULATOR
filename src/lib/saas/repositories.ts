@@ -344,7 +344,7 @@ const devicePayloadSchema = z.object({
 });
 
 export class UserDeviceRepository extends RepositoryBase<'user_devices'> {
-  constructor(clientFactory: ClientFactory = createClient) {
+  constructor(clientFactory: ClientFactory = createAdminClient) {
     super('user_devices', clientFactory);
   }
 
@@ -410,7 +410,7 @@ const resetInfoSchema = z.object({
 });
 
 export class DeviceResetRequestRepository extends RepositoryBase<'device_reset_requests'> {
-  constructor(clientFactory: ClientFactory = createClient) {
+  constructor(clientFactory: ClientFactory = createAdminClient) {
     super('device_reset_requests', clientFactory);
   }
 
@@ -698,6 +698,17 @@ export class PasswordResetRequestRepository extends RepositoryBase<'password_res
       .order('requested_at', { ascending: false })
       .limit(50);
     if (error) throwDbError('Failed to list password reset requests', error);
+    return (data ?? []) as PasswordResetRequest[];
+  }
+
+  async listAll(limit = 100): Promise<PasswordResetRequest[]> {
+    const client = await this.client();
+    const { data, error } = await (client as any)
+      .from('password_reset_requests')
+      .select('*')
+      .order('requested_at', { ascending: false })
+      .limit(limit);
+    if (error) throwDbError('Failed to list all password reset requests', error);
     return (data ?? []) as PasswordResetRequest[];
   }
 

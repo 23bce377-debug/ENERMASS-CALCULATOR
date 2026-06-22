@@ -1,16 +1,18 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSettings, type CategoryMargins } from '@/lib/hooks/useSettings';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { revalidateMasterCache } from '@/app/actions/revalidateMasters';
+import { supabase } from '@/lib/supabase/client';
 import {
   Settings as SettingsIcon, Percent, Zap, Building2,
   Download, Upload, RotateCcw, Check, ChevronDown, Sun, Moon,
-  CloudUpload, CloudDownload, Loader2, Cloud, RefreshCcw, Lock
+  CloudUpload, CloudDownload, Loader2, Cloud, RefreshCcw, Lock,
+  Users, CreditCard, ShieldAlert, History, Key
 } from 'lucide-react';
 
 // ─── Section Wrapper ────────────────────────────────────────────────────────────
@@ -55,6 +57,31 @@ export default function SettingsPage() {
     commitToDb, loadFromDb, isSyncing, lastSynced,
   } = useSettings();
   const { theme, setTheme } = useTheme();
+  const [profile, setProfile] = useState<{ role: string | null; org_id: string | null } | null>(null);
+
+  useEffect(() => {
+    async function loadUserProfile() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role, org_id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (!error && data) {
+          setProfile(data);
+        }
+      } catch (err) {
+        console.error('Failed to load profile for role check:', err);
+      }
+    }
+    loadUserProfile();
+  }, []);
+
+  const isOrgAdmin = profile && ['owner', 'admin', 'manager'].includes(profile.role ?? '');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saveFlash, setSaveFlash] = useState(false);
@@ -228,6 +255,84 @@ export default function SettingsPage() {
           </div>
         </div>
       </Section>
+
+      {/* Organization Administration */}
+      {isOrgAdmin && (
+        <Section title="Organization Administration" icon={<Building2 size={18} />}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link
+              href="/settings/team"
+              className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
+                <Users size={16} className="text-accent" />
+                Team & Devices
+              </div>
+              <span className="text-xs text-text-muted">Manage member roles and revoke bound device hardware keys.</span>
+            </Link>
+            <Link
+              href="/settings/subscription"
+              className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
+                <Zap size={16} className="text-accent" />
+                Subscription Plan
+              </div>
+              <span className="text-xs text-text-muted">View active SaaS licensing tier, status, and active user seat counts.</span>
+            </Link>
+            <Link
+              href="/settings/billing"
+              className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
+                <CreditCard size={16} className="text-accent" />
+                Billing & Payments
+              </div>
+              <span className="text-xs text-text-muted">Record offline manual transactions and download PDF tax invoices.</span>
+            </Link>
+            <Link
+              href="/settings/activation-keys"
+              className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
+                <Key size={16} className="text-accent" />
+                Activation Keys
+              </div>
+              <span className="text-xs text-text-muted">Generate new one-time activation keys to onboard/license staff.</span>
+            </Link>
+            <Link
+              href="/settings/password-resets"
+              className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
+                <Lock size={16} className="text-accent" />
+                Password Resets
+              </div>
+              <span className="text-xs text-text-muted">Approve forgot password recovery requests for your organization.</span>
+            </Link>
+            <Link
+              href="/settings/roles"
+              className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
+                <ShieldAlert size={16} className="text-accent" />
+                Access Control
+              </div>
+              <span className="text-xs text-text-muted">View feature matrix and capabilities map for linked roles.</span>
+            </Link>
+            <Link
+              href="/settings/audit-log"
+              className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
+                <History size={16} className="text-accent" />
+                Security Audit Log
+              </div>
+              <span className="text-xs text-text-muted">Monitor and search administrative audit trail of company changes.</span>
+            </Link>
+          </div>
+        </Section>
+      )}
 
       {/* Custom Systems */}
       <Section title="Custom Solar Systems" icon={<SettingsIcon size={18} />}>

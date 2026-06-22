@@ -23,6 +23,10 @@ import type {
   PaymentStatus,
   SubscriptionStatus,
 } from '@/lib/saas/types';
+import {
+  approvePasswordResetRequest,
+  rejectPasswordResetRequest,
+} from '@/lib/saas/services/passwordResetService';
 
 export interface SuperAdminActionState {
   ok: boolean;
@@ -224,6 +228,105 @@ export async function rejectDeviceResetAsSuperAdminAction(formData: FormData): P
     const session = await requireSuperAdminSession();
     await rejectOrgDeviceResetAsAdmin(value(formData, 'orgId'), session.user.id, value(formData, 'requestId'));
     refreshSuperAdminPages();
+    return;
+  } catch (error) {
+    throw new Error(messageForError(error));
+  }
+}
+
+export async function approvePasswordResetAsSuperAdminAction(formData: FormData): Promise<void> {
+  try {
+    const session = await requireSuperAdminSession();
+    await approvePasswordResetRequest(value(formData, 'requestId'), session.user.id);
+    refreshSuperAdminPages();
+    revalidatePath('/super-admin/passwords');
+    return;
+  } catch (error) {
+    throw new Error(messageForError(error));
+  }
+}
+
+export async function rejectPasswordResetAsSuperAdminAction(formData: FormData): Promise<void> {
+  try {
+    const session = await requireSuperAdminSession();
+    await rejectPasswordResetRequest(value(formData, 'requestId'), session.user.id);
+    refreshSuperAdminPages();
+    revalidatePath('/super-admin/passwords');
+    return;
+  } catch (error) {
+    throw new Error(messageForError(error));
+  }
+}
+
+export async function adminChangeUserPasswordAction(formData: FormData): Promise<void> {
+  try {
+    await requireSuperAdminSession();
+    const userId = value(formData, 'userId');
+    const newPassword = value(formData, 'password');
+
+    if (!userId || !newPassword) {
+      throw new Error('User ID and Password are required.');
+    }
+
+    const { createAdminClient } = await import('@/lib/supabase/server');
+    const adminClient = createAdminClient();
+    const { error } = await adminClient.auth.admin.updateUserById(userId, {
+      password: newPassword,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    revalidatePath('/super-admin/passwords');
+    return;
+  } catch (error) {
+    throw new Error(messageForError(error));
+  }
+}
+
+export async function adminChangeUserRoleAction(formData: FormData): Promise<void> {
+  try {
+    await requireSuperAdminSession();
+    const userId = value(formData, 'userId');
+    const role = value(formData, 'role');
+
+    if (!userId || !role) {
+      throw new Error('User ID and Role are required.');
+    }
+
+    const { createAdminClient } = await import('@/lib/supabase/server');
+    const adminClient = createAdminClient();
+
+    // 1. Update the profile
+    const { error: profileError } = await adminClient
+      .from('profiles')
+      .update({ role })
+      .eq('id', userId);
+
+    if (profileError) throw profileError;
+
+    // 2. Update the organization member role
+    const { error: memberError } = await adminClient
+      .from('org_members')
+      .update({ role })
+      .eq('user_id', userId);
+
+    if (memberError) {
+      console.warn(`[adminChangeUserRoleAction] Failed to update org_members for user ${userId}:`, memberError.message);
+    }
+
+    // 3. Update Supabase auth app_metadata
+    const { error: authError } = await adminClient.auth.admin.updateUserById(userId, {
+      app_metadata: { role },
+    });
+
+    if (authError) {
+      console.warn(`[adminChangeUserRoleAction] Failed to update auth app_metadata for user ${userId}:`, authError.message);
+    }
+
+    revalidatePath('/super-admin/passwords');
+    revalidatePath('/super-admin/orgs', 'layout');
     return;
   } catch (error) {
     throw new Error(messageForError(error));

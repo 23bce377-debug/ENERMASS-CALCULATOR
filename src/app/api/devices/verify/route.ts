@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { withAuthenticatedOrgApiRoute } from '@/lib/auth/withAuthenticatedOrgApiRoute';
+import { createAdminClient } from '@/lib/supabase/server';
 import { UserDeviceRepository } from '@/lib/saas/repositories';
 import { DeviceMismatchError } from '@/lib/saas/errors';
 import { enforceRateLimit } from '@/lib/security/rateLimit';
@@ -29,7 +30,7 @@ const STUB_SUBSCRIPTION: OrgSubscription = {
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
-const skipSubscriptionCheck = async (_orgId: string) => ({ ...STUB_SUBSCRIPTION, org_id: _orgId });
+const bypassSubscriptionGate = async (_orgId: string) => ({ ...STUB_SUBSCRIPTION, org_id: _orgId });
 
 const DEVICE_TOKEN_COOKIE_NAME = 'enermass_device_token';
 
@@ -41,6 +42,7 @@ const verifyPayloadSchema = z.object({
   public_key: z.string().nullable().optional(),
   challenge_str: z.string().nullable().optional(),
   signature: z.string().nullable().optional(),
+  device_token: z.string().nullable().optional(),
 }).passthrough();
 
 function verifySignature(publicKeyJwkStr: string, challengeStr: string, signatureB64: string): boolean {
@@ -67,6 +69,44 @@ export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
     const body = await parseJsonBody(request, verifyPayloadSchema).catch(() => ({} as z.infer<typeof verifyPayloadSchema>));
     const userDeviceRepository = new UserDeviceRepository();
     const activeDevice = await userDeviceRepository.getActiveForUser(context.session.user.id);
+
+    // Bypass check for super admins
+    let isSuperAdmin = false;
+    try {
+      if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        const adminClient = createAdminClient();
+        const { data: profile } = await adminClient
+          .from('profiles')
+          .select('is_super_admin, role')
+          .eq('id', context.session.user.id)
+          .maybeSingle();
+
+        isSuperAdmin = profile?.is_super_admin === true || profile?.role === 'superadmin' || profile?.role === 'super_admin';
+      }
+    } catch (err) {
+      console.warn('[DeviceVerify] Super admin check skipped:', err);
+    }
+
+    if (isSuperAdmin) {
+      const tokenToUse = body.device_token || 'superadmin-bypass-token';
+      const response = NextResponse.json({
+        device: {
+          id: activeDevice?.id || '00000000-0000-0000-0000-000000000000',
+          status: 'active',
+        },
+        deviceToken: tokenToUse,
+      });
+
+      response.cookies.set({
+        name: DEVICE_TOKEN_COOKIE_NAME,
+        value: tokenToUse,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+      });
+      return response;
+    }
     
     let deviceToken = '';
     const cookieHeader = request.headers.get('cookie');
@@ -225,4 +265,4 @@ export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
   } catch (error) {
     return jsonForDeviceError(error);
   }
-}, { deps: { assertActiveSubscription: skipSubscriptionCheck } });
+}, { deps: { assertActiveSubscription: bypassSubscriptionGate } });

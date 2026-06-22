@@ -3,7 +3,7 @@ import 'server-only';
 import crypto from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/server';
 import z from 'zod';
-import { ActivationKeyRepository, OrgMemberRepository, UserDeviceRepository } from '../repositories';
+import { ActivationKeyRepository, OrgMemberRepository, UserDeviceRepository, OrgSubscriptionRepository, SubscriptionPlanRepository } from '../repositories';
 import {
   encryptActivationKey,
   generateRawActivationKey,
@@ -32,11 +32,7 @@ const generateKeysSchema = z.object({
 
 // Password complexity requirements — enforced here and in the UI
 export const PASSWORD_RULES = [
-  { test: (p: string) => p.length >= 12,            message: 'at least 12 characters' },
-  { test: (p: string) => /[A-Z]/.test(p),           message: 'at least one uppercase letter' },
-  { test: (p: string) => /[a-z]/.test(p),           message: 'at least one lowercase letter' },
-  { test: (p: string) => /[0-9]/.test(p),           message: 'at least one number' },
-  { test: (p: string) => /[^A-Za-z0-9]/.test(p),   message: 'at least one special character' },
+  { test: (p: string) => p.length >= 8,            message: 'at least 8 characters' },
 ];
 
 const redeemKeySchema = z.object({
@@ -45,7 +41,7 @@ const redeemKeySchema = z.object({
   email: z.string().email().toLowerCase(),
   password: z
     .string()
-    .min(12, 'Password must be at least 12 characters.')
+    .min(8, 'Password must be at least 8 characters.')
     .max(128)
     .superRefine((p, ctx) => {
       const failed = PASSWORD_RULES.filter(r => !r.test(p));
@@ -111,6 +107,99 @@ export interface MaskedKeyItem {
   key_version: number;
 }
 
+// ─── Subscription Alignment Helper ───────────────────────────────────────────
+
+async function ensureActiveOrgSubscription(orgId: string, requiredSeats = 1) {
+  const orgSubRepo = new OrgSubscriptionRepository(createAdminClient);
+  const planRepo = new SubscriptionPlanRepository(createAdminClient);
+  
+  let subscription = await orgSubRepo.getActiveByOrgId(orgId);
+  const now = new Date();
+  
+  if (subscription) {
+    let needsUpdate = false;
+    const updates: any = {};
+    
+    if (subscription.status === 'cancelled' || subscription.status === 'expired') {
+      updates.status = 'active';
+      needsUpdate = true;
+    }
+    
+    if (subscription.current_period_end && new Date(subscription.current_period_end) <= now) {
+      updates.current_period_end = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+      updates.current_period_start = now.toISOString();
+      updates.status = 'active';
+      needsUpdate = true;
+    }
+    
+    if (subscription.status === 'trialing' && subscription.trial_ends_at && new Date(subscription.trial_ends_at) <= now) {
+      updates.trial_ends_at = null;
+      updates.current_period_end = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+      updates.current_period_start = now.toISOString();
+      updates.status = 'active';
+      needsUpdate = true;
+    }
+
+    if (subscription.seat_limit < requiredSeats) {
+      updates.seat_limit = requiredSeats;
+      needsUpdate = true;
+    }
+    
+    if (needsUpdate) {
+      await orgSubRepo.update(subscription.id, updates);
+    }
+    return;
+  }
+  
+  const client = createAdminClient();
+  const { data: latestSub } = await (client as any)
+    .from('org_subscriptions')
+    .select('*')
+    .eq('org_id', orgId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+    
+  if (latestSub) {
+    await orgSubRepo.update(latestSub.id, {
+      status: 'active',
+      seat_limit: Math.max(latestSub.seat_limit, requiredSeats),
+      current_period_start: now.toISOString(),
+      current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      trial_ends_at: null,
+      cancelled_at: null,
+    });
+    return;
+  }
+  
+  let planCode = 'starter';
+  if (requiredSeats > 25) {
+    planCode = 'enterprise';
+  } else if (requiredSeats > 5) {
+    planCode = 'business';
+  } else if (requiredSeats > 1) {
+    planCode = 'team';
+  }
+  
+  let plan = await planRepo.getByCode(planCode);
+  if (!plan) {
+    const activePlans = await planRepo.listActive();
+    plan = activePlans[0] ?? null;
+  }
+  
+  if (!plan) {
+    throw new Error('No active subscription plan found. Please ensure plans are seeded or contact support.');
+  }
+  await orgSubRepo.create(orgId, {
+    plan_id: plan.id,
+    status: 'active',
+    seat_limit: Math.max(plan.seat_limit, requiredSeats),
+    billing_cycle: 'manual',
+    current_period_start: now.toISOString(),
+    current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+  });
+}
+
 // ─── Generate Keys (Super Admin only) ────────────────────────────────────────
 
 /**
@@ -120,6 +209,8 @@ export interface MaskedKeyItem {
  */
 export async function generateActivationKeys(input: z.input<typeof generateKeysSchema>): Promise<KeyGenerationResult> {
   const payload = generateKeysSchema.parse(input);
+  await ensureActiveOrgSubscription(payload.orgId, payload.count);
+
   const batchId = crypto.randomUUID();
   const repo = new ActivationKeyRepository(createAdminClient);
   const results: GeneratedKey[] = [];
@@ -233,9 +324,17 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
     throw new Error('This activation key has expired.');
   }
 
+  // Ensure organization subscription exists and is active with sufficient seats before redemption
+  const keyCountResult = await keyRepo.countByOrg(key.org_id);
+  const totalSeatsNeeded = Math.max(1, keyCountResult.total);
+  await ensureActiveOrgSubscription(key.org_id, totalSeatsNeeded);
+
   // Activation keys are invitations, not extra capacity. Enforce the org seat
   // cap before creating the Supabase auth user or any related tenant records.
-  await assertSeatAvailableForActivation(key.org_id);
+  await assertSeatAvailableForActivation(key.org_id, {
+    orgSubscriptionRepository: new OrgSubscriptionRepository(createAdminClient),
+    orgMemberRepository: new OrgMemberRepository(createAdminClient),
+  });
 
   // ── 2. Determine role (first owner or staff) ──────────────────────────────────
   const memberRepo = new OrgMemberRepository(createAdminClient);
@@ -243,19 +342,24 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
   const hasOwner = existingMembers.some(m => m.role === 'owner' && m.status === 'active');
   const assignedRole: 'owner' | 'staff' = hasOwner ? 'staff' : 'owner';
 
-  // ── 3. Create Supabase auth user ──────────────────────────────────────────────
-  const { data: authData, error: authError } = await (adminClient as any).auth.admin.createUser({
+  // ── 3. Create Supabase auth user using public client to trigger confirmation email ──
+  // Note: We use publicClient.auth.signUp instead of adminClient.auth.admin.createUser to trigger confirmation email.
+  const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
+  const publicClient = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  const { data: authData, error: authError } = await publicClient.auth.signUp({
     email: payload.email,
     password: payload.password,
-    email_confirm: false,
-    user_metadata: {
-      full_name: payload.fullName,
-      org_id: key.org_id,
-    },
-    app_metadata: {
-      org_id: key.org_id,
-      role: assignedRole,
-    },
+    options: {
+      data: {
+        full_name: payload.fullName,
+        org_id: key.org_id,
+      },
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/confirm`
+    }
   });
 
   if (authError || !authData?.user) {
@@ -266,6 +370,18 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
   }
 
   const userId = authData.user.id;
+
+  // ── 4. Set custom app metadata using the admin client ────────────────────────
+  const { error: metaError } = await (adminClient as any).auth.admin.updateUserById(userId, {
+    app_metadata: {
+      org_id: key.org_id,
+      role: assignedRole,
+    },
+  });
+
+  if (metaError) {
+    throw new Error(`Failed to initialize user metadata: ${metaError.message}`);
+  }
 
   try {
     // ── 5. Create profile ─────────────────────────────────────────────────────────

@@ -345,7 +345,7 @@ describe('master-control data hardening', () => {
       'utf8'
     );
 
-    const seatCheckIndex = activationKeySource.indexOf('await assertSeatAvailableForActivation(key.org_id)');
+    const seatCheckIndex = activationKeySource.indexOf('await assertSeatAvailableForActivation(key.org_id');
     const createUserIndex = activationKeySource.indexOf('auth.admin.createUser');
 
     expect(activationKeySource).toContain("import { assertSeatAvailableForActivation } from './seatService'");

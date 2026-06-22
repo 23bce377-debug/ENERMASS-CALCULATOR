@@ -64,6 +64,7 @@ export interface RequireLicensedSessionDeps {
   getDeviceById?: (deviceId: string) => Promise<UserDevice | null>;
   getActiveDevice?: (userId: string) => Promise<UserDevice | null>;
   audit?: typeof logLicenseEvent;
+  checkSuperAdmin?: (userId: string) => Promise<boolean>;
 }
 
 export type RequireAuthenticatedOrgSessionDeps = Pick<
@@ -296,6 +297,49 @@ export async function requireLicensedSession(
   const assertSubscription = deps.assertActiveSubscription ?? assertActiveSubscription;
   const subscription = await assertSubscription(orgId);
 
+  const checkSuperAdmin = deps.checkSuperAdmin ?? defaultCheckSuperAdmin;
+  const isSuperAdmin = await checkSuperAdmin(user.id);
+
+  if (isSuperAdmin) {
+    const getActiveDevice = deps.getActiveDevice ?? defaultGetActiveDevice;
+    const activeDevice = await getActiveDevice(user.id);
+    const dummyDevice: UserDevice = activeDevice || {
+      id: '00000000-0000-0000-0000-000000000000',
+      user_id: user.id,
+      org_id: orgId,
+      device_name: 'Super Admin Bypass Device',
+      browser: 'Any',
+      os: 'Any',
+      status: 'active',
+      first_seen_at: new Date().toISOString(),
+      last_seen_at: new Date().toISOString(),
+      revoked_at: null,
+      device_secret_hash: '',
+      public_key: null,
+      fingerprint_hash: null,
+    };
+
+    const assertFeature = deps.assertFeatureAccess ?? assertFeatureAccess;
+    await assertFeature(orgId, options.feature);
+
+    if (!hasAllowedRole(role, options.roles)) {
+      throw new UnauthorizedRoleError({ orgId, userId: user.id, role, allowedRoles: options.roles ?? [] });
+    }
+
+    const getOrgById = deps.getOrgById ?? defaultGetOrgById;
+    const org = await getOrgById(orgId);
+
+    return {
+      user,
+      org,
+      orgId,
+      member: { ...member, role },
+      subscription,
+      device: dummyDevice,
+      permissions: buildPermissions(role, options.roles),
+    };
+  }
+
   const getActiveDevice = deps.getActiveDevice ?? defaultGetActiveDevice;
   let activeDevice = await getActiveDevice(user.id);
 
@@ -376,4 +420,20 @@ export async function requireLicensedSession(
     device,
     permissions: buildPermissions(role, options.roles),
   };
+}
+
+async function defaultCheckSuperAdmin(userId: string): Promise<boolean> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await (supabase as any)
+      .from('profiles')
+      .select('is_super_admin, role')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error || !data) return false;
+    return data.is_super_admin === true || data.role === 'superadmin' || data.role === 'super_admin';
+  } catch {
+    return false;
+  }
 }

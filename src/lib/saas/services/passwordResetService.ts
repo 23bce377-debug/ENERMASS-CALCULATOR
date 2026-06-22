@@ -208,3 +208,38 @@ export async function rejectPasswordResetRequest(
     eventData: { action: 'password_reset_rejected' },
   });
 }
+
+// ─── List All Password Reset Requests (Super Admin) ───────────────────────────
+
+export async function listAllPasswordResetRequests(): Promise<PasswordResetRequestItem[]> {
+  const repo = new PasswordResetRequestRepository(createAdminClient);
+  const requests = await repo.listAll();
+
+  const userIds = [...new Set(requests.map(r => r.user_id))];
+  if (userIds.length === 0) return [];
+
+  const adminClient = createAdminClient();
+  const emailMap = new Map<string, string>();
+  let authPage = 1;
+  while (emailMap.size < userIds.length) {
+    const { data: authUsers } = await adminClient.auth.admin.listUsers({ page: authPage, perPage: 100 });
+    (authUsers?.users ?? []).filter(u => u.id && userIds.includes(u.id)).forEach(u => {
+      if (u.email) emailMap.set(u.id, u.email);
+    });
+    if ((authUsers?.users?.length ?? 0) < 100) break;
+    authPage++;
+  }
+
+  const { data: profiles } = await (adminClient as any)
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', userIds);
+  const nameMap = new Map<string, string>();
+  (profiles ?? []).forEach((p: { id: string; full_name: string }) => nameMap.set(p.id, p.full_name));
+
+  return requests.map(r => ({
+    ...r,
+    user_email: emailMap.get(r.user_id) ?? null,
+    user_name: nameMap.get(r.user_id) ?? null,
+  }));
+}
