@@ -11,6 +11,7 @@ import {
   revokeOrgDeviceAsAdmin,
   type OrgMemberRole,
 } from '@/lib/saas';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export interface ManagementActionState {
   ok: boolean;
@@ -37,6 +38,7 @@ function refreshOrgAdminPages() {
   revalidatePath('/settings/devices');
   revalidatePath('/settings/device-reset-requests');
   revalidatePath('/settings/roles');
+  revalidatePath('/settings/team');
 }
 
 export async function inviteOrgUserAction(formData: FormData): Promise<void> {
@@ -108,6 +110,28 @@ export async function rejectOrgDeviceResetAction(formData: FormData): Promise<vo
   try {
     const session = await requireOrgManagementSession(['owner', 'admin', 'manager']);
     await rejectOrgDeviceResetAsAdmin(session.orgId, session.user.id, value(formData, 'requestId'));
+    refreshOrgAdminPages();
+    return;
+  } catch (error) {
+    throw new Error(messageForError(error));
+  }
+}
+
+/**
+ * Resend an invitation email for a member still in 'invited' status.
+ * Uses Supabase admin inviteUserByEmail to re-send the magic link.
+ */
+export async function resendInviteAction(formData: FormData): Promise<void> {
+  try {
+    const session = await requireOrgManagementSession(['owner', 'admin', 'manager']);
+    const email = value(formData, 'email');
+    if (!email) throw new Error('Email is required.');
+
+    const adminClient = createAdminClient();
+    const { error } = await adminClient.auth.admin.inviteUserByEmail(email, {
+      data: { org_id: session.orgId },
+    });
+    if (error) throw new Error(`Failed to resend invitation: ${error.message}`);
     refreshOrgAdminPages();
     return;
   } catch (error) {

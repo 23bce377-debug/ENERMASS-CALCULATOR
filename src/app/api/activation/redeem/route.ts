@@ -58,16 +58,17 @@ export async function POST(request: Request) {
         : 'Account created. You are a member of this organisation.',
     });
 
-    // Set device token cookie — 10 year expiry
+    // Set device token cookie — 1 year expiry
+    // HttpOnly: prevents JS access; Secure: HTTPS only in prod; SameSite=Strict: CSRF protection
     const expires = new Date();
-    expires.setFullYear(expires.getFullYear() + 10);
+    expires.setFullYear(expires.getFullYear() + 1);
 
     response.cookies.set({
       name: DEVICE_TOKEN_COOKIE,
       value: result.deviceToken,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       path: '/',
       expires,
     });

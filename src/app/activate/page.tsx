@@ -2,8 +2,37 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Key, User, Mail, Lock, Phone, ArrowRight, CheckCircle, Loader2, ChevronLeft } from 'lucide-react';
+import { Shield, Key, User, Mail, Lock, Phone, ArrowRight, CheckCircle, XCircle, Loader2, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+
+// Password complexity rules — mirrors server-side PASSWORD_RULES in activationKeyService.ts
+const PASSWORD_RULES = [
+  { test: (p: string) => p.length >= 12,           label: 'At least 12 characters' },
+  { test: (p: string) => /[A-Z]/.test(p),          label: 'Uppercase letter (A–Z)' },
+  { test: (p: string) => /[a-z]/.test(p),          label: 'Lowercase letter (a–z)' },
+  { test: (p: string) => /[0-9]/.test(p),          label: 'Number (0–9)' },
+  { test: (p: string) => /[^A-Za-z0-9]/.test(p),  label: 'Special character (!@#$…)' },
+];
+
+function PasswordStrengthIndicator({ password }: { password: string }) {
+  if (!password) return null;
+  return (
+    <ul className="mt-2 space-y-1">
+      {PASSWORD_RULES.map((rule) => {
+        const ok = rule.test(password);
+        return (
+          <li key={rule.label} className={`flex items-center gap-1.5 text-[10px] font-medium transition-colors duration-200 ${ok ? 'text-green-400' : 'text-red-400/80'}`}>
+            {ok
+              ? <CheckCircle size={11} className="shrink-0" />
+              : <XCircle size={11} className="shrink-0" />
+            }
+            {rule.label}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 type Step = 'key-entry' | 'registration' | 'success';
 
@@ -134,8 +163,9 @@ export default function ActivatePage() {
       toast('Please fill in all required fields.', 'error');
       return;
     }
-    if (password.length < 8) {
-      toast('Password must be at least 8 characters.', 'error');
+    const failedRules = PASSWORD_RULES.filter(r => !r.test(password));
+    if (failedRules.length > 0) {
+      toast(`Password must include: ${failedRules.map(r => r.label.toLowerCase()).join(', ')}.`, 'error');
       return;
     }
 
@@ -343,13 +373,14 @@ export default function ActivatePage() {
                         type="password"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
-                        placeholder="Min. 8 characters"
+                        placeholder="Min. 12 characters"
                         className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-border bg-background/50
                           text-sm text-text-primary placeholder:text-text-muted
                           focus:outline-none focus:border-accent/50 focus:bg-background transition-all duration-200"
-                        required minLength={8}
+                        required minLength={12}
                       />
                     </div>
+                    <PasswordStrengthIndicator password={password} />
                   </div>
 
                   {/* Phone (optional) */}

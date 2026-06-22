@@ -17,7 +17,7 @@ import {
 } from '@/components/saas/ManagementUi';
 import { getBillingOverview, listOrgUsers, listOrgDevices } from '@/lib/saas';
 import { requireOrgAdminPageSession } from '@/lib/saas/managementPageGuards';
-import { changeOrgUserRoleAction, disableOrgUserAction, inviteOrgUserAction, revokeOrgDeviceAction } from '../saasActions';
+import { changeOrgUserRoleAction, disableOrgUserAction, inviteOrgUserAction, resendInviteAction, revokeOrgDeviceAction } from '../saasActions';
 
 const roles = ['owner', 'admin', 'manager', 'staff', 'viewer'];
 
@@ -117,10 +117,20 @@ export default async function TeamPage() {
                       <td className={tdClass}><StatusBadge status={user.status} /></td>
                       <td className={tdClass}>{new Date(user.created_at).toLocaleDateString('en-IN')}</td>
                       <td className={tdClass}>
-                        <form action={disableOrgUserAction}>
-                          <input type="hidden" name="memberId" value={user.id} />
-                          <button className={dangerButtonClass} type="submit" disabled={user.status === 'disabled'}>Disable</button>
-                        </form>
+                        <div className="flex flex-col gap-1.5">
+                          <form action={disableOrgUserAction}>
+                            <input type="hidden" name="memberId" value={user.id} />
+                            <button className={dangerButtonClass} type="submit" disabled={user.status === 'disabled'}>Disable</button>
+                          </form>
+                          {user.status === 'invited' && (
+                            <form action={resendInviteAction}>
+                              <input type="hidden" name="email" value={user.email ?? ''} />
+                              <button className={`${buttonClass} text-xs py-1 px-2 h-auto`} type="submit" title="Resend invitation email">
+                                Resend Invite
+                              </button>
+                            </form>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

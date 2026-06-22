@@ -590,12 +590,14 @@ export class ActivationKeyRepository extends RepositoryBase<'activation_keys'> {
     return (data ?? []) as ActivationKey[];
   }
 
-  async listAll(): Promise<ActivationKey[]> {
+  async listAll(page = 1, limit = 100): Promise<ActivationKey[]> {
     const client = await this.client();
+    const offset = (page - 1) * limit;
     const { data, error } = await (client as any)
       .from('activation_keys')
       .select('id, org_id, key_prefix, status, activated_by, activated_at, device_id, batch_id, created_by, expires_at, revoked_at, created_at, updated_at')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
     if (error) throwDbError('Failed to list all activation keys', error);
     return (data ?? []) as ActivationKey[];
   }

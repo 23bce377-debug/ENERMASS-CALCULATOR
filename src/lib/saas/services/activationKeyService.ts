@@ -17,10 +17,9 @@ import type { ActivationKey } from '../types';
 import { profilesByUserId, userEmailsById } from './userDirectory';
 import { assertSeatAvailable } from './seatService';
 
-// ─── Super Admin email (hardcoded as the single source of truth) ───────────────
-const SUPER_ADMIN_EMAIL = 'hrushibhanvadiya@gmail.com';
-
 // ─── Schemas ──────────────────────────────────────────────────────────────────
+// Note: Super admin auth is determined exclusively by profiles.is_super_admin.
+// See managementService.ts → isSuperAdmin() for the authoritative check.
 
 const generateKeysSchema = z.object({
   orgId: z.string().uuid(),
@@ -29,11 +28,32 @@ const generateKeysSchema = z.object({
   expiresAt: z.string().datetime().optional(),
 });
 
+// Password complexity requirements — enforced here and in the UI
+export const PASSWORD_RULES = [
+  { test: (p: string) => p.length >= 12,            message: 'at least 12 characters' },
+  { test: (p: string) => /[A-Z]/.test(p),           message: 'at least one uppercase letter' },
+  { test: (p: string) => /[a-z]/.test(p),           message: 'at least one lowercase letter' },
+  { test: (p: string) => /[0-9]/.test(p),           message: 'at least one number' },
+  { test: (p: string) => /[^A-Za-z0-9]/.test(p),   message: 'at least one special character' },
+];
+
 const redeemKeySchema = z.object({
   rawKey: z.string().min(25).max(30),
   fullName: z.string().min(2).max(100),
   email: z.string().email().toLowerCase(),
-  password: z.string().min(8).max(128),
+  password: z
+    .string()
+    .min(12, 'Password must be at least 12 characters.')
+    .max(128)
+    .superRefine((p, ctx) => {
+      const failed = PASSWORD_RULES.filter(r => !r.test(p));
+      if (failed.length > 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Password must contain: ${failed.map(r => r.message).join(', ')}.`,
+        });
+      }
+    }),
   phone: z.string().optional().nullable(),
   deviceName: z.string().optional().nullable(),
   browser: z.string().optional().nullable(),
@@ -313,9 +333,9 @@ export async function listOrgActivationKeys(orgId: string): Promise<MaskedKeyIte
   }));
 }
 
-export async function listAllActivationKeys(): Promise<MaskedKeyItem[]> {
+export async function listAllActivationKeys(page = 1, limit = 100): Promise<MaskedKeyItem[]> {
   const repo = new ActivationKeyRepository(createAdminClient);
-  const keys = await repo.listAll();
+  const keys = await repo.listAll(page, limit);
   const activatedByIds = [...new Set(keys.filter(k => k.activated_by).map(k => k.activated_by!))];
   const [profiles, emailMap] = await Promise.all([
     profilesByUserId(activatedByIds),

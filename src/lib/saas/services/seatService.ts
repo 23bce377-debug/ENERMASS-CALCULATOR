@@ -21,15 +21,22 @@ const inviteSchema = z.object({
 
 async function defaultResolveUserIdByEmail(email: string): Promise<string> {
   const supabase = createAdminClient();
-  const { data: listData, error: listError } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  const normalised = email.toLowerCase();
 
-  if (listError) {
-    throw new Error(`Failed to resolve invited user: ${listError.message}`);
+  // Paginated scan — early exit as soon as the user is found.
+  // 100 per page keeps each request small; stops when the last page is shorter than 100.
+  let page = 1;
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 100 });
+    if (error) throw new Error(`Failed to resolve invited user: ${error.message}`);
+
+    const found = data.users.find(u => u.email?.toLowerCase() === normalised);
+    if (found) return found.id;
+    if (data.users.length < 100) break; // reached the last page
+    page++;
   }
 
-  const existing = listData.users.find((user) => user.email?.toLowerCase() === email);
-  if (existing) return existing.id;
-
+  // User not found in auth.users → send an invitation
   const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email);
   if (inviteError || !inviteData.user?.id) {
     throw new Error(`Failed to invite user: ${inviteError?.message ?? 'No user returned'}`);

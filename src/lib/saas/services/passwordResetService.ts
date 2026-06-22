@@ -29,8 +29,15 @@ export async function requestPasswordReset(
   const adminClient = createAdminClient();
 
   // ── 1. Look up user by email ──────────────────────────────────────────────────
-  const { data: authUsers } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  const user = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+  // Paginated scan with early exit — avoids 1000-user cap
+  let page = 1;
+  let user: { id: string; email?: string } | undefined;
+  while (!user) {
+    const { data: authUsers } = await adminClient.auth.admin.listUsers({ page, perPage: 100 });
+    user = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    if (!user && (authUsers?.users?.length ?? 0) < 100) break;
+    page++;
+  }
 
   if (!user) {
     // Intentionally vague response to prevent email enumeration
@@ -87,11 +94,17 @@ export async function listPasswordResetRequests(orgId: string): Promise<Password
   if (userIds.length === 0) return [];
 
   const adminClient = createAdminClient();
-  const { data: authUsers } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  // Paginated scan — build emailMap for only the userIds we need
   const emailMap = new Map<string, string>();
-  (authUsers?.users ?? []).filter(u => userIds.includes(u.id)).forEach(u => {
-    if (u.email) emailMap.set(u.id, u.email);
-  });
+  let authPage = 1;
+  while (emailMap.size < userIds.length) {
+    const { data: authUsers } = await adminClient.auth.admin.listUsers({ page: authPage, perPage: 100 });
+    (authUsers?.users ?? []).filter(u => u.id && userIds.includes(u.id)).forEach(u => {
+      if (u.email) emailMap.set(u.id, u.email);
+    });
+    if ((authUsers?.users?.length ?? 0) < 100) break;
+    authPage++;
+  }
 
   const { data: profiles } = await (adminClient as any)
     .from('profiles')
@@ -137,14 +150,22 @@ export async function approvePasswordResetRequest(
   // Mark approved first
   await repo.approve(requestId, adminUserId);
 
-  // Send Supabase password reset email
+  // Send Supabase password reset email via SMTP
+  // generateLink() only creates a URL — resetPasswordForEmail() actually sends the email.
   const { error: resetError } = await adminClient.auth.admin.generateLink({
     type: 'recovery',
     email: authUser.user.email,
   });
 
   if (resetError) {
-    throw new Error(`Failed to generate password reset link: ${resetError.message}`);
+    // generateLink failure is non-fatal for audit purposes; log but don't block approval
+    console.error('[PasswordReset] Failed to generate recovery link:', resetError.message);
+  }
+
+  // Also trigger the built-in Supabase email flow (requires SMTP configured in Supabase project)
+  const { error: emailError } = await adminClient.auth.resetPasswordForEmail(authUser.user.email);
+  if (emailError) {
+    throw new Error(`Failed to send password reset email: ${emailError.message}`);
   }
 
   // Mark link sent

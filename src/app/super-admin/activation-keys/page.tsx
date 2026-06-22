@@ -14,6 +14,7 @@ import {
 import { listAllActivationKeys, listSuperAdminOrgs } from '@/lib/saas';
 import { requireSuperAdminPageSession } from '@/lib/saas/managementPageGuards';
 import { GenerateKeysModal } from '@/components/saas/GenerateKeysModal';
+import Link from 'next/link';
 
 export default async function SuperAdminActivationKeysPage() {
   await requireSuperAdminPageSession();
@@ -88,7 +89,18 @@ export default async function SuperAdminActivationKeysPage() {
       </Section>
 
       {/* All Keys */}
-      <Section title="All Activation Keys">
+      <Section
+        title={`All Activation Keys (${keys.length} shown)`}
+        aside={
+          <Link
+            href="/api/super-admin/activation-keys/export"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent border border-accent/30 rounded-lg px-3 py-1.5 hover:bg-accent/10 transition-colors"
+            title="Download all activation keys as CSV"
+          >
+            ↓ Export CSV
+          </Link>
+        }
+      >
         {keys.length === 0 ? (
           <EmptyState title="No activation keys generated yet">
             Use the &quot;Generate Keys&quot; button above to create keys for an organisation.
