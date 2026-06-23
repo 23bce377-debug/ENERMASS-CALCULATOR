@@ -82,6 +82,7 @@ export default function SettingsPage() {
   }, []);
 
   const isOrgAdmin = profile && ['owner', 'admin', 'manager'].includes(profile.role ?? '');
+  const disableInputs = !!(loaded && profile && !isOrgAdmin);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saveFlash, setSaveFlash] = useState(false);
@@ -189,7 +190,8 @@ export default function SettingsPage() {
                   min={0}
                   max={100}
                   step={1}
-                  className="w-full px-4 py-2.5 pr-10 rounded-lg bg-background border border-border text-sm text-text-primary font-mono outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all"
+                  disabled={disableInputs}
+                  className="w-full px-4 py-2.5 pr-10 rounded-lg bg-background border border-border text-sm text-text-primary font-mono outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">%</span>
               </div>
@@ -212,7 +214,8 @@ export default function SettingsPage() {
               }}
               min={0}
               step={0.5}
-              className="w-full pl-8 pr-16 py-2.5 rounded-lg bg-background border border-border text-sm text-text-primary font-mono outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all"
+              disabled={disableInputs}
+              className="w-full pl-8 pr-16 py-2.5 rounded-lg bg-background border border-border text-sm text-text-primary font-mono outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs">/kWh</span>
           </div>
@@ -233,7 +236,8 @@ export default function SettingsPage() {
                   setSettings({ company: { ...settings.company, name: e.target.value } });
                   flash();
                 }}
-                className="w-full px-4 py-3 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all shadow-sm"
+                disabled={disableInputs}
+                className="w-full px-4 py-3 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 placeholder="Your company name"
               />
             </FieldLabel>
@@ -248,7 +252,8 @@ export default function SettingsPage() {
                   flash();
                 }}
                 rows={4}
-                className="w-full px-4 py-3 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all shadow-sm resize-none"
+                disabled={disableInputs}
+                className="w-full px-4 py-3 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all shadow-sm resize-none disabled:opacity-60 disabled:cursor-not-allowed"
                 placeholder="Full business address"
               />
             </FieldLabel>
@@ -372,14 +377,16 @@ export default function SettingsPage() {
               exportData();
               toast('Data exported successfully', 'success');
             }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent/10 text-accent text-sm font-semibold hover:bg-accent/20 transition-all cursor-pointer"
+            disabled={disableInputs}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent/10 text-accent text-sm font-semibold hover:bg-accent/20 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Download size={16} /> Export All Data
           </button>
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-surface border border-border text-sm font-medium text-text-secondary hover:text-text-primary hover:border-border-light transition-all cursor-pointer"
+            disabled={disableInputs}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-surface border border-border text-sm font-medium text-text-secondary hover:text-text-primary hover:border-border-light transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Upload size={16} /> Import Data
           </button>
@@ -400,7 +407,8 @@ export default function SettingsPage() {
                 flash();
               }
             }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-surface border border-border text-sm font-medium text-text-secondary hover:text-error hover:border-error/30 transition-all cursor-pointer"
+            disabled={disableInputs}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-surface border border-border text-sm font-medium text-text-secondary hover:text-error hover:border-error/30 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <RotateCcw size={16} /> Reset Defaults
           </button>
@@ -424,7 +432,7 @@ export default function SettingsPage() {
           <div className="flex flex-wrap gap-3">
             <button
               id="btn-commit-to-db"
-              disabled={isSyncing}
+              disabled={isSyncing || disableInputs}
               onClick={async () => {
                 const err = await commitToDb();
                 if (err) {
@@ -446,7 +454,7 @@ export default function SettingsPage() {
 
             <button
               id="btn-load-from-db"
-              disabled={isSyncing}
+              disabled={isSyncing || disableInputs}
               onClick={async () => {
                 const err = await loadFromDb();
                 if (err) {
@@ -468,7 +476,7 @@ export default function SettingsPage() {
 
             <button
               id="btn-refresh-master-cache"
-              disabled={isRefreshingCache}
+              disabled={isRefreshingCache || disableInputs}
               onClick={async () => {
                 setIsRefreshingCache(true);
                 try {

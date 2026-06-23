@@ -410,9 +410,37 @@ export const createCalculationSlice: StateCreator<
 
   fetchMasterData: async () => {
     try {
-      const bootstrapRes = await fetch('/api/erp/bootstrap', { cache: 'no-store', credentials: 'include' });
-      if (!bootstrapRes.ok) throw new Error(`/api/erp/bootstrap returned ${bootstrapRes.status}`);
-      const bootstrap = await bootstrapRes.json() as any;
+      // Parallel lazy-chunk fetches — equipment, structures, rules, and org data load
+      // concurrently instead of sequentially inside a single blocking request.
+      const [equipRes, structRes, rulesRes, orgRes] = await Promise.all([
+        fetch('/api/erp/master/equipment', { cache: 'no-store', credentials: 'include' }),
+        fetch('/api/erp/master/structures', { cache: 'no-store', credentials: 'include' }),
+        fetch('/api/erp/master/rules', { cache: 'no-store', credentials: 'include' }),
+        fetch('/api/erp/master/org', { cache: 'no-store', credentials: 'include' }),
+      ]);
+
+      // Surface auth / server errors clearly
+      if (!equipRes.ok) throw new Error(`/api/erp/master/equipment returned ${equipRes.status}`);
+      if (!structRes.ok) throw new Error(`/api/erp/master/structures returned ${structRes.status}`);
+      if (!rulesRes.ok) throw new Error(`/api/erp/master/rules returned ${rulesRes.status}`);
+      if (!orgRes.ok) throw new Error(`/api/erp/master/org returned ${orgRes.status}`);
+
+      const [equip, struct, rules, org] = await Promise.all([
+        equipRes.json() as Promise<any>,
+        structRes.json() as Promise<any>,
+        rulesRes.json() as Promise<any>,
+        orgRes.json() as Promise<any>,
+      ]);
+
+      // Merge into the same flat shape the mapping logic below expects.
+      const bootstrap: any = {
+        ...equip,   // panels, inverters, batteries, meters, lightningArresters, commDevices
+        ...struct,  // structures, weightLookups, structureComponents, structureBom, structureAddons,
+                    // structureAccessoryRates, structureMaterialRates, structureTemplates,
+                    // structureTemplateItems, walkwayTemplates, ladderTemplates, structureComponentMasters
+        ...rules,   // stateRules, slabs, schemes, systems, taxHsnCodes, taxGstRates, bomItems
+        ...org,     // inventorySummary, vendors, structureVendors, appSettings
+      };
 
       const mappedPanels = bootstrap.panels.map((p: any) => {
         return {

@@ -132,7 +132,6 @@ describe('device binding API routes (simplified)', () => {
     expect(response.status).toBe(200);
     const json = await response.json();
     expect(json.device).toEqual({ id: 'new-device-id', status: 'active' });
-    expect(json.deviceToken).toBeDefined();
     expect(deviceServices.registerDevice).toHaveBeenCalledWith(
       routeAuth.userId,
       routeAuth.orgId,

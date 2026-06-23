@@ -19,7 +19,7 @@ import { GenerateKeysModal } from '@/components/saas/GenerateKeysModal';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { adminChangeUserRoleAction } from '../../actions';
+import { adminChangeUserRoleAction, updateOrgDetailsAction } from '../../actions';
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -74,35 +74,153 @@ export default async function SuperAdminOrgDetailsPage({ params }: { params: Pro
         }
       >
         {/* Actions & Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <Section title="Subscription Overview">
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-text-muted">Status</span>
-                <StatusBadge status={overview.subscription?.status ?? 'missing'} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-1 space-y-6">
+            <Section title="Subscription Overview">
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Status</span>
+                  <StatusBadge status={overview.subscription?.status ?? 'missing'} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Plan</span>
+                  <span className="font-semibold text-text-primary">{overview.plan?.name ?? 'None'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Seat Usage</span>
+                  <span className="font-semibold text-text-primary">
+                    {overview.seatUsage.usedSeats} / {overview.seatUsage.seatLimit || '—'}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-text-muted">Plan</span>
-                <span className="font-semibold text-text-primary">{overview.plan?.name ?? 'None'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-muted">Seat Usage</span>
-                <span className="font-semibold text-text-primary">
-                  {overview.seatUsage.usedSeats} / {overview.seatUsage.seatLimit || '—'}
-                </span>
-              </div>
-            </div>
-          </Section>
+            </Section>
 
-          <Section title="Activation Keys Management">
-            <p className="text-sm text-text-muted mb-4">
-              Generate new one-time activation keys for this organization. 
-              The raw keys will only be shown once and must be shared securely.
-            </p>
-            <div className="flex justify-start">
-              <GenerateKeysModal orgId={overview.org.id} orgName={overview.org.name} />
-            </div>
-          </Section>
+            <Section title="Activation Keys Management">
+              <p className="text-sm text-text-muted mb-4">
+                Generate new one-time activation keys for this organization. 
+                The raw keys will only be shown once and must be shared securely.
+              </p>
+              <div className="flex justify-start">
+                <GenerateKeysModal orgId={overview.org.id} orgName={overview.org.name} />
+              </div>
+            </Section>
+          </div>
+
+          <div className="lg:col-span-2">
+            <Section title="Edit Organization Details">
+              <form action={updateOrgDetailsAction} className="space-y-4">
+                <input type="hidden" name="orgId" value={orgId} />
+                
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Company Name</label>
+                  <input
+                    type="text"
+                    name="name"
+                    defaultValue={overview.org.name ?? ''}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-muted mb-1">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      defaultValue={overview.org.email ?? ''}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-muted mb-1">Phone</label>
+                    <input
+                      type="text"
+                      name="phone"
+                      defaultValue={overview.org.phone ?? ''}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Address</label>
+                  <input
+                    type="text"
+                    name="address"
+                    defaultValue={overview.org.address ?? ''}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-muted mb-1">City</label>
+                    <input
+                      type="text"
+                      name="city"
+                      defaultValue={overview.org.city ?? ''}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-muted mb-1">State</label>
+                    <input
+                      type="text"
+                      name="state"
+                      defaultValue={overview.org.state ?? ''}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-muted mb-1">Pincode</label>
+                    <input
+                      type="text"
+                      name="pincode"
+                      defaultValue={overview.org.pincode ?? ''}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-muted mb-1">GSTIN</label>
+                    <input
+                      type="text"
+                      name="gstin"
+                      defaultValue={overview.org.gstin ?? ''}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-muted mb-1">Website</label>
+                    <input
+                      type="text"
+                      name="website"
+                      defaultValue={overview.org.website ?? ''}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-muted mb-1">Quote Prefix</label>
+                    <input
+                      type="text"
+                      name="quote_prefix"
+                      defaultValue={overview.org.quote_prefix ?? 'QM'}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button type="submit" className={buttonClass}>
+                    Save Details
+                  </button>
+                </div>
+              </form>
+            </Section>
+          </div>
         </div>
 
         {/* Members & Devices */}

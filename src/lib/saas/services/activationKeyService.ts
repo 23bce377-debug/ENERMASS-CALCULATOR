@@ -1,6 +1,7 @@
 import 'server-only';
 
 import crypto from 'node:crypto';
+import { Client } from 'pg';
 import { createAdminClient } from '@/lib/supabase/server';
 import z from 'zod';
 import { ActivationKeyRepository, OrgMemberRepository, UserDeviceRepository, OrgSubscriptionRepository, SubscriptionPlanRepository } from '../repositories';
@@ -32,7 +33,11 @@ const generateKeysSchema = z.object({
 
 // Password complexity requirements — enforced here and in the UI
 export const PASSWORD_RULES = [
-  { test: (p: string) => p.length >= 8,            message: 'at least 8 characters' },
+  { test: (p: string) => p.length >= 12,           message: 'at least 12 characters' },
+  { test: (p: string) => /[A-Z]/.test(p),          message: 'one uppercase letter' },
+  { test: (p: string) => /[a-z]/.test(p),          message: 'one lowercase letter' },
+  { test: (p: string) => /[0-9]/.test(p),          message: 'one number' },
+  { test: (p: string) => /[^A-Za-z0-9]/.test(p),   message: 'one special character' },
 ];
 
 const redeemKeySchema = z.object({
@@ -41,7 +46,7 @@ const redeemKeySchema = z.object({
   email: z.string().email().toLowerCase(),
   password: z
     .string()
-    .min(8, 'Password must be at least 8 characters.')
+    .min(12, 'Password must be at least 12 characters.')
     .max(128)
     .superRefine((p, ctx) => {
       const failed = PASSWORD_RULES.filter(r => !r.test(p));
@@ -253,6 +258,8 @@ export async function generateActivationKeys(input: z.input<typeof generateKeysS
 
 // ─── Validate Key (Public — pre-registration step) ────────────────────────────
 
+const orgNameCache = new Map<string, string>();
+
 /**
  * Validates a key without consuming it.
  * Returns org name so the user can confirm before registering.
@@ -282,17 +289,22 @@ export async function validateActivationKey(rawKey: string): Promise<KeyValidati
   }
 
   // Fetch org name
-  const client = createAdminClient();
-  const { data: org } = await (client as any)
-    .from('organisations')
-    .select('name')
-    .eq('id', key.org_id)
-    .maybeSingle();
+  let orgName: string = orgNameCache.get(key.org_id) ?? '';
+  if (!orgName) {
+    const client = createAdminClient();
+    const { data: org } = await (client as any)
+      .from('organisations')
+      .select('name')
+      .eq('id', key.org_id)
+      .maybeSingle();
+    orgName = (org?.name as string | null | undefined) ?? 'Unknown Organisation';
+    orgNameCache.set(key.org_id, orgName);
+  }
 
   return {
     valid: true,
     orgId: key.org_id,
-    orgName: org?.name ?? 'Unknown Organisation',
+    orgName,
   };
 }
 
@@ -335,12 +347,6 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
     orgSubscriptionRepository: new OrgSubscriptionRepository(createAdminClient),
     orgMemberRepository: new OrgMemberRepository(createAdminClient),
   });
-
-  // ── 2. Determine role (first owner or staff) ──────────────────────────────────
-  const memberRepo = new OrgMemberRepository(createAdminClient);
-  const existingMembers = await memberRepo.listByOrgId(key.org_id);
-  const hasOwner = existingMembers.some(m => m.role === 'owner' && m.status === 'active');
-  const assignedRole: 'owner' | 'staff' = hasOwner ? 'staff' : 'owner';
 
   // ── 3. Create Supabase auth user using public client to trigger confirmation email ──
   // Note: We use publicClient.auth.signUp instead of adminClient.auth.admin.createUser to trigger confirmation email.
@@ -396,70 +402,145 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
 
   const userId = authData.user.id;
 
-  // ── 4. Set custom app metadata using the admin client ────────────────────────
-  const { error: metaError } = await (adminClient as any).auth.admin.updateUserById(userId, {
-    app_metadata: {
-      org_id: key.org_id,
-      role: assignedRole,
-    },
+  const pgClient = new Client({
+    connectionString: process.env.DATABASE_URL
   });
+  await pgClient.connect();
 
-  if (metaError) {
-    throw new Error(`Failed to initialize user metadata: ${metaError.message}`);
-  }
+  let assignedRole: 'owner' | 'staff' = 'staff';
+  const deviceToken = crypto.randomBytes(32).toString('hex');
+  const secretHash = crypto.createHash('sha256').update(deviceToken).digest('hex');
+  const deviceId = crypto.randomUUID();
 
   try {
-    // ── 5. Create profile ─────────────────────────────────────────────────────────
-    await (adminClient as any).from('profiles').insert({
-      id: userId,
-      org_id: key.org_id,
-      full_name: payload.fullName,
-      role: assignedRole,
-      phone: payload.phone ?? null,
-      is_active: true,
-    });
+    await pgClient.query('BEGIN');
 
-    // ── 6. Create org_member ──────────────────────────────────────────────────────
-    await memberRepo.create(key.org_id, { user_id: userId, role: assignedRole, status: 'active' });
+    // 1. SELECT FOR UPDATE on activation_keys to lock and verify key status
+    const keyRes = await pgClient.query(
+      'SELECT status, expires_at, org_id FROM public.activation_keys WHERE id = $1 FOR UPDATE',
+      [key.id]
+    );
+    const dbKey = keyRes.rows[0];
+    if (!dbKey) throw new Error('Activation key not found in transaction.');
+    if (dbKey.status !== 'unused') throw new Error('This activation key has already been used.');
+    if (dbKey.expires_at && new Date(dbKey.expires_at) < new Date()) {
+      throw new Error('This activation key has expired.');
+    }
 
-    // ── 7. Generate device secret and bind device ─────────────────────────────────
-    const deviceToken = crypto.randomBytes(32).toString('hex');
-    const secretHash = crypto.createHash('sha256').update(deviceToken).digest('hex');
+    // 2. Lock organisation row to serialize owner checks and seat usage verification
+    const orgRes = await pgClient.query(
+      'SELECT id FROM public.organisations WHERE id = $1 FOR UPDATE',
+      [key.org_id]
+    );
+    if (orgRes.rows.length === 0) {
+      throw new Error('Organisation not found.');
+    }
 
-    const deviceRepo = new UserDeviceRepository(createAdminClient);
-    const device = await deviceRepo.create(key.org_id, userId, {
-      deviceSecretHash: secretHash,
-      deviceName: payload.deviceName ?? 'Activation Device',
-      browser: payload.browser ?? null,
-      os: payload.os ?? null,
-      publicKey: payload.publicKey ?? null,
-      fingerprintHash: payload.fingerprintHash ?? null,
-    });
+    // 3. Determine role atomically (first owner or staff)
+    const membersRes = await pgClient.query(
+      "SELECT role, status FROM public.org_members WHERE org_id = $1",
+      [key.org_id]
+    );
+    const hasOwner = membersRes.rows.some((m: any) => m.role === 'owner' && m.status === 'active');
+    assignedRole = hasOwner ? 'staff' : 'owner';
 
-    // ── 8. Mark key as activated ──────────────────────────────────────────────────
-    await keyRepo.activate(key.id, userId, device.id);
+    // 4. Enforce seats atomically inside lock
+    const subRes = await pgClient.query(
+      "SELECT seat_limit FROM public.org_subscriptions WHERE org_id = $1 AND status IN ('trialing', 'active', 'past_due') LIMIT 1",
+      [key.org_id]
+    );
+    const subscription = subRes.rows[0];
+    const countRes = await pgClient.query(
+      "SELECT COUNT(*) as count FROM public.org_members WHERE org_id = $1 AND status IN ('active', 'invited')",
+      [key.org_id]
+    );
+    const usedSeats = parseInt(countRes.rows[0].count, 10);
+    if (subscription) {
+      const seatLimit = subscription.seat_limit;
+      if (seatLimit > 0 && usedSeats >= seatLimit) {
+        throw new Error(`Seat limit reached. Organization has ${usedSeats} used seats, limit is ${seatLimit}.`);
+      }
+    }
 
-    // ── 9. Audit log ──────────────────────────────────────────────────────────────
-    await logLicenseEvent({
-      orgId: key.org_id,
-      userId,
-      entityType: 'activation_key',
-      entityId: key.id,
-      eventType: 'device_registered',
-      eventData: {
-        action: 'key_activated',
+    // 5. Update user app_metadata in Auth service before committing DB inserts
+    const { error: metaError } = await (adminClient as any).auth.admin.updateUserById(userId, {
+      app_metadata: {
+        org_id: key.org_id,
         role: assignedRole,
-        keyPrefix: key.key_prefix,
-        deviceId: device.id,
       },
     });
+    if (metaError) {
+      throw new Error(`Failed to initialize user metadata: ${metaError.message}`);
+    }
 
+    // 6. Create Profile
+    await pgClient.query(
+      `INSERT INTO public.profiles (id, org_id, full_name, role, phone, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [userId, key.org_id, payload.fullName, assignedRole, payload.phone ?? null, true]
+    );
+
+    // 7. Create Org Member
+    await pgClient.query(
+      `INSERT INTO public.org_members (org_id, user_id, role, status)
+       VALUES ($1, $2, $3, $4)`,
+      [key.org_id, userId, assignedRole, 'active']
+    );
+
+    // 8. Create User Device
+    await pgClient.query(
+      `INSERT INTO public.user_devices (id, org_id, user_id, device_secret_hash, device_name, browser, os, public_key, fingerprint_hash)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        deviceId,
+        key.org_id,
+        userId,
+        secretHash,
+        payload.deviceName ?? 'Activation Device',
+        payload.browser ?? null,
+        payload.os ?? null,
+        payload.publicKey ?? null,
+        payload.fingerprintHash ?? null,
+      ]
+    );
+
+    // 9. Mark activation key as activated
+    await pgClient.query(
+      `UPDATE public.activation_keys
+       SET status = 'activated', activated_by = $1, device_id = $2, activated_at = NOW(), updated_at = NOW()
+       WHERE id = $3`,
+      [userId, deviceId, key.id]
+    );
+
+    // 10. Log audit event
+    await pgClient.query(
+      `INSERT INTO public.license_events (id, org_id, user_id, entity_type, entity_id, event_type, event_data, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+      [
+        crypto.randomUUID(),
+        key.org_id,
+        userId,
+        'activation_key',
+        key.id,
+        'device_registered',
+        JSON.stringify({
+          action: 'key_activated',
+          role: assignedRole,
+          keyPrefix: key.key_prefix,
+          deviceId: deviceId,
+        }),
+      ]
+    );
+
+    await pgClient.query('COMMIT');
     return { userId, orgId: key.org_id, role: assignedRole, deviceToken };
 
   } catch (error) {
-    // Rollback: delete the Supabase auth user if anything failed
+    await pgClient.query('ROLLBACK').catch(() => {});
     await (adminClient as any).auth.admin.deleteUser(userId).catch(() => {});
     throw error;
+  } finally {
+    await pgClient.end().catch(() => {});
   }
 }
 

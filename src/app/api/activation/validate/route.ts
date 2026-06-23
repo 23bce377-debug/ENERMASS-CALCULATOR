@@ -25,15 +25,29 @@ export async function POST(request: Request) {
     const result = await validateActivationKey(rawKey);
     if (result.valid) {
       const keyHash = hashActivationKey(rawKey);
-      const challenge = generateWebAuthnChallenge(keyHash);
+      const cryptoNode = require('node:crypto');
+      const sessionNonce = cryptoNode.randomUUID();
+      const challenge = generateWebAuthnChallenge(keyHash, sessionNonce);
       const origin = request.headers.get('host') || 'localhost';
 
-      return NextResponse.json({
+      const response = NextResponse.json({
         ...result,
         challenge,
         rpName: 'Enermass SaaS',
         rpId: origin.split(':')[0],
       }, { status: 200 });
+
+      response.cookies.set({
+        name: 'enermass_activation_session',
+        value: sessionNonce,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 15 * 60, // 15 mins
+      });
+
+      return response;
     }
 
     return NextResponse.json(result, { status: 400 });

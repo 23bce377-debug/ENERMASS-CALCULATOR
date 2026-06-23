@@ -1,4 +1,5 @@
 import 'server-only';
+import { Client } from 'pg';
 
 import { createAdminClient } from '@/lib/supabase/server';
 import z from 'zod';
@@ -13,11 +14,79 @@ export interface PasswordResetRequestItem extends PasswordResetRequest {
   user_name: string | null;
 }
 
+// ─── Direct Database Helpers for O(1) Lookup ───────────────────────────────────
+
+async function lookupUserByEmail(email: string): Promise<{ id: string; email?: string } | undefined> {
+  const normalized = email.toLowerCase();
+  
+  if (process.env.DATABASE_URL) {
+    const pgClient = new Client({ connectionString: process.env.DATABASE_URL });
+    try {
+      await pgClient.connect();
+      const res = await pgClient.query('SELECT id, email FROM auth.users WHERE LOWER(email) = $1 LIMIT 1', [normalized]);
+      if (res.rows.length > 0) {
+        return { id: res.rows[0].id, email: res.rows[0].email };
+      }
+      return undefined;
+    } catch (err) {
+      console.error('[UserLookup] Direct database lookup failed, falling back to paginated scanning:', err);
+    } finally {
+      await pgClient.end().catch(() => {});
+    }
+  }
+
+  // Fallback to O(N) scan using listUsers
+  const adminClient = createAdminClient();
+  let page = 1;
+  while (true) {
+    const { data: authUsers, error } = await adminClient.auth.admin.listUsers({ page, perPage: 100 });
+    if (error) throw new Error(`Failed to list users: ${error.message}`);
+    const found = authUsers?.users?.find(u => u.email?.toLowerCase() === normalized);
+    if (found) return { id: found.id, email: found.email };
+    if ((authUsers?.users?.length ?? 0) < 100) break;
+    page++;
+  }
+  return undefined;
+}
+
+async function getEmailMapForUserIds(userIds: string[]): Promise<Map<string, string>> {
+  const emailMap = new Map<string, string>();
+  if (userIds.length === 0) return emailMap;
+
+  if (process.env.DATABASE_URL) {
+    const pgClient = new Client({ connectionString: process.env.DATABASE_URL });
+    try {
+      await pgClient.connect();
+      const res = await pgClient.query('SELECT id, email FROM auth.users WHERE id = ANY($1)', [userIds]);
+      res.rows.forEach(row => {
+        if (row.email) emailMap.set(row.id, row.email);
+      });
+      return emailMap;
+    } catch (err) {
+      console.error('[UserLookup] Direct database lookup for email map failed, falling back to paginated scanning:', err);
+    } finally {
+      await pgClient.end().catch(() => {});
+    }
+  }
+
+  // Fallback to O(N) scan using listUsers
+  const adminClient = createAdminClient();
+  let authPage = 1;
+  while (emailMap.size < userIds.length) {
+    const { data: authUsers } = await adminClient.auth.admin.listUsers({ page: authPage, perPage: 100 });
+    (authUsers?.users ?? []).filter(u => u.id && userIds.includes(u.id)).forEach(u => {
+      if (u.email) emailMap.set(u.id, u.email);
+    });
+    if ((authUsers?.users?.length ?? 0) < 100) break;
+    authPage++;
+  }
+  return emailMap;
+}
+
 // ─── Request a Password Reset ─────────────────────────────────────────────────
 
 /**
  * Creates a password reset request (pending admin approval).
- * The user must be authenticated and have an active org membership.
  * No Supabase reset email is sent until admin approves.
  */
 export async function requestPasswordReset(
@@ -29,15 +98,7 @@ export async function requestPasswordReset(
   const adminClient = createAdminClient();
 
   // ── 1. Look up user by email ──────────────────────────────────────────────────
-  // Paginated scan with early exit — avoids 1000-user cap
-  let page = 1;
-  let user: { id: string; email?: string } | undefined;
-  while (!user) {
-    const { data: authUsers } = await adminClient.auth.admin.listUsers({ page, perPage: 100 });
-    user = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
-    if (!user && (authUsers?.users?.length ?? 0) < 100) break;
-    page++;
-  }
+  const user = await lookupUserByEmail(email);
 
   if (!user) {
     // Intentionally vague response to prevent email enumeration
@@ -45,7 +106,6 @@ export async function requestPasswordReset(
   }
 
   // ── 2. Fetch org membership ───────────────────────────────────────────────────
-  const memberRepo = new OrgMemberRepository(createAdminClient);
   const { data: members, error: membersError } = await (adminClient as any)
     .from('org_members')
     .select('*')
@@ -77,7 +137,7 @@ export async function requestPasswordReset(
     orgId: member.org_id,
     userId: user.id,
     entityType: 'password_reset_request',
-    eventType: 'device_reset_requested',
+    eventType: 'password_reset_requested',
     eventData: { action: 'password_reset_requested', email },
   });
 
@@ -94,17 +154,7 @@ export async function listPasswordResetRequests(orgId: string): Promise<Password
   if (userIds.length === 0) return [];
 
   const adminClient = createAdminClient();
-  // Paginated scan — build emailMap for only the userIds we need
-  const emailMap = new Map<string, string>();
-  let authPage = 1;
-  while (emailMap.size < userIds.length) {
-    const { data: authUsers } = await adminClient.auth.admin.listUsers({ page: authPage, perPage: 100 });
-    (authUsers?.users ?? []).filter(u => u.id && userIds.includes(u.id)).forEach(u => {
-      if (u.email) emailMap.set(u.id, u.email);
-    });
-    if ((authUsers?.users?.length ?? 0) < 100) break;
-    authPage++;
-  }
+  const emailMap = await getEmailMapForUserIds(userIds);
 
   const { data: profiles } = await (adminClient as any)
     .from('profiles')
@@ -150,36 +200,43 @@ export async function approvePasswordResetRequest(
   // Mark approved first
   await repo.approve(requestId, adminUserId);
 
-  // Send Supabase password reset email via SMTP
-  // generateLink() only creates a URL — resetPasswordForEmail() actually sends the email.
-  const { error: resetError } = await adminClient.auth.admin.generateLink({
-    type: 'recovery',
-    email: authUser.user.email,
-  });
+  try {
+    // Send Supabase password reset email via SMTP
+    // generateLink() only creates a URL — resetPasswordForEmail() actually sends the email.
+    const { error: resetError } = await adminClient.auth.admin.generateLink({
+      type: 'recovery',
+      email: authUser.user.email,
+    });
 
-  if (resetError) {
-    // generateLink failure is non-fatal for audit purposes; log but don't block approval
-    console.error('[PasswordReset] Failed to generate recovery link:', resetError.message);
+    if (resetError) {
+      console.error('[PasswordReset] Failed to generate recovery link:', resetError.message);
+    }
+
+    // Also trigger the built-in Supabase email flow (requires SMTP configured in Supabase project)
+    const { error: emailError } = await adminClient.auth.resetPasswordForEmail(authUser.user.email);
+    if (emailError) {
+      throw new Error(`Failed to send password reset email: ${emailError.message}`);
+    }
+
+    // Mark link sent
+    await repo.markLinkSent(requestId);
+
+    await logLicenseEvent({
+      orgId: request.org_id,
+      userId: request.user_id,
+      entityType: 'password_reset_request',
+      entityId: requestId,
+      eventType: 'password_reset_approved',
+      actorUserId: adminUserId,
+      eventData: { action: 'password_reset_approved' },
+    });
+  } catch (err) {
+    // Rollback status to pending on failure
+    await repo.rollbackApproval(requestId).catch(rollbackErr => {
+      console.error('[PasswordReset] Failed to rollback request status:', rollbackErr.message);
+    });
+    throw err;
   }
-
-  // Also trigger the built-in Supabase email flow (requires SMTP configured in Supabase project)
-  const { error: emailError } = await adminClient.auth.resetPasswordForEmail(authUser.user.email);
-  if (emailError) {
-    throw new Error(`Failed to send password reset email: ${emailError.message}`);
-  }
-
-  // Mark link sent
-  await repo.markLinkSent(requestId);
-
-  await logLicenseEvent({
-    orgId: request.org_id,
-    userId: request.user_id,
-    entityType: 'password_reset_request',
-    entityId: requestId,
-    eventType: 'device_reset_approved',
-    actorUserId: adminUserId,
-    eventData: { action: 'password_reset_approved' },
-  });
 }
 
 // ─── Reject Request (org admin) ───────────────────────────────────────────────
@@ -203,7 +260,7 @@ export async function rejectPasswordResetRequest(
     userId: request.user_id,
     entityType: 'password_reset_request',
     entityId: requestId,
-    eventType: 'device_reset_rejected',
+    eventType: 'password_reset_rejected',
     actorUserId: adminUserId,
     eventData: { action: 'password_reset_rejected' },
   });
@@ -219,16 +276,7 @@ export async function listAllPasswordResetRequests(): Promise<PasswordResetReque
   if (userIds.length === 0) return [];
 
   const adminClient = createAdminClient();
-  const emailMap = new Map<string, string>();
-  let authPage = 1;
-  while (emailMap.size < userIds.length) {
-    const { data: authUsers } = await adminClient.auth.admin.listUsers({ page: authPage, perPage: 100 });
-    (authUsers?.users ?? []).filter(u => u.id && userIds.includes(u.id)).forEach(u => {
-      if (u.email) emailMap.set(u.id, u.email);
-    });
-    if ((authUsers?.users?.length ?? 0) < 100) break;
-    authPage++;
-  }
+  const emailMap = await getEmailMapForUserIds(userIds);
 
   const { data: profiles } = await (adminClient as any)
     .from('profiles')

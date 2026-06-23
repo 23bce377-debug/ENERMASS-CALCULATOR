@@ -31,6 +31,9 @@ export type LicenseEventType =
   | 'device_reset_requested'
   | 'device_reset_approved'
   | 'device_reset_rejected'
+  | 'password_reset_requested'
+  | 'password_reset_approved'
+  | 'password_reset_rejected'
   | 'feature_access_denied'
   | 'org_id_spoofed'
   | 'cross_org_attempt';

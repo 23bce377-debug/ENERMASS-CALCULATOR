@@ -1,4 +1,5 @@
 import 'server-only';
+import { Client } from 'pg';
 
 import { createAdminClient } from '@/lib/supabase/server';
 import z from 'zod';
@@ -20,11 +21,26 @@ const inviteSchema = z.object({
 });
 
 async function defaultResolveUserIdByEmail(email: string): Promise<string> {
-  const supabase = createAdminClient();
   const normalised = email.toLowerCase();
 
-  // Paginated scan — early exit as soon as the user is found.
-  // 100 per page keeps each request small; stops when the last page is shorter than 100.
+  // O(1) direct database lookup if DATABASE_URL is available
+  if (process.env.DATABASE_URL) {
+    const pgClient = new Client({ connectionString: process.env.DATABASE_URL });
+    try {
+      await pgClient.connect();
+      const res = await pgClient.query('SELECT id FROM auth.users WHERE LOWER(email) = $1 LIMIT 1', [normalised]);
+      if (res.rows.length > 0) {
+        return res.rows[0].id;
+      }
+    } catch (err) {
+      console.error('[SeatService] Direct database email lookup failed, falling back to paginated scan:', err);
+    } finally {
+      await pgClient.end().catch(() => {});
+    }
+  }
+
+  const supabase = createAdminClient();
+  // Fallback: paginated scan
   let page = 1;
   while (true) {
     const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 100 });
@@ -94,13 +110,25 @@ export async function assertSeatAvailableForActivation(orgId: string, deps: Seat
   const counts = await orgMemberRepository.countBillableSeats(orgId);
   const usedSeats = counts.active + counts.invited;
 
-  // No subscription at all → allow (first user bootstrapping the org)
+  // No subscription at all → allow only 1 user (first user bootstrapping the org)
   if (!subscription) {
+    if (usedSeats >= 1) {
+      await audit({
+        orgId,
+        entityType: 'org_subscription',
+        eventType: 'seat_limit_reached',
+        eventData: { activeSeats: counts.active, invitedSeats: counts.invited, usedSeats, seatLimit: 1, overLimitBy: usedSeats - 1 } as unknown as Record<string, number>,
+      });
+      throw new SeatLimitReachedError({
+        orgId,
+        usage: { activeSeats: counts.active, invitedSeats: counts.invited, usedSeats, seatLimit: 1, overLimitBy: usedSeats - 1 },
+      });
+    }
     return {
       activeSeats: counts.active,
       invitedSeats: counts.invited,
       usedSeats,
-      seatLimit: 0,
+      seatLimit: 1,
       overLimitBy: 0,
     };
   }
@@ -147,8 +175,13 @@ export async function inviteOrgUser(
       status: 'invited',
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (/seat limit|seat_limit|23514/i.test(message)) {
+    const pgErr = error as any;
+    const isSeatLimit = 
+      pgErr.code === '23514' || 
+      pgErr.constraint === 'org_members_enforce_seat_limit' ||
+      /seat limit|seat_limit|23514/i.test(pgErr.message || String(pgErr));
+
+    if (isSeatLimit) {
       const usage = await getSeatUsage(orgId, deps).catch(() => null);
       await audit({
         orgId,

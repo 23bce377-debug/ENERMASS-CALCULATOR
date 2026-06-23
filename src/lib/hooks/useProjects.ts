@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProjectORM, type Project } from '@/backend/orm/project';
 import { supabase } from '@/lib/supabase/client';
+import { queryKeys } from '@/lib/query-keys';
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
 export function useProjectsQuery(orgId: string | null) {
   return useQuery<any[]>({
-    queryKey: ['projects', orgId],
+    queryKey: queryKeys.projects.all(orgId),
     queryFn: async () => {
       if (!orgId) return [];
       return ProjectORM.getAll(orgId) as any;
@@ -18,7 +19,7 @@ export function useProjectsQuery(orgId: string | null) {
 
 export function useProjectDetailsQuery(projectId: string | null) {
   return useQuery<any>({
-    queryKey: ['project-details', projectId],
+    queryKey: queryKeys.projects.detail(projectId),
     queryFn: async () => {
       if (!projectId) return null;
       return ProjectORM.getById(projectId) as any;
@@ -47,8 +48,8 @@ export function useUpdateProjectStatusMutation() {
       return ProjectORM.updateStatus(projectId, status, version);
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['projects', variables.orgId] });
-      queryClient.invalidateQueries({ queryKey: ['project-details', variables.projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all(variables.orgId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(variables.projectId) });
     }
   });
 }
@@ -60,7 +61,7 @@ export function useUpdateProjectNotesMutation() {
       return ProjectORM.updateNotes(projectId, notes);
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['project-details', variables.projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(variables.projectId) });
     }
   });
 }
@@ -80,8 +81,8 @@ export function useAssignPMMutation() {
       return ProjectORM.assignPM(projectId, pmId);
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['projects', variables.orgId] });
-      queryClient.invalidateQueries({ queryKey: ['project-details', variables.projectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all(variables.orgId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(variables.projectId) });
     }
   });
 }
@@ -122,12 +123,31 @@ export function useCreateProjectMutation() {
           })
           .select('id')
           .single();
-        if (qErr) throw qErr;
+        if (qErr) {
+          console.error('[useCreateProjectMutation] Quote insert failed:', JSON.stringify({
+            message: qErr?.message,
+            code: qErr?.code,
+            details: qErr?.details,
+            hint: qErr?.hint,
+            error: qErr,
+          }, null, 2));
+          throw qErr;
+        }
         finalQuoteId = qData.id;
       } else if (finalQuoteId) {
-        await (supabase.from('quotes') as any)
+        const { error: updateErr } = await (supabase.from('quotes') as any)
           .update({ status: 'won', updated_at: new Date().toISOString() })
           .eq('id', finalQuoteId);
+        if (updateErr) {
+          console.error('[useCreateProjectMutation] Quote update failed:', JSON.stringify({
+            message: updateErr?.message,
+            code: updateErr?.code,
+            details: updateErr?.details,
+            hint: updateErr?.hint,
+            error: updateErr,
+          }, null, 2));
+          throw updateErr;
+        }
       }
 
       return ProjectORM.create({
@@ -141,7 +161,7 @@ export function useCreateProjectMutation() {
       });
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['projects', variables.orgId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all(variables.orgId) });
     }
   });
 }

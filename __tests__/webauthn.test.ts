@@ -22,7 +22,7 @@ describe('WebAuthn / Passkeys Cryptographic Service', () => {
     expect(isInvalidHash).toBe(false);
 
     // Verification should fail for expired challenges (mock clock)
-    const isNotExpired = verifyWebAuthnChallenge(challenge, keyHash, -1);
+    const isNotExpired = verifyWebAuthnChallenge(challenge, keyHash, '', -1);
     expect(isNotExpired).toBe(false);
   });
 

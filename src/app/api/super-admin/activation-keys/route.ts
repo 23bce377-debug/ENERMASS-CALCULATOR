@@ -20,7 +20,13 @@ export async function GET(request: Request) {
     });
     if (limited) return limited;
 
-    const keys = await listAllActivationKeys();
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1', 10);
+    const limit = parseInt(url.searchParams.get('limit') || '100', 10);
+    const validPage = isNaN(page) || page < 1 ? 1 : page;
+    const validLimit = isNaN(limit) || limit < 1 || limit > 1000 ? 100 : limit;
+
+    const keys = await listAllActivationKeys(validPage, validLimit);
     return NextResponse.json({ keys });
   } catch (error) {
     return jsonForManagementError(error);

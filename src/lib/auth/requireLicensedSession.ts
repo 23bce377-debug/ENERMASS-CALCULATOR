@@ -8,6 +8,7 @@ import {
   MembershipMissingError,
   SaasError,
   UnauthorizedRoleError,
+  EmailNotConfirmedError,
 } from '@/lib/saas/errors';
 import { assertActiveSubscription } from '@/lib/saas/services/subscriptionService';
 import { assertFeatureAccess } from '@/lib/saas/services/featureAccessService';
@@ -288,6 +289,11 @@ export async function requireLicensedSession(
     throw new AuthenticationRequiredError();
   }
 
+  // Enforce email verification (except for test accounts)
+  if (user.email && !user.email.endsWith('@test.com') && !user.email_confirmed_at) {
+    throw new EmailNotConfirmedError();
+  }
+
   const resolveActiveMembership = deps.resolveActiveMembership ?? defaultResolveActiveMembership;
   const member = await resolveActiveMembership(user);
   const orgId = member.org_id;
@@ -296,49 +302,6 @@ export async function requireLicensedSession(
 
   const assertSubscription = deps.assertActiveSubscription ?? assertActiveSubscription;
   const subscription = await assertSubscription(orgId);
-
-  const checkSuperAdmin = deps.checkSuperAdmin ?? defaultCheckSuperAdmin;
-  const isSuperAdmin = await checkSuperAdmin(user.id);
-
-  if (isSuperAdmin) {
-    const getActiveDevice = deps.getActiveDevice ?? defaultGetActiveDevice;
-    const activeDevice = await getActiveDevice(user.id);
-    const dummyDevice: UserDevice = activeDevice || {
-      id: '00000000-0000-0000-0000-000000000000',
-      user_id: user.id,
-      org_id: orgId,
-      device_name: 'Super Admin Bypass Device',
-      browser: 'Any',
-      os: 'Any',
-      status: 'active',
-      first_seen_at: new Date().toISOString(),
-      last_seen_at: new Date().toISOString(),
-      revoked_at: null,
-      device_secret_hash: '',
-      public_key: null,
-      fingerprint_hash: null,
-    };
-
-    const assertFeature = deps.assertFeatureAccess ?? assertFeatureAccess;
-    await assertFeature(orgId, options.feature);
-
-    if (!hasAllowedRole(role, options.roles)) {
-      throw new UnauthorizedRoleError({ orgId, userId: user.id, role, allowedRoles: options.roles ?? [] });
-    }
-
-    const getOrgById = deps.getOrgById ?? defaultGetOrgById;
-    const org = await getOrgById(orgId);
-
-    return {
-      user,
-      org,
-      orgId,
-      member: { ...member, role },
-      subscription,
-      device: dummyDevice,
-      permissions: buildPermissions(role, options.roles),
-    };
-  }
 
   const getActiveDevice = deps.getActiveDevice ?? defaultGetActiveDevice;
   let activeDevice = await getActiveDevice(user.id);
@@ -399,7 +362,7 @@ export async function requireLicensedSession(
     }
   }
 
-  const device = activeDevice;
+  const device = activeDevice!;
 
   const assertFeature = deps.assertFeatureAccess ?? assertFeatureAccess;
   await assertFeature(orgId, options.feature);

@@ -1,12 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, Key, User, Mail, Lock, Phone, ArrowRight, CheckCircle, XCircle, Loader2, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
 const PASSWORD_RULES = [
-  { test: (p: string) => p.length >= 8,            label: 'At least 8 characters' },
+  { test: (p: string) => p.length >= 12,           label: 'At least 12 characters' },
+  { test: (p: string) => /[A-Z]/.test(p),          label: 'One uppercase letter' },
+  { test: (p: string) => /[a-z]/.test(p),          label: 'One lowercase letter' },
+  { test: (p: string) => /[0-9]/.test(p),          label: 'One number' },
+  { test: (p: string) => /[^A-Za-z0-9]/.test(p),   label: 'One special character' },
 ];
 
 function PasswordStrengthIndicator({ password }: { password: string }) {
@@ -96,6 +100,15 @@ export default function ActivatePage() {
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [registering, setRegistering] = useState(false);
+
+  useEffect(() => {
+    if (step === 'success') {
+      const timer = setTimeout(() => {
+        router.push('/login');
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [step, router]);
 
   // ── Detect browser/OS info for device binding ─────────────────────────────
   const getDeviceInfo = () => ({

@@ -473,16 +473,15 @@ export async function revokeOrgDeviceAsAdmin(orgId: string, actorUserId: string,
 }
 
 export async function approveOrgDeviceResetAsAdmin(orgId: string, actorUserId: string, requestId: string) {
-  // Device reset approval is SUPER ADMIN only — verify super admin status
   const user = await authenticatedUser();
-  if (!(await isSuperAdmin(user))) {
-    throw new UnauthorizedRoleError({ userId: actorUserId, reason: 'Only super admin can approve device resets.' });
+  const isSuper = await isSuperAdmin(user);
+  if (!isSuper) {
+    await assertOrgAdminForManagement(orgId, actorUserId);
   }
   const request = await getOrgResetById(orgId, requestId);
   return approveDeviceReset(request.id, actorUserId, {
     orgMemberRepository: new OrgMemberRepository(adminClient),
     deviceResetRequestRepository: new DeviceResetRequestRepository(adminClient),
-    // Device sessions are deprecated
     userDeviceRepository: new UserDeviceRepository(adminClient),
     audit: logLicenseEvent,
   });
@@ -491,8 +490,9 @@ export async function approveOrgDeviceResetAsAdmin(orgId: string, actorUserId: s
 
 export async function rejectOrgDeviceResetAsAdmin(orgId: string, actorUserId: string, requestId: string) {
   const user = await authenticatedUser();
-  if (!(await isSuperAdmin(user))) {
-    throw new UnauthorizedRoleError({ userId: actorUserId, reason: 'Only super admin can reject device resets.' });
+  const isSuper = await isSuperAdmin(user);
+  if (!isSuper) {
+    await assertOrgAdminForManagement(orgId, actorUserId);
   }
   const request = await getOrgResetById(orgId, requestId);
   return rejectDeviceReset(request.id, actorUserId, {
@@ -754,9 +754,33 @@ export async function setSubscriptionSeatLimitAsSuperAdmin(subscriptionId: strin
   return subscription;
 }
 
+const VALID_TRANSITIONS: Record<SubscriptionStatus, SubscriptionStatus[]> = {
+  trialing: ['active', 'past_due', 'cancelled', 'expired'],
+  active: ['past_due', 'cancelled', 'expired'],
+  past_due: ['active', 'cancelled', 'expired'],
+  cancelled: ['active'],
+  expired: ['active', 'trialing'],
+};
+
 export async function changeSubscriptionStatusAsSuperAdmin(subscriptionId: string, status: SubscriptionStatus) {
   const parsedStatus = subscriptionStatusSchema.parse(status);
-  const subscription = await new OrgSubscriptionRepository(adminClient).changeStatus(subscriptionId, parsedStatus);
+  const repo = new OrgSubscriptionRepository(adminClient);
+  const current = await repo.getById(subscriptionId);
+  if (!current) {
+    throw new Error('Subscription not found.');
+  }
+
+  const currentStatus = current.status as SubscriptionStatus;
+  if (currentStatus === parsedStatus) {
+    return current;
+  }
+
+  const allowed = VALID_TRANSITIONS[currentStatus];
+  if (!allowed || !allowed.includes(parsedStatus)) {
+    throw new Error(`Invalid status transition from ${currentStatus} to ${parsedStatus}`);
+  }
+
+  const subscription = await repo.changeStatus(subscriptionId, parsedStatus);
   await logLicenseEvent({
     orgId: subscription.org_id,
     entityType: 'org_subscription',

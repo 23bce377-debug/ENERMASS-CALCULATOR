@@ -104,7 +104,16 @@ export const ProjectORM = {
       })
       .select()
       .single();
-    if (projectError) throw projectError;
+    if (projectError) {
+      console.error('[ProjectORM.create] Project insert failed:', JSON.stringify({
+        message: projectError?.message,
+        code: projectError?.code,
+        details: projectError?.details,
+        hint: projectError?.hint,
+        error: projectError,
+      }, null, 2));
+      throw projectError;
+    }
 
     return newProject;
   }

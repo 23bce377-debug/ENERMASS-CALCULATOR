@@ -221,15 +221,11 @@ export class OrgSubscriptionRepository extends RepositoryBase<'org_subscriptions
   async getActiveByOrgId(orgId: string): Promise<OrgSubscription | null> {
     uuidSchema.parse(orgId);
     const client = await this.client();
-    const now = new Date();
-    // Allow up to a 3-day grace window when querying active subscriptions from the DB
-    const graceCutoff = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await (client as any)
       .from('org_subscriptions')
       .select('*')
       .eq('org_id', orgId)
       .in('status', ['trialing', 'active', 'past_due'])
-      .or(`current_period_end.is.null,current_period_end.gte.${graceCutoff}`)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -461,6 +457,10 @@ export class SubscriptionPaymentRepository extends RepositoryBase<'subscription_
     super('subscription_payments', clientFactory);
   }
 
+  async listByOrgId(orgId: string): Promise<SubscriptionPayment[]> {
+    return super.listByOrgId(orgId);
+  }
+
   create(orgId: string, input: z.input<typeof paymentCreateSchema>) {
     uuidSchema.parse(orgId);
     return this.insert({ ...paymentCreateSchema.parse(input), org_id: orgId } as TableInsert<'subscription_payments'>);
@@ -496,6 +496,9 @@ const licenseEventSchema = z.object({
     'device_reset_requested',
     'device_reset_approved',
     'device_reset_rejected',
+    'password_reset_requested',
+    'password_reset_approved',
+    'password_reset_rejected',
     'feature_access_denied',
     'org_id_spoofed',
     'cross_org_attempt',
@@ -749,6 +752,16 @@ export class PasswordResetRequestRepository extends RepositoryBase<'password_res
       status: 'rejected',
       rejected_by: rejectedBy,
       rejected_at: new Date().toISOString(),
+    } as TableUpdate<'password_reset_requests'>) as Promise<PasswordResetRequest>;
+  }
+
+  /** Roll back a failed approval attempt — resets the request to pending. */
+  rollbackApproval(id: string): Promise<PasswordResetRequest> {
+    uuidSchema.parse(id);
+    return this.patch(id, {
+      status: 'pending_admin_approval',
+      approved_by: null,
+      approved_at: null,
     } as TableUpdate<'password_reset_requests'>) as Promise<PasswordResetRequest>;
   }
 }

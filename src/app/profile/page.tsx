@@ -177,6 +177,10 @@ export default function ProfilePage() {
     if (!newPw) { toast('Enter a new password', 'error'); return; }
     if (newPw !== confirmPw) { toast('Passwords do not match', 'error'); return; }
     if (newPw.length < 12) { toast('Password must be at least 12 characters long', 'error'); return; }
+    if (!/[A-Z]/.test(newPw)) { toast('Password must contain at least one uppercase letter', 'error'); return; }
+    if (!/[a-z]/.test(newPw)) { toast('Password must contain at least one lowercase letter', 'error'); return; }
+    if (!/[0-9]/.test(newPw)) { toast('Password must contain at least one number', 'error'); return; }
+    if (!/[^A-Za-z0-9]/.test(newPw)) { toast('Password must contain at least one special character', 'error'); return; }
 
     setChangingPassword(true);
     try {

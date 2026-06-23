@@ -10,7 +10,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 0, // Dynamic/transactional data defaults to 0 for real-time integrity
+            staleTime: 30 * 1000, // 30s default for transactional data
+            gcTime: 5 * 60 * 1000, // 5 min garbage collection
             refetchOnWindowFocus: false,
           },
         },

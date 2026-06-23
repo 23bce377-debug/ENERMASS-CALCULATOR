@@ -88,6 +88,7 @@ CREATE TABLE profiles (
   role        TEXT NOT NULL DEFAULT 'sales_exec',  -- 'owner', 'admin', 'sales_exec', 'viewer'
   phone       TEXT,
   is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+  is_super_admin BOOLEAN NOT NULL DEFAULT FALSE,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -1272,9 +1273,22 @@ ALTER TABLE eq_batteries           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE eq_mounting_structures  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE structure_weight_lookup ENABLE ROW LEVEL SECURITY;
 
--- Helper: get caller's org_id from JWT claim
-CREATE OR REPLACE FUNCTION auth_org_id() RETURNS UUID LANGUAGE sql STABLE AS $$
-  SELECT (auth.jwt() ->> 'org_id')::UUID
+-- Helper: get caller's org_id from JWT claim or profile
+CREATE OR REPLACE FUNCTION auth_org_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  WITH claims AS (
+    SELECT COALESCE(NULLIF(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb) AS jwt
+  )
+  SELECT COALESCE(
+    (SELECT p.org_id FROM public.profiles p WHERE p.id = auth.uid()),
+    NULLIF((SELECT jwt ->> 'org_id' FROM claims), '')::uuid,
+    NULLIF((SELECT jwt -> 'app_metadata' ->> 'org_id' FROM claims), '')::uuid
+  );
 $$;
 
 -- Helper: get caller's role

@@ -41,7 +41,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isPublicRoute = publicRoutes.has(pathname);
   const shouldBootstrapMasterData = useMemo(() => {
     const bootstrapPrefixes = [
-      '/calculator',
       '/systems',
       '/quotes',
       '/acquisition',

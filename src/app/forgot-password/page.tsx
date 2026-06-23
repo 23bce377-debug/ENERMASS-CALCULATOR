@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
                 <div>
                   <h3 className="text-base font-bold text-text-primary mb-1">Reset Your Password</h3>
                   <p className="text-sm text-text-muted leading-relaxed">
-                    Enter your email address. A password reset link will be sent to your email immediately.
+                    Enter your email address. A password reset request will be submitted to your organisation administrator for approval.
                   </p>
                 </div>
 
@@ -114,9 +114,9 @@ export default function ForgotPasswordPage() {
                   <CheckCircle size={32} className="text-green-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-text-primary mb-2">Email Sent</h3>
+                  <h3 className="text-lg font-bold text-text-primary mb-2">Request Submitted</h3>
                   <p className="text-sm text-text-muted leading-relaxed">
-                    If an account with this email exists, a password reset link has been sent to your email address.
+                    If an account with this email exists, your organisation administrator has been notified. Once approved, a password reset link will be sent to your email address.
                   </p>
                 </div>
                 <button

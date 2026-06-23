@@ -63,8 +63,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Invalid clientDataJSON structure.' }, { status: 400 });
     }
 
+    // Read the session nonce from cookie
+    let sessionNonce = '';
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)enermass_activation_session=([^;]*)/);
+      if (match) {
+        sessionNonce = match[1];
+      }
+    }
+
     const keyHash = hashActivationKey(body.key);
-    if (!verifyWebAuthnChallenge(challenge, keyHash)) {
+    if (!verifyWebAuthnChallenge(challenge, keyHash, sessionNonce)) {
       return NextResponse.json({ success: false, message: 'WebAuthn challenge expired or invalid.' }, { status: 400 });
     }
 
@@ -101,10 +111,20 @@ export async function POST(request: Request) {
       userId: result.userId,
       orgId: result.orgId,
       role: result.role,
-      deviceToken: result.deviceToken, // Return the secret key to be stored on device
       message: result.role === 'owner'
         ? 'Account created. You are the organisation administrator.'
         : 'Account created. You are a member of this organisation.',
+    });
+
+    // Clear the activation session cookie since it's consumed
+    response.cookies.set({
+      name: 'enermass_activation_session',
+      value: '',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 0,
     });
 
     // Set transient session device token cookie

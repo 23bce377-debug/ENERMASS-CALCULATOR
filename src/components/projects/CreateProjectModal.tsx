@@ -175,8 +175,17 @@ export function CreateProjectModal({
       onCreated(result.id);
       onClose();
     } catch (err: any) {
-      console.error('Failed to create project:', err);
-      toast(err.message || 'Failed to instantiate project', 'error');
+      const errorDetails = {
+        message: err?.message,
+        code: err?.code,
+        stack: err?.stack,
+        cause: err?.cause,
+        hint: err?.hint,
+        details: err?.details,
+        error: err,
+      };
+      console.error('Failed to create project:', JSON.stringify(errorDetails, null, 2));
+      toast(err?.message || 'Failed to instantiate project', 'error');
     }
   };
 

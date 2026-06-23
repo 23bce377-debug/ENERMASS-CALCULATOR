@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import z from 'zod';
 import type { ZodIssue } from 'zod';
+import { logLicenseEvent } from '@/lib/saas/services/licenseAuditService';
 import {
   assignPlanAsSuperAdmin,
   approveOrgDeviceResetAsAdmin,
@@ -260,7 +261,7 @@ export async function rejectPasswordResetAsSuperAdminAction(formData: FormData):
 
 export async function adminChangeUserPasswordAction(formData: FormData): Promise<void> {
   try {
-    await requireSuperAdminSession();
+    const session = await requireSuperAdminSession();
     const userId = value(formData, 'userId');
     const newPassword = value(formData, 'password');
 
@@ -270,6 +271,14 @@ export async function adminChangeUserPasswordAction(formData: FormData): Promise
 
     const { createAdminClient } = await import('@/lib/supabase/server');
     const adminClient = createAdminClient();
+
+    // Fetch user profile to get orgId for audit event
+    const { data: userProfile } = await adminClient
+      .from('profiles')
+      .select('org_id')
+      .eq('id', userId)
+      .maybeSingle();
+
     const { error } = await adminClient.auth.admin.updateUserById(userId, {
       password: newPassword,
     });
@@ -277,6 +286,17 @@ export async function adminChangeUserPasswordAction(formData: FormData): Promise
     if (error) {
       throw error;
     }
+
+    // Audit the password change
+    await logLicenseEvent({
+      orgId: userProfile?.org_id || '00000000-0000-0000-0000-000000000000',
+      userId,
+      entityType: 'profile',
+      entityId: userId,
+      eventType: 'role_changed',
+      actorUserId: session.user.id,
+      eventData: { action: 'admin_password_change' },
+    });
 
     revalidatePath('/super-admin/passwords');
     return;
@@ -287,7 +307,7 @@ export async function adminChangeUserPasswordAction(formData: FormData): Promise
 
 export async function adminChangeUserRoleAction(formData: FormData): Promise<void> {
   try {
-    await requireSuperAdminSession();
+    const session = await requireSuperAdminSession();
     const userId = value(formData, 'userId');
     const role = value(formData, 'role');
 
@@ -298,7 +318,20 @@ export async function adminChangeUserRoleAction(formData: FormData): Promise<voi
     const { createAdminClient } = await import('@/lib/supabase/server');
     const adminClient = createAdminClient();
 
-    // 1. Update the profile
+    // 1. Fetch current profile to get original role for rollback
+    const { data: originalProfile, error: getProfileError } = await adminClient
+      .from('profiles')
+      .select('role, org_id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (getProfileError || !originalProfile) {
+      throw new Error(`Failed to retrieve user profile: ${getProfileError?.message || 'Profile not found.'}`);
+    }
+
+    const originalRole = originalProfile.role;
+
+    // 2. Update the profile
     const { error: profileError } = await adminClient
       .from('profiles')
       .update({ role })
@@ -306,7 +339,7 @@ export async function adminChangeUserRoleAction(formData: FormData): Promise<voi
 
     if (profileError) throw profileError;
 
-    // 2. Update the organization member role
+    // 3. Update the organization member role
     const { error: memberError } = await adminClient
       .from('org_members')
       .update({ role })
@@ -316,17 +349,89 @@ export async function adminChangeUserRoleAction(formData: FormData): Promise<voi
       console.warn(`[adminChangeUserRoleAction] Failed to update org_members for user ${userId}:`, memberError.message);
     }
 
-    // 3. Update Supabase auth app_metadata
+    // 4. Update Supabase auth app_metadata and user_metadata
     const { error: authError } = await adminClient.auth.admin.updateUserById(userId, {
       app_metadata: { role },
+      user_metadata: { role },
     });
 
     if (authError) {
-      console.warn(`[adminChangeUserRoleAction] Failed to update auth app_metadata for user ${userId}:`, authError.message);
+      // Rollback database profile role and member role
+      await adminClient
+        .from('profiles')
+        .update({ role: originalRole })
+        .eq('id', userId)
+        .then(() => {}, () => {});
+      await adminClient
+        .from('org_members')
+        .update({ role: originalRole })
+        .eq('user_id', userId)
+        .then(() => {}, () => {});
+      throw new Error(`Failed to update auth app_metadata and user_metadata: ${authError.message}`);
     }
+
+    // 5. Log audit log event
+    await logLicenseEvent({
+      orgId: originalProfile.org_id || '00000000-0000-0000-0000-000000000000',
+      userId,
+      entityType: 'org_member',
+      entityId: userId,
+      eventType: 'role_changed',
+      actorUserId: session.user.id,
+      eventData: { role, previousRole: originalRole },
+    });
 
     revalidatePath('/super-admin/passwords');
     revalidatePath('/super-admin/orgs', 'layout');
+    return;
+  } catch (error) {
+    throw new Error(messageForError(error));
+  }
+}
+
+export async function updateOrgDetailsAction(formData: FormData): Promise<void> {
+  try {
+    await requireSuperAdminSession();
+    const orgId = value(formData, 'orgId');
+    if (!orgId) throw new Error('Org ID is required.');
+
+    const name = value(formData, 'name');
+    const address = value(formData, 'address') || null;
+    const city = value(formData, 'city') || null;
+    const state = value(formData, 'state') || null;
+    const pincode = value(formData, 'pincode') || null;
+    const phone = value(formData, 'phone') || null;
+    const email = value(formData, 'email') || null;
+    const gstin = value(formData, 'gstin') || null;
+    const website = value(formData, 'website') || null;
+    const quote_prefix = value(formData, 'quote_prefix') || 'QM';
+
+    if (!name) throw new Error('Organization name is required.');
+
+    const { createAdminClient } = await import('@/lib/supabase/server');
+    const adminClient = createAdminClient();
+
+    const { error } = await adminClient
+      .from('organisations')
+      .update({
+        name,
+        address,
+        city,
+        state,
+        pincode,
+        phone,
+        email,
+        gstin,
+        website,
+        quote_prefix,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orgId);
+
+    if (error) throw error;
+
+    revalidatePath(`/super-admin/orgs/${orgId}`);
+    revalidatePath('/super-admin/orgs');
     return;
   } catch (error) {
     throw new Error(messageForError(error));

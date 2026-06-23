@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS public.user_devices (
   first_seen_at timestamptz NOT NULL DEFAULT now(),
   last_seen_at timestamptz NOT NULL DEFAULT now(),
   revoked_at timestamptz,
+  device_secret_hash text,
   CONSTRAINT user_devices_status_check CHECK (status IN ('active', 'pending', 'revoked'))
 );
 
@@ -246,7 +247,8 @@ ALTER TABLE public.user_devices
   ADD COLUMN IF NOT EXISTS status text DEFAULT 'active',
   ADD COLUMN IF NOT EXISTS first_seen_at timestamptz DEFAULT now(),
   ADD COLUMN IF NOT EXISTS last_seen_at timestamptz DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS revoked_at timestamptz;
+  ADD COLUMN IF NOT EXISTS revoked_at timestamptz,
+  ADD COLUMN IF NOT EXISTS device_secret_hash text;
 
 ALTER TABLE public.device_sessions
   ADD COLUMN IF NOT EXISTS org_id uuid,

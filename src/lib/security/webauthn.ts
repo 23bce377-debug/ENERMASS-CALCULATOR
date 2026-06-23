@@ -21,10 +21,10 @@ export interface WebAuthnVerificationResult {
 /**
  * Generates an HMAC-signed challenge bound to a specific activation key hash.
  */
-export function generateWebAuthnChallenge(keyHash: string): string {
+export function generateWebAuthnChallenge(keyHash: string, sessionNonce: string = ''): string {
   const timestamp = Date.now();
   const randomBytes = crypto.randomBytes(16).toString('hex');
-  const payload = `${timestamp}:${keyHash}:${randomBytes}`;
+  const payload = `${timestamp}:${keyHash}:${sessionNonce}:${randomBytes}`;
   const hmac = crypto.createHmac('sha256', CHALLENGE_SECRET).update(payload).digest('hex');
   return Buffer.from(`${payload}:${hmac}`).toString('base64url');
 }
@@ -32,18 +32,44 @@ export function generateWebAuthnChallenge(keyHash: string): string {
 /**
  * Verifies the HMAC-signed challenge.
  */
-export function verifyWebAuthnChallenge(challenge: string, keyHash: string, maxAgeMs = 15 * 60 * 1000): boolean {
+export function verifyWebAuthnChallenge(
+  challenge: string,
+  keyHash: string,
+  sessionNonce: string = '',
+  maxAgeMs = 15 * 60 * 1000
+): boolean {
   try {
     const decoded = Buffer.from(challenge, 'base64url').toString('utf8');
-    const [timestampStr, originalKeyHash, randomBytes, hmacSignature] = decoded.split(':');
-    if (!timestampStr || !originalKeyHash || !randomBytes || !hmacSignature) return false;
+    const parts = decoded.split(':');
+    if (parts.length < 4) return false;
 
+    const timestampStr = parts[0];
+    const originalKeyHash = parts[1];
+    let originalSessionNonce = '';
+    let randomBytes = '';
+    let hmacSignature = '';
+
+    if (parts.length === 5) {
+      originalSessionNonce = parts[2];
+      randomBytes = parts[3];
+      hmacSignature = parts[4];
+    } else {
+      // Backward compatibility for legacy challenges
+      randomBytes = parts[2];
+      hmacSignature = parts[3];
+    }
+
+    if (!timestampStr || !originalKeyHash || !randomBytes || !hmacSignature) return false;
     if (originalKeyHash !== keyHash) return false;
+    if (originalSessionNonce !== sessionNonce) return false;
 
     const timestamp = parseInt(timestampStr, 10);
     if (isNaN(timestamp) || Date.now() - timestamp > maxAgeMs) return false;
 
-    const payload = `${timestampStr}:${originalKeyHash}:${randomBytes}`;
+    const payload = parts.length === 5
+      ? `${timestampStr}:${originalKeyHash}:${originalSessionNonce}:${randomBytes}`
+      : `${timestampStr}:${originalKeyHash}:${randomBytes}`;
+
     const expectedHmac = crypto.createHmac('sha256', CHALLENGE_SECRET).update(payload).digest('hex');
     return crypto.timingSafeEqual(Buffer.from(hmacSignature), Buffer.from(expectedHmac));
   } catch {

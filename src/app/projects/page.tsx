@@ -50,21 +50,28 @@ export default function ProjectsPage() {
   const confirm = useConfirm();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUserId(session.user.id);
-        supabase.from('profiles').select('org_id').eq('id', session.user.id).single()
-          .then(({ data }: any) => {
-            if (data?.org_id) {
-              setOrgId(data.org_id);
-              supabase.from('profiles').select('id, full_name').eq('org_id', data.org_id)
-                .then(({ data: profList }) => {
-                  setProfiles(profList || []);
-                });
-            }
-          });
+    async function loadAuthAndProfiles() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      setUserId(session.user.id);
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('org_id')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (profile?.org_id) {
+        setOrgId(profile.org_id);
+        const { data: profList } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('org_id', profile.org_id);
+        setProfiles(profList || []);
       }
-    });
+    }
+    loadAuthAndProfiles();
   }, []);
 
   useEffect(() => {

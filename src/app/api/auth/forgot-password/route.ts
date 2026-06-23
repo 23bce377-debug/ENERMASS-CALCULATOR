@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit, rateLimitResponse, requestIpForRateLimit } from '@/lib/security/rateLimit';
-import { createAdminClient } from '@/lib/supabase/server';
+import { requestPasswordReset } from '@/lib/saas/services/passwordResetService';
 
 /**
  * POST /api/auth/forgot-password
@@ -21,25 +21,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Email is required.' }, { status: 400 });
     }
 
-    const adminClient = createAdminClient();
-    const redirectTo = `${new URL(request.url).origin}/profile?recovery=true`;
-    
-    const { error: emailError } = await adminClient.auth.resetPasswordForEmail(email, {
-      redirectTo,
+    const res = await requestPasswordReset(email, {
+      ipAddress: ip,
+      userAgent: request.headers.get('user-agent'),
     });
-
-    if (emailError) {
-      console.error('[ForgotPassword] Reset password error:', emailError.message);
-    }
 
     return NextResponse.json({
       success: true,
-      message: 'If an account with this email exists, a password reset link has been sent.',
+      message: res.success ? res.message : 'If an account with this email exists, your admin has been notified.',
     });
   } catch (err) {
     return NextResponse.json({
       success: true,
-      message: 'If an account with this email exists, a password reset link has been sent.',
+      message: 'If an account with this email exists, your admin has been notified.',
     });
   }
 }

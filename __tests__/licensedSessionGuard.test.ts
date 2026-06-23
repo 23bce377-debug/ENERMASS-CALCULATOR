@@ -52,6 +52,7 @@ function user(overrides: Partial<User> = {}): User {
     aud: 'authenticated',
     role: 'authenticated',
     email: 'user@example.com',
+    email_confirmed_at: '2026-06-01T00:00:00.000Z',
     app_metadata: { active_org_id: orgId },
     user_metadata: {},
     created_at: '2026-06-01T00:00:00.000Z',

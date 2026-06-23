@@ -36,6 +36,10 @@ function DeviceBlockedContent() {
 
   const title = useMemo(() => reasonCopy(reason), [reason]);
 
+  const regDeviceName = searchParams.get('deviceName') || searchParams.get('device_name');
+  const regBrowser = searchParams.get('browser');
+  const regOs = searchParams.get('os');
+
   return (
     <main className="min-h-screen bg-background flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-2xl animate-fade-in">
@@ -76,9 +80,17 @@ function DeviceBlockedContent() {
                   <ShieldCheck size={17} className="text-accent" />
                   Registered device
                 </div>
-                <p className="mt-3 text-sm text-text-secondary">
-                  Existing registered device details are available to your company admin.
-                </p>
+                {regDeviceName ? (
+                  <div className="mt-3 space-y-2 text-sm text-text-secondary">
+                    <p><span className="text-text-muted">Device:</span> {regDeviceName}</p>
+                    <p><span className="text-text-muted">Browser:</span> {regBrowser ?? 'Unknown'}</p>
+                    <p><span className="text-text-muted">OS:</span> {regOs ?? 'Unknown'}</p>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-text-secondary">
+                    Existing registered device details are available to your company admin.
+                  </p>
+                )}
               </section>
             </div>
 

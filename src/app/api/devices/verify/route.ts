@@ -70,43 +70,7 @@ export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
     const userDeviceRepository = new UserDeviceRepository();
     const activeDevice = await userDeviceRepository.getActiveForUser(context.session.user.id);
 
-    // Bypass check for super admins
-    let isSuperAdmin = false;
-    try {
-      if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-        const adminClient = createAdminClient();
-        const { data: profile } = await adminClient
-          .from('profiles')
-          .select('is_super_admin, role')
-          .eq('id', context.session.user.id)
-          .maybeSingle();
-
-        isSuperAdmin = profile?.is_super_admin === true || profile?.role === 'superadmin' || profile?.role === 'super_admin';
-      }
-    } catch (err) {
-      console.warn('[DeviceVerify] Super admin check skipped:', err);
-    }
-
-    if (isSuperAdmin) {
-      const tokenToUse = body.device_token || 'superadmin-bypass-token';
-      const response = NextResponse.json({
-        device: {
-          id: activeDevice?.id || '00000000-0000-0000-0000-000000000000',
-          status: 'active',
-        },
-        deviceToken: tokenToUse,
-      });
-
-      response.cookies.set({
-        name: DEVICE_TOKEN_COOKIE_NAME,
-        value: tokenToUse,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        path: '/',
-      });
-      return response;
-    }
+    // Super admins are subject to normal device binding checks (remediation)
     
     let deviceToken = '';
     const cookieHeader = request.headers.get('cookie');
@@ -152,7 +116,6 @@ export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
           id: device.id,
           status: device.status,
         },
-        deviceToken: newToken, // Return token to be stored on device
       });
 
       response.cookies.set({
@@ -196,7 +159,7 @@ export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
         try {
           const challenge = JSON.parse(body.challenge_str);
           const timeDiff = Math.abs(Date.now() - Number(challenge.timestamp));
-          if (!isNaN(timeDiff) && timeDiff <= 5 * 60 * 1000) {
+          if (!isNaN(timeDiff) && timeDiff <= 60 * 1000) {
             // Verify ECDSA signature
             const isSigValid = verifySignature(storedPubKey, body.challenge_str, body.signature);
             // Verify fingerprint hash
@@ -237,7 +200,6 @@ export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
             id: activeDevice.id,
             status: activeDevice.status,
           },
-          deviceToken: tokenToUse, // Return token to store on device
         });
 
         response.cookies.set({

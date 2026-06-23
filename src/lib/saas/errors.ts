@@ -75,11 +75,23 @@ const errorMetadata = {
     userMessage: 'Your organization membership is missing or disabled.',
     internalMessage: 'Membership lookup failed or returned a non-active status for the requested org.',
   },
+  EmailNotConfirmedError: {
+    statusCode: 403,
+    redirectTo: '/email-not-confirmed',
+    userMessage: 'Please confirm your email address before continuing.',
+    internalMessage: 'Access denied because the user email has not been confirmed.',
+  },
 } satisfies Record<string, SaasErrorMetadata>;
 
 class DefinedSaasError extends SaasError {
   constructor(code: keyof typeof errorMetadata, cause?: unknown) {
     super(code, errorMetadata[code], cause);
+  }
+}
+
+export class EmailNotConfirmedError extends DefinedSaasError {
+  constructor(cause?: unknown) {
+    super('EmailNotConfirmedError', cause);
   }
 }
 
