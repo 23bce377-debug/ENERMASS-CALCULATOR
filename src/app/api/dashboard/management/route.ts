@@ -57,5 +57,5 @@ export const GET = withLicensedApiRoute(async (request, context) => {
   }
 }, {
   feature: 'erp',
-  roles: ['owner', 'admin', 'manager'],
+  roles: ['owner', 'admin', 'manager', 'staff'],
 });

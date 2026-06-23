@@ -5,7 +5,7 @@ import { requireLicensedPage } from '@/lib/auth/requireLicensedPage';
 export default async function DashboardsLayout({ children }: { children: ReactNode }) {
   await requireLicensedPage({
     feature: 'reports',
-    roles: ['owner', 'admin', 'manager'],
+    roles: ['owner', 'admin', 'manager', 'staff'],
   });
 
   return <>{children}</>;

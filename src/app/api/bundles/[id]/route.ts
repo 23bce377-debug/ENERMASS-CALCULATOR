@@ -36,7 +36,7 @@ export const GET = withLicensedApiRoute<BundleRouteContext>(async (_request, con
   }
 }, {
   feature: 'inventory',
-  roles: ['owner', 'admin', 'manager'],
+  roles: ['owner', 'admin', 'manager', 'staff'],
 });
 
 export const PUT = withLicensedApiRoute<BundleRouteContext>(async (request, context) => {
@@ -51,7 +51,7 @@ export const PUT = withLicensedApiRoute<BundleRouteContext>(async (request, cont
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    if (role !== 'owner' && role !== 'admin') {
+    if (role !== 'owner' && role !== 'admin' && role !== 'manager' && role !== 'staff') {
       return NextResponse.json({ error: 'Forbidden: Insufficient role' }, { status: 403 });
     }
 
@@ -84,7 +84,7 @@ export const PUT = withLicensedApiRoute<BundleRouteContext>(async (request, cont
   }
 }, {
   feature: 'inventory',
-  roles: ['owner', 'admin'],
+  roles: ['owner', 'admin', 'manager', 'staff'],
 });
 
 export const DELETE = withLicensedApiRoute<BundleRouteContext>(async (_request, context) => {
@@ -99,7 +99,7 @@ export const DELETE = withLicensedApiRoute<BundleRouteContext>(async (_request, 
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    if (role !== 'owner' && role !== 'admin') {
+    if (role !== 'owner' && role !== 'admin' && role !== 'manager' && role !== 'staff') {
       return NextResponse.json({ error: 'Forbidden: Insufficient role' }, { status: 403 });
     }
 
@@ -111,5 +111,5 @@ export const DELETE = withLicensedApiRoute<BundleRouteContext>(async (_request, 
   }
 }, {
   feature: 'inventory',
-  roles: ['owner', 'admin'],
+  roles: ['owner', 'admin', 'manager', 'staff'],
 });

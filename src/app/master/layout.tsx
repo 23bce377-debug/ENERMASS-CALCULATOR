@@ -6,7 +6,7 @@ import { MasterTabs } from './MasterTabs';
 export default async function MastersLayout({ children }: { children: ReactNode }) {
   await requireLicensedPage({
     feature: 'master_data',
-    roles: ['owner', 'admin'],
+    roles: ['owner', 'admin', 'manager', 'staff'],
   });
 
   return (

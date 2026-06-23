@@ -103,7 +103,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
   }
 }, {
   feature: 'inventory',
-  roles: ['owner', 'admin', 'manager'],
+  roles: ['owner', 'admin', 'manager', 'staff'],
 });
 
 function formatINR(value: number): string {

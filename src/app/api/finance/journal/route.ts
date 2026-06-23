@@ -38,5 +38,5 @@ export const POST = withLicensedApiRoute(async (request, context) => {
   }
 }, {
   feature: 'erp',
-  roles: ['owner', 'admin'],
+  roles: ['owner', 'admin', 'manager', 'staff'],
 });

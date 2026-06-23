@@ -31,7 +31,7 @@ export const GET = withLicensedApiRoute(async (_request, context) => {
   return NextResponse.json(presets);
 }, {
   feature: 'inventory',
-  roles: ['owner', 'admin', 'manager'],
+  roles: ['owner', 'admin', 'manager', 'staff'],
 });
 
 export const POST = withLicensedApiRoute(async (request, context) => {
@@ -64,5 +64,5 @@ export const POST = withLicensedApiRoute(async (request, context) => {
   return NextResponse.json(newPreset, { status: 201 });
 }, {
   feature: 'inventory',
-  roles: ['owner', 'admin'],
+  roles: ['owner', 'admin', 'manager', 'staff'],
 });

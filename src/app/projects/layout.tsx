@@ -5,7 +5,7 @@ import { requireLicensedPage } from '@/lib/auth/requireLicensedPage';
 export default async function ProjectsLayout({ children }: { children: ReactNode }) {
   await requireLicensedPage({
     feature: 'erp',
-    roles: ['owner', 'admin', 'manager'],
+    roles: ['owner', 'admin', 'manager', 'staff'],
   });
 
   return <>{children}</>;

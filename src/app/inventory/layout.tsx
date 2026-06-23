@@ -5,7 +5,7 @@ import { requireLicensedPage } from '@/lib/auth/requireLicensedPage';
 export default async function InventoryLayout({ children }: { children: ReactNode }) {
   await requireLicensedPage({
     feature: 'inventory',
-    roles: ['owner', 'admin', 'manager'],
+    roles: ['owner', 'admin', 'manager', 'staff'],
   });
 
   return <>{children}</>;
