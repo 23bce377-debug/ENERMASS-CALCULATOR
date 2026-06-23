@@ -39,16 +39,16 @@ export const GET = withLicensedApiRoute(
                 supabase
                   .from('eq_panels')
                   .select(
-                    'id, name, brand, watt_peak, voc, isc, dimensions, weight_kg, price, is_active, created_at'
+                    'id, brand, model, wattage_w, panel_type, selling_price, gst_pct, is_active, created_at'
                   )
                   .eq('is_active', true)
-                  .order('watt_peak', { ascending: true })
+                  .order('wattage_w', { ascending: true })
               ),
               safeQuery(
                 supabase
                   .from('eq_inverters')
                   .select(
-                    'id, name, brand, capacity_kw, type, phases, efficiency, price, is_active, created_at'
+                    'id, brand, model, capacity_kw, inverter_type, phases, selling_price, gst_pct, is_active, created_at'
                   )
                   .eq('is_active', true)
                   .order('capacity_kw', { ascending: true })
@@ -57,26 +57,26 @@ export const GET = withLicensedApiRoute(
                 supabase
                   .from('eq_batteries')
                   .select(
-                    'id, name, brand, capacity_kwh, chemistry, voltage, price, is_active, created_at'
+                    'id, brand, model, capacity_kwh, chemistry, dod_pct, selling_price, gst_pct, is_active, created_at'
                   )
                   .eq('is_active', true)
               ),
               safeQuery(
                 supabase
                   .from('eq_meters')
-                  .select('id, name, brand, type, price, is_active')
+                  .select('id, brand, model, phases, selling_price, gst_pct, is_active')
                   .eq('is_active', true)
               ),
               safeQuery(
                 supabase
                   .from('eq_lightning_arresters')
-                  .select('id, name, brand, type, price, is_active')
+                  .select('id, brand, model, selling_price, gst_pct, is_active')
                   .eq('is_active', true)
               ),
               safeQuery(
                 supabase
                   .from('eq_communication_devices')
-                  .select('id, name, brand, type, price, is_active')
+                  .select('id, brand, model, selling_price, gst_pct, is_active')
                   .eq('is_active', true)
               ),
             ]);

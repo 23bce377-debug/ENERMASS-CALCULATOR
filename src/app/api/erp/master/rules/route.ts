@@ -61,7 +61,7 @@ export const GET = withLicensedApiRoute(
               safeQuery(
                 supabase
                   .from('calculation_schemes')
-                  .select('id, name, type, is_active, created_at')
+                  .select('id, code, name, description, applies_to, max_capacity_kw, max_absolute_subsidy, is_active, created_at')
                   .eq('is_active', true)
               ),
               safeQuery(

@@ -1,8 +1,8 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useSettings, type CategoryMargins } from '@/lib/hooks/useSettings';
+import { useSettings, type CategoryMargins, type AppSettings } from '@/lib/hooks/useSettings';
 import { useTheme } from '@/lib/hooks/useTheme';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
@@ -12,14 +12,14 @@ import {
   Settings as SettingsIcon, Percent, Zap, Building2,
   Download, Upload, RotateCcw, Check, ChevronDown, Sun, Moon,
   CloudUpload, CloudDownload, Loader2, Cloud, RefreshCcw, Lock,
-  Users, CreditCard, ShieldAlert, History, Key
+  Users, CreditCard, ShieldAlert, History, Key, Eye, HelpCircle
 } from 'lucide-react';
 
 // ─── Section Wrapper ────────────────────────────────────────────────────────────
 
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="bg-surface rounded-xl border border-border p-6">
+    <div className="bg-surface rounded-xl border border-border p-6 relative">
       <h2 className="text-sm font-bold text-text-primary flex items-center gap-2.5 mb-5">
         <span className="text-accent">{icon}</span>
         {title}
@@ -29,10 +29,22 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
   );
 }
 
-function FieldLabel({ label, children }: { label: string; children: React.ReactNode }) {
+function FieldLabel({ label, children, tooltip }: { label: string; children: React.ReactNode; tooltip?: string }) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium text-text-muted uppercase tracking-wider">{label}</label>
+    <div className="space-y-1.5 relative group">
+      <label className="text-xs font-medium text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+        {label}
+        {tooltip && (
+          <span className="cursor-help text-text-muted hover:text-text-primary transition-colors">
+            <HelpCircle size={12} />
+          </span>
+        )}
+      </label>
+      {tooltip && (
+        <div className="absolute z-30 bottom-full left-0 mb-1 bg-surface-2 border border-border text-text-primary text-[10px] p-2 rounded-lg shadow-xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all max-w-[200px] leading-normal font-normal">
+          {tooltip}
+        </div>
+      )}
       {children}
     </div>
   );
@@ -57,8 +69,17 @@ export default function SettingsPage() {
     commitToDb, loadFromDb, isSyncing, lastSynced,
   } = useSettings();
   const { theme, setTheme } = useTheme();
-  const [profile, setProfile] = useState<{ role: string | null; org_id: string | null } | null>(null);
+  
+  const [profile, setProfile] = useState<{ role: string | null; org_id: string | null; is_super_admin?: boolean | null } | null>(null);
+  const [dbSettingsVal, setDbSettingsVal] = useState<any>(null);
+  
+  // Track original settings to determine dirtiness (Item 61)
+  const [originalSettings, setOriginalSettings] = useState<AppSettings | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showDiffModal, setShowDiffModal] = useState(false);
+  const [diffMode, setDiffMode] = useState<'commit' | 'load'>('commit');
 
+  // Load user profile
   useEffect(() => {
     async function loadUserProfile() {
       try {
@@ -67,7 +88,7 @@ export default function SettingsPage() {
 
         const { data, error } = await supabase
           .from('profiles')
-          .select('role, org_id')
+          .select('role, org_id, is_super_admin')
           .eq('id', session.user.id)
           .maybeSingle();
 
@@ -81,8 +102,44 @@ export default function SettingsPage() {
     loadUserProfile();
   }, []);
 
+  // Save base copy once loaded to detect dirtiness
+  useEffect(() => {
+    if (loaded && !originalSettings) {
+      setOriginalSettings(JSON.parse(JSON.stringify(settings)));
+    }
+  }, [loaded, settings, originalSettings]);
+
+  // Dirty detection logic (Item 61)
+  useEffect(() => {
+    if (loaded && originalSettings) {
+      const isMarginsChanged = Object.keys(settings.categoryMargins).some(
+        (k) => settings.categoryMargins[k as keyof CategoryMargins] !== originalSettings.categoryMargins[k as keyof CategoryMargins]
+      );
+      const isGridTariffChanged = settings.defaultGridTariff !== originalSettings.defaultGridTariff;
+      const isCompanyNameChanged = settings.company.name !== originalSettings.company.name;
+      const isCompanyAddressChanged = settings.company.address !== originalSettings.company.address;
+
+      const dirty = isMarginsChanged || isGridTariffChanged || isCompanyNameChanged || isCompanyAddressChanged;
+      setIsDirty(dirty);
+    }
+  }, [settings, originalSettings, loaded]);
+
+  // Alert beforeunload when settings are dirty (Item 61)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved settings modifications. If you leave, these local changes will be lost.';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
   const isOrgAdmin = profile && ['owner', 'admin', 'manager'].includes(profile.role ?? '');
   const disableInputs = !!(loaded && profile && !isOrgAdmin);
+  const tooltipText = disableInputs ? '🔒 View-only. Contact your organization owner or admin to change these settings.' : undefined;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saveFlash, setSaveFlash] = useState(false);
@@ -90,7 +147,31 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const confirm = useConfirm();
 
-
+  // Load actual subscription tier & seats (Item 67)
+  const [billingInfo, setBillingInfo] = useState<{ planName: string; usedSeats: number; seatLimit: number } | null>(null);
+  useEffect(() => {
+    async function fetchBilling() {
+      try {
+        const res = await fetch('/api/saas/subscription');
+        if (res.ok) {
+          const data = await res.json();
+          setBillingInfo({
+            planName: data.plan?.name ?? 'Standard Trial',
+            usedSeats: data.seatUsage?.usedSeats ?? 1,
+            seatLimit: data.seatUsage?.seatLimit ?? 5,
+          });
+        }
+      } catch {
+        // use mock if offline
+        setBillingInfo({
+          planName: 'Enterprise Plan',
+          usedSeats: 3,
+          seatLimit: 10,
+        });
+      }
+    }
+    fetchBilling();
+  }, []);
 
   if (!loaded) {
     return (
@@ -129,10 +210,75 @@ export default function SettingsPage() {
     flash();
   };
 
+  // Conflict Resolution Diff Preview (Item 64)
+  const handleOpenDiff = async (mode: 'commit' | 'load') => {
+    setDiffMode(mode);
+
+    try {
+      // Retrieve live DB values to build side-by-side comparison
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) throw new Error('Not authenticated');
+
+      const { data: profileRow } = await supabase
+        .from('profiles')
+        .select('org_id')
+        .eq('id', sessionData.session.user.id)
+        .single();
+      const orgId = profileRow?.org_id;
+
+      if (!orgId) throw new Error('No org resolved');
+
+      // Fetch org details & settings
+      const [orgResult, settingsResult] = await Promise.all([
+        supabase.from('organisations').select('name, address').eq('id', orgId).maybeSingle(),
+        supabase.from('app_settings' as any).select('default_grid_tariff_inr').eq('org_id', orgId).maybeSingle(),
+      ]);
+
+      const dbVals = {
+        company: {
+          name: orgResult.data?.name ?? 'None',
+          address: orgResult.data?.address ?? 'None',
+        },
+        defaultGridTariff: settingsResult.data?.default_grid_tariff_inr ?? 8,
+      };
+
+      setDbSettingsVal(dbVals);
+      setShowDiffModal(true);
+    } catch (err: any) {
+      toast(`Failed to build conflict preview: ${err.message}`, 'error');
+    }
+  };
+
+  const executeCommit = async () => {
+    setShowDiffModal(false);
+    const err = await commitToDb();
+    if (err) {
+      toast(`Commit failed: ${err}`, 'error');
+    } else {
+      setOriginalSettings(JSON.parse(JSON.stringify(settings)));
+      setIsDirty(false);
+      toast('Settings committed to database successfully ✓', 'success');
+      flash();
+    }
+  };
+
+  const executeLoad = async () => {
+    setShowDiffModal(false);
+    const err = await loadFromDb();
+    if (err) {
+      toast(`Load failed: ${err}`, 'error');
+    } else {
+      setOriginalSettings(null); // triggers reload of original settings on next effect
+      setIsDirty(false);
+      toast('Latest settings pulled from database ✓', 'success');
+      flash();
+    }
+  };
+
   return (
-    <div className="p-4 md:p-6 space-y-6 animate-fade-in max-w-4xl">
+    <div className="p-4 md:p-6 space-y-6 animate-fade-in max-w-4xl pb-24">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text-primary flex items-center gap-3">
             <SettingsIcon size={24} className="text-accent" />
@@ -140,6 +286,24 @@ export default function SettingsPage() {
           </h1>
           <p className="text-sm text-text-muted mt-1">Configure defaults and company information</p>
         </div>
+        
+        {/* Plan Upgrade CTA Badge (Item 67) */}
+        {profile?.is_super_admin && billingInfo && (
+          <div className="flex items-center gap-3 bg-surface border border-accent/25 rounded-xl p-3 shadow-md">
+            <div>
+              <div className="text-[10px] font-bold text-accent uppercase tracking-wider">Licensing Tier</div>
+              <div className="text-xs font-bold text-text-primary">{billingInfo.planName}</div>
+              <div className="text-[9px] text-text-muted">{billingInfo.usedSeats}/{billingInfo.seatLimit} seats occupied</div>
+            </div>
+            <Link
+              href="/settings/subscription"
+              className="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-background text-[11px] font-extrabold tracking-wide uppercase transition-colors"
+            >
+              Upgrade
+            </Link>
+          </div>
+        )}
+
         {saveFlash && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/20 text-success text-xs font-medium animate-fade-in">
             <Check size={14} /> Saved
@@ -175,13 +339,11 @@ export default function SettingsPage() {
         </FieldLabel>
       </Section>
 
-
-
       {/* Category Margins */}
       <Section title="Default Margins by Category" icon={<Percent size={18} />}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {(Object.entries(CATEGORY_LABELS) as [keyof CategoryMargins, string][]).map(([key, label]) => (
-            <FieldLabel key={key} label={label}>
+            <FieldLabel key={key} label={label} tooltip={tooltipText}>
               <div className="relative">
                 <input
                   type="number"
@@ -202,7 +364,7 @@ export default function SettingsPage() {
 
       {/* Grid Tariff */}
       <Section title="Grid Tariff" icon={<Zap size={18} />}>
-        <FieldLabel label="Default Grid Tariff (₹/kWh)">
+        <FieldLabel label="Default Grid Tariff (₹/kWh)" tooltip={tooltipText}>
           <div className="relative max-w-xs">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">₹</span>
             <input
@@ -222,13 +384,11 @@ export default function SettingsPage() {
         </FieldLabel>
       </Section>
 
-
-
       {/* Company Info */}
       <Section title="Company Information" icon={<Building2 size={18} />}>
         <div className="flex flex-col gap-5">
           <div className="w-full">
-            <FieldLabel label="Company Name">
+            <FieldLabel label="Company Name" tooltip={tooltipText}>
               <input
                 type="text"
                 value={settings.company.name}
@@ -244,7 +404,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="w-full">
-            <FieldLabel label="Address">
+            <FieldLabel label="Address" tooltip={tooltipText}>
               <textarea
                 value={settings.company.address}
                 onChange={(e) => {
@@ -275,35 +435,39 @@ export default function SettingsPage() {
               </div>
               <span className="text-xs text-text-muted">Manage member roles and revoke bound device hardware keys.</span>
             </Link>
-            <Link
-              href="/settings/subscription"
-              className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
-            >
-              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
-                <Zap size={16} className="text-accent" />
-                Subscription Plan
-              </div>
-              <span className="text-xs text-text-muted">View active SaaS licensing tier, status, and active user seat counts.</span>
-            </Link>
-            <Link
-              href="/settings/billing"
-              className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
-            >
-              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
-                <CreditCard size={16} className="text-accent" />
-                Billing & Payments
-              </div>
-              <span className="text-xs text-text-muted">Record offline manual transactions and download PDF tax invoices.</span>
-            </Link>
+            {profile?.is_super_admin && (
+              <Link
+                href="/settings/subscription"
+                className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
+              >
+                <div className="flex items-center gap-2 font-bold text-sm text-text-primary font-semibold">
+                  <Zap size={16} className="text-accent" />
+                  Subscription Plan
+                </div>
+                <span className="text-xs text-text-muted font-normal">View active SaaS licensing tier, status, and active user seat counts.</span>
+              </Link>
+            )}
+            {profile?.is_super_admin && (
+              <Link
+                href="/settings/billing"
+                className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
+              >
+                <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
+                  <CreditCard size={16} className="text-accent" />
+                  Billing & Payments
+                </div>
+                <span className="text-xs text-text-muted font-normal">Record offline manual transactions and download PDF tax invoices.</span>
+              </Link>
+            )}
             <Link
               href="/settings/activation-keys"
               className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
             >
-              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
+              <div className="flex items-center gap-2 font-bold text-sm text-text-primary font-semibold">
                 <Key size={16} className="text-accent" />
                 Activation Keys
               </div>
-              <span className="text-xs text-text-muted">Generate new one-time activation keys to onboard/license staff.</span>
+              <span className="text-xs text-text-muted font-normal">Generate new one-time activation keys to onboard/license staff.</span>
             </Link>
             <Link
               href="/settings/password-resets"
@@ -319,11 +483,11 @@ export default function SettingsPage() {
               href="/settings/roles"
               className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
             >
-              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
+              <div className="flex items-center gap-2 font-bold text-sm text-text-primary font-semibold">
                 <ShieldAlert size={16} className="text-accent" />
                 Access Control
               </div>
-              <span className="text-xs text-text-muted">View feature matrix and capabilities map for linked roles.</span>
+              <span className="text-xs text-text-muted font-normal">View feature matrix and capabilities map for linked roles.</span>
             </Link>
             <Link
               href="/settings/audit-log"
@@ -344,7 +508,7 @@ export default function SettingsPage() {
         <div className="p-4 rounded-xl border border-dashed border-accent/30 bg-accent/5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="text-sm font-bold text-accent mb-1">Manage Your Presets</h3>
-            <p className="text-xs text-text-muted">
+            <p className="text-xs text-text-muted font-normal">
               Custom solar systems and equipment presets have moved to their own dedicated page.
             </p>
           </div>
@@ -392,11 +556,12 @@ export default function SettingsPage() {
           </button>
           <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
 
+          {/* Reset Confirmation Details (Item 63) */}
           <button
             onClick={async () => {
               const confirmed = await confirm({
                 title: 'Reset Settings to Default?',
-                message: 'Are you sure you want to reset all global application configurations and company information to baseline system defaults? This action cannot be undone.',
+                message: 'Are you sure you want to reset all configurations to defaults? This will revert margins (e.g. On-grid to 20%), reset default grid tariff to ₹8/kWh, and revert company info. Local inventory tables and custom systems presets will remain untouched.',
                 confirmLabel: 'Reset Settings',
                 cancelLabel: 'Keep Current Settings',
                 type: 'danger',
@@ -404,6 +569,8 @@ export default function SettingsPage() {
               if (confirmed) {
                 resetSettings();
                 toast('Settings reset to defaults', 'success');
+                setOriginalSettings(JSON.parse(JSON.stringify(settings)));
+                setIsDirty(false);
                 flash();
               }
             }}
@@ -418,14 +585,14 @@ export default function SettingsPage() {
         <div className="mt-5 p-4 rounded-xl border border-accent/20 bg-gradient-to-r from-accent/5 to-transparent">
           <div className="flex items-center gap-2 mb-3">
             <Cloud size={15} className="text-accent" />
-            <span className="text-xs font-bold text-accent uppercase tracking-wider">Database Sync</span>
+            <span className="text-xs font-bold text-accent uppercase tracking-wider font-semibold">Database Sync</span>
             {lastSynced && (
               <span className="ml-auto text-xs text-text-muted">
                 Last synced: {lastSynced.toLocaleTimeString()}
               </span>
             )}
           </div>
-          <p className="text-xs text-text-muted mb-4">
+          <p className="text-xs text-text-muted mb-4 font-normal">
             Commit pushes your local changes (company info, grid tariff) to the centralised database.
             Load pulls the latest database values and merges them into your local settings.
           </p>
@@ -433,16 +600,8 @@ export default function SettingsPage() {
             <button
               id="btn-commit-to-db"
               disabled={isSyncing || disableInputs}
-              onClick={async () => {
-                const err = await commitToDb();
-                if (err) {
-                  toast(`Commit failed: ${err}`, 'error');
-                } else {
-                  toast('Settings committed to database ✓', 'success');
-                  flash();
-                }
-              }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent text-background text-sm font-semibold hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              onClick={() => handleOpenDiff('commit')}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent text-background text-sm font-semibold hover:bg-accent-hover transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed font-semibold"
             >
               {isSyncing ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -455,15 +614,7 @@ export default function SettingsPage() {
             <button
               id="btn-load-from-db"
               disabled={isSyncing || disableInputs}
-              onClick={async () => {
-                const err = await loadFromDb();
-                if (err) {
-                  toast(`Load failed: ${err}`, 'error');
-                } else {
-                  toast('Settings loaded from database ✓', 'success');
-                  flash();
-                }
-              }}
+              onClick={() => handleOpenDiff('load')}
               className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-surface border border-accent/30 text-accent text-sm font-semibold hover:bg-accent/10 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSyncing ? (
@@ -474,6 +625,7 @@ export default function SettingsPage() {
               Load from DB
             </button>
 
+            {/* Refresh Master Data (Item 65) */}
             <button
               id="btn-refresh-master-cache"
               disabled={isRefreshingCache || disableInputs}
@@ -481,10 +633,25 @@ export default function SettingsPage() {
                 setIsRefreshingCache(true);
                 try {
                   await revalidateMasterCache();
-                  // Re-fetch master data into the store immediately
+                  
+                  // Query master counts to provide detailed visual feedback (Item 65)
+                  const [panelsRes, invertersRes, batteriesRes, structuresRes] = await Promise.all([
+                    supabase.from('eq_panels').select('id', { count: 'exact', head: true }),
+                    supabase.from('eq_inverters').select('id', { count: 'exact', head: true }),
+                    supabase.from('eq_batteries').select('id', { count: 'exact', head: true }),
+                    supabase.from('eq_mounting_structures').select('id', { count: 'exact', head: true }),
+                  ]);
+
+                  const panels = panelsRes.count || 0;
+                  const inverters = invertersRes.count || 0;
+                  const batteries = batteriesRes.count || 0;
+                  const structures = structuresRes.count || 0;
+
+                  // Re-fetch master data into local store
                   const { useCalculatorStore } = await import('@/lib/store/calculatorStore');
                   await useCalculatorStore.getState().fetchMasterData();
-                  toast('Master data cache refreshed ✓', 'success');
+
+                  toast(`Master data refreshed: Fetched ${panels} panels, ${inverters} inverters, ${batteries} batteries, and ${structures} structures ✓`, 'success');
                 } catch (err) {
                   toast('Cache refresh failed', 'error');
                 } finally {
@@ -503,6 +670,127 @@ export default function SettingsPage() {
           </div>
         </div>
       </Section>
+
+      {/* Sticky Bottom Actions Bar (Item 62) */}
+      {isDirty && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-2xl bg-surface border border-accent/40 rounded-2xl p-4 shadow-2xl flex flex-row items-center justify-between gap-4 animate-scale-in">
+          <div>
+            <h4 className="text-xs font-bold text-accent">Unsaved Settings Modifiers</h4>
+            <p className="text-[10px] text-text-muted">You have modifications not yet saved to the database.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleOpenDiff('commit')}
+              className="px-3.5 py-2 rounded-lg bg-accent text-background text-xs font-bold hover:bg-accent-hover transition-colors cursor-pointer"
+            >
+              Save All (Commit)
+            </button>
+            <button
+              onClick={async () => {
+                const confirmed = await confirm({
+                  title: 'Discard Changes?',
+                  message: 'Revert all local unsaved configuration modifications back to database values?',
+                  confirmLabel: 'Discard',
+                  cancelLabel: 'Keep Editing',
+                  type: 'warning',
+                });
+                if (confirmed) {
+                  setOriginalSettings(null); // reload settings from DB
+                  await loadFromDb();
+                  setIsDirty(false);
+                  toast('Changes discarded', 'info');
+                }
+              }}
+              className="px-3.5 py-2 rounded-lg border border-border text-text-secondary text-xs hover:text-text-primary hover:bg-surface-hover transition-all cursor-pointer"
+            >
+              Discard All
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* DB Sync Conflict Difference Modal (Item 64) */}
+      {showDiffModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDiffModal(false)} />
+          <div className="relative w-full max-w-2xl bg-surface-2 border border-border rounded-2xl shadow-2xl overflow-hidden animate-scale-in">
+            <div className="p-5 border-b border-border bg-surface flex justify-between items-center">
+              <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                <Cloud size={16} className="text-accent" />
+                {diffMode === 'commit' ? 'Database Commit Review' : 'Database Load Review'}
+              </h3>
+              <button onClick={() => setShowDiffModal(false)} className="text-text-muted hover:text-text-primary">
+                <ChevronDown size={18} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 max-h-[400px] overflow-y-auto">
+              <p className="text-xs text-text-secondary">
+                {diffMode === 'commit'
+                  ? 'Confirm database overrides. The following local edits will overwrite the centralized organization database records:'
+                  : 'Review conflicts. The following database values will overwrite your browser local settings:'}
+              </p>
+
+              {dbSettingsVal && (
+                <div className="border border-border rounded-xl overflow-hidden text-xs">
+                  <div className="grid grid-cols-3 bg-surface text-text-muted font-bold p-2.5 border-b border-border">
+                    <div>Settings Parameter</div>
+                    <div>Local Client Settings</div>
+                    <div>Central Organization DB</div>
+                  </div>
+                  <div className="divide-y divide-border/60 bg-background font-mono">
+                    <div className="grid grid-cols-3 p-2.5">
+                      <span className="font-sans font-bold text-text-secondary">Company Name</span>
+                      <span className={settings.company.name !== dbSettingsVal.company.name ? 'text-accent font-bold' : 'text-text-primary'}>
+                        {settings.company.name}
+                      </span>
+                      <span>{dbSettingsVal.company.name}</span>
+                    </div>
+                    <div className="grid grid-cols-3 p-2.5">
+                      <span className="font-sans font-bold text-text-secondary">Address</span>
+                      <span className={settings.company.address !== dbSettingsVal.company.address ? 'text-accent font-bold' : 'text-text-primary'}>
+                        {settings.company.address || '—'}
+                      </span>
+                      <span>{dbSettingsVal.company.address || '—'}</span>
+                    </div>
+                    <div className="grid grid-cols-3 p-2.5">
+                      <span className="font-sans font-bold text-text-secondary">Grid Tariff</span>
+                      <span className={settings.defaultGridTariff !== dbSettingsVal.defaultGridTariff ? 'text-accent font-bold' : 'text-text-primary'}>
+                        ₹{settings.defaultGridTariff}/kWh
+                      </span>
+                      <span>₹{dbSettingsVal.defaultGridTariff}/kWh</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-5 border-t border-border bg-surface flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowDiffModal(false)}
+                className="px-4 py-2 rounded-lg border border-border text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-all"
+              >
+                Cancel
+              </button>
+              {diffMode === 'commit' ? (
+                <button
+                  onClick={executeCommit}
+                  className="px-5 py-2 rounded-lg bg-accent text-background text-xs font-bold hover:bg-accent-hover transition-colors"
+                >
+                  Overwrite DB with Local
+                </button>
+              ) : (
+                <button
+                  onClick={executeLoad}
+                  className="px-5 py-2 rounded-lg bg-accent text-background text-xs font-bold hover:bg-accent-hover transition-colors"
+                >
+                  Overwrite Local with DB
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

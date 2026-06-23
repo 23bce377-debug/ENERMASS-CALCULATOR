@@ -132,7 +132,17 @@ function ActionBar({ onSaveQuote, onCreateQuote, hasBlockingErrors }: { onSaveQu
 
 import { Download, Share2, Save, ChevronDown, Search, MapPin, Settings, Trash2, Edit3, X, Loader2, AlertCircle } from 'lucide-react';
 
-export default function CalculatorClient({ initialData }: { initialData: any }) {
+export default function CalculatorClient({
+  initialEquipment,
+  initialRules,
+  deferredStructures,
+  deferredOrgContext,
+}: {
+  initialEquipment: any;
+  initialRules: any;
+  deferredStructures: Promise<any>;
+  deferredOrgContext: Promise<any>;
+}) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalIntent, setModalIntent] = useState<'print' | 'draft'>('print');
   const [isPresetManagerOpen, setIsPresetManagerOpen] = useState(false);
@@ -146,12 +156,47 @@ export default function CalculatorClient({ initialData }: { initialData: any }) 
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [restoredDate, setRestoredDate] = useState<Date | null>(null);
 
-  // Hydrate store on initial load
-  const isHydrated = useRef(false);
-  if (!isHydrated.current && initialData) {
-    useCalculatorStore.getState().setOfflineData(initialData);
-    isHydrated.current = true;
-  }
+  // 1. Hydrate critical data on mount/initial load (immediate render capability)
+  useEffect(() => {
+    if (initialEquipment && initialRules) {
+      useCalculatorStore.getState().setOfflineData({
+        ...initialEquipment,
+        ...initialRules,
+      });
+    }
+  }, [initialEquipment, initialRules]);
+
+  // 2. Hydrate deferred structures progressively
+  useEffect(() => {
+    if (!deferredStructures) return;
+    Promise.resolve(deferredStructures)
+      .then((structures) => {
+        if (structures) {
+          useCalculatorStore.getState().setOfflineData({
+            ...structures,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error('[Deferred structures load failed]', err);
+      });
+  }, [deferredStructures]);
+
+  // 3. Hydrate deferred org context progressively
+  useEffect(() => {
+    if (!deferredOrgContext) return;
+    Promise.resolve(deferredOrgContext)
+      .then((orgContext) => {
+        if (orgContext) {
+          useCalculatorStore.getState().setOfflineData({
+            ...orgContext,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error('[Deferred org context load failed]', err);
+      });
+  }, [deferredOrgContext]);
 
   useEffect(() => {
     async function loadDraft() {

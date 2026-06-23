@@ -1,10 +1,10 @@
 import { unstable_cache } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 // Equipment master cache (10 min)
 export const getEquipmentMaster = unstable_cache(
   async (orgId: string | null) => {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const [panels, inverters, batteries, meters, las, commDevices] = await Promise.all([
       supabase.from('eq_panels').select('id, brand, model, wattage_w, selling_price, gst_pct, panel_type').eq('is_active', true),
       supabase.from('eq_inverters').select('id, brand, model, capacity_kw, selling_price, gst_pct, inverter_type, phases').eq('is_active', true),
@@ -29,7 +29,7 @@ export const getEquipmentMaster = unstable_cache(
 // Structures master cache (15 min)
 export const getStructuresMaster = unstable_cache(
   async (orgId: string | null) => {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const [structures, weightLookups, structureComponents, structureBom, structureAddons] = await Promise.all([
       supabase.from('eq_mounting_structures').select('*').eq('is_active', true),
       supabase.from('structure_weight_lookup').select('*'),
@@ -70,7 +70,7 @@ export const getStructuresMaster = unstable_cache(
 // Rules master cache (10 min)
 export const getRulesMaster = unstable_cache(
   async (orgId: string | null) => {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const [stateRules, slabs, schemes, systems, taxHsn, taxGstRates, bomItems] = await Promise.all([
       supabase.from('state_rules').select('*').eq('is_active', true),
       supabase.from('scheme_slabs').select('*'),
@@ -98,7 +98,7 @@ export const getRulesMaster = unstable_cache(
 export const getOrgContext = unstable_cache(
   async (orgId: string | null) => {
     if (!orgId) return { inventorySummary: [], vendors: [], appSettings: null, structureVendors: [] };
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const [inventory, vendors, appSettings] = await Promise.all([
       supabase.from('inventory_summary').select('*').eq('org_id', orgId).limit(1000),
       supabase.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true }),

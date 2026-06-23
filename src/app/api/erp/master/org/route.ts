@@ -53,7 +53,7 @@ export const GET = withLicensedApiRoute(
             safeQuery(
               supabase
                 .from('inventory_summary')
-                .select('id, item_name, sku, quantity, unit, warehouse_id, org_id')
+                .select('catalog_item_id, item_description, category, current_qty, weighted_avg_cost, last_updated, org_id')
                 .eq('org_id', orgId)
                 .limit(invLimit)
             ),

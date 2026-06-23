@@ -84,6 +84,10 @@ export interface KeyValidationResult {
   orgId?: string;
   orgName?: string;
   reason?: string;
+  expiresAt?: string | null;
+  planName?: string;
+  seatLimit?: number;
+  activeMembers?: number;
 }
 
 export interface KeyRedemptionResult {
@@ -301,10 +305,32 @@ export async function validateActivationKey(rawKey: string): Promise<KeyValidati
     orgNameCache.set(key.org_id, orgName);
   }
 
+  // Retrieve plan details and seat limit
+  const client = createAdminClient();
+  const { data: sub } = await client
+    .from('org_subscriptions')
+    .select('seat_limit, plan:plan_id(name)')
+    .eq('org_id', key.org_id)
+    .in('status', ['trialing', 'active', 'past_due'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // Retrieve current active members count
+  const { count: memberCount } = await client
+    .from('org_members')
+    .select('*', { count: 'exact', head: true })
+    .eq('org_id', key.org_id)
+    .in('status', ['active', 'invited']);
+
   return {
     valid: true,
     orgId: key.org_id,
     orgName,
+    expiresAt: key.expires_at ? key.expires_at : undefined,
+    planName: sub?.plan && typeof sub.plan === 'object' && 'name' in sub.plan ? (sub.plan as any).name : 'Standard Team Plan',
+    seatLimit: sub?.seat_limit ?? 5,
+    activeMembers: memberCount ?? 1,
   };
 }
 

@@ -29,8 +29,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
           <input
             ref={ref}
+            aria-describedby={error && props.id ? `${props.id}-error` : props['aria-describedby']}
             className={cn(
-              "w-full bg-background border rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-all focus:outline-none focus:ring-2 focus:ring-accent/20",
+              "w-full bg-background border rounded-lg px-3 py-2.5 text-base md:text-sm text-text-primary placeholder:text-text-muted transition-all focus:outline-none focus:ring-2 focus:ring-accent/20",
               icon ? "pl-10" : "",
               error ? "border-error focus:border-error" : "border-border hover:border-border-light focus:border-accent",
               className
@@ -38,7 +39,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
         </div>
-        {error && <p className="text-[10px] text-error mt-1 font-medium">{error}</p>}
+        {error && (
+          <p id={props.id ? `${props.id}-error` : undefined} className="text-[10px] text-error mt-1 font-medium" role="alert">
+            {error}
+          </p>
+        )}
       </div>
     );
   }

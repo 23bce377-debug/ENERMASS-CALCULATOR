@@ -150,8 +150,6 @@ export const thClass = 'bg-surface-2 px-3 py-2 text-left text-[11px] font-bold u
 export const tdClass = 'px-3 py-3 align-middle text-text-secondary';
 
 export const orgAdminTabs = [
-  { href: '/settings/billing', label: 'Billing' },
-  { href: '/settings/subscription', label: 'Subscription' },
   { href: '/settings/team', label: 'Team' },
   { href: '/settings/device-reset-requests', label: 'Reset Requests' },
   { href: '/settings/activation-keys', label: 'Keys' },

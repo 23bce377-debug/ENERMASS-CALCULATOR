@@ -7,14 +7,20 @@ import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Toast {
   id: string;
   message: string;
   type: ToastType;
+  action?: ToastAction;
 }
 
 interface ToastContextValue {
-  toast: (message: string, type?: ToastType) => void;
+  toast: (message: string, type?: ToastType, action?: ToastAction) => void;
 }
 
 const ToastContext = createContext<ToastContextValue>({ toast: () => {} });
@@ -57,9 +63,9 @@ const TOAST_CONFIG: Record<ToastType, {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const addToast = useCallback((message: string, type: ToastType = 'info') => {
+  const addToast = useCallback((message: string, type: ToastType = 'info', action?: ToastAction) => {
     const id = Math.random().toString(36).substring(2, 8);
-    setToasts((prev) => [...prev, { id, message, type }]);
+    setToasts((prev) => [...prev, { id, message, type, action }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4500);
@@ -106,6 +112,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <span className="text-sm text-text-primary flex-1 leading-snug font-medium">
                 {t.message}
               </span>
+
+              {/* Action Button */}
+              {t.action && (
+                <button
+                  onClick={() => {
+                    t.action?.onClick();
+                    removeToast(t.id);
+                  }}
+                  className="shrink-0 text-xs font-bold text-accent hover:underline px-1.5 py-0.5 rounded hover:bg-accent-dim/10 transition-colors"
+                >
+                  {t.action.label}
+                </button>
+              )}
 
               {/* Dismiss */}
               <button

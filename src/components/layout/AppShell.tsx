@@ -10,6 +10,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { supabase } from '@/lib/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { CommandPalette } from './CommandPalette';
+import { KeyboardHelpModal } from './KeyboardHelpModal';
+import { OnboardingTour } from './OnboardingTour';
+import { OfflineBanner } from './OfflineBanner';
+import { SyncConflictResolver } from './SyncConflictResolver';
+import { PwaPrompt } from './PwaPrompt';
 
 /**
  * AppShell wraps all pages with the sidebar, header, and mobile tab bar.
@@ -206,6 +212,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, systemName]);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isCmdOpen, setIsCmdOpen] = useState(false);
+  const [isKbdOpen, setIsKbdOpen] = useState(false);
+
+  // Keyboard shortcut listeners (Item 124 & 125)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCmdOpen((prev) => !prev);
+      }
+      if (e.key === '?') {
+        const target = e.target as HTMLElement;
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && !target.isContentEditable) {
+          e.preventDefault();
+          setIsKbdOpen((prev) => !prev);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const persisted = localStorage.getItem('enermass-sidebar-collapsed');
@@ -258,11 +285,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             contextValue={headerContext.contextValue}
             quoteCount={quoteCount}
           />
-          <main className="flex-1 pb-20 md:pb-0">{children}</main>
+          <main id="main-content" className="flex-1 pb-20 md:pb-0" tabIndex={-1}>{children}</main>
         </div>
 
         {/* Mobile bottom nav */}
         <MobileTabBar />
+
+        {/* Global palettes & helpers */}
+        <CommandPalette isOpen={isCmdOpen} onClose={() => setIsCmdOpen(false)} />
+        <KeyboardHelpModal isOpen={isKbdOpen} onClose={() => setIsKbdOpen(false)} />
+        <OnboardingTour />
+        <OfflineBanner />
+        <SyncConflictResolver />
+        <PwaPrompt />
       </ConfirmProvider>
     </ToastProvider>
   );

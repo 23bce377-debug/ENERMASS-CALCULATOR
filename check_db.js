@@ -7,21 +7,18 @@ async function check() {
   });
   await client.connect();
 
-  console.log("--- COLUMNS ---");
-  const res = await client.query(`
-    SELECT column_name, data_type, is_nullable
-    FROM information_schema.columns
-    WHERE table_name = 'net_metering_applications';
-  `);
-  console.log(res.rows);
+  const tables = ['inventory_summary', 'vendors', 'app_settings'];
 
-  console.log("\n--- POLICIES ---");
-  const res2 = await client.query(`
-    SELECT polname, polcmd, polqual, polwithcheck
-    FROM pg_policy
-    WHERE polrelid = 'epc_project_milestones'::regclass;
-  `);
-  console.log(res2.rows);
+  for (const table of tables) {
+    console.log(`\n--- COLUMNS FOR ${table} ---`);
+    const res = await client.query(`
+      SELECT column_name, data_type, is_nullable
+      FROM information_schema.columns
+      WHERE table_name = '${table}'
+      ORDER BY ordinal_position;
+    `);
+    console.log(res.rows.map(r => `${r.column_name}: ${r.data_type} (${r.is_nullable === 'YES' ? 'null' : 'not null'})`).join('\n'));
+  }
 
   await client.end();
 }

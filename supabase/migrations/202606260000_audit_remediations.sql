@@ -121,6 +121,7 @@ CREATE TRIGGER org_subscriptions_enforce_seat_limit
 -- ─── 5. Update device reset request RLS policy to allow org admins ───
 DROP POLICY IF EXISTS device_reset_requests_superadmin_review ON public.device_reset_requests;
 DROP POLICY IF EXISTS device_reset_requests_org_admin_review ON public.device_reset_requests;
+DROP POLICY IF EXISTS device_reset_requests_admin_review ON public.device_reset_requests;
 
 CREATE POLICY device_reset_requests_admin_review
   ON public.device_reset_requests FOR UPDATE TO authenticated

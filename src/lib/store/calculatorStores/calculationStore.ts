@@ -690,200 +690,264 @@ export const createCalculationSlice: StateCreator<
         get().recalculate();
       }
     }
-  },
-
-  setOfflineData: (bootstrap: any) => {
+  },  setOfflineData: (bootstrap: any) => {
     try {
-      const mappedPanels = (bootstrap.panels || []).map((p: any) => ({
-        id: p.id,
-        brand: p.brand,
-        model: p.model,
-        wattage: Number(p.wattage_w),
-        type: p.panel_type,
-        ratePerWatt: Number(p.wattage_w) > 0 ? Number(p.selling_price) / Number(p.wattage_w) : 0,
-        gst_pct: Number(p.gst_pct),
-      }));
+      const stateUpdate: Partial<CalculatorState> = {};
 
-      const mappedInverters = (bootstrap.inverters || []).map((i: any) => ({
-        id: i.id,
-        brand: i.brand,
-        model: i.model,
-        capacityKW: Number(i.capacity_kw),
-        type: i.inverter_type === 'on_grid' ? 'on-grid' : (i.inverter_type === 'micro' ? 'micro' : 'hybrid'),
-        phases: Number(i.phases),
-        rate: Number(i.selling_price),
-        gst_pct: Number(i.gst_pct),
-      }));
+      if (bootstrap.panels) {
+        stateUpdate.dbPanels = bootstrap.panels.map((p: any) => ({
+          id: p.id,
+          brand: p.brand,
+          model: p.model,
+          wattage: Number(p.wattage_w),
+          type: p.panel_type,
+          ratePerWatt: Number(p.wattage_w) > 0 ? Number(p.selling_price) / Number(p.wattage_w) : 0,
+          gst_pct: Number(p.gst_pct),
+        }));
+      }
 
-      const mappedBatteries = (bootstrap.batteries || []).map((b: any) => ({
-        id: b.id,
-        brand: b.brand,
-        model: b.model,
-        capacityKWh: Number(b.capacity_kwh),
-        chemistry: b.chemistry,
-        dodPct: Number(b.dod_pct),
-        rate: Number(b.selling_price),
-        gst_pct: Number(b.gst_pct),
-      }));
+      if (bootstrap.inverters) {
+        stateUpdate.dbInverters = bootstrap.inverters.map((i: any) => ({
+          id: i.id,
+          brand: i.brand,
+          model: i.model,
+          capacityKW: Number(i.capacity_kw),
+          type: i.inverter_type === 'on_grid' ? 'on-grid' : (i.inverter_type === 'micro' ? 'micro' : 'hybrid'),
+          phases: Number(i.phases),
+          rate: Number(i.selling_price),
+          gst_pct: Number(i.gst_pct),
+        }));
+      }
 
-      const mappedStructures = (bootstrap.structures || []).map((st: any) => ({
-        ...st,
-        raw_material_rate: Number(st.raw_material_rate),
-        fabrication_rate: Number(st.fabrication_rate),
-        galvanizing_rate: Number(st.galvanizing_rate),
-        rate_per_kg: Number(st.rate_per_kg),
-        wastage_pct: Number(st.wastage_pct),
-        fastener_weight_pct: Number(st.fastener_weight_pct),
-        base_weight_kg: Number(st.base_weight_kg),
-        flat_rate: st.selling_price != null ? Number(st.selling_price) : (st.flat_rate != null ? Number(st.flat_rate) : null),
-        per_watt_rate: st.per_watt_rate != null ? Number(st.per_watt_rate) : null,
-        gst_pct: Number(st.gst_pct),
-      }));
+      if (bootstrap.batteries) {
+        stateUpdate.dbBatteries = bootstrap.batteries.map((b: any) => ({
+          id: b.id,
+          brand: b.brand,
+          model: b.model,
+          capacityKWh: Number(b.capacity_kwh),
+          chemistry: b.chemistry,
+          dodPct: Number(b.dod_pct),
+          rate: Number(b.selling_price),
+          gst_pct: Number(b.gst_pct),
+        }));
+      }
 
-      const mappedMeters = (bootstrap.meters || []).map((m: any) => ({
-        ...m,
-        phases: Number(m.phases),
-        rate: Number(m.selling_price),
-        gst_pct: Number(m.gst_pct),
-      }));
+      if (bootstrap.meters) {
+        stateUpdate.dbMeters = bootstrap.meters.map((m: any) => ({
+          ...m,
+          phases: Number(m.phases),
+          rate: Number(m.selling_price),
+          gst_pct: Number(m.gst_pct),
+        }));
+      }
 
-      const mappedLAs = (bootstrap.lightningArresters || []).map((l: any) => ({
-        ...l,
-        rate: Number(l.selling_price),
-        gst_pct: Number(l.gst_pct),
-      }));
+      if (bootstrap.lightningArresters) {
+        stateUpdate.dbLAs = bootstrap.lightningArresters.map((l: any) => ({
+          ...l,
+          rate: Number(l.selling_price),
+          gst_pct: Number(l.gst_pct),
+        }));
+      }
 
-      const mappedBomItems = (bootstrap.bomItems || []).map((b: any) => ({
-        ...b,
-        rate: Number(b.selling_price),
-        gst_pct: Number(b.gst_pct),
-      }));
+      // commDevices is mapped locally inside the systems block
 
-      const mappedCommDevices = (bootstrap.commDevices || []).map((c: any) => ({
-        ...c,
-        rate: Number(c.selling_price),
-        gst_pct: Number(c.gst_pct),
-      }));
+      if (bootstrap.stateRules) {
+        const mappedStateData: Record<string, any> = {};
+        for (const rule of bootstrap.stateRules) {
+          mappedStateData[rule.state_name] = {
+            name: rule.state_name,
+            stateCode: rule.state_code,
+            sunHoursPerDay: Number(rule.sun_hours_per_day),
+            performanceRatio: Number(rule.performance_ratio),
+            labourMultiplier: Number(rule.labour_multiplier),
+            gstOnOutput: Number(rule.gst_on_output),
+            gridTariffInr: Number(rule.grid_tariff_inr),
+            subsidyRules: [],
+          };
+        }
+        stateUpdate.dbStateData = mappedStateData;
+      }
 
-      const mappedStructureComponentMasters = (bootstrap.structureComponentMasters || []).map((scm: any) => ({
-        id: scm.id,
-        name: scm.name,
-        rate: Number(scm.selling_price),
-        gst_pct: Number(scm.gst_pct)
-      }));
+      if (bootstrap.schemes) {
+        const activeScheme = bootstrap.schemes.find((s: any) => s.code === 'PM_SURYA_GHAR_2024' && s.is_active);
+        stateUpdate.dbActiveScheme = activeScheme || null;
+        if (activeScheme && bootstrap.slabs) {
+          const schemeSlabs = bootstrap.slabs.filter((s: any) => s.scheme_id === activeScheme.id);
+          stateUpdate.dbSlabs = [...schemeSlabs].sort((a, b) => a.slab_index - b.slab_index).map(s => ({
+            start_kw: Number(s.start_kw),
+            end_kw: s.end_kw !== null ? Number(s.end_kw) : null,
+            rate_per_kw: Number(s.rate_per_kw),
+            is_fixed_amount: Boolean(s.is_fixed_amount),
+            fixed_amount: s.fixed_amount !== null ? Number(s.fixed_amount) : null,
+          }));
+        }
+      }
 
-      const mappedStateData: Record<string, any> = {};
-      for (const rule of (bootstrap.stateRules || [])) {
-        mappedStateData[rule.state_name] = {
-          name: rule.state_name,
-          stateCode: rule.state_code,
-          sunHoursPerDay: Number(rule.sun_hours_per_day),
-          performanceRatio: Number(rule.performance_ratio),
-          labourMultiplier: Number(rule.labour_multiplier),
-          gstOnOutput: Number(rule.gst_on_output),
-          gridTariffInr: Number(rule.grid_tariff_inr),
-          subsidyRules: [],
+      if (bootstrap.bomItems) {
+        stateUpdate.dbStructureParts = bootstrap.bomItems.map((b: any) => ({
+          ...b,
+          rate: Number(b.selling_price),
+          gst_pct: Number(b.gst_pct),
+        }));
+      }
+
+      if (bootstrap.structures) {
+        stateUpdate.dbStructures = bootstrap.structures.map((st: any) => ({
+          ...st,
+          raw_material_rate: Number(st.raw_material_rate),
+          fabrication_rate: Number(st.fabrication_rate),
+          galvanizing_rate: Number(st.galvanizing_rate),
+          rate_per_kg: Number(st.rate_per_kg),
+          wastage_pct: Number(st.wastage_pct),
+          fastener_weight_pct: Number(st.fastener_weight_pct),
+          base_weight_kg: Number(st.base_weight_kg),
+          flat_rate: st.selling_price != null ? Number(st.selling_price) : (st.flat_rate != null ? Number(st.flat_rate) : null),
+          per_watt_rate: st.per_watt_rate != null ? Number(st.per_watt_rate) : null,
+          gst_pct: Number(st.gst_pct),
+        }));
+      }
+
+      if (bootstrap.structureComponentMasters) {
+        stateUpdate.dbStructureComponentMasters = bootstrap.structureComponentMasters.map((scm: any) => ({
+          id: scm.id,
+          name: scm.name,
+          rate: Number(scm.selling_price),
+          gst_pct: Number(scm.gst_pct)
+        }));
+      }
+
+      if (bootstrap.structureVendors !== undefined) stateUpdate.dbStructureVendors = bootstrap.structureVendors;
+      if (bootstrap.structureAccessoryRates !== undefined) stateUpdate.dbStructureAccessoryRates = bootstrap.structureAccessoryRates;
+      if (bootstrap.structureMaterialRates !== undefined) stateUpdate.dbStructureMaterialRates = bootstrap.structureMaterialRates;
+      if (bootstrap.structureTemplates !== undefined) stateUpdate.dbStructureTemplates = bootstrap.structureTemplates;
+      if (bootstrap.structureTemplateItems !== undefined) stateUpdate.dbStructureTemplateItems = bootstrap.structureTemplateItems;
+      if (bootstrap.walkwayTemplates !== undefined) stateUpdate.dbWalkwayTemplates = bootstrap.walkwayTemplates;
+      if (bootstrap.ladderTemplates !== undefined) stateUpdate.dbLadderTemplates = bootstrap.ladderTemplates;
+      if (bootstrap.weightLookups !== undefined) stateUpdate.dbWeightLookups = bootstrap.weightLookups;
+      if (bootstrap.structureComponents !== undefined) stateUpdate.dbStructureComponents = bootstrap.structureComponents;
+      if (bootstrap.structureBom !== undefined) stateUpdate.dbStructureBom = bootstrap.structureBom;
+      if (bootstrap.structureAddons !== undefined) stateUpdate.dbStructureAddons = bootstrap.structureAddons;
+      if (bootstrap.inventorySummary !== undefined) stateUpdate.inventorySummary = bootstrap.inventorySummary;
+
+      if (bootstrap.appSettings) {
+        const factor = bootstrap.appSettings.orientation_factor !== undefined && bootstrap.appSettings.orientation_factor !== null
+          ? Number(bootstrap.appSettings.orientation_factor)
+          : 1.0;
+        stateUpdate.dbOrientationMultipliers = {
+          South: 1.0,
+          'East/West': 0.85 * factor,
+          Flat: 0.90 * factor
         };
       }
 
-      const factor = bootstrap.appSettings?.orientation_factor !== undefined && bootstrap.appSettings?.orientation_factor !== null
-        ? Number(bootstrap.appSettings.orientation_factor)
-        : 1.0;
-      const orientationMultipliers = {
-        South: 1.0,
-        'East/West': 0.85 * factor,
-        Flat: 0.90 * factor
-      };
+      // Map systems once panels and inverters exist (or are currently stored)
+      if (bootstrap.systems) {
+        const panels = stateUpdate.dbPanels || get().dbPanels;
+        const inverters = stateUpdate.dbInverters || get().dbInverters;
+        const batteries = stateUpdate.dbBatteries || get().dbBatteries;
+        const meters = stateUpdate.dbMeters || get().dbMeters;
+        const LAs = stateUpdate.dbLAs || get().dbLAs;
+        const commDevices = (bootstrap.commDevices || []).map((c: any) => ({
+          id: c.id,
+          rate: Number(c.selling_price),
+          gst_pct: Number(c.gst_pct)
+        }));
+        const bomItems = stateUpdate.dbStructureParts || get().dbStructureParts;
+        const structures = stateUpdate.dbStructures || get().dbStructures;
+        const structureComponentMasters = stateUpdate.dbStructureComponentMasters || get().dbStructureComponentMasters;
 
-      const activeScheme = (bootstrap.schemes || []).find((s: any) => s.code === 'PM_SURYA_GHAR_2024' && s.is_active);
-      const schemeSlabs = activeScheme 
-        ? (bootstrap.slabs || []).filter((s: any) => s.scheme_id === activeScheme.id)
-        : [];
-      const sortedSlabs = [...schemeSlabs].sort((a, b) => a.slab_index - b.slab_index).map(s => ({
-        start_kw: Number(s.start_kw),
-        end_kw: s.end_kw !== null ? Number(s.end_kw) : null,
-        rate_per_kw: Number(s.rate_per_kw),
-        is_fixed_amount: Boolean(s.is_fixed_amount),
-        fixed_amount: s.fixed_amount !== null ? Number(s.fixed_amount) : null,
-      }));
+        stateUpdate.dbSystems = bootstrap.systems.map((sys: any) => {
+          const items = (sys.system_items || []).map((item: any) => {
+            let rate = 0;
+            let gstPct: any = TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            if (item.panel_id) {
+              const panel = panels.find((p: any) => p.id === item.panel_id);
+              rate = panel ? Number(panel.ratePerWatt) * Number(panel.wattage) : 0;
+              gstPct = panel ? Number(panel.gst_pct) : TAX_CONSTANTS.RESIDENTIAL_GST_RATE;
+            } else if (item.inverter_id) {
+              const inverter = inverters.find((i: any) => i.id === item.inverter_id);
+              rate = inverter ? Number(inverter.rate) : 0;
+              gstPct = inverter ? Number(inverter.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            } else if (item.battery_id) {
+              const battery = batteries.find((b: any) => b.id === item.battery_id);
+              rate = battery ? Number(battery.rate) : 0;
+              gstPct = battery ? Number(battery.gst_pct) : 0.12;
+            } else if (item.solar_meter_id) {
+              const meter = meters.find((m: any) => m.id === item.solar_meter_id);
+              rate = meter ? Number(meter.rate) : 0;
+              gstPct = meter ? Number(meter.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            } else if (item.net_meter_id) {
+              const meter = meters.find((m: any) => m.id === item.net_meter_id);
+              rate = meter ? Number(meter.rate) : 0;
+              gstPct = meter ? Number(meter.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            } else if (item.la_id) {
+              const la = LAs.find((l: any) => l.id === item.la_id);
+              rate = la ? Number(la.rate) : 0;
+              gstPct = la ? Number(la.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            } else if (item.structure_id) {
+              const structure = structures.find((s: any) => s.id === item.structure_id);
+              rate = structure ? Number(structure.flat_rate ?? 0) : 0;
+              gstPct = structure ? Number(structure.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            } else if (item.bom_item_id) {
+              const bom = bomItems.find((b: any) => b.id === item.bom_item_id);
+              rate = bom ? Number(bom.rate) : 0;
+              gstPct = bom ? Number(bom.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            } else if (item.comm_device_id) {
+              const comm = commDevices.find((c: any) => c.id === item.comm_device_id);
+              rate = comm ? Number(comm.rate) : 0;
+              gstPct = comm ? Number(comm.gst_pct) : 0.12;
+            } else if (item.structure_component_id) {
+              const comp = structureComponentMasters.find((c: any) => c.id === item.structure_component_id);
+              rate = comp ? Number(comp.rate) : 0;
+              gstPct = comp ? Number(comp.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            }
 
-      const mappedSystems: SolarSystem[] = (bootstrap.systems || []).map((sys: any) => {
-        const items = (sys.system_items || []).map((item: any) => {
-          let rate = 0;
-          let gstPct: any = 0.18;
-          if (item.panel_id) {
-            const panel = mappedPanels.find((p: any) => p.id === item.panel_id);
-            rate = panel ? Number(panel.ratePerWatt) * Number(panel.wattage) : 0;
-            gstPct = panel ? Number(panel.gst_pct) : 0.12;
-          } else if (item.inverter_id) {
-            const inverter = mappedInverters.find((i: any) => i.id === item.inverter_id);
-            rate = inverter ? Number(inverter.rate) : 0;
-            gstPct = inverter ? Number(inverter.gst_pct) : 0.18;
-          } else if (item.battery_id) {
-            const battery = mappedBatteries.find((b: any) => b.id === item.battery_id);
-            rate = battery ? Number(battery.rate) : 0;
-            gstPct = battery ? Number(battery.gst_pct) : 0.12;
-          }
+            return {
+              description: item.description,
+              remarks: item.remarks ?? undefined,
+              unit: item.unit ?? undefined,
+              qty: Number(item.default_qty),
+              ratePerUnit: rate,
+              gstPct: gstPct as any
+            };
+          });
+
           return {
-            id: item.id,
-            systemId: item.system_id,
-            panelId: item.panel_id,
-            inverterId: item.inverter_id,
-            batteryId: item.battery_id,
-            qty: Number(item.qty),
-            rate: rate,
-            gstPct: gstPct,
+            id: sys.id,
+            name: sys.name,
+            category: sys.category.replace('_', '-') as any,
+            capacityKW: Number(sys.capacity_kw),
+            panelWattage: Number(sys.panel_wattage_w ?? 0),
+            panelQty: Number(sys.panel_qty ?? 0),
+            targetMarginPct: Number(sys.target_margin_pct),
+            items
           };
         });
+      }
 
-        return {
-          id: sys.id,
-          name: sys.name,
-          capacityKW: Number(sys.capacity_kw),
-          type: sys.system_type,
-          phase: sys.phase,
-          items: items,
-        };
-      });
+      // Mark store loaded if core data is hydrated
+      const isLoaded = (stateUpdate.dbPanels || get().dbPanels).length > 0 &&
+                        (stateUpdate.dbSystems || get().dbSystems).length > 0;
+      if (isLoaded) {
+        stateUpdate.dbLoaded = true;
+      }
 
-      set({
-        dbSystems: mappedSystems,
-        dbStateData: mappedStateData,
-        dbPanels: mappedPanels,
-        dbInverters: mappedInverters,
-        dbBatteries: mappedBatteries,
-        dbSlabs: sortedSlabs,
-        dbActiveScheme: activeScheme || null,
-        dbStructures: mappedStructures,
-        dbStructureVendors: bootstrap.structureVendors || [],
-        dbStructureAccessoryRates: bootstrap.structureAccessoryRates || [],
-        dbStructureMaterialRates: bootstrap.structureMaterialRates || [],
-        dbStructureTemplates: bootstrap.structureTemplates || [],
-        dbStructureTemplateItems: bootstrap.structureTemplateItems || [],
-        dbWalkwayTemplates: bootstrap.walkwayTemplates || [],
-        dbLadderTemplates: bootstrap.ladderTemplates || [],
-        dbWeightLookups: bootstrap.weightLookups || [],
-        dbMeters: mappedMeters,
-        dbLAs: mappedLAs,
-        dbStructureParts: mappedBomItems,
-        dbStructureComponents: bootstrap.structureComponents || [],
-        dbStructureComponentMasters: mappedStructureComponentMasters,
-        dbStructureBom: bootstrap.structureBom || [],
-        dbStructureAddons: bootstrap.structureAddons || [],
-        dbOrientationMultipliers: orientationMultipliers,
-        inventorySummary: bootstrap.inventorySummary || [],
-        dbLoaded: true
-      });
+      set(stateUpdate);
 
-      const currentSystemId = get().selectedSystemId;
-      const systemExists = mappedSystems.some(s => s.id === currentSystemId);
-      if ((!currentSystemId || !systemExists) && mappedSystems.length > 0) {
-        get().selectSystem(mappedSystems[0].id);
-      } else {
+      // Select system or recalculate if systems or equipment fields changed
+      if (stateUpdate.dbSystems && stateUpdate.dbSystems.length > 0) {
+        const currentSystemId = get().selectedSystemId;
+        const systemExists = stateUpdate.dbSystems.some(s => s.id === currentSystemId);
+        if ((!currentSystemId || !systemExists)) {
+          get().selectSystem(stateUpdate.dbSystems[0].id);
+        } else {
+          get().recalculate();
+        }
+      } else if (stateUpdate.dbPanels || stateUpdate.dbInverters || stateUpdate.dbBatteries) {
         get().recalculate();
       }
     } catch (err) {
       console.error("Failed to parse offline master data:", err);
     }
-  },
+  }
 });
