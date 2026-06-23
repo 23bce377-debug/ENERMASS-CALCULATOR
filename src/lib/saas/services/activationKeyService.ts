@@ -350,7 +350,10 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const { data: authData, error: authError } = await publicClient.auth.signUp({
+  let authData: any = null;
+  let authError: any = null;
+
+  const signUpResult = await publicClient.auth.signUp({
     email: payload.email,
     password: payload.password,
     options: {
@@ -361,6 +364,28 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/confirm`
     }
   });
+
+  authData = signUpResult.data;
+  authError = signUpResult.error;
+
+  // Fallback to admin createUser if email rate limit is hit
+  if (authError && authError.message?.toLowerCase().includes('rate limit')) {
+    const adminCreateResult = await adminClient.auth.admin.createUser({
+      email: payload.email,
+      password: payload.password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: payload.fullName,
+        org_id: key.org_id,
+      }
+    });
+    if (!adminCreateResult.error && adminCreateResult.data?.user) {
+      authData = adminCreateResult.data;
+      authError = null;
+    } else if (adminCreateResult.error) {
+      authError = adminCreateResult.error;
+    }
+  }
 
   if (authError || !authData?.user) {
     if (authError?.message?.toLowerCase().includes('already')) {
