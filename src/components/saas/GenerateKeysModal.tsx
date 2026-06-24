@@ -53,8 +53,8 @@ export function GenerateKeysModal({ orgId, orgName }: GenerateKeysProps) {
         });
         const data = await res.json() as KeyGenerationResult;
         setResult(res.ok ? data : { success: false, error: data.error ?? 'Generation failed.' });
-      } catch {
-        setResult({ success: false, error: 'Network error. Please try again.' });
+      } catch (err) {
+        setResult({ success: false, error: err instanceof Error ? err.message : String(err) });
       }
     });
   };
