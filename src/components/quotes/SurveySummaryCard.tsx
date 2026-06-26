@@ -95,12 +95,9 @@ export function SurveySummaryCard({ quoteNumber }: SurveySummaryCardProps) {
           <div className="text-center py-6 space-y-2">
             <MapPin size={32} className="mx-auto text-text-muted/30" />
             <p className="text-xs text-text-muted">No site survey on record for this lead.</p>
-            <a
-              href="/crm"
-              className="inline-block text-xs font-bold text-accent underline underline-offset-2 hover:text-accent/80 transition-colors"
-            >
-              Schedule one from the CRM →
-            </a>
+            <span className="text-[11px] text-text-muted mt-1 italic block">
+              Contact administrator to schedule a site survey.
+            </span>
           </div>
         ) : (
           <>

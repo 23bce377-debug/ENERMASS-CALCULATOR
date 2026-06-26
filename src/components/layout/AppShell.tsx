@@ -49,8 +49,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const bootstrapPrefixes = [
       '/systems',
       '/quotes',
-      '/acquisition',
-      '/earnings',
       '/rate-master',
       '/master',
       '/presets',
@@ -58,7 +56,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       '/dashboards',
       '/erp',
       '/inventory',
-      '/projects',
       '/reports',
     ];
 
@@ -165,18 +162,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         contextValue: 'Quote Management',
       };
     }
-    if (pathname.startsWith('/acquisition')) {
-      return {
-        contextLabel: 'Finance',
-        contextValue: 'Acquisition & Inventory',
-      };
-    }
-    if (pathname.startsWith('/earnings')) {
-      return {
-        contextLabel: 'Finance',
-        contextValue: 'Management Dashboard',
-      };
-    }
+
     if (pathname.startsWith('/rate-master')) {
       return {
         contextLabel: 'Finance',

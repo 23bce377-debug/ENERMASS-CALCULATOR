@@ -10,7 +10,6 @@ const protectedRoutes = [
   '/erp',
   '/inventory',
   '/master',
-  '/projects',
   '/quotes',
   '/reports',
   '/settings',

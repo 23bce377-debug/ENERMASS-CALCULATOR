@@ -12,12 +12,8 @@ import {
   Bookmark,
   LogOut,
   User,
-  ShoppingCart,
-  TrendingUp,
   Zap,
   Building2,
-  Wrench,
-  Users,
   Shield,
 } from 'lucide-react';
 import { useState, useEffect, type ReactNode } from 'react';
@@ -35,11 +31,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: '/calculator',  label: 'Calculator',  icon: <Calculator  size={18} />, mobileVisible: true  },
   { href: '/systems',     label: 'Systems',     icon: <Cpu         size={18} /> },
-  { href: '/crm',         label: 'Clients',     icon: <Users       size={18} />, mobileVisible: true  },
   { href: '/quotes',      label: 'Quotes',      icon: <FileText    size={18} />, mobileVisible: true  },
-  { href: '/projects',    label: 'Projects',    icon: <Wrench      size={18} />, mobileVisible: true  },
-  { href: '/acquisition', label: 'Acquisition', icon: <ShoppingCart size={18} /> },
-  { href: '/earnings',    label: 'Earnings',    icon: <TrendingUp  size={18} /> },
   { href: '/master',      label: 'ERP Masters', icon: <Building2   size={18} />, mobileVisible: true  },
 
   { href: '/settings',    label: 'Settings',    icon: <Settings    size={18} />, mobileVisible: true  },

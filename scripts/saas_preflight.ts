@@ -84,7 +84,6 @@ const guardedLayouts = [
   'src/app/dashboards/layout.tsx',
   'src/app/inventory/layout.tsx',
   'src/app/master/layout.tsx',
-  'src/app/projects/layout.tsx',
   'src/app/quotes/layout.tsx',
   'src/app/reports/layout.tsx',
   'src/app/settings/layout.tsx',

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Activity, Search, Filter, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Activity, Search, Filter, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { Select } from '@/components/ui/Select';
 
@@ -117,12 +117,11 @@ export default function NetMeteringReport() {
                 <th className="px-4 py-4">Current Stage</th>
                 <th className="px-4 py-4">Elapsed Days</th>
                 <th className="px-4 py-4">SLA Status</th>
-                <th className="px-4 py-4">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
               {filteredApps.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-text-muted">No applications match criteria.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-text-muted">No applications match criteria.</td></tr>
               ) : (
                 filteredApps.map(app => {
                   const sla = STAGE_SLAS[app.current_stage as keyof typeof STAGE_SLAS];
@@ -154,14 +153,6 @@ export default function NetMeteringReport() {
                         ) : (
                           <span className="text-success text-xs font-semibold">On Track (SLA: {sla})</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Link 
-                          href={`/projects?projectId=${app.project_id}`}
-                          className="flex items-center gap-1.5 text-accent hover:underline text-xs font-semibold"
-                        >
-                          View Project <ExternalLink size={14} />
-                        </Link>
                       </td>
                     </tr>
                   );
