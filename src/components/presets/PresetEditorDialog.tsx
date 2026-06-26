@@ -94,7 +94,7 @@ export function PresetEditorDialog({
       id: `temp_${Date.now()}`,
       category,
       catalogItemId: catalogItem.id,
-      catalogType: catalogItem.type === 'panel' || catalogItem.type === 'inverter'
+      catalogType: ['panel', 'inverter', 'battery'].includes(catalogItem.type)
         ? 'equipment' : 'bom_template',
       skuCode: catalogItem.skuCode ?? '',
       description: catalogItem.description,

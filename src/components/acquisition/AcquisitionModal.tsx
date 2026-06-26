@@ -64,8 +64,6 @@ export default function AcquisitionModal({ isOpen, onClose, onSuccess, orgId, ve
     return presets.filter(p => p.is_active);
   }, [presets]);
 
-  if (!isOpen) return null;
-
   // Standard items actions
   const addItem = () => {
     setItems([...items, { item_description: '', qty: 0, rate_per_unit: 0, gst_pct: TAX_CONSTANTS.COMMERCIAL_GST_RATE, unit: 'Nos', category: 'solar_panels' }]);
@@ -229,6 +227,8 @@ export default function AcquisitionModal({ isOpen, onClose, onSuccess, orgId, ve
       setLoading(false);
     }
   }
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">

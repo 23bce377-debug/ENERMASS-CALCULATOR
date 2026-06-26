@@ -6,13 +6,18 @@ async function run() {
     connectionString: process.env.DATABASE_URL
   });
   await client.connect();
+
   const res = await client.query(`
-    SELECT table_name 
-    FROM information_schema.tables 
-    WHERE table_schema = 'public' 
-    ORDER BY table_name;
+    SELECT prosrc 
+    FROM pg_proc 
+    WHERE proname = 'fn_trigger_seed_project_milestones';
   `);
-  console.log(res.rows.map(r => r.table_name).join('\n'));
+  if (res.rows.length > 0) {
+    console.log(res.rows[0].prosrc);
+  } else {
+    console.log('Function fn_trigger_seed_project_milestones not found.');
+  }
+
   await client.end();
 }
 

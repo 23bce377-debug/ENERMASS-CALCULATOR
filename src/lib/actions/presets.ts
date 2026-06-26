@@ -132,7 +132,7 @@ export async function getPresetWithComponents(presetId: string) {
     } else if (item.structure_id) {
       category = 'structure';
       catalogItemId = item.structure_id;
-      catalogType = 'bom_template';
+      catalogType = 'eq_structure';
       const str = structures.find((x: any) => x.id === item.structure_id);
       if (str) {
         unitRate = Number(str.selling_price || 0);
@@ -171,7 +171,7 @@ export async function getPresetWithComponents(presetId: string) {
     } else if (item.structure_component_id) {
       category = 'structure';
       catalogItemId = item.structure_component_id;
-      catalogType = 'bom_template';
+      catalogType = 'structure_component';
       const comp = structureComponents.find((x: any) => x.id === item.structure_component_id);
       if (comp) {
         unitRate = Number(comp.selling_price || 0);
@@ -274,13 +274,13 @@ export async function savePresetWithComponents(
       panel_id: item.category === 'panel' ? item.catalogItemId : null,
       inverter_id: item.category === 'inverter' ? item.catalogItemId : null,
       battery_id: item.category === 'battery' ? item.catalogItemId : null,
-      structure_id: item.category === 'structure' && item.catalogType === 'bom_template' && !item.description.includes('GP') ? item.catalogItemId : null,
-      solar_meter_id: isSolarMeter ? item.catalogItemId : null,
-      net_meter_id: isNetMeter ? item.catalogItemId : null,
-      la_id: isLA ? item.catalogItemId : null,
-      bom_item_id: item.catalogType === 'bom_template' && item.category !== 'structure' ? item.catalogItemId : null,
-      comm_device_id: isCommDevice ? item.catalogItemId : null,
-      structure_component_id: item.category === 'structure' && (item.catalogType === 'bom_template' || item.catalogType === 'equipment') && (item.description.includes('GP') || !item.catalogItemId) ? item.catalogItemId : null,
+      structure_id: item.category === 'structure' && item.catalogType === 'eq_structure' ? item.catalogItemId : null,
+      solar_meter_id: isSolarMeter && item.catalogType === 'equipment' ? item.catalogItemId : null,
+      net_meter_id: isNetMeter && item.catalogType === 'equipment' ? item.catalogItemId : null,
+      la_id: isLA && item.catalogType === 'equipment' ? item.catalogItemId : null,
+      bom_item_id: item.catalogType === 'bom_template' ? item.catalogItemId : null,
+      comm_device_id: isCommDevice && item.catalogType === 'equipment' ? item.catalogItemId : null,
+      structure_component_id: item.category === 'structure' && item.catalogType === 'structure_component' ? item.catalogItemId : null,
     };
   });
 

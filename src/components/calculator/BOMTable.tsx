@@ -98,6 +98,43 @@ function groupLines(lines: LineResult[]): GroupedLines[] {
     });
   }
 
+  // Sort groups based on a preferred order
+  const orderMap = new Map<string, number>();
+  [
+    'SOLAR PANELS',
+    'POWER ELECTRONICS',
+    'METERING',
+    'MOUNTING & STRUCTURE',
+    'ELECTRICAL PROTECTION',
+    'EARTHING',
+    'CABLING',
+    'WIRING',
+    'SERVICES'
+  ].forEach((cat, idx) => {
+    orderMap.set(cat, idx);
+  });
+
+  groups.sort((a, b) => {
+    const labelA = a.label.toUpperCase().trim();
+    const labelB = b.label.toUpperCase().trim();
+
+    const isOtherA = labelA === 'OTHER' || labelA === 'OTHERS';
+    const isOtherB = labelB === 'OTHER' || labelB === 'OTHERS';
+
+    if (isOtherA && !isOtherB) return 1;
+    if (!isOtherA && isOtherB) return -1;
+    if (isOtherA && isOtherB) return 0;
+
+    const idxA = orderMap.has(labelA) ? orderMap.get(labelA)! : 100;
+    const idxB = orderMap.has(labelB) ? orderMap.get(labelB)! : 100;
+
+    if (idxA !== idxB) {
+      return idxA - idxB;
+    }
+
+    return labelA.localeCompare(labelB);
+  });
+
   return groups;
 }
 
