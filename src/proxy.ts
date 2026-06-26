@@ -43,15 +43,10 @@ function pathMatchesPrefix(pathname: string, prefixes: string[]) {
 }
 
 function addSecurityHeaders(response: NextResponse) {
-  // Generate a random nonce for CSP
-  const array = new Uint8Array(16)
-  globalThis.crypto.getRandomValues(array)
-  const nonce = btoa(String.fromCharCode(...array))
-
-  // Basic CSP: Self, strict-dynamic for scripts, allow fonts/images/connects
+  // CSP compatible with Next.js script injection (no nonce required)
   const csp = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval' https://apis.google.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' blob: data: https:;
