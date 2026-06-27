@@ -19,7 +19,66 @@ interface QuoteSaveModalProps {
   leadId?: string | null;
 }
 
-const STEPS = ['Project', 'Address', 'Site', 'Sales'];
+const STEPS = ['Project', 'Address', 'Site', 'Sales', 'Proposal Customization'];
+
+const DEFAULT_TERMS = [
+  "This proposal is valid for the period stated. Post expiry, all prices subject to revision.",
+  "Payment: 50% advance with order; 40% before dispatch; 10% on commissioning & handover.",
+  "Installation within 15 working days of 50% advance. Commissioning within 45–60 days.",
+  "Solar PV Modules: 12-year product warranty + 30-year linear power output warranty (min 80% at year 30).",
+  "Inverter: 10-year manufacturer warranty. Extended AMC packages available.",
+  "MMS: 5-year structural warranty on galvanization and workmanship.",
+  "1-year free AMC post commissioning. Annual AMC packages available thereafter.",
+  "Net metering application assistance provided. DISCOM approval timelines as per DISCOM.",
+  "CFA/state subsidy documentation assistance. Subsidy credited directly to consumer by Govt.",
+  "Proposal based on standard site conditions. Additional civil/structural work quoted separately.",
+  "Force Majeure: Not liable for delays due to acts of God, government restrictions, or supply disruptions.",
+  "Disputes subject to courts at registered office. Governed by Indian law.",
+  "GST @ 8.9% blended (70%@5% + 30%@18%) per Govt. notification on solar equipment.",
+  "Contractor maintains workmen's compensation and public liability insurance during installation.",
+  "Binding only upon written acceptance and receipt of advance payment.",
+  "STATE TERMS – KERALA:",
+  "Comply with KSEB Net Metering Regulations 2014.",
+  "ANERT-empanelled / KSEB-approved installer required.",
+  "Kerala Electrical Inspector (EI) approval before grid connectivity.",
+  "KSEB bi-directional net meter subject to KSEB approval timeline.",
+  "PM Surya Ghar subsidy application post-commissioning. Timeline 60–90 days typically."
+];
+
+const DEFAULT_WHY_SOLAR = {
+  benefits: [
+    "Reduce electricity bills by 70–90%",
+    "25-year system lifespan",
+    "Protection against rising tariffs",
+    "Earn via net metering & grid export",
+    "Increases property value",
+    "Zero carbon emissions"
+  ],
+  reasons: [
+    "MNRE Empanelled EPC Contractor",
+    "13+ Years in Solar Energy Sector",
+    "5500+ Solar Projects Commissioned",
+    "25+ MW Aggregate Capacity commissioned",
+    "Full DISCOM & net metering support",
+    "ISO 9001:2015 certified"
+  ],
+  warranties: [
+    "25-year panel power output warranty",
+    "5–10 year inverter manufacturer warranty",
+    "10-year structural warranty on MMS",
+    "2-year workmanship warranty",
+    "MNRE certified Tier-1 equipment",
+    "BIS / IEC 61215 certified"
+  ],
+  promises: [
+    "Dedicated project manager assigned",
+    "Proactive DISCOM support",
+    "Commissioning & handover report",
+    "Annual performance monitoring",
+    "Responsive WhatsApp & call support",
+    "+91-81 380 27336"
+  ]
+};
 
 export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = [], leadId = null }: QuoteSaveModalProps) {
   const saveQuote = useCalculatorStore((s) => s.saveQuote);
@@ -45,6 +104,39 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
   const [address, setAddress] = useState<AddressInfo>({ line1: '', line2: '', city: '', state: 'Gujarat', pin: '' });
   const [site, setSite] = useState<SiteInfo>({ meterNo: '', sanctionedLoad: '', monthlyBill: 0, roofType: 'RCC', roofArea: 0 });
   const [sales, setSales] = useState<SalesInfo>({ projectTitle: '', execName: '', notes: '', saleType: 'New' });
+
+  // Customizable fields
+  const [companyCin, setCompanyCin] = useState('U74999KL2018PTC053947');
+  const [companyGstin, setCompanyGstin] = useState('32AAFCE1087R1ZA');
+  const [companyPan, setCompanyPan] = useState('AAFCE1087R');
+  const [companyPhone, setCompanyPhone] = useState('+91-81 380 27336');
+  const [companyEmail, setCompanyEmail] = useState('info@enermass.in');
+  const [companyWebsite, setCompanyWebsite] = useState('www.enermass.in');
+  const [companyAddress, setCompanyAddress] = useState('First Floor, AVM Complex, Chirangara Koratty Post, Thrissur, Kerala - 680 308');
+  const [ceoName, setCeoName] = useState('Mr. Manoj M S');
+  const [ceoDesignation, setCeoDesignation] = useState('Chief Executive Officer');
+  const [ceoSignatureUrl, setCeoSignatureUrl] = useState('');
+  const [salesExecRole, setSalesExecRole] = useState('Sales Manager');
+  const [salesExecPhone, setSalesExecPhone] = useState('7594933374');
+  const [bankAccountHolder, setBankAccountHolder] = useState('Enermass Power Solutions Pvt. Ltd.');
+  const [bankName, setBankName] = useState('bank of Baroda, Koratty');
+  const [bankAccountNo, setBankAccountNo] = useState('85080200000055');
+  const [bankIfsc, setBankIfsc] = useState('BARB0KORATT');
+  const [bankUpiId, setBankUpiId] = useState('enermass@barodampay');
+  const [terms, setTerms] = useState<string[]>(DEFAULT_TERMS);
+  const [whySolar, setWhySolar] = useState<any>(DEFAULT_WHY_SOLAR);
+  const [pdfSubSection, setPdfSubSection] = useState<'ceo_sales' | 'company' | 'bank' | 'terms'>('ceo_sales');
+
+  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCeoSignatureUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Client-side mounting for portal
   const [mounted, setMounted] = useState(false);
@@ -235,6 +327,59 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
     fetchLeadInfo();
   }, [isOpen, leadId]);
 
+  // Prefill when editing active quote
+  const quotes = useCalculatorStore((s) => s.quotes);
+  useEffect(() => {
+    if (isOpen && activeQuoteId) {
+      const activeQuote = quotes.find((q) => q.quoteId === activeQuoteId);
+      if (activeQuote) {
+        setCustomer(activeQuote.customer);
+        setAddress(activeQuote.address);
+        setSite(activeQuote.site);
+        setSales(activeQuote.sales);
+        setCompanyCin(activeQuote.company_cin || 'U74999KL2018PTC053947');
+        setCompanyGstin(activeQuote.company_gstin || '32AAFCE1087R1ZA');
+        setCompanyPan(activeQuote.company_pan || 'AAFCE1087R');
+        setCompanyPhone(activeQuote.company_phone || '+91-81 380 27336');
+        setCompanyEmail(activeQuote.company_email || 'info@enermass.in');
+        setCompanyWebsite(activeQuote.company_website || 'www.enermass.in');
+        setCompanyAddress(activeQuote.company_address || 'First Floor, AVM Complex, Chirangara Koratty Post, Thrissur, Kerala - 680 308');
+        setCeoName(activeQuote.ceo_name || 'Mr. Manoj M S');
+        setCeoDesignation(activeQuote.ceo_designation || 'Chief Executive Officer');
+        setCeoSignatureUrl(activeQuote.ceo_signature_url || '');
+        setSalesExecRole(activeQuote.sales_exec_role || 'Sales Manager');
+        setSalesExecPhone(activeQuote.sales_exec_phone || '7594933374');
+        setBankAccountHolder(activeQuote.bank_account_holder || 'Enermass Power Solutions Pvt. Ltd.');
+        setBankName(activeQuote.bank_name || 'bank of Baroda, Koratty');
+        setBankAccountNo(activeQuote.bank_account_no || '85080200000055');
+        setBankIfsc(activeQuote.bank_ifsc || 'BARB0KORATT');
+        setBankUpiId(activeQuote.bank_upi_id || 'enermass@barodampay');
+        setTerms(activeQuote.terms_json || DEFAULT_TERMS);
+        setWhySolar(activeQuote.why_solar_json || DEFAULT_WHY_SOLAR);
+      }
+    } else if (isOpen && !activeQuoteId) {
+      setCompanyCin('U74999KL2018PTC053947');
+      setCompanyGstin('32AAFCE1087R1ZA');
+      setCompanyPan('AAFCE1087R');
+      setCompanyPhone('+91-81 380 27336');
+      setCompanyEmail('info@enermass.in');
+      setCompanyWebsite('www.enermass.in');
+      setCompanyAddress('First Floor, AVM Complex, Chirangara Koratty Post, Thrissur, Kerala - 680 308');
+      setCeoName('Mr. Manoj M S');
+      setCeoDesignation('Chief Executive Officer');
+      setCeoSignatureUrl('');
+      setSalesExecRole('Sales Manager');
+      setSalesExecPhone('7594933374');
+      setBankAccountHolder('Enermass Power Solutions Pvt. Ltd.');
+      setBankName('bank of Baroda, Koratty');
+      setBankAccountNo('85080200000055');
+      setBankIfsc('BARB0KORATT');
+      setBankUpiId('enermass@barodampay');
+      setTerms(DEFAULT_TERMS);
+      setWhySolar(DEFAULT_WHY_SOLAR);
+    }
+  }, [isOpen, activeQuoteId]);
+
   // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -258,7 +403,33 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
     try {
       setFormError(null);
       const salesWithItc = { ...sales, itcEligible };
-      const quote = await saveQuote({ customer, address, site, sales: salesWithItc, validationAcknowledged: acknowledgedGuards, leadId }, forceOverwrite);
+      const quote = await saveQuote({
+        customer,
+        address,
+        site,
+        sales: salesWithItc,
+        validationAcknowledged: acknowledgedGuards,
+        leadId,
+        company_cin: companyCin,
+        company_gstin: companyGstin,
+        company_pan: companyPan,
+        company_phone: companyPhone,
+        company_email: companyEmail,
+        company_website: companyWebsite,
+        company_address: companyAddress,
+        ceo_name: ceoName,
+        ceo_designation: ceoDesignation,
+        ceo_signature_url: ceoSignatureUrl,
+        sales_exec_role: salesExecRole,
+        sales_exec_phone: salesExecPhone,
+        bank_account_holder: bankAccountHolder,
+        bank_name: bankName,
+        bank_account_no: bankAccountNo,
+        bank_ifsc: bankIfsc,
+        bank_upi_id: bankUpiId,
+        terms_json: terms,
+        why_solar_json: whySolar,
+      }, forceOverwrite);
 
       // Link quote to project if selected
       if (selectedProjectId) {
@@ -423,6 +594,25 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                                 roofType: (q.roof_type || 'RCC') as any,
                                 roofArea: q.roof_area_sqft || 0,
                               });
+                              setCompanyCin(q.company_cin || 'U74999KL2018PTC053947');
+                              setCompanyGstin(q.company_gstin || '32AAFCE1087R1ZA');
+                              setCompanyPan(q.company_pan || 'AAFCE1087R');
+                              setCompanyPhone(q.company_phone || '+91-81 380 27336');
+                              setCompanyEmail(q.company_email || 'info@enermass.in');
+                              setCompanyWebsite(q.company_website || 'www.enermass.in');
+                              setCompanyAddress(q.company_address || 'First Floor, AVM Complex, Chirangara Koratty Post, Thrissur, Kerala - 680 308');
+                              setCeoName(q.ceo_name || 'Mr. Manoj M S');
+                              setCeoDesignation(q.ceo_designation || 'Chief Executive Officer');
+                              setCeoSignatureUrl(q.ceo_signature_url || '');
+                              setSalesExecRole(q.sales_exec_role || 'Sales Manager');
+                              setSalesExecPhone(q.sales_exec_phone || '7594933374');
+                              setBankAccountHolder(q.bank_account_holder || 'Enermass Power Solutions Pvt. Ltd.');
+                              setBankName(q.bank_name || 'bank of Baroda, Koratty');
+                              setBankAccountNo(q.bank_account_no || '85080200000055');
+                              setBankIfsc(q.bank_ifsc || 'BARB0KORATT');
+                              setBankUpiId(q.bank_upi_id || 'enermass@barodampay');
+                              setTerms(q.terms_json || DEFAULT_TERMS);
+                              setWhySolar(q.why_solar_json || DEFAULT_WHY_SOLAR);
                             } else {
                               // If project exists but no quote is linked yet
                               setSales({
@@ -434,6 +624,25 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                               setCustomer({ name: '', phone: '', whatsapp: '', email: '', isGstRegistered: false });
                               setAddress({ line1: '', line2: '', city: '', state: 'Gujarat', pin: '' });
                               setSite({ meterNo: '', sanctionedLoad: '', monthlyBill: 0, roofType: 'RCC', roofArea: 0 });
+                              setCompanyCin('U74999KL2018PTC053947');
+                              setCompanyGstin('32AAFCE1087R1ZA');
+                              setCompanyPan('AAFCE1087R');
+                              setCompanyPhone('+91-81 380 27336');
+                              setCompanyEmail('info@enermass.in');
+                              setCompanyWebsite('www.enermass.in');
+                              setCompanyAddress('First Floor, AVM Complex, Chirangara Koratty Post, Thrissur, Kerala - 680 308');
+                              setCeoName('Mr. Manoj M S');
+                              setCeoDesignation('Chief Executive Officer');
+                              setCeoSignatureUrl('');
+                              setSalesExecRole('Sales Manager');
+                              setSalesExecPhone('7594933374');
+                              setBankAccountHolder('Enermass Power Solutions Pvt. Ltd.');
+                              setBankName('bank of Baroda, Koratty');
+                              setBankAccountNo('85080200000055');
+                              setBankIfsc('BARB0KORATT');
+                              setBankUpiId('enermass@barodampay');
+                              setTerms(DEFAULT_TERMS);
+                              setWhySolar(DEFAULT_WHY_SOLAR);
                             }
                           }
                         } else {
@@ -556,6 +765,123 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                   </div>
                 </div>
               )}
+
+              {step === 4 && (
+                <div className="space-y-4 animate-fade-in">
+                  {/* Sub-tab navigation */}
+                  <div className="flex border-b border-border text-xs mb-4 overflow-x-auto whitespace-nowrap">
+                    {(['ceo_sales', 'company', 'bank', 'terms'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        onClick={() => setPdfSubSection(tab)}
+                        className={`px-3 py-2 font-semibold capitalize border-b-2 -mb-[2px] transition-colors ${
+                          pdfSubSection === tab
+                            ? 'border-accent text-accent'
+                            : 'border-transparent text-text-muted hover:text-text-primary'
+                        }`}
+                      >
+                        {tab === 'ceo_sales' ? 'CEO & Sales' : tab === 'company' ? 'Company Profile' : tab === 'bank' ? 'Bank Details' : 'Terms & Conditions'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {pdfSubSection === 'ceo_sales' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input label="CEO Name" value={ceoName} onChange={(e) => setCeoName(e.target.value)} />
+                        <Input label="CEO Designation" value={ceoDesignation} onChange={(e) => setCeoDesignation(e.target.value)} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-text-secondary">CEO Signature Image (Base64 file upload)</label>
+                        <div className="flex gap-4 items-center">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleSignatureUpload}
+                            className="text-xs text-text-muted file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-surface-hover file:text-text-primary hover:file:bg-surface-active cursor-pointer"
+                          />
+                          {ceoSignatureUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setCeoSignatureUrl('')}
+                              className="text-xs text-error hover:underline"
+                            >
+                              Clear Signature
+                            </button>
+                          )}
+                        </div>
+                        {ceoSignatureUrl && (
+                          <div className="mt-2 p-2 border border-border bg-surface-hover rounded max-w-[200px]">
+                            <img src={ceoSignatureUrl} alt="CEO Signature Preview" className="max-h-12 object-contain" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input label="Sales Manager Role Name" value={salesExecRole} onChange={(e) => setSalesExecRole(e.target.value)} />
+                        <Input label="Sales Manager Phone" value={salesExecPhone} onChange={(e) => setSalesExecPhone(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
+
+                  {pdfSubSection === 'company' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input label="Company CIN" value={companyCin} onChange={(e) => setCompanyCin(e.target.value)} />
+                        <Input label="Company GSTIN" value={companyGstin} onChange={(e) => setCompanyGstin(e.target.value)} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input label="Company PAN" value={companyPan} onChange={(e) => setCompanyPan(e.target.value)} />
+                        <Input label="Company Phone" value={companyPhone} onChange={(e) => setCompanyPhone(e.target.value)} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input label="Company Email" value={companyEmail} onChange={(e) => setCompanyEmail(e.target.value)} />
+                        <Input label="Company Website" value={companyWebsite} onChange={(e) => setCompanyWebsite(e.target.value)} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-text-secondary">Company Registered Address</label>
+                        <textarea
+                          value={companyAddress}
+                          onChange={(e) => setCompanyAddress(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent min-h-16"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {pdfSubSection === 'bank' && (
+                    <div className="space-y-4">
+                      <Input label="Account Holder Name" value={bankAccountHolder} onChange={(e) => setBankAccountHolder(e.target.value)} />
+                      <Input label="Bank Name & Branch" value={bankName} onChange={(e) => setBankName(e.target.value)} />
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input label="Account Number" value={bankAccountNo} onChange={(e) => setBankAccountNo(e.target.value)} />
+                        <Input label="IFSC Code" value={bankIfsc} onChange={(e) => setBankIfsc(e.target.value)} />
+                      </div>
+                      <Input label="UPI ID (VPA for QR Code)" value={bankUpiId} onChange={(e) => setBankUpiId(e.target.value)} />
+                    </div>
+                  )}
+
+                  {pdfSubSection === 'terms' && (
+                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                      <p className="text-xs text-text-muted mb-2">Edit individual terms and conditions. These will print on pages 8 and 9.</p>
+                      {terms.map((t, idx) => (
+                        <div key={idx} className="flex gap-2 items-start">
+                          <span className="text-xs text-text-secondary font-mono mt-2.5 w-6 text-right">{idx + 1}.</span>
+                          <textarea
+                            value={t}
+                            onChange={(e) => {
+                              const newTerms = [...terms];
+                              newTerms[idx] = e.target.value;
+                              setTerms(newTerms);
+                            }}
+                            className="flex-1 px-2.5 py-1.5 rounded bg-background border border-border text-xs text-text-primary outline-none focus:border-accent min-h-12"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -613,7 +939,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                     }
                     setFormError(null);
                   }
-                  if (step === 3) {
+                  if (step === 4) {
                     handleSave();
                     return;
                   }
@@ -623,7 +949,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                 disabled={saving}
                 className="px-6 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background font-bold transition-colors text-sm disabled:opacity-50"
               >
-                {step === 3 ? (saving ? 'Saving...' : 'Create Quote PDF') : 'Next'}
+                {step === 4 ? (saving ? 'Saving...' : 'Create Quote PDF') : 'Next'}
               </button>
             </>
           )}

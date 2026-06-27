@@ -31,6 +31,25 @@ export const createQuoteSlice: StateCreator<
       sales: SalesInfo;
       validationAcknowledged?: string[];
       leadId?: string | null;
+      company_cin?: string;
+      company_gstin?: string;
+      company_pan?: string;
+      company_phone?: string;
+      company_email?: string;
+      company_website?: string;
+      company_address?: string;
+      ceo_name?: string;
+      ceo_designation?: string;
+      ceo_signature_url?: string;
+      sales_exec_role?: string;
+      sales_exec_phone?: string;
+      bank_account_holder?: string;
+      bank_name?: string;
+      bank_account_no?: string;
+      bank_ifsc?: string;
+      bank_upi_id?: string;
+      terms_json?: string[];
+      why_solar_json?: any;
     },
     forceOverwrite?: boolean
   ): Promise<Quote> => {
@@ -132,6 +151,26 @@ export const createQuoteSlice: StateCreator<
       status: existingStatus,
       createdAt: existingCreatedAt,
       updatedAt: now,
+
+      company_cin: info.company_cin,
+      company_gstin: info.company_gstin,
+      company_pan: info.company_pan,
+      company_phone: info.company_phone,
+      company_email: info.company_email,
+      company_website: info.company_website,
+      company_address: info.company_address,
+      ceo_name: info.ceo_name,
+      ceo_designation: info.ceo_designation,
+      ceo_signature_url: info.ceo_signature_url,
+      sales_exec_role: info.sales_exec_role,
+      sales_exec_phone: info.sales_exec_phone,
+      bank_account_holder: info.bank_account_holder,
+      bank_name: info.bank_name,
+      bank_account_no: info.bank_account_no,
+      bank_ifsc: info.bank_ifsc,
+      bank_upi_id: info.bank_upi_id,
+      terms_json: info.terms_json,
+      why_solar_json: info.why_solar_json,
     };
 
     // Add custom fields for state restoration
@@ -149,6 +188,26 @@ export const createQuoteSlice: StateCreator<
       quote_number: quote.quoteId,
       status: quote.status.toLowerCase(),
       project_type: quote.projectType,
+
+      company_cin: quote.company_cin || null,
+      company_gstin: quote.company_gstin || null,
+      company_pan: quote.company_pan || null,
+      company_phone: quote.company_phone || null,
+      company_email: quote.company_email || null,
+      company_website: quote.company_website || null,
+      company_address: quote.company_address || null,
+      ceo_name: quote.ceo_name || null,
+      ceo_designation: quote.ceo_designation || null,
+      ceo_signature_url: quote.ceo_signature_url || null,
+      sales_exec_role: quote.sales_exec_role || null,
+      sales_exec_phone: quote.sales_exec_phone || null,
+      bank_account_holder: quote.bank_account_holder || null,
+      bank_name: quote.bank_name || null,
+      bank_account_no: quote.bank_account_no || null,
+      bank_ifsc: quote.bank_ifsc || null,
+      bank_upi_id: quote.bank_upi_id || null,
+      terms_json: quote.terms_json || null,
+      why_solar_json: quote.why_solar_json || null,
       customer_name: quote.customer.name,
       customer_phone: quote.customer.phone || null,
       customer_whatsapp: quote.customer.whatsapp || null,

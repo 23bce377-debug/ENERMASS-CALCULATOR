@@ -462,11 +462,18 @@ html.dark .inner-glow {
 
   @page {
     size: A4;
-    margin: 12mm 15mm;
+    margin: 0;
   }
 
   .pdf-page-break { page-break-before: always; }
-  .pdf-page { width: 100%; max-width: 100%; }
+  .pdf-page {
+    width: 210mm;
+    height: 297mm;
+    position: relative;
+    box-sizing: border-box;
+    overflow: hidden;
+    page-break-after: always;
+  }
 
   .pdf-header {
     display: flex;

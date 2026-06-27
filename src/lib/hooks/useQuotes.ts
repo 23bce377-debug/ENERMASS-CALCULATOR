@@ -135,6 +135,26 @@ function mapDbQuoteToQuote(q: any): Quote {
     gstOnOutputOverride: q.gst_output_override,
     targetMRPInclGST: q.target_mrp_incl_gst,
     targetMRPPerWatt: q.target_mrp_per_watt,
+
+    company_cin: q.company_cin || undefined,
+    company_gstin: q.company_gstin || undefined,
+    company_pan: q.company_pan || undefined,
+    company_phone: q.company_phone || undefined,
+    company_email: q.company_email || undefined,
+    company_website: q.company_website || undefined,
+    company_address: q.company_address || undefined,
+    ceo_name: q.ceo_name || undefined,
+    ceo_designation: q.ceo_designation || undefined,
+    ceo_signature_url: q.ceo_signature_url || undefined,
+    sales_exec_role: q.sales_exec_role || undefined,
+    sales_exec_phone: q.sales_exec_phone || undefined,
+    bank_account_holder: q.bank_account_holder || undefined,
+    bank_name: q.bank_name || undefined,
+    bank_account_no: q.bank_account_no || undefined,
+    bank_ifsc: q.bank_ifsc || undefined,
+    bank_upi_id: q.bank_upi_id || undefined,
+    terms_json: q.terms_json || undefined,
+    why_solar_json: q.why_solar_json || undefined,
   } as Quote
 }
 

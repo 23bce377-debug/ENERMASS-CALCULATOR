@@ -119,6 +119,32 @@ export interface Quote {
   updatedAt: string;
   version?: number;
   parentQuoteId?: string;
+
+  // Custom/Editable details
+  company_cin?: string;
+  company_gstin?: string;
+  company_pan?: string;
+  company_phone?: string;
+  company_email?: string;
+  company_website?: string;
+  company_address?: string;
+  ceo_name?: string;
+  ceo_designation?: string;
+  ceo_signature_url?: string;
+  sales_exec_role?: string;
+  sales_exec_phone?: string;
+  bank_account_holder?: string;
+  bank_name?: string;
+  bank_account_no?: string;
+  bank_ifsc?: string;
+  bank_upi_id?: string;
+  terms_json?: string[];
+  why_solar_json?: {
+    benefits?: string[];
+    reasons?: string[];
+    warranties?: string[];
+    promises?: string[];
+  };
 }
 
 // ─── Quote ID Generator ─────────────────────────────────────────────────────────

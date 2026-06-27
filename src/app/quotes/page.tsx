@@ -123,9 +123,7 @@ function QuoteDetailModal({
           <div className="flex items-center gap-2 print:hidden flex-wrap justify-end">
             <button
               onClick={() => onEdit(quote.quoteId)}
-              disabled={quote.version === 1 && !quote.parentQuoteId}
-              title={quote.version === 1 && !quote.parentQuoteId ? "Original quote is read-only. Use 'Revise Quote' to create a new version." : undefined}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-text-primary text-sm font-medium hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-text-primary text-sm font-medium hover:bg-surface-hover transition-colors"
             >
               <PenSquare size={16} /> Edit
             </button>

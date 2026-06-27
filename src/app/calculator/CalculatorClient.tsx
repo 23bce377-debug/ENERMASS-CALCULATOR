@@ -200,6 +200,13 @@ export default function CalculatorClient({
 
   useEffect(() => {
     async function loadDraft() {
+      // If we are already editing/viewing an active quote, do not load draft!
+      const currentStore = useCalculatorStore.getState();
+      if (currentStore.activeQuoteId) {
+        setDraftLoaded(true);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setDraftLoaded(true); return; }
 
