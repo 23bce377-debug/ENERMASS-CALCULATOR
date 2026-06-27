@@ -335,7 +335,7 @@ export async function requireLicensedSession(
     id: '00000000-0000-0000-0000-000000000000',
     org_id: orgId,
     user_id: user.id,
-    device_install_id: 'disabled',
+    device_secret_hash: '',
     public_key: '',
     fingerprint_hash: '',
     device_name: 'Any Device',
@@ -345,7 +345,6 @@ export async function requireLicensedSession(
     first_seen_at: new Date().toISOString(),
     last_seen_at: new Date().toISOString(),
     revoked_at: null,
-    device_secret_hash: '',
   };
 
   const assertFeature = deps.assertFeatureAccess ?? assertFeatureAccess;
