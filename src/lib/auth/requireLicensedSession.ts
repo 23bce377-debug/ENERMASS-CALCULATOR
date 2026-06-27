@@ -345,7 +345,7 @@ export async function requireLicensedSession(
     first_seen_at: new Date().toISOString(),
     last_seen_at: new Date().toISOString(),
     revoked_at: null,
-    device_secret_hash: null,
+    device_secret_hash: '',
   };
 
   const assertFeature = deps.assertFeatureAccess ?? assertFeatureAccess;

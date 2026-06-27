@@ -5289,6 +5289,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_super_admin: boolean
+          key_id: string | null
           org_id: string
           phone: string | null
           role: string
@@ -5300,6 +5301,7 @@ export type Database = {
           id: string
           is_active?: boolean
           is_super_admin?: boolean
+          key_id?: string | null
           org_id: string
           phone?: string | null
           role?: string
@@ -5311,6 +5313,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_super_admin?: boolean
+          key_id?: string | null
           org_id?: string
           phone?: string | null
           role?: string
