@@ -29,7 +29,7 @@ async function sendDiscordAlert(payload: LogPayload) {
         { name: 'User ID', value: payload.userId || 'N/A', inline: true },
         { name: 'Correlation ID', value: payload.correlationId || 'N/A', inline: true }
       ],
-      footer: { text: 'ENERMASS ERP Operations Monitor' }
+      footer: { text: 'ENERMASS Operations Monitor' }
     };
 
     if (payload.error) {

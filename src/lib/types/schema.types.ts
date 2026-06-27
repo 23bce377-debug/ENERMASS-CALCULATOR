@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -748,6 +748,7 @@ export type Database = {
           revoked_by: string | null
           status: string
           updated_at: string
+          max_uses: number
         }
         Insert: {
           activated_at?: string | null
@@ -767,6 +768,7 @@ export type Database = {
           revoked_by?: string | null
           status?: string
           updated_at?: string
+          max_uses?: number
         }
         Update: {
           activated_at?: string | null
@@ -786,6 +788,7 @@ export type Database = {
           revoked_by?: string | null
           status?: string
           updated_at?: string
+          max_uses?: number
         }
         Relationships: [
           {

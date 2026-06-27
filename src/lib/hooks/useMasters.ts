@@ -561,6 +561,7 @@ export function useUpdateSubsidyMutation() {
           rate_per_kw: parseFloat(s.ratePerKW ?? s.rate_per_kw ?? 0),
           is_fixed_amount: s.isFixedAmount ?? s.is_fixed_amount ?? false,
           fixed_amount: s.fixedAmount || s.fixed_amount ? parseFloat(s.fixedAmount ?? s.fixed_amount) : null,
+          formula: s.formula ?? null,
         }));
 
         const { error: slabsErr } = await supabase.from('scheme_slabs').insert(slabsToInsert);
@@ -627,6 +628,7 @@ export function useCreateSubsidyMutation() {
           rate_per_kw: parseFloat(s.ratePerKW ?? s.rate_per_kw ?? 0),
           is_fixed_amount: s.isFixedAmount ?? s.is_fixed_amount ?? false,
           fixed_amount: s.fixedAmount || s.fixed_amount ? parseFloat(s.fixedAmount ?? s.fixed_amount) : null,
+          formula: s.formula ?? null,
         }));
 
         const { error: slabsErr } = await supabase.from('scheme_slabs').insert(slabsToInsert);

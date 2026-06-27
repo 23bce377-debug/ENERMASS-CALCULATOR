@@ -47,7 +47,7 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
       id: 'master-panels',
       title: 'Go to Solar Panels Directory',
       subtitle: 'Manage PV module catalogs, wattages, and master inventories',
-      category: 'ERP Masters',
+      category: 'Price Masters',
       icon: <Database size={15} />,
       action: () => { router.push('/master/panels'); onClose(); }
     },

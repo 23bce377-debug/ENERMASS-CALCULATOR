@@ -1,3 +1,5 @@
+import { sanitizeNumber } from './calculator';
+
 export type DiscountType = 'none' | 'flat' | 'percent';
 
 export interface PricingMarginInput {
@@ -15,12 +17,12 @@ export interface PricingMarginInput {
  * Previously targetMRPPerWatt silently won, masking a misconfiguration.
  * Priority (documented): targetMRPInclGST > targetMRPPerWatt > targetMarginPct > defaultMarginPct
  */
-export function calculatePricingAndMargins(input: PricingMarginInput) {
+export function calculatePricingAndMargins(rawInput: PricingMarginInput) {
   // FIX CALC-07: Conflict detection
   const setPricingOptions = [
-    input.targetMRPInclGST !== undefined,
-    input.targetMRPPerWatt !== undefined,
-    input.targetMarginPct !== undefined
+    rawInput.targetMRPInclGST !== undefined,
+    rawInput.targetMRPPerWatt !== undefined,
+    rawInput.targetMarginPct !== undefined
   ].filter(Boolean).length;
   
   if (setPricingOptions > 1) {
@@ -30,37 +32,45 @@ export function calculatePricingAndMargins(input: PricingMarginInput) {
     );
   }
 
-  const baseCostPaise = Math.round(input.baseCost * 100);
+  const baseCost = Math.max(0, sanitizeNumber(rawInput.baseCost, 0));
+  const targetMarginPct = rawInput.targetMarginPct !== undefined ? sanitizeNumber(rawInput.targetMarginPct, 0) : undefined;
+  const targetMRPInclGST = rawInput.targetMRPInclGST !== undefined ? sanitizeNumber(rawInput.targetMRPInclGST, 0) : undefined;
+  const targetMRPPerWatt = rawInput.targetMRPPerWatt !== undefined ? sanitizeNumber(rawInput.targetMRPPerWatt, 0) : undefined;
+  const gstOutputRate = Math.max(0, Math.min(2.0, sanitizeNumber(rawInput.gstOutputRate, 0)));
+  const capacityWatts = Math.max(0, sanitizeNumber(rawInput.capacityWatts, 0));
+  const defaultMarginPct = sanitizeNumber(rawInput.defaultMarginPct, 0);
+
+  const baseCostPaise = Math.round(baseCost * 100);
   let mrpInclGSTPaise = 0;
   let mrpExclGSTPaise = 0;
   let marginAmountPaise = 0;
   let effectiveMarginPct = 0;
 
-  if (input.targetMRPInclGST !== undefined) {
-    mrpInclGSTPaise = Math.round(input.targetMRPInclGST * 100);
-    mrpExclGSTPaise = Math.round(mrpInclGSTPaise / (1 + input.gstOutputRate));
+  if (targetMRPInclGST !== undefined) {
+    mrpInclGSTPaise = Math.round(targetMRPInclGST * 100);
+    mrpExclGSTPaise = Math.round(mrpInclGSTPaise / (1 + gstOutputRate));
     marginAmountPaise = mrpExclGSTPaise - baseCostPaise;
     effectiveMarginPct = mrpExclGSTPaise > 0 ? marginAmountPaise / mrpExclGSTPaise : 0;
-  } else if (input.targetMRPPerWatt !== undefined) {
-    mrpInclGSTPaise = Math.round(input.targetMRPPerWatt * input.capacityWatts * 100);
-    mrpExclGSTPaise = Math.round(mrpInclGSTPaise / (1 + input.gstOutputRate));
+  } else if (targetMRPPerWatt !== undefined) {
+    mrpInclGSTPaise = Math.round(targetMRPPerWatt * capacityWatts * 100);
+    mrpExclGSTPaise = Math.round(mrpInclGSTPaise / (1 + gstOutputRate));
     marginAmountPaise = mrpExclGSTPaise - baseCostPaise;
     effectiveMarginPct = mrpExclGSTPaise > 0 ? marginAmountPaise / mrpExclGSTPaise : 0;
   } else {
-    effectiveMarginPct = input.targetMarginPct !== undefined
-      ? input.targetMarginPct
-      : input.defaultMarginPct;
+    effectiveMarginPct = targetMarginPct !== undefined
+      ? targetMarginPct
+      : defaultMarginPct;
     effectiveMarginPct = Math.max(Math.min(effectiveMarginPct, 0.99), 0); // Cap at 99%
     mrpExclGSTPaise = Math.round(baseCostPaise / (1 - effectiveMarginPct));
     marginAmountPaise = mrpExclGSTPaise - baseCostPaise;
-    mrpInclGSTPaise = Math.round(mrpExclGSTPaise * (1 + input.gstOutputRate));
+    mrpInclGSTPaise = Math.round(mrpExclGSTPaise * (1 + gstOutputRate));
   }
 
   return {
-    mrpInclGST: mrpInclGSTPaise / 100,
-    mrpExclGST: mrpExclGSTPaise / 100,
-    marginAmount: marginAmountPaise / 100,
-    effectiveMarginPct
+    mrpInclGST: sanitizeNumber(mrpInclGSTPaise / 100),
+    mrpExclGST: sanitizeNumber(mrpExclGSTPaise / 100),
+    marginAmount: sanitizeNumber(marginAmountPaise / 100),
+    effectiveMarginPct: sanitizeNumber(effectiveMarginPct)
   };
 }
 
@@ -70,17 +80,19 @@ export interface DiscountInput {
   discountVal: number;
 }
 
-export function calculateDiscountAmount(input: DiscountInput): number {
+export function calculateDiscountAmount(rawInput: DiscountInput): number {
+  const mrpInclGST = Math.max(0, sanitizeNumber(rawInput.mrpInclGST, 0));
+  const val = Math.max(0, sanitizeNumber(rawInput.discountVal, 0));
+  
   let discountAmountPaise = 0;
-  const val = Math.max(0, input.discountVal);
-  const mrpInclGSTPaise = Math.round(input.mrpInclGST * 100);
+  const mrpInclGSTPaise = Math.round(mrpInclGST * 100);
 
-  switch (input.discountType) {
+  switch (rawInput.discountType) {
     case 'flat':
       discountAmountPaise = Math.round(val * 100);
       break;
     case 'percent':
-      discountAmountPaise = Math.round(mrpInclGSTPaise * (val / 100));
+      discountAmountPaise = Math.round(mrpInclGSTPaise * (Math.min(100, val) / 100));
       break;
     case 'none':
     default:
@@ -88,5 +100,6 @@ export function calculateDiscountAmount(input: DiscountInput): number {
       break;
   }
 
-  return Math.max(0, Math.min(discountAmountPaise, mrpInclGSTPaise)) / 100;
+  const finalDiscountPaise = Math.max(0, Math.min(discountAmountPaise, mrpInclGSTPaise));
+  return sanitizeNumber(finalDiscountPaise / 100);
 }

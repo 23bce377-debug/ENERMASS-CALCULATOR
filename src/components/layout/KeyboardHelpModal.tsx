@@ -17,7 +17,7 @@ export function KeyboardHelpModal({ isOpen, onClose }: { isOpen: boolean; onClos
       ]
     },
     {
-      title: 'ERP Masters Directories',
+      title: 'Price Masters Directories',
       keys: [
         { combination: ['/'], action: 'Focus text search field' },
         { combination: ['N'], action: 'Create a new catalog item' },

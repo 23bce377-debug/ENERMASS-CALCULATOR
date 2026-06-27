@@ -352,10 +352,11 @@ export class UserDeviceRepository extends RepositoryBase<'user_devices'> {
       .select('*')
       .eq('user_id', userId)
       .eq('status', 'active')
-      .maybeSingle();
+      .order('last_seen_at', { ascending: false })
+      .limit(1);
 
     if (error) throwDbError('Failed to fetch active user device', error);
-    return data;
+    return data && data.length > 0 ? data[0] : null;
   }
 
   create(orgId: string, userId: string, input: DevicePayload) {
@@ -596,7 +597,7 @@ export class ActivationKeyRepository extends RepositoryBase<'activation_keys'> {
     const client = await this.client();
     const { data, error } = await (client as any)
       .from('activation_keys')
-      .select('id, org_id, key_prefix, status, activated_by, activated_at, device_id, batch_id, created_by, expires_at, revoked_at, created_at, updated_at, key_version')
+      .select('id, org_id, key_prefix, status, activated_by, activated_at, device_id, batch_id, created_by, expires_at, revoked_at, created_at, updated_at, key_version, max_uses')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
     if (error) throwDbError('Failed to list activation keys for org', error);
@@ -608,7 +609,7 @@ export class ActivationKeyRepository extends RepositoryBase<'activation_keys'> {
     const offset = (page - 1) * limit;
     const { data, error } = await (client as any)
       .from('activation_keys')
-      .select('id, org_id, key_prefix, status, activated_by, activated_at, device_id, batch_id, created_by, expires_at, revoked_at, created_at, updated_at, key_version')
+      .select('id, org_id, key_prefix, status, activated_by, activated_at, device_id, batch_id, created_by, expires_at, revoked_at, created_at, updated_at, key_version, max_uses')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
     if (error) throwDbError('Failed to list all activation keys', error);

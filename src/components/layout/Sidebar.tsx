@@ -32,7 +32,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/calculator',  label: 'Calculator',  icon: <Calculator  size={18} />, mobileVisible: true  },
   { href: '/systems',     label: 'Systems',     icon: <Cpu         size={18} /> },
   { href: '/quotes',      label: 'Quotes',      icon: <FileText    size={18} />, mobileVisible: true  },
-  { href: '/master',      label: 'ERP Masters', icon: <Building2   size={18} />, mobileVisible: true  },
+  { href: '/master',      label: 'Price Masters', icon: <Building2   size={18} />, mobileVisible: true  },
 
   { href: '/settings',    label: 'Settings',    icon: <Settings    size={18} />, mobileVisible: true  },
   { href: '/profile',     label: 'Profile',     icon: <User        size={18} /> },

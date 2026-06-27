@@ -22,17 +22,27 @@ import { generateElectricalBOM } from './bomElectrical';
 import { generateStructureBOM } from './bomStructure';
 import { generateCivilEarthingBOM } from './bomCivilEarthing';
 
+export const MAX_SAFE_NUMBER = 999999999999;
+export const MIN_SAFE_NUMBER = -999999999999;
+
+export function sanitizeNumber(num: any, def = 0): number {
+  if (num === null || num === undefined || typeof num !== 'number' || isNaN(num) || !isFinite(num)) {
+    return def;
+  }
+  return Math.max(MIN_SAFE_NUMBER, Math.min(MAX_SAFE_NUMBER, num));
+}
+
 export function roundTo5(num: number | null | undefined): number {
-  if (num === null || num === undefined || isNaN(num)) return 0;
-  return Math.round(num * 1e5) / 1e5;
+  const val = sanitizeNumber(num);
+  return Math.round(val * 1e5) / 1e5;
 }
 
 /**
  * Rounds a number to exactly two decimal places (currency).
  */
 export function roundToINR(num: number | null | undefined): number {
-  if (num === null || num === undefined || isNaN(num)) return 0;
-  return Math.round(num * 1e2) / 1e2;
+  const val = sanitizeNumber(num);
+  return Math.round(val * 1e2) / 1e2;
 }
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -336,6 +346,7 @@ export function getSubsidyAmount(
     rate_per_kw: number;
     is_fixed_amount: boolean;
     fixed_amount: number | null;
+    formula?: string | null;
   }>,
   maxCapacityKW?: number,
   maxAbsoluteSubsidy?: number,
@@ -366,13 +377,28 @@ export function getSubsidyAmount(
     if (eligibleCapacityKW <= start) {
       break;
     }
-    if (slab.is_fixed_amount) {
+    const end = slab.end_kw === null
+      ? eligibleCapacityKW
+      : Math.min(eligibleCapacityKW, Number(slab.end_kw));
+    const applicable = Math.max(0, end - start);
+
+    if (slab.formula) {
+      try {
+        const val = safeEvalFormula(slab.formula, {
+          system_kw: eligibleCapacityKW,
+          applicable_kw: applicable,
+          panel_capacity_kw: panelCapacityKW,
+          inverter_capacity_kw: inverterCapacityKW ?? panelCapacityKW,
+          start_kw: start,
+          end_kw: slab.end_kw === null ? eligibleCapacityKW : Number(slab.end_kw),
+        });
+        total += sanitizeNumber(val, 0);
+      } catch (err) {
+        console.warn(`Failed to evaluate subsidy slab formula: "${slab.formula}". Error:`, err);
+      }
+    } else if (slab.is_fixed_amount) {
       total += Number(slab.fixed_amount ?? 0);
     } else {
-      const end = slab.end_kw === null
-        ? eligibleCapacityKW
-        : Math.min(eligibleCapacityKW, Number(slab.end_kw));
-      const applicable = end - start;
       total += applicable * Number(slab.rate_per_kw);
     }
   }
@@ -738,7 +764,29 @@ export function resolveStructureItems(
  * Full system calculation. NO rounding in intermediate steps.
  * Round only in UI display layer.
  */
-export function calculateSystem(input: CalcInput): CalcResult {
+export function calculateSystem(rawInput: CalcInput): CalcResult {
+  const input: CalcInput = {
+    ...rawInput,
+    panelCapacityKW: rawInput.panelCapacityKW !== undefined ? sanitizeNumber(rawInput.panelCapacityKW, 0) : undefined,
+    discountVal: rawInput.discountVal !== undefined ? sanitizeNumber(rawInput.discountVal, 0) : undefined,
+    targetMarginPct: rawInput.targetMarginPct !== undefined ? sanitizeNumber(rawInput.targetMarginPct, 0) : undefined,
+    targetMRPInclGST: rawInput.targetMRPInclGST !== undefined ? sanitizeNumber(rawInput.targetMRPInclGST, 0) : undefined,
+    targetMRPPerWatt: rawInput.targetMRPPerWatt !== undefined ? sanitizeNumber(rawInput.targetMRPPerWatt, 0) : undefined,
+    panelRateOverride: rawInput.panelRateOverride !== undefined ? sanitizeNumber(rawInput.panelRateOverride, 0) : undefined,
+    panelQtyOverride: rawInput.panelQtyOverride !== undefined ? sanitizeNumber(rawInput.panelQtyOverride, 0) : undefined,
+    inverterRateOverride: rawInput.inverterRateOverride !== undefined ? sanitizeNumber(rawInput.inverterRateOverride, 0) : undefined,
+    inverterQtyOverride: rawInput.inverterQtyOverride !== undefined ? sanitizeNumber(rawInput.inverterQtyOverride, 0) : undefined,
+    batteryRateOverride: rawInput.batteryRateOverride !== undefined ? sanitizeNumber(rawInput.batteryRateOverride, 0) : undefined,
+    batteryQtyOverride: rawInput.batteryQtyOverride !== undefined ? sanitizeNumber(rawInput.batteryQtyOverride, 0) : undefined,
+    dcCableLengthM: rawInput.dcCableLengthM !== undefined ? sanitizeNumber(rawInput.dcCableLengthM, 0) : undefined,
+    acCableLengthM: rawInput.acCableLengthM !== undefined ? sanitizeNumber(rawInput.acCableLengthM, 0) : undefined,
+    walkwayLengthM: rawInput.walkwayLengthM !== undefined ? sanitizeNumber(rawInput.walkwayLengthM, 0) : undefined,
+    ladderLengthM: rawInput.ladderLengthM !== undefined ? sanitizeNumber(rawInput.ladderLengthM, 0) : undefined,
+    additionalCosts: rawInput.additionalCosts?.map(c => ({
+      ...c,
+      amount: sanitizeNumber(c.amount, 0)
+    }))
+  };
   const systems = input.systems ?? SYSTEMS;
   // ── Step 1: Lookup system ──
   let system = systems.find((s) => s.id === input.systemId);
@@ -1408,7 +1456,7 @@ export function calculateSystem(input: CalcInput): CalcResult {
   const effectiveMarginPct = roundTo5(marginResults.effectiveMarginPct);
 
   // ── Per-kW analysis ──
-  const capKW = capacityKW;
+  const capKW = Math.max(0.0001, capacityKW);
   const perKWexclGST = roundToINR(mrpExclGST / capKW);
   const perKWinclGST = roundToINR(mrpInclGST / capKW);
 

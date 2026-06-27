@@ -6,7 +6,8 @@ const token = process.env.UPSTASH_REDIS_REST_TOKEN
 const isProduction = process.env.NODE_ENV === 'production';
 const isConfigured = !!(url && !url.includes('your-database-name') && token && token !== 'your-rest-token');
 
-if (isProduction && !isConfigured) {
+const isProductionBuild = process.env.NEXT_PHASE === 'phase-production-build';
+if (isProduction && !isConfigured && !isProductionBuild) {
   throw new Error('CRITICAL: Upstash Redis is not configured. Redis is MANDATORY in production environments.');
 }
 

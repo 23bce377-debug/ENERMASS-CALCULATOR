@@ -31,6 +31,9 @@ const CARDS = [
     icon: <Sun size={24} className="text-amber-500" />,
     entity: 'panels',
     table: 'eq_panels',
+    hoverBorder: 'hover:border-amber-500/30 group-hover:border-amber-500/30',
+    glow: 'bg-amber-500/5',
+    iconBgHover: 'group-hover:bg-amber-500/10',
   },
   {
     href: '/master/inverters',
@@ -39,6 +42,9 @@ const CARDS = [
     icon: <Cpu size={24} className="text-emerald-500" />,
     entity: 'inverters',
     table: 'eq_inverters',
+    hoverBorder: 'hover:border-emerald-500/30 group-hover:border-emerald-500/30',
+    glow: 'bg-emerald-500/5',
+    iconBgHover: 'group-hover:bg-emerald-500/10',
   },
   {
     href: '/master/batteries',
@@ -47,30 +53,9 @@ const CARDS = [
     icon: <Battery size={24} className="text-purple-500" />,
     entity: 'batteries',
     table: 'eq_batteries',
-  },
-  {
-    href: '/master/structures',
-    label: 'Structures Master',
-    desc: 'Set mounting structure weight lookup values and metal raw material rates.',
-    icon: <Wrench size={24} className="text-indigo-500" />,
-    entity: 'structures',
-    table: 'eq_mounting_structures',
-  },
-  {
-    href: '/master/accessories',
-    label: 'Accessories Master',
-    desc: 'Standardize ACDB, DCDB boxes, earthing rods, solar cabling, and transport logs.',
-    icon: <Package size={24} className="text-sky-500" />,
-    entity: 'accessories',
-    table: 'bom_template_items',
-  },
-  {
-    href: '/master/vendors',
-    label: 'Vendors Master',
-    desc: 'Directory of approved solar engineering manufacturers, address files, and GSTNs.',
-    icon: <Truck size={24} className="text-blue-500" />,
-    entity: 'vendors',
-    table: 'vendors',
+    hoverBorder: 'hover:border-purple-500/30 group-hover:border-purple-500/30',
+    glow: 'bg-purple-500/5',
+    iconBgHover: 'group-hover:bg-purple-500/10',
   },
   {
     href: '/master/pricing',
@@ -79,6 +64,42 @@ const CARDS = [
     icon: <Tag size={24} className="text-rose-500" />,
     entity: 'pricing',
     table: 'rate_master',
+    hoverBorder: 'hover:border-rose-500/30 group-hover:border-rose-500/30',
+    glow: 'bg-rose-500/5',
+    iconBgHover: 'group-hover:bg-rose-500/10',
+  },
+  {
+    href: '/master/structures',
+    label: 'Structures Master',
+    desc: 'Set mounting structure weight lookup values and metal raw material rates.',
+    icon: <Wrench size={24} className="text-indigo-500" />,
+    entity: 'structures',
+    table: 'eq_mounting_structures',
+    hoverBorder: 'hover:border-indigo-500/30 group-hover:border-indigo-500/30',
+    glow: 'bg-indigo-500/5',
+    iconBgHover: 'group-hover:bg-indigo-500/10',
+  },
+  {
+    href: '/master/accessories',
+    label: 'Accessories Master',
+    desc: 'Standardize ACDB, DCDB boxes, earthing rods, solar cabling, and transport logs.',
+    icon: <Package size={24} className="text-sky-500" />,
+    entity: 'accessories',
+    table: 'bom_template_items',
+    hoverBorder: 'hover:border-sky-500/30 group-hover:border-sky-500/30',
+    glow: 'bg-sky-500/5',
+    iconBgHover: 'group-hover:bg-sky-500/10',
+  },
+  {
+    href: '/master/vendors',
+    label: 'Vendors Master',
+    desc: 'Directory of approved solar engineering manufacturers, address files, and GSTNs.',
+    icon: <Truck size={24} className="text-blue-500" />,
+    entity: 'vendors',
+    table: 'vendors',
+    hoverBorder: 'hover:border-blue-500/30 group-hover:border-blue-500/30',
+    glow: 'bg-blue-500/5',
+    iconBgHover: 'group-hover:bg-blue-500/10',
   },
   {
     href: '/master/subsidy',
@@ -87,6 +108,9 @@ const CARDS = [
     icon: <Percent size={24} className="text-teal-500" />,
     entity: 'subsidy',
     table: 'calculation_schemes',
+    hoverBorder: 'hover:border-teal-500/30 group-hover:border-teal-500/30',
+    glow: 'bg-teal-500/5',
+    iconBgHover: 'group-hover:bg-teal-500/10',
   },
 ];
 
@@ -180,7 +204,7 @@ export default function MastersDashboardPage() {
       {/* Welcome Banner */}
       <div>
         <h1 className="text-xl font-bold text-text-primary flex items-center gap-2">
-          ERP Masters Dashboard
+          Price Masters Dashboard
         </h1>
         <p className="text-xs text-text-muted mt-0.5">
           Central directory panel to standardize equipment specifications, installer references, and subsidy grids.
@@ -195,26 +219,26 @@ export default function MastersDashboardPage() {
             <Link
               key={card.href}
               href={card.href}
-              className="group card card-hover p-5 flex flex-col justify-between h-48 border border-border relative overflow-hidden"
+              className={`group card card-hover p-6 flex flex-col justify-between h-48 border border-border relative overflow-hidden transition-all duration-300 ${card.hoverBorder}`}
             >
               {/* Decorative Glow */}
-              <div className="absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-accent/3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
+              <div className={`absolute -right-6 -bottom-6 w-20 h-20 rounded-full ${card.glow} opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl`} />
 
               <div>
                 <div className="flex items-start justify-between">
-                  <div className="p-2 rounded-lg bg-surface-hover group-hover:bg-accent/10 transition-colors">
+                  <div className={`p-2 rounded-lg bg-surface-hover ${card.iconBgHover} transition-colors duration-300`}>
                     {card.icon}
                   </div>
-                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-surface-2 border border-border text-text-secondary">
+                  <span className="text-xs font-mono font-medium px-2.5 py-0.5 rounded-full bg-surface-2 border border-border text-text-primary transition-colors group-hover:border-accent/30 group-hover:text-accent">
                     {itemCount} {card.entity === 'vendors' ? 'vendors' : card.entity === 'subsidy' ? 'schemes' : card.entity === 'pricing' ? 'overrides' : 'items'}
                   </span>
                 </div>
 
                 <h3 className="text-sm font-bold text-text-primary mt-4 group-hover:text-accent transition-colors flex items-center gap-1.5">
                   {card.label}
-                  <ArrowRight size={13} className="opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                  <ArrowRight size={13} className="opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
                 </h3>
-                <p className="text-[11px] text-text-muted mt-1 leading-normal">
+                <p className="text-xs text-text-secondary mt-2 leading-relaxed">
                   {card.desc}
                 </p>
               </div>

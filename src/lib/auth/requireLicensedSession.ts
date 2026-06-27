@@ -289,8 +289,13 @@ export async function requireLicensedSession(
     throw new AuthenticationRequiredError();
   }
 
-  // Enforce email verification (except for test accounts)
-  if (user.email && !user.email.endsWith('@test.com') && !user.email_confirmed_at) {
+  // Enforce email verification (except for test accounts and local key accounts)
+  if (
+    user.email &&
+    !user.email.endsWith('@test.com') &&
+    !user.email.endsWith('@enermass.local') &&
+    !user.email_confirmed_at
+  ) {
     throw new EmailNotConfirmedError();
   }
 
@@ -302,9 +307,6 @@ export async function requireLicensedSession(
 
   const assertSubscription = deps.assertActiveSubscription ?? assertActiveSubscription;
   const subscription = await assertSubscription(orgId);
-
-  const getActiveDevice = deps.getActiveDevice ?? defaultGetActiveDevice;
-  let activeDevice = await getActiveDevice(user.id);
 
   let deviceToken = '';
   const cookieHeader = request.headers.get('cookie');
@@ -325,16 +327,26 @@ export async function requireLicensedSession(
     }
   }
 
-  // Case 1: No device exists at all → auto-register one
+  let activeDevice: UserDevice | null = null;
+  if (deviceToken) {
+    const secretHash = crypto.createHash('sha256').update(deviceToken).digest('hex');
+    const supabaseAdmin = createAdminClient();
+    const { data } = await supabaseAdmin
+      .from('user_devices')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('device_secret_hash', secretHash)
+      .eq('status', 'active')
+      .maybeSingle();
+    activeDevice = data as UserDevice | null;
+  }
+
+  // Case 1: No device exists matching this token → auto-register or register one
   if (!activeDevice) {
-    // If we have a device token cookie, use it to register; otherwise we cannot proceed
-    // from SSR context (we can't set cookies from a Server Component render).
-    // Throw DeviceNotRegisteredError so the client-side verify flow takes over.
     if (!deviceToken) {
       throw new DeviceNotRegisteredError({ orgId, userId: user.id, deviceId: 'none' });
     }
 
-    // We have a cookie but no device record → auto-register using the cookie token
     const secretHash = crypto.createHash('sha256').update(deviceToken).digest('hex');
     const userAgent = request.headers.get('user-agent') ?? 'Unknown Device';
 
@@ -347,18 +359,9 @@ export async function requireLicensedSession(
 
     activeDevice = newDevice;
   } else {
-    // Case 2: Device exists → verify status and token
+    // Case 2: Device exists → verify status
     if (activeDevice.status !== 'active' || activeDevice.user_id !== user.id || activeDevice.org_id !== orgId) {
       throw new DeviceNotRegisteredError({ orgId, userId: user.id, deviceId: activeDevice.id });
-    }
-
-    if (!deviceToken) {
-      throw new DeviceMismatchError({ orgId, userId: user.id, activeDeviceId: activeDevice.id });
-    }
-
-    const secretHash = crypto.createHash('sha256').update(deviceToken).digest('hex');
-    if (secretHash !== activeDevice.device_secret_hash) {
-      throw new DeviceMismatchError({ orgId, userId: user.id, activeDeviceId: activeDevice.id });
     }
   }
 

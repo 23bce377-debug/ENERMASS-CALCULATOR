@@ -171,7 +171,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
     if (pathname === '/master' || pathname.startsWith('/master/')) {
       return {
-        contextLabel: 'ERP Masters',
+        contextLabel: 'Price Masters',
         contextValue: 'Master Data Management',
       };
     }

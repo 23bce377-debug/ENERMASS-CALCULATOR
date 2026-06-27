@@ -19,13 +19,14 @@ interface KeyGenerationResult {
 }
 
 interface GenerateKeysProps {
-  orgId: string;
-  orgName: string;
+  orgId?: string;
+  orgName?: string;
 }
 
-export function GenerateKeysModal({ orgId, orgName }: GenerateKeysProps) {
+export function GenerateKeysModal({ orgId, orgName }: GenerateKeysProps = {}) {
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(1);
+  const [maxUses, setMaxUses] = useState(5);
   const [expiresAt, setExpiresAt] = useState('');
   const [result, setResult] = useState<KeyGenerationResult | null>(null);
   const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
@@ -48,6 +49,7 @@ export function GenerateKeysModal({ orgId, orgName }: GenerateKeysProps) {
           body: JSON.stringify({
             orgId,
             count,
+            maxUses,
             expiresAt: isoExpiry,
           }),
         });
@@ -76,6 +78,7 @@ export function GenerateKeysModal({ orgId, orgName }: GenerateKeysProps) {
     setOpen(false);
     setResult(null);
     setCount(1);
+    setMaxUses(5);
     setExpiresAt('');
     setCopiedKeys(new Set());
     setAllCopied(false);
@@ -84,11 +87,11 @@ export function GenerateKeysModal({ orgId, orgName }: GenerateKeysProps) {
   return (
     <>
       <button
-        id={`generate-keys-${orgId}`}
+        id={orgId ? `generate-keys-${orgId}` : 'generate-keys'}
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-bold text-background transition hover:bg-accent-hover"
+        className="inline-flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-xs font-bold text-background transition hover:bg-accent-hover cursor-pointer"
       >
-        <Key size={13} /> Generate Keys
+        <Key size={13} /> Generate License Key
       </button>
 
       {open && (
@@ -98,11 +101,11 @@ export function GenerateKeysModal({ orgId, orgName }: GenerateKeysProps) {
             <div className="flex items-center justify-between p-6 border-b border-border/40">
               <div>
                 <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
-                  <Key size={16} className="text-accent" /> Generate Activation Keys
+                  <Key size={16} className="text-accent" /> Generate License Keys
                 </h2>
-                <p className="text-xs text-text-muted mt-0.5">{orgName}</p>
+                {orgName && <p className="text-xs text-text-muted mt-0.5">{orgName}</p>}
               </div>
-              <button onClick={handleClose} className="text-text-muted hover:text-text-primary transition-colors">
+              <button onClick={handleClose} className="text-text-muted hover:text-text-primary transition-colors cursor-pointer">
                 <X size={20} />
               </button>
             </div>
@@ -135,6 +138,21 @@ export function GenerateKeysModal({ orgId, orgName }: GenerateKeysProps) {
 
                   <div className="space-y-1.5">
                     <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                      Device limit (Concurrent Logins)
+                    </label>
+                    <input
+                      id="key-maxuses-input"
+                      type="number"
+                      value={maxUses}
+                      onChange={e => setMaxUses(Math.max(1, Math.min(9999, Number(e.target.value))))}
+                      min={1} max={9999}
+                      className="w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-sm text-text-primary
+                        focus:outline-none focus:border-accent/50 transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest">
                       Key Expiry <span className="text-text-muted/50">(Optional)</span>
                     </label>
                     <input
@@ -154,7 +172,7 @@ export function GenerateKeysModal({ orgId, orgName }: GenerateKeysProps) {
                     disabled={isPending}
                     className="w-full gold-gradient py-3 px-4 rounded-xl text-background font-bold text-sm
                       transition-all active:scale-[0.98] shadow-lg shadow-accent/20 hover:brightness-110
-                      disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {isPending ? 'Generating...' : `Generate ${count} Key${count > 1 ? 's' : ''}`}
                   </button>

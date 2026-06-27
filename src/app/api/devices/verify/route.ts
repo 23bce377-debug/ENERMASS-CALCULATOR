@@ -68,9 +68,6 @@ export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
 
     const body = await parseJsonBody(request, verifyPayloadSchema).catch(() => ({} as z.infer<typeof verifyPayloadSchema>));
     const userDeviceRepository = new UserDeviceRepository();
-    const activeDevice = await userDeviceRepository.getActiveForUser(context.session.user.id);
-
-    // Super admins are subject to normal device binding checks (remediation)
     
     let deviceToken = '';
     const cookieHeader = request.headers.get('cookie');
@@ -89,6 +86,22 @@ export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
       } catch {
         // Graceful fallback for non-request environments
       }
+    }
+
+    const requestToken = deviceToken || body.device_token;
+    let activeDevice: any = null;
+
+    if (requestToken && typeof requestToken === 'string') {
+      const secretHash = crypto.createHash('sha256').update(requestToken).digest('hex');
+      const supabaseAdmin = createAdminClient();
+      const { data } = await supabaseAdmin
+        .from('user_devices')
+        .select('*')
+        .eq('user_id', context.session.user.id)
+        .eq('device_secret_hash', secretHash)
+        .eq('status', 'active')
+        .maybeSingle();
+      activeDevice = data;
     }
 
     let response: NextResponse;
@@ -118,11 +131,12 @@ export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
         },
       });
 
+      const isLocalhost = request.headers.get('host')?.includes('localhost') || request.headers.get('host')?.includes('127.0.0.1');
       response.cookies.set({
         name: DEVICE_TOKEN_COOKIE_NAME,
         value: newToken,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production' && !isLocalhost,
         sameSite: 'strict',
         path: '/',
       });
@@ -130,7 +144,6 @@ export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
     } else {
       // Validate the device token (from cookie or request body)
       let tokenValid = false;
-      const requestToken = deviceToken || body.device_token;
       
       if (requestToken && typeof requestToken === 'string') {
         const secretHash = crypto.createHash('sha256').update(requestToken).digest('hex');
@@ -202,11 +215,12 @@ export const POST = withAuthenticatedOrgApiRoute(async (request, context) => {
           },
         });
 
+        const isLocalhost = request.headers.get('host')?.includes('localhost') || request.headers.get('host')?.includes('127.0.0.1');
         response.cookies.set({
           name: DEVICE_TOKEN_COOKIE_NAME,
           value: tokenToUse,
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
+          secure: process.env.NODE_ENV === 'production' && !isLocalhost,
           sameSite: 'strict',
           path: '/',
         });

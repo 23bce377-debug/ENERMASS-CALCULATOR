@@ -29,6 +29,7 @@ const generateKeysSchema = z.object({
   count: z.number().int().min(1).max(100),
   createdBy: z.string().uuid(),
   expiresAt: z.string().datetime().optional(),
+  maxUses: z.number().int().min(1).max(9999).optional(),
 });
 
 // Password complexity requirements — enforced here and in the UI
@@ -114,6 +115,8 @@ export interface MaskedKeyItem {
   created_at: string;
   updated_at: string;
   key_version: number;
+  max_uses: number;
+  active_devices_count: number;
 }
 
 // ─── Subscription Alignment Helper ───────────────────────────────────────────
@@ -240,7 +243,77 @@ export async function generateActivationKeys(input: z.input<typeof generateKeysS
       created_by: payload.createdBy,
       expires_at: payload.expiresAt ?? null,
       key_version: CURRENT_VERSION,
+      max_uses: payload.maxUses ?? 5,
+    } as any);
+
+    // Auto-create Supabase auth user for this key
+    const adminClient = createAdminClient();
+    const email = `key-${row.id}@enermass.local`;
+    const password = rawKey;
+
+    const { data: userData, error: userError } = await adminClient.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: `Key User ${prefix}`,
+        org_id: payload.orgId,
+        key_id: row.id,
+      }
     });
+
+    if (userError || !userData?.user) {
+      console.error('Failed to create auth user for key:', userError);
+      throw new Error(`Failed to generate key auth user: ${userError?.message ?? 'Unknown error'}`);
+    }
+
+    const userId = userData.user.id;
+
+    // Create Profile
+    const { error: profileError } = await adminClient
+      .from('profiles')
+      .insert({
+        id: userId,
+        org_id: payload.orgId,
+        full_name: `Key User ${prefix}`,
+        role: 'staff',
+        is_active: true,
+      });
+
+    if (profileError) {
+      console.error('Failed to create profile for key user:', profileError);
+      throw new Error(`Failed to create profile: ${profileError.message}`);
+    }
+
+    // Create Org Member
+    const { error: memberError } = await adminClient
+      .from('org_members')
+      .insert({
+        org_id: payload.orgId,
+        user_id: userId,
+        role: 'staff',
+        status: 'active',
+      });
+
+    if (memberError) {
+      console.error('Failed to create member for key user:', memberError);
+      throw new Error(`Failed to create org member: ${memberError.message}`);
+    }
+
+    // Link key to user and mark as activated
+    const { error: updateError } = await adminClient
+      .from('activation_keys')
+      .update({
+        status: 'activated',
+        activated_by: userId,
+        activated_at: new Date().toISOString(),
+      })
+      .eq('id', row.id);
+
+    if (updateError) {
+      console.error('Failed to update key status:', updateError);
+      throw new Error(`Failed to update key status: ${updateError.message}`);
+    }
 
     results.push({ id: row.id, rawKey, prefix });
   }
@@ -582,8 +655,25 @@ export async function listOrgActivationKeys(orgId: string): Promise<MaskedKeyIte
     userEmailsById(activatedByIds),
   ]);
 
+  const supabase = createAdminClient();
+  const { data: deviceCounts } = await supabase
+    .from('user_devices')
+    .select('user_id')
+    .eq('status', 'active');
+
+  const countMap = new Map<string, number>();
+  if (deviceCounts) {
+    for (const d of deviceCounts) {
+      if (d.user_id) {
+        countMap.set(d.user_id, (countMap.get(d.user_id) ?? 0) + 1);
+      }
+    }
+  }
+
   return keys.map(k => ({
     ...k,
+    max_uses: (k as any).max_uses ?? 5,
+    active_devices_count: k.activated_by ? (countMap.get(k.activated_by) ?? 0) : 0,
     activated_by_email: k.activated_by ? (emailMap.get(k.activated_by) ?? null) : null,
     activated_by_name: k.activated_by ? (profiles.get(k.activated_by)?.full_name ?? null) : null,
   }));
@@ -598,8 +688,25 @@ export async function listAllActivationKeys(page = 1, limit = 100): Promise<Mask
     userEmailsById(activatedByIds),
   ]);
 
+  const supabase = createAdminClient();
+  const { data: deviceCounts } = await supabase
+    .from('user_devices')
+    .select('user_id')
+    .eq('status', 'active');
+
+  const countMap = new Map<string, number>();
+  if (deviceCounts) {
+    for (const d of deviceCounts) {
+      if (d.user_id) {
+        countMap.set(d.user_id, (countMap.get(d.user_id) ?? 0) + 1);
+      }
+    }
+  }
+
   return keys.map(k => ({
     ...k,
+    max_uses: (k as any).max_uses ?? 5,
+    active_devices_count: k.activated_by ? (countMap.get(k.activated_by) ?? 0) : 0,
     activated_by_email: k.activated_by ? (emailMap.get(k.activated_by) ?? null) : null,
     activated_by_name: k.activated_by ? (profiles.get(k.activated_by)?.full_name ?? null) : null,
   }));

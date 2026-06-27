@@ -53,7 +53,11 @@ export function resolveBomTemplateItem(
 
   if (templateItem.qty_formula) {
     try {
-      qty = safeEvalFormula(templateItem.qty_formula, variables);
+      const parsedQty = safeEvalFormula(templateItem.qty_formula, variables);
+      qty = Math.round(parsedQty * 1e5) / 1e5;
+      if (isNaN(qty) || !isFinite(qty) || qty < 0) {
+        qty = 0;
+      }
       resolvedFromFormula = true;
     } catch (e) {
       console.warn(`Formula evaluation failed for item ${templateItem.sku_code}: ${e}`);

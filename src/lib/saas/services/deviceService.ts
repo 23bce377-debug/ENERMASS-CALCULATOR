@@ -1,6 +1,7 @@
 import 'server-only';
 import { Client } from 'pg';
 import crypto from 'node:crypto';
+import { createAdminClient } from '@/lib/supabase/server';
 
 import { UserDeviceRepository } from '../repositories';
 import { DeviceMismatchError } from '../errors';
@@ -38,27 +39,12 @@ export async function registerDevice(
       await pgClient.query('SELECT id FROM public.profiles WHERE id = $1 FOR UPDATE', [userId]);
 
       const existingRes = await pgClient.query(
-        "SELECT * FROM public.user_devices WHERE user_id = $1 AND status = 'active' LIMIT 1",
-        [userId]
+        "SELECT * FROM public.user_devices WHERE user_id = $1 AND device_secret_hash = $2 AND status = 'active' LIMIT 1",
+        [userId, devicePayload.deviceSecretHash]
       );
       const existing = existingRes.rows[0];
 
       if (existing) {
-        if (!sameDevice(existing, devicePayload)) {
-          await pgClient.query('COMMIT');
-          await audit({
-            orgId,
-            userId,
-            entityType: 'user_device',
-            entityId: existing.id,
-            eventType: 'device_mismatch_blocked',
-            eventData: {
-              activeDeviceId: existing.id,
-            },
-          });
-          throw new DeviceMismatchError({ orgId, userId, activeDeviceId: existing.id });
-        }
-
         const deviceName = devicePayload.deviceName ?? existing.device_name;
         const browser = devicePayload.browser ?? existing.browser;
         const os = devicePayload.os ?? existing.os;
@@ -85,6 +71,35 @@ export async function registerDevice(
           eventData: { alreadyRegistered: true },
         });
         return device;
+      }
+
+      // Check device limit
+      const countRes = await pgClient.query(
+        "SELECT count(*) FROM public.user_devices WHERE user_id = $1 AND status = 'active'",
+        [userId]
+      );
+      const activeCount = parseInt(countRes.rows[0].count, 10);
+
+      const keyRes = await pgClient.query(
+        "SELECT max_uses FROM public.activation_keys WHERE activated_by = $1 LIMIT 1",
+        [userId]
+      );
+      const maxUses = keyRes.rows[0]?.max_uses ?? 5;
+
+      if (activeCount >= maxUses) {
+        await pgClient.query('COMMIT');
+        await audit({
+          orgId,
+          userId,
+          entityType: 'user_device',
+          eventType: 'device_mismatch_blocked',
+          eventData: {
+            reason: 'device_limit_reached',
+            activeCount,
+            maxUses,
+          },
+        });
+        throw new DeviceMismatchError({ orgId, userId, reason: 'device_limit_reached' });
       }
 
       const deviceId = crypto.randomUUID();
@@ -124,19 +139,6 @@ export async function registerDevice(
 
     } catch (error) {
       await pgClient.query('ROLLBACK').catch(() => {});
-      const message = error instanceof Error ? error.message : String(error);
-      if (/user_devices_one_active_per_user|duplicate key|unique/i.test(message)) {
-        await audit({
-          orgId,
-          userId,
-          entityType: 'user_device',
-          eventType: 'device_mismatch_blocked',
-          eventData: {
-            reason: 'device_registration_conflict',
-          },
-        });
-        throw new DeviceMismatchError({ orgId, userId, reason: 'device_registration_conflict' });
-      }
       throw error;
     } finally {
       await pgClient.end().catch(() => {});
@@ -144,23 +146,18 @@ export async function registerDevice(
   }
 
   // Fallback to normal client-based logic (e.g. for mocks/tests)
-  const existing = await userDeviceRepository.getActiveForUser(userId);
+  const client = createAdminClient();
+  const { data: activeDevices } = await (client as any)
+    .from('user_devices')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'active');
+
+  const existing = (activeDevices ?? []).find(
+    (d: any) => d.device_secret_hash === devicePayload.deviceSecretHash
+  );
 
   if (existing) {
-    if (!sameDevice(existing, devicePayload)) {
-      await audit({
-        orgId,
-        userId,
-        entityType: 'user_device',
-        entityId: existing.id,
-        eventType: 'device_mismatch_blocked',
-        eventData: {
-          activeDeviceId: existing.id,
-        },
-      });
-      throw new DeviceMismatchError({ orgId, userId, activeDeviceId: existing.id });
-    }
-
     const device = await userDeviceRepository.update(existing.id, {
       deviceName: devicePayload.deviceName ?? existing.device_name,
       browser: devicePayload.browser ?? existing.browser,
@@ -180,25 +177,30 @@ export async function registerDevice(
     return device;
   }
 
-  let device;
-  try {
-    device = await userDeviceRepository.create(orgId, userId, devicePayload);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (/user_devices_one_active_per_user|duplicate key|unique/i.test(message)) {
-      await audit({
-        orgId,
-        userId,
-        entityType: 'user_device',
-        eventType: 'device_mismatch_blocked',
-        eventData: {
-          reason: 'device_registration_conflict',
-        },
-      });
-      throw new DeviceMismatchError({ orgId, userId, reason: 'device_registration_conflict' });
-    }
-    throw error;
+  const activeCount = activeDevices?.length ?? 0;
+  const { data: keyData } = await (client as any)
+    .from('activation_keys')
+    .select('max_uses')
+    .eq('activated_by', userId)
+    .maybeSingle();
+  const maxUses = keyData?.max_uses ?? 5;
+
+  if (activeCount >= maxUses) {
+    await audit({
+      orgId,
+      userId,
+      entityType: 'user_device',
+      eventType: 'device_mismatch_blocked',
+      eventData: {
+        reason: 'device_limit_reached',
+        activeCount,
+        maxUses,
+      },
+    });
+    throw new DeviceMismatchError({ orgId, userId, reason: 'device_limit_reached' });
   }
+
+  const device = await userDeviceRepository.create(orgId, userId, devicePayload);
   await audit({
     orgId,
     userId,

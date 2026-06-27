@@ -35,6 +35,9 @@ export function calculatePMSuryaGharSubsidy(
     subsidy = 78000;
     breakdown = `Capped at ₹78,000 (MNRE ceiling for systems > 3kW)`;
   }
+  
+  subsidy = Math.round(subsidy * 100) / 100;
+  
   return {
     amount: subsidy,
     breakdown,

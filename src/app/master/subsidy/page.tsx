@@ -23,6 +23,7 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { HistoryDrawer } from '@/components/master/HistoryDrawer';
 import { formatINR } from '@/lib/engine/calculator';
+import { safeEvalFormula } from '@/lib/engine/formulaParser';
 
 interface SchemeSlab {
   id?: string;
@@ -32,7 +33,28 @@ interface SchemeSlab {
   rate_per_kw: number;
   is_fixed_amount: boolean;
   fixed_amount: number | null;
+  formula?: string | null;
 }
+
+const validateFormula = (formula: string): { isValid: boolean; error?: string } => {
+  if (!formula || formula.trim() === '') {
+    return { isValid: false, error: 'Formula cannot be empty' };
+  }
+  try {
+    const dummyVars = {
+      system_kw: 5,
+      applicable_kw: 3,
+      panel_capacity_kw: 5.4,
+      inverter_capacity_kw: 5,
+      start_kw: 3,
+      end_kw: 10,
+    };
+    safeEvalFormula(formula, dummyVars);
+    return { isValid: true };
+  } catch (err: any) {
+    return { isValid: false, error: err.message || 'Syntax error' };
+  }
+};
 
 interface Scheme {
   id: string;
@@ -86,7 +108,12 @@ export default function SubsidyMasterPage() {
       max_absolute_subsidy: scheme.max_absolute_subsidy,
     });
     // Sort slabs by index
-    const sortedSlabs = [...(scheme.scheme_slabs || [])].sort((a, b) => a.slab_index - b.slab_index);
+    const sortedSlabs = [...(scheme.scheme_slabs || [])]
+      .map(s => ({
+        ...s,
+        formula: s.formula ?? null
+      }))
+      .sort((a, b) => a.slab_index - b.slab_index);
     setSlabs(sortedSlabs);
     setEditorOpen(true);
   };
@@ -118,6 +145,7 @@ export default function SubsidyMasterPage() {
         rate_per_kw: 18000,
         is_fixed_amount: false,
         fixed_amount: null,
+        formula: null,
       },
     ]);
   };
@@ -140,7 +168,6 @@ export default function SubsidyMasterPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSchemeId) return;
 
     // Slabs validation
     for (let i = 0; i < slabs.length; i++) {
@@ -224,14 +251,16 @@ export default function SubsidyMasterPage() {
                   <div className="space-y-1.5">
                     {scheme.scheme_slabs && scheme.scheme_slabs.length > 0 ? (
                       scheme.scheme_slabs.map((slab) => (
-                        <div key={slab.id} className="text-xs font-mono flex justify-between text-text-secondary">
-                          <span>
+                        <div key={slab.id} className="text-xs font-mono flex justify-between text-text-secondary gap-4">
+                          <span className="shrink-0">
                             {slab.start_kw} kW - {slab.end_kw ? `${slab.end_kw} kW` : '∞'}
                           </span>
-                          <span className="font-semibold text-accent">
-                            {slab.is_fixed_amount 
-                              ? `Fixed: ${formatINR(slab.fixed_amount || 0)}` 
-                              : `${formatINR(slab.rate_per_kw)} / kW`
+                          <span className="font-semibold text-accent truncate max-w-[220px]" title={slab.formula || undefined}>
+                            {slab.formula
+                              ? `Formula: ${slab.formula}`
+                              : (slab.is_fixed_amount 
+                                  ? `Fixed: ${formatINR(slab.fixed_amount || 0)}` 
+                                  : `${formatINR(slab.rate_per_kw)} / kW`)
                             }
                           </span>
                         </div>
@@ -385,29 +414,82 @@ export default function SubsidyMasterPage() {
                       </div>
 
                       {/* Pricing Rule */}
-                      <div className="flex items-center gap-3 w-full sm:w-auto flex-1 justify-end">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto flex-1 justify-end">
                         <Select
-                          value={slab.is_fixed_amount ? 'fixed' : 'rate'}
+                          value={slab.formula ? 'formula' : (slab.is_fixed_amount ? 'fixed' : 'rate')}
                           onChange={(val) => {
-                            const isFixed = val === 'fixed';
-                            handleSlabChange(index, 'is_fixed_amount', isFixed);
-                            if (isFixed) {
+                            if (val === 'formula') {
+                              handleSlabChange(index, 'formula', 'applicable_kw * 18000');
+                              handleSlabChange(index, 'is_fixed_amount', false);
+                              handleSlabChange(index, 'fixed_amount', null);
+                              handleSlabChange(index, 'rate_per_kw', 0);
+                            } else if (val === 'fixed') {
+                              handleSlabChange(index, 'formula', null);
+                              handleSlabChange(index, 'is_fixed_amount', true);
                               handleSlabChange(index, 'fixed_amount', 18000);
                               handleSlabChange(index, 'rate_per_kw', 0);
                             } else {
+                              handleSlabChange(index, 'formula', null);
+                              handleSlabChange(index, 'is_fixed_amount', false);
                               handleSlabChange(index, 'fixed_amount', null);
                               handleSlabChange(index, 'rate_per_kw', 18000);
                             }
                           }}
                           options={[
                             { value: 'rate', label: 'Rate / kW' },
-                            { value: 'fixed', label: 'Fixed Amount' }
+                            { value: 'fixed', label: 'Fixed Amount' },
+                            { value: 'formula', label: 'Formula' }
                           ]}
                           size="sm"
-                          className="w-32"
+                          className="w-32 shrink-0"
                         />
 
-                        {slab.is_fixed_amount ? (
+                        {slab.formula ? (
+                          <div className="flex-1 w-full min-w-[200px] flex flex-col gap-1.5">
+                            <div className="relative w-full">
+                              <input
+                                type="text" required
+                                value={slab.formula || ''}
+                                onChange={(e) => handleSlabChange(index, 'formula', e.target.value)}
+                                className="w-full px-2.5 py-1 bg-surface border border-border text-xs rounded font-mono font-semibold text-accent focus:border-accent/40 outline-none placeholder:text-text-muted"
+                                placeholder="Formula (e.g. system_kw * 18000)"
+                              />
+                            </div>
+                            
+                            <div className="flex flex-col gap-1 w-full">
+                              {(() => {
+                                const check = validateFormula(slab.formula || '');
+                                return check.isValid ? (
+                                  <span className="text-[9px] text-emerald-500 flex items-center gap-0.5 font-medium">
+                                    <Check size={10} /> Valid formula syntax
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] text-rose-500 font-medium flex items-center gap-0.5">
+                                    ⚠️ {check.error}
+                                  </span>
+                                );
+                              })()}
+                              
+                              <div className="flex flex-wrap gap-1 items-center">
+                                <span className="text-[8px] text-text-muted uppercase font-bold mr-0.5">Insert:</span>
+                                {['system_kw', 'applicable_kw', 'panel_capacity_kw', 'inverter_capacity_kw', 'start_kw', 'end_kw'].map((v) => (
+                                  <button
+                                    key={v}
+                                    type="button"
+                                    onClick={() => {
+                                      const currentVal = slab.formula || '';
+                                      const needsSpace = currentVal.length > 0 && !/[\s+\-*/()]$/.test(currentVal);
+                                      handleSlabChange(index, 'formula', currentVal + (needsSpace ? ' ' : '') + v);
+                                    }}
+                                    className="px-1.5 py-0.5 rounded bg-surface border border-border text-[8px] text-text-secondary hover:text-accent hover:border-accent/30 transition-colors font-mono cursor-pointer"
+                                  >
+                                    {v}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ) : slab.is_fixed_amount ? (
                           <div className="relative max-w-[120px]">
                             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted text-[10px]">₹</span>
                             <input
@@ -433,7 +515,7 @@ export default function SubsidyMasterPage() {
                         <button
                           type="button"
                           onClick={() => handleRemoveSlab(index)}
-                          className="p-1 rounded bg-surface hover:bg-error/10 border border-border hover:border-error/20 text-text-secondary hover:text-error transition-all"
+                          className="p-1 rounded bg-surface hover:bg-error/10 border border-border hover:border-error/20 text-text-secondary hover:text-error transition-all shrink-0 self-end sm:self-center"
                         >
                           <Trash2 size={13} />
                         </button>

@@ -1,3 +1,6 @@
+import { safeEvalFormula } from './formulaParser';
+import { sanitizeNumber } from './calculator';
+
 export type ProjectType = 'residential' | 'commercial';
 
 export interface SubsidyInput {
@@ -10,6 +13,7 @@ export interface SubsidyInput {
     rate_per_kw: number;
     is_fixed_amount: boolean;
     fixed_amount: number | null;
+    formula?: string | null;
   }>;
   maxCapacityKW?: number;
 }
@@ -36,11 +40,26 @@ export function calculateSubsidyAmount(input: SubsidyInput): number {
     if (capacityForSubsidy <= start) {
       break;
     }
-    if (slab.is_fixed_amount) {
+    const end = slab.end_kw === null ? capacityForSubsidy : Math.min(capacityForSubsidy, Number(slab.end_kw));
+    const applicable = Math.max(0, end - start);
+
+    if (slab.formula) {
+      try {
+        const val = safeEvalFormula(slab.formula, {
+          system_kw: capacityForSubsidy,
+          applicable_kw: applicable,
+          panel_capacity_kw: input.panelCapacityKW,
+          inverter_capacity_kw: input.inverterCapacityKW ?? input.panelCapacityKW,
+          start_kw: start,
+          end_kw: slab.end_kw === null ? capacityForSubsidy : Number(slab.end_kw),
+        });
+        total += sanitizeNumber(val, 0);
+      } catch (err) {
+        console.warn(`Failed to evaluate subsidy slab formula: "${slab.formula}". Error:`, err);
+      }
+    } else if (slab.is_fixed_amount) {
       total += Number(slab.fixed_amount ?? 0);
     } else {
-      const end = slab.end_kw === null ? capacityForSubsidy : Math.min(capacityForSubsidy, Number(slab.end_kw));
-      const applicable = end - start;
       total += applicable * Number(slab.rate_per_kw);
     }
   }

@@ -437,3 +437,50 @@ export async function updateOrgDetailsAction(formData: FormData): Promise<void> 
     throw new Error(messageForError(error));
   }
 }
+
+export async function resetKeyDevicesAction(formData: FormData): Promise<void> {
+  try {
+    const session = await requireSuperAdminSession();
+    const keyId = value(formData, 'keyId');
+    if (!keyId) throw new Error('Key ID is required.');
+
+    const { createAdminClient } = await import('@/lib/supabase/server');
+    const supabase = createAdminClient();
+
+    // Find the user associated with this key
+    const { data: keyData, error: keyError } = await supabase
+      .from('activation_keys')
+      .select('activated_by, org_id')
+      .eq('id', keyId)
+      .maybeSingle();
+
+    if (keyError || !keyData) throw new Error('Key not found or error fetching key.');
+
+    const userId = keyData.activated_by;
+    if (userId) {
+      // Mark all active devices for this user as revoked
+      const { error: updateError } = await supabase
+        .from('user_devices')
+        .update({ status: 'revoked', revoked_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .eq('status', 'active');
+
+      if (updateError) throw new Error(`Failed to reset devices: ${updateError.message}`);
+
+      await logLicenseEvent({
+        orgId: keyData.org_id,
+        userId: userId,
+        entityType: 'user_device',
+        eventType: 'device_reset_approved',
+        actorUserId: session.user.id,
+        eventData: { action: 'admin_reset_all_devices', keyId },
+      });
+    }
+
+    revalidatePath('/super-admin/activation-keys');
+    return;
+  } catch (error) {
+    throw new Error(messageForError(error));
+  }
+}
+

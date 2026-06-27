@@ -513,7 +513,7 @@ export default function StructuresMasterPage() {
               : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
           }`}
         >
-          ERP Structure Templates (New Model)
+          Price Structure Templates (New Model)
         </button>
         <button
           onClick={() => setMainTab('legacy')}

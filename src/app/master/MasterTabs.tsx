@@ -24,10 +24,10 @@ const TABS: TabItem[] = [
   { href: '/master/panels', label: 'Panels', icon: <Sun size={15} /> },
   { href: '/master/inverters', label: 'Inverters', icon: <Cpu size={15} /> },
   { href: '/master/batteries', label: 'Batteries', icon: <Battery size={15} /> },
+  { href: '/master/pricing', label: 'Pricing Master', icon: <Tag size={15} /> },
   { href: '/master/structures', label: 'Structures', icon: <Wrench size={15} /> },
   { href: '/master/accessories', label: 'Accessories', icon: <Package size={15} /> },
   { href: '/master/vendors', label: 'Vendors', icon: <Truck size={15} /> },
-  { href: '/master/pricing', label: 'Pricing Master', icon: <Tag size={15} /> },
   { href: '/master/subsidy', label: 'Subsidy Master', icon: <Percent size={15} /> },
 ];
 

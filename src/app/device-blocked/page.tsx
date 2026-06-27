@@ -35,6 +35,39 @@ function DeviceBlockedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get('reason');
+
+  if (reason === 'device_limit_reached') {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md animate-fade-in">
+          <div className="bg-surface border border-border rounded-2xl shadow-xl overflow-hidden">
+            <div className="p-7 border-b border-border/60 bg-surface-hover/30 text-center">
+              <div className="mx-auto h-12 w-12 rounded-xl bg-error/10 text-error flex items-center justify-center mb-4">
+                <AlertTriangle size={24} />
+              </div>
+              <h1 className="text-xl font-black text-text-primary tracking-tight">
+                Concurrent Limit Reached
+              </h1>
+              <p className="mt-3 text-sm text-text-secondary">
+                This license key is already in use on the maximum number of allowed devices. Please log out from another device or ask your administrator to reset active sessions.
+              </p>
+            </div>
+            <div className="p-7 space-y-4">
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => router.push('/login')}
+                className="w-full"
+              >
+                Back to Sign In
+              </Button>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   const [metadata, setMetadata] = useState<DeviceMetadata | null>(null);
   const [geo, setGeo] = useState<ClientGeoInfo | null>(null);
   const [userAgent, setUserAgent] = useState('');
