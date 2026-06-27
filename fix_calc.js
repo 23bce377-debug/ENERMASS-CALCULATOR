@@ -4,7 +4,7 @@ const path = require('path');
 const file = path.join(__dirname, 'src', 'lib', 'engine', 'calculator.ts');
 let content = fs.readFileSync(file, 'utf8');
 
-// The marker we want to replace from
+// The marker we want to replace from   89
 const startMarker = `  // 🚀 Step 3.5: Inject Engineering BOS Components (Electrical, Structure, Civil)`;
 const endMarker = `  // "?"? Step 4: Apply Overrides, Rate Master, and Calculate Totals "?"?`;
 const endMarker2 = `  // ── Step 4: Apply Overrides, Rate Master, and Calculate Totals ──`;
