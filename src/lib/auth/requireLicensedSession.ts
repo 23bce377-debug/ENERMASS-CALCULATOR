@@ -9,6 +9,7 @@ import {
   SaasError,
   UnauthorizedRoleError,
   EmailNotConfirmedError,
+  SeatLimitReachedError,
 } from '@/lib/saas/errors';
 import { assertActiveSubscription } from '@/lib/saas/services/subscriptionService';
 import { assertFeatureAccess } from '@/lib/saas/services/featureAccessService';
@@ -241,6 +242,26 @@ export function isLicensedSessionError(error: unknown): error is SaasError | Aut
   return error instanceof SaasError || error instanceof AuthenticationRequiredError;
 }
 
+async function assertSeatLimitNotExceeded(orgId: string, seatLimit: number) {
+  if (seatLimit > 0) {
+    const supabaseAdmin = createAdminClient();
+    const { count, error } = await supabaseAdmin
+      .from('org_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', orgId)
+      .in('status', ['active', 'invited']);
+
+    if (error) {
+      console.warn(`[assertSeatLimitNotExceeded] Error checking seats for org ${orgId}:`, error.message);
+      return;
+    }
+
+    if ((count ?? 0) > seatLimit) {
+      throw new SeatLimitReachedError({ orgId, limit: seatLimit, used: count });
+    }
+  }
+}
+
 export async function requireAuthenticatedOrgSession(
   options: { roles?: OrgMemberRole[] } = {},
   deps: RequireAuthenticatedOrgSessionDeps = {}
@@ -263,6 +284,7 @@ export async function requireAuthenticatedOrgSession(
 
   const assertSubscription = deps.assertActiveSubscription ?? assertActiveSubscription;
   const subscription = await assertSubscription(orgId);
+  await assertSeatLimitNotExceeded(orgId, subscription.seat_limit);
 
   const getOrgById = deps.getOrgById ?? defaultGetOrgById;
   const org = await getOrgById(orgId);
@@ -307,65 +329,24 @@ export async function requireLicensedSession(
 
   const assertSubscription = deps.assertActiveSubscription ?? assertActiveSubscription;
   const subscription = await assertSubscription(orgId);
+  await assertSeatLimitNotExceeded(orgId, subscription.seat_limit);
 
-  let deviceToken = '';
-  const cookieHeader = request.headers.get('cookie');
-  if (cookieHeader) {
-    const match = cookieHeader.match(/(?:^|;\s*)enermass_device_token=([^;]*)/);
-    if (match) {
-      deviceToken = match[1];
-    }
-  }
-
-  if (!deviceToken) {
-    try {
-      const { cookies } = require('next/headers');
-      const cookieStore = await cookies();
-      deviceToken = cookieStore.get('enermass_device_token')?.value || '';
-    } catch {
-      // Graceful fallback for non-request environments (e.g., test runners)
-    }
-  }
-
-  let activeDevice: UserDevice | null = null;
-  if (deviceToken) {
-    const secretHash = crypto.createHash('sha256').update(deviceToken).digest('hex');
-    const supabaseAdmin = createAdminClient();
-    const { data } = await supabaseAdmin
-      .from('user_devices')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('device_secret_hash', secretHash)
-      .eq('status', 'active')
-      .maybeSingle();
-    activeDevice = data as UserDevice | null;
-  }
-
-  // Case 1: No device exists matching this token → auto-register or register one
-  if (!activeDevice) {
-    if (!deviceToken) {
-      throw new DeviceNotRegisteredError({ orgId, userId: user.id, deviceId: 'none' });
-    }
-
-    const secretHash = crypto.createHash('sha256').update(deviceToken).digest('hex');
-    const userAgent = request.headers.get('user-agent') ?? 'Unknown Device';
-
-    const newDevice = await registerDevice(user.id, orgId, {
-      deviceSecretHash: secretHash,
-      deviceName: userAgent,
-      browser: null,
-      os: null,
-    });
-
-    activeDevice = newDevice;
-  } else {
-    // Case 2: Device exists → verify status
-    if (activeDevice.status !== 'active' || activeDevice.user_id !== user.id || activeDevice.org_id !== orgId) {
-      throw new DeviceNotRegisteredError({ orgId, userId: user.id, deviceId: activeDevice.id });
-    }
-  }
-
-  const device = activeDevice!;
+  const device: UserDevice = {
+    id: '00000000-0000-0000-0000-000000000000',
+    org_id: orgId,
+    user_id: user.id,
+    device_install_id: 'disabled',
+    public_key: '',
+    fingerprint_hash: '',
+    device_name: 'Any Device',
+    browser: 'Any Browser',
+    os: 'Any OS',
+    status: 'active',
+    first_seen_at: new Date().toISOString(),
+    last_seen_at: new Date().toISOString(),
+    revoked_at: null,
+    device_secret_hash: null,
+  };
 
   const assertFeature = deps.assertFeatureAccess ?? assertFeatureAccess;
   await assertFeature(orgId, options.feature);

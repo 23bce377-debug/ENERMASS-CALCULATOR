@@ -359,6 +359,21 @@ export class UserDeviceRepository extends RepositoryBase<'user_devices'> {
     return data && data.length > 0 ? data[0] : null;
   }
 
+  async getActiveForUserAndSecretHash(userId: string, secretHash: string): Promise<UserDevice | null> {
+    uuidSchema.parse(userId);
+    const client = await this.client();
+    const { data, error } = await (client as any)
+      .from('user_devices')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('device_secret_hash', secretHash)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (error) throwDbError('Failed to fetch active user device by secret hash', error);
+    return data;
+  }
+
   create(orgId: string, userId: string, input: DevicePayload) {
     uuidSchema.parse(orgId);
     uuidSchema.parse(userId);

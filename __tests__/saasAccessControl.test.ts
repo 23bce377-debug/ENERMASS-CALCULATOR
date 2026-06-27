@@ -274,45 +274,20 @@ describe('Device session enforcement (simplified requireLicensedSession)', () =>
     ).rejects.toBeInstanceOf(MembershipMissingError);
   });
 
-  it('mismatched device token blocks request', async () => {
-    const deps = happyDeps({
-      getActiveDevice: vi.fn().mockResolvedValue(mkDevice({
-        device_secret_hash: 'different-hash',
-      })),
-    });
-    await expect(
-      requireLicensedSession(
-        new Request('http://localhost', { headers: validHeaders() }),
-        { feature: 'calculator' },
-        deps
-      )
-    ).rejects.toBeInstanceOf(DeviceMismatchError);
-  });
-
-  it('revoked or inactive device is blocked', async () => {
+  it('bypasses device token and status checks when device binding is disabled', async () => {
     const deps = happyDeps({
       getActiveDevice: vi.fn().mockResolvedValue(mkDevice({
         status: 'revoked',
+        device_secret_hash: 'different-hash',
       })),
     });
-    await expect(
-      requireLicensedSession(
-        new Request('http://localhost', { headers: validHeaders() }),
-        { feature: 'calculator' },
-        deps
-      )
-    ).rejects.toBeInstanceOf(DeviceNotRegisteredError);
-  });
-
-  it('missing token cookie blocks request', async () => {
-    const deps = happyDeps();
-    await expect(
-      requireLicensedSession(
-        new Request('http://localhost', { headers: {} }),
-        { feature: 'calculator' },
-        deps
-      )
-    ).rejects.toBeInstanceOf(DeviceMismatchError);
+    const session = await requireLicensedSession(
+      new Request('http://localhost', { headers: {} }),
+      { feature: 'calculator' },
+      deps
+    );
+    expect(session).toBeDefined();
+    expect(session.device.id).toBe('00000000-0000-0000-0000-000000000000');
   });
 });
 

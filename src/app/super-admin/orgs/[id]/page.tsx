@@ -19,7 +19,7 @@ import { GenerateKeysModal } from '@/components/saas/GenerateKeysModal';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { adminChangeUserRoleAction, updateOrgDetailsAction } from '../../actions';
+import { adminChangeUserRoleAction, updateOrgDetailsAction, setSeatLimitAction } from '../../actions';
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -77,7 +77,7 @@ export default async function SuperAdminOrgDetailsPage({ params }: { params: Pro
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-1 space-y-6">
             <Section title="Subscription Overview">
-              <div className="space-y-3 text-sm">
+              <div className="space-y-4 text-sm">
                 <div className="flex justify-between">
                   <span className="text-text-muted">Status</span>
                   <StatusBadge status={overview.subscription?.status ?? 'missing'} />
@@ -92,17 +92,57 @@ export default async function SuperAdminOrgDetailsPage({ params }: { params: Pro
                     {overview.seatUsage.usedSeats} / {overview.seatUsage.seatLimit || '—'}
                   </span>
                 </div>
+
+                {overview.subscription && (
+                  <form action={setSeatLimitAction} className="pt-3 border-t border-border/40 space-y-2">
+                    <input type="hidden" name="subscriptionId" value={overview.subscription.id} />
+                    <div>
+                      <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5">
+                        Edit Seat Limit
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          name="seatLimit"
+                          defaultValue={overview.seatUsage.seatLimit ?? 5}
+                          min={1}
+                          className={`${inputClass} !py-1.5 !px-2.5 !text-xs w-24`}
+                        />
+                        <button type="submit" className={`${buttonClass} !py-1.5 !px-3 !text-xs`}>
+                          Save Seats
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                )}
               </div>
             </Section>
 
             <Section title="Activation Keys Management">
-              <p className="text-sm text-text-muted mb-4">
-                Generate new one-time activation keys for this organization. 
-                The raw keys will only be shown once and must be shared securely.
-              </p>
-              <div className="flex justify-start">
-                <GenerateKeysModal orgId={overview.org.id} orgName={overview.org.name} />
-              </div>
+              {keys.length > 0 ? (
+                <div className="space-y-3">
+                  <p className="text-xs text-text-muted">
+                    License key already generated for this organization. Only one key per organization is allowed.
+                  </p>
+                  <div className="p-3 rounded-xl border border-accent/20 bg-accent/5">
+                    <span className="text-[10px] font-bold text-accent uppercase tracking-widest block mb-1">
+                      Active License Key Prefix
+                    </span>
+                    <code className="font-mono text-xs text-text-primary bg-background/50 border border-border/60 px-2 py-1 rounded-md block w-fit">
+                      {keys[0].key_prefix}-****
+                    </code>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-text-muted mb-4">
+                    Generate the license key for this organization. Raw keys are shown exactly once and must be shared securely.
+                  </p>
+                  <div className="flex justify-start">
+                    <GenerateKeysModal orgId={overview.org.id} orgName={overview.org.name} />
+                  </div>
+                </>
+              )}
             </Section>
           </div>
 

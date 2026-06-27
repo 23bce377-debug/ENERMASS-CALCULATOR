@@ -158,9 +158,7 @@ describe('requireLicensedSession', () => {
     expect(nextMocks.redirect).toHaveBeenCalledWith('/subscription-expired');
   });
 
-  it('rejects users with the wrong role after device validation', async () => {
-    const getActiveDevice = vi.fn().mockResolvedValue(device());
-
+  it('rejects users with the wrong role', async () => {
     await expect(
       requireLicensedSession(
         new Request('https://app.test/calculator', { headers: { 'cookie': 'enermass_device_token=token' } }),
@@ -168,11 +166,9 @@ describe('requireLicensedSession', () => {
           feature: 'calculator',
           roles: ['admin'],
         },
-        licensedDeps({ getActiveDevice })
+        licensedDeps()
       )
     ).rejects.toBeInstanceOf(UnauthorizedRoleError);
-
-    expect(getActiveDevice).toHaveBeenCalled();
   });
 
   it('rejects disabled users during membership resolution', async () => {
@@ -190,9 +186,7 @@ describe('requireLicensedSession', () => {
     ).rejects.toBeInstanceOf(MembershipMissingError);
   });
 
-  it('rejects disabled features after device validation', async () => {
-    const getActiveDevice = vi.fn().mockResolvedValue(device());
-
+  it('rejects disabled features', async () => {
     await expect(
       requireLicensedSession(
         new Request('https://app.test/inventory', { headers: { 'cookie': 'enermass_device_token=token' } }),
@@ -202,12 +196,9 @@ describe('requireLicensedSession', () => {
         },
         licensedDeps({
           assertFeatureAccess: vi.fn().mockRejectedValue(new FeatureNotEnabledError()),
-          getActiveDevice,
         })
       )
     ).rejects.toBeInstanceOf(FeatureNotEnabledError);
-
-    expect(getActiveDevice).toHaveBeenCalled();
   });
 
   it('accepts a valid licensed user', async () => {
@@ -224,7 +215,7 @@ describe('requireLicensedSession', () => {
       orgId,
       member: { id: memberId },
       subscription: { id: subscriptionId },
-      device: { id: deviceId },
+      device: { id: '00000000-0000-0000-0000-000000000000' },
       permissions: { role: 'staff' },
     });
   });

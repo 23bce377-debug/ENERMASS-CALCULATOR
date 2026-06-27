@@ -37,11 +37,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This license key has expired.' }, { status: 403 });
     }
 
+    // Count how many users have been activated with this key
+    const { count: activatedCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('key_id', key.id);
+
+    const maxUses = key.max_uses ?? 5;
     let userId = key.activated_by;
 
     // For backwards compatibility: if the key is unused and not associated with any user yet,
     // we activate it on first login by creating the Supabase user, profile, and org member.
     if (key.status === 'unused' || !userId) {
+      if ((activatedCount ?? 0) >= maxUses) {
+        return NextResponse.json({ error: `This license key has reached its seat limit of ${maxUses} users.` }, { status: 403 });
+      }
       const email = `key-${key.id}@enermass.local`;
       const password = normalized; // the raw key
 
@@ -78,6 +88,7 @@ export async function POST(request: Request) {
           full_name: `Key User ${key.key_prefix}`,
           role: 'staff',
           is_active: true,
+          key_id: key.id,
         });
 
         // Create org member
@@ -98,53 +109,6 @@ export async function POST(request: Request) {
           activated_at: new Date().toISOString(),
         })
         .eq('id', key.id);
-    }
-
-    // 2. Count active devices/sessions for this user
-    const { count, error: countError } = await supabase
-      .from('user_devices')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('status', 'active');
-
-    if (countError) {
-      console.error('[KeyLoginInit] Device count failed:', countError);
-      return NextResponse.json({ error: 'Failed to verify active sessions.' }, { status: 500 });
-    }
-
-    const maxUses = key.max_uses ?? 5;
-
-    // Check if the current browser already has a valid active device session
-    let deviceToken = '';
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      const match = cookieHeader.match(/(?:^|;\s*)enermass_device_token=([^;]*)/);
-      if (match) {
-        deviceToken = match[1];
-      }
-    }
-    
-    let isThisDeviceActive = false;
-    if (deviceToken) {
-      const secretHash = crypto.createHash('sha256').update(deviceToken).digest('hex');
-      const { data: matchedDevice } = await supabase
-        .from('user_devices')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('device_secret_hash', secretHash)
-        .eq('status', 'active')
-        .maybeSingle();
-      if (matchedDevice) {
-        isThisDeviceActive = true;
-      }
-    }
-
-    if (!isThisDeviceActive && (count ?? 0) >= maxUses) {
-      return NextResponse.json({
-        error: 'DeviceLimitReached',
-        message: 'Concurrent login limit reached for this license key. Please log out from another device.',
-        redirectTo: `/device-blocked?reason=device_limit_reached`
-      }, { status: 428 });
     }
 
     return NextResponse.json({

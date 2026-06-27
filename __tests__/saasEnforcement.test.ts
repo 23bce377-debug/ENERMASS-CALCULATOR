@@ -161,7 +161,7 @@ describe('requireLicensedSession', () => {
     ).rejects.toBeInstanceOf(FeatureNotEnabledError);
   });
 
-  it('throws DeviceMismatchError when device fingerprint changes', async () => {
+  it('does not check device fingerprint when device binding is disabled', async () => {
     const deps = {
       ...happyDeps(),
       getActiveDevice: vi.fn().mockResolvedValue(mkDevice({
@@ -170,7 +170,7 @@ describe('requireLicensedSession', () => {
     };
     await expect(
       requireLicensedSession(makeRequest(validHeaders()), { feature: 'calculator' }, deps)
-    ).rejects.toBeInstanceOf(DeviceMismatchError);
+    ).resolves.toBeDefined();
   });
 
   it('throws UnauthorizedRoleError when viewer role tries admin route', async () => {
@@ -192,7 +192,7 @@ describe('requireLicensedSession', () => {
     );
     expect(session.orgId).toBe(orgId);
     expect(session.user.id).toBe(userId);
-    expect(session.device.id).toBe(deviceId);
+    expect(session.device.id).toBe('00000000-0000-0000-0000-000000000000');
   });
 
   it('org_id is derived from session, not from query params (spoofing blocked)', async () => {
@@ -265,7 +265,7 @@ describe('withLicensedApiRoute HTTP responses', () => {
     expect(body.error).toBe('FeatureNotEnabledError');
   });
 
-  it('returns 403 for device mismatch', async () => {
+  it('returns 200 on device fingerprint mismatch when device binding is disabled', async () => {
     const handler = withLicensedApiRoute(
       async () => NextResponse.json({ ok: true }),
       {
@@ -279,9 +279,9 @@ describe('withLicensedApiRoute HTTP responses', () => {
       }
     );
     const response = await handler(makeRequest(validHeaders()), {});
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.error).toBe('DeviceMismatchError');
+    expect(body.ok).toBe(true);
   });
 
   it('returns 403 for insufficient role (viewer on admin route)', async () => {

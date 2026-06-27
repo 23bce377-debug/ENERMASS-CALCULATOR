@@ -346,7 +346,7 @@ describe('master-control data hardening', () => {
     );
 
     const seatCheckIndex = activationKeySource.indexOf('await assertSeatAvailableForActivation(key.org_id');
-    const createUserIndex = activationKeySource.indexOf('auth.admin.createUser');
+    const createUserIndex = activationKeySource.indexOf('auth.admin.createUser', seatCheckIndex);
 
     expect(activationKeySource).toContain("import { assertSeatAvailableForActivation } from './seatService'");
     expect(seatCheckIndex).toBeGreaterThan(-1);

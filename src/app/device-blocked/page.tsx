@@ -31,6 +31,18 @@ function reasonCopy(reason: string | null) {
   return DEVICE_BLOCKED_MESSAGE;
 }
 
+const BrowserIsolationWarning = () => (
+  <div className="p-4 rounded-xl border border-warning/20 bg-warning/5 text-xs text-text-secondary space-y-1.5 leading-normal">
+    <div className="flex items-center gap-2 text-amber-500 font-bold">
+      <Globe size={14} className="shrink-0" />
+      Same Device, Different Browser?
+    </div>
+    <p className="text-text-muted">
+      Browser security models isolate local cookies and database storage. Switching browsers (e.g., Chrome to Firefox), using different browser profiles, or opening a private/incognito window on the same physical computer will be treated as a new device registration and consume a separate license seat.
+    </p>
+  </div>
+);
+
 function DeviceBlockedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -53,6 +65,7 @@ function DeviceBlockedContent() {
               </p>
             </div>
             <div className="p-7 space-y-4">
+              <BrowserIsolationWarning />
               <Button
                 type="button"
                 variant="primary"
@@ -283,6 +296,8 @@ function DeviceBlockedContent() {
                 )}
               </section>
             </div>
+
+            <BrowserIsolationWarning />
 
             {/* Admin mailto link (Item 53) */}
             <div className="rounded-xl border border-warning/25 bg-warning/10 p-4 text-xs text-text-secondary flex flex-col gap-2">

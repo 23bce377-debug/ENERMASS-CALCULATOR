@@ -16,6 +16,7 @@ import {
   MembershipMissingError,
   SubscriptionExpiredError,
   UnauthorizedRoleError,
+  SeatLimitReachedError,
 } from '@/lib/saas/errors';
 
 export interface LicensedPageOptions extends RequireLicensedSessionOptions {
@@ -27,7 +28,11 @@ function redirectPathForError(error: unknown) {
     return '/login';
   }
 
-  if (error instanceof SubscriptionExpiredError || error instanceof FeatureNotEnabledError) {
+  if (
+    error instanceof SubscriptionExpiredError ||
+    error instanceof FeatureNotEnabledError ||
+    error instanceof SeatLimitReachedError
+  ) {
     return '/subscription-expired';
   }
 

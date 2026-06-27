@@ -1,6 +1,6 @@
 'use client';
 
-export const DEVICE_BLOCKED_MESSAGE = 'This account is already registered on another device.';
+export const DEVICE_BLOCKED_MESSAGE = 'This account is already registered on another device (or browser).';
 export const DEVICE_RESET_MESSAGE = 'Please request a device reset from your company admin.';
 
 export type DeviceClientErrorCode =
@@ -339,43 +339,12 @@ export async function saveDeviceToken(token: string): Promise<void> {
 }
 
 export async function registerOrVerifyDevice(env: DeviceClientEnvironment = {}) {
-  const nav = getNavigator(env);
-  if (nav?.cookieEnabled === false) {
-    throw new DeviceClientError(
-      'cookies_blocked',
-      'Cookies must be enabled to keep this device signed in.',
-      { redirectTo: '/device-blocked' }
-    );
-  }
-
-  const metadata = collectSafeDeviceMetadata(env);
-  const fingerprintHash = generateClientFingerprint();
-  const { publicKeyJwk, keyPair } = await getOrCreateDeviceKeyPair();
-  const deviceToken = await keyStore.getDeviceToken();
-  
-  const challenge = {
-    timestamp: Date.now(),
-    random: Math.random().toString(36).substring(2)
+  return {
+    device: {
+      id: '00000000-0000-0000-0000-000000000000',
+      status: 'active',
+    },
   };
-  const challengeStr = JSON.stringify(challenge);
-  const signature = await signChallenge(challengeStr, keyPair);
-
-  const res = await postJson<{ device: { id: string; status: string }; deviceToken?: string }>('/api/devices/verify', {
-    device_name: metadata.deviceName,
-    browser: metadata.browser,
-    os: metadata.os,
-    fingerprint_hash: fingerprintHash,
-    public_key: publicKeyJwk,
-    challenge_str: challengeStr,
-    signature: signature,
-    device_token: deviceToken
-  }, env);
-
-  if (res.deviceToken) {
-    await keyStore.setDeviceToken(res.deviceToken);
-  }
-
-  return res;
 }
 
 export async function requestDeviceReset(input: { deviceName?: string; reason?: string }, env: DeviceClientEnvironment = {}) {

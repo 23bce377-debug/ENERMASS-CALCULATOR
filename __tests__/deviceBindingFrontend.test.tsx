@@ -117,6 +117,17 @@ describe('device binding frontend', () => {
     const view = render(<LoginPage />);
     await flush();
 
+    // Switch to credentials mode
+    const switchBtn = Array.from(view.container.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Admin Credentials')
+    );
+    if (switchBtn) {
+      await act(async () => {
+        switchBtn.click();
+      });
+      await flush();
+    }
+
     changeValue(view.container.querySelector('input[type="email"]') as HTMLInputElement, 'user@example.com');
     changeValue(view.container.querySelector('input[type="password"]') as HTMLInputElement, 'password');
     await submit(view.container.querySelector('form') as HTMLFormElement);
@@ -132,6 +143,17 @@ describe('device binding frontend', () => {
     );
     const view = render(<LoginPage />);
     await flush();
+
+    // Switch to credentials mode
+    const switchBtn = Array.from(view.container.querySelectorAll('button')).find(
+      b => b.textContent?.includes('Admin Credentials')
+    );
+    if (switchBtn) {
+      await act(async () => {
+        switchBtn.click();
+      });
+      await flush();
+    }
 
     changeValue(view.container.querySelector('input[type="email"]') as HTMLInputElement, 'user@example.com');
     changeValue(view.container.querySelector('input[type="password"]') as HTMLInputElement, 'password');

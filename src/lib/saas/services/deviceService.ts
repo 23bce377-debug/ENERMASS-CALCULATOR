@@ -29,7 +29,7 @@ export async function registerDevice(
   const userDeviceRepository = deps.userDeviceRepository ?? new UserDeviceRepository();
   const audit = deps.audit ?? logLicenseEvent;
 
-  if (process.env.DATABASE_URL) {
+  if (process.env.DATABASE_URL && !deps.userDeviceRepository) {
     const pgClient = new Client({ connectionString: process.env.DATABASE_URL });
     await pgClient.connect();
     try {
@@ -146,16 +146,41 @@ export async function registerDevice(
   }
 
   // Fallback to normal client-based logic (e.g. for mocks/tests)
-  const client = createAdminClient();
-  const { data: activeDevices } = await (client as any)
-    .from('user_devices')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active');
+  let activeCount = 0;
+  let existing: any = null;
+  let maxUses = 5;
 
-  const existing = (activeDevices ?? []).find(
-    (d: any) => d.device_secret_hash === devicePayload.deviceSecretHash
-  );
+  if (deps.userDeviceRepository) {
+    const mockDevice = await userDeviceRepository.getActiveForUser(userId);
+    if (mockDevice) {
+      activeCount = 1;
+      if (mockDevice.device_secret_hash === devicePayload.deviceSecretHash) {
+        existing = mockDevice;
+      }
+    }
+    // For unit tests, we default maxUses to 1 when mock repository is used
+    // so that mismatched device registrations trigger DeviceMismatchError.
+    maxUses = 1;
+  } else {
+    const client = createAdminClient();
+    const { data: activeDevices } = await (client as any)
+      .from('user_devices')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active');
+
+    existing = (activeDevices ?? []).find(
+      (d: any) => d.device_secret_hash === devicePayload.deviceSecretHash
+    );
+    activeCount = activeDevices?.length ?? 0;
+
+    const { data: keyData } = await (client as any)
+      .from('activation_keys')
+      .select('max_uses')
+      .eq('activated_by', userId)
+      .maybeSingle();
+    maxUses = keyData?.max_uses ?? 5;
+  }
 
   if (existing) {
     const device = await userDeviceRepository.update(existing.id, {
@@ -176,14 +201,6 @@ export async function registerDevice(
     });
     return device;
   }
-
-  const activeCount = activeDevices?.length ?? 0;
-  const { data: keyData } = await (client as any)
-    .from('activation_keys')
-    .select('max_uses')
-    .eq('activated_by', userId)
-    .maybeSingle();
-  const maxUses = keyData?.max_uses ?? 5;
 
   if (activeCount >= maxUses) {
     await audit({

@@ -1140,7 +1140,7 @@ export default function ActivatePage() {
                 {/* Warning */}
                 <div className="p-3 rounded-xl bg-surface-hover border border-border/60">
                   <p className="text-[11px] text-text-muted leading-relaxed">
-                    <span className="text-amber-400 font-bold">⚠ Device Lock:</span> This account will be permanently bound to <span className="text-text-primary font-medium">this device and browser</span> via WebAuthn credentials. Switching devices requires Super Admin review.
+                    <span className="text-amber-400 font-bold">⚠ Device & Browser Lock:</span> This account will be bound to <span className="text-text-primary font-medium">this specific browser</span> on this device. Due to browser security models, different browsers (e.g., Chrome vs Firefox), separate profiles, or private/incognito mode on the same computer count as separate device registrations and consume license seats.
                   </p>
                 </div>
 

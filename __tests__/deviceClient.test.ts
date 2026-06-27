@@ -25,42 +25,16 @@ describe('device client identity (simplified)', () => {
     expect(meta.os).toBe('Windows');
   });
 
-  it('throws cookies_blocked when cookies are disabled', async () => {
-    const nav = { ...testNavigator, cookieEnabled: false };
-    await expect(
-      registerOrVerifyDevice({ navigator: nav })
-    ).rejects.toThrowError(
-      new DeviceClientError('cookies_blocked', 'Cookies must be enabled to keep this device signed in.', { redirectTo: '/device-blocked' })
-    );
-  });
-
-  it('sends post request to verify device', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ device: { id: 'device-1', status: 'active' } }),
-    });
-
+  it('resolves immediately with stub active device details', async () => {
     const res = await registerOrVerifyDevice({
       navigator: testNavigator,
-      fetch: mockFetch,
     });
-
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    const [url, options] = mockFetch.mock.calls[0];
-    expect(url).toBe('/api/devices/verify');
-    expect(options.method).toBe('POST');
-    expect(options.credentials).toBe('include');
-    expect(options.headers).toEqual({ 'content-type': 'application/json' });
-    
-    const parsedBody = JSON.parse(options.body);
-    expect(parsedBody.device_name).toBe('Windows - Chrome');
-    expect(parsedBody.browser).toBe('Chrome');
-    expect(parsedBody.os).toBe('Windows');
-    expect(parsedBody.fingerprint_hash).toBeDefined();
-    expect(parsedBody.public_key).toBeDefined();
-    expect(parsedBody.challenge_str).toBeDefined();
-    expect(parsedBody.signature).toBeDefined();
-    expect(res).toEqual({ device: { id: 'device-1', status: 'active' } });
+    expect(res).toEqual({
+      device: {
+        id: '00000000-0000-0000-0000-000000000000',
+        status: 'active',
+      },
+    });
   });
 
   it('sends post request to request device reset', async () => {

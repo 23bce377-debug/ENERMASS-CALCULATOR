@@ -48,7 +48,7 @@ const errorMetadata = {
   DeviceMismatchError: {
     statusCode: 403,
     redirectTo: '/device/reset',
-    userMessage: 'This login is coming from a different registered device.',
+    userMessage: 'This login is coming from a different registered device (or browser).',
     internalMessage: 'Device session validation failed because the device token or fingerprint did not match.',
   },
   DeviceNotRegisteredError: {

@@ -121,24 +121,26 @@ export function GenerateKeysModal({ orgId, orgName }: GenerateKeysProps = {}) {
                     </p>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest">
-                      Number of Keys (1–100)
-                    </label>
-                    <input
-                      id="key-count-input"
-                      type="number"
-                      value={count}
-                      onChange={e => setCount(Math.max(1, Math.min(100, Number(e.target.value))))}
-                      min={1} max={100}
-                      className="w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-sm text-text-primary
-                        focus:outline-none focus:border-accent/50 transition-all"
-                    />
-                  </div>
+                  {!orgId && (
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                        Number of Keys (1–100)
+                      </label>
+                      <input
+                        id="key-count-input"
+                        type="number"
+                        value={count}
+                        onChange={e => setCount(Math.max(1, Math.min(100, Number(e.target.value))))}
+                        min={1} max={100}
+                        className="w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-sm text-text-primary
+                          focus:outline-none focus:border-accent/50 transition-all"
+                      />
+                    </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest">
-                      Device limit (Concurrent Logins)
+                      User Limit (Seats)
                     </label>
                     <input
                       id="key-maxuses-input"
@@ -174,7 +176,7 @@ export function GenerateKeysModal({ orgId, orgName }: GenerateKeysProps = {}) {
                       transition-all active:scale-[0.98] shadow-lg shadow-accent/20 hover:brightness-110
                       disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    {isPending ? 'Generating...' : `Generate ${count} Key${count > 1 ? 's' : ''}`}
+                    {isPending ? 'Generating...' : orgId ? 'Generate License Key' : `Generate ${count} Key${count > 1 ? 's' : ''}`}
                   </button>
                 </div>
               ) : result.success && result.keys ? (

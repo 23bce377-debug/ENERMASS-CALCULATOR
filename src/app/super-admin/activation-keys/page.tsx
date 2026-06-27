@@ -80,8 +80,8 @@ export default async function SuperAdminActivationKeysPage() {
                 <tr>
                   <th className={thClass}>Key Prefix</th>
                   <th className={thClass}>Status</th>
-                  <th className={thClass}>Limit (Devices)</th>
-                  <th className={thClass}>Active Logins</th>
+                  <th className={thClass}>User Limit</th>
+                  <th className={thClass}>Activated Accounts</th>
                   <th className={thClass}>Activated By</th>
                   <th className={thClass}>Expires</th>
                   <th className={thClass}>Created</th>

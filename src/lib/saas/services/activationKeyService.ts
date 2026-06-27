@@ -278,6 +278,7 @@ export async function generateActivationKeys(input: z.input<typeof generateKeysS
         full_name: `Key User ${prefix}`,
         role: 'staff',
         is_active: true,
+        key_id: row.id,
       });
 
     if (profileError) {
@@ -357,8 +358,19 @@ export async function validateActivationKey(rawKey: string): Promise<KeyValidati
     return { valid: false, reason: 'Key not found.' };
   }
 
-  if (key.status !== 'unused') {
-    return { valid: false, reason: 'This key has already been used or revoked.' };
+  if (key.status === 'revoked') {
+    return { valid: false, reason: 'This key has been revoked.' };
+  }
+
+  const client = createAdminClient();
+  const { count: activatedCount } = await client
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('key_id', key.id);
+
+  const maxUses = key.max_uses ?? 5;
+  if ((activatedCount ?? 0) >= maxUses) {
+    return { valid: false, reason: `This key has reached its maximum activation limit of ${maxUses} users.` };
   }
 
   if (key.expires_at && new Date(key.expires_at) < new Date()) {
@@ -368,7 +380,6 @@ export async function validateActivationKey(rawKey: string): Promise<KeyValidati
   // Fetch org name
   let orgName: string = orgNameCache.get(key.org_id) ?? '';
   if (!orgName) {
-    const client = createAdminClient();
     const { data: org } = await (client as any)
       .from('organisations')
       .select('name')
@@ -379,7 +390,6 @@ export async function validateActivationKey(rawKey: string): Promise<KeyValidati
   }
 
   // Retrieve plan details and seat limit
-  const client = createAdminClient();
   const { data: sub } = await client
     .from('org_subscriptions')
     .select('seat_limit, plan:plan_id(name)')
@@ -430,9 +440,24 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
   // ── 1. Fetch and validate key ────────────────────────────────────────────────
   const key = await keyRepo.getByHash(hash);
   if (!key) throw new Error('Activation key not found.');
-  if (key.status !== 'unused') throw new Error('This activation key has already been used.');
-  if (key.expires_at && new Date(key.expires_at) < new Date()) {
+  if (key.status === 'revoked') throw new Error('This activation key has been revoked.');
+  if (key.status === 'expired' || (key.expires_at && new Date(key.expires_at) < new Date())) {
     throw new Error('This activation key has expired.');
+  }
+
+  // Count how many users have been activated with this key
+  const { count: activatedCount, error: countErr } = await adminClient
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('key_id', key.id);
+
+  if (countErr) {
+    throw new Error('Failed to verify license activation status.');
+  }
+
+  const maxUses = key.max_uses ?? 5;
+  if ((activatedCount ?? 0) >= maxUses) {
+    throw new Error(`This activation key has reached its maximum activation limit of ${maxUses} users.`);
   }
 
   // Ensure organization subscription exists and is active with sufficient seats before redemption
@@ -516,14 +541,25 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
 
     // 1. SELECT FOR UPDATE on activation_keys to lock and verify key status
     const keyRes = await pgClient.query(
-      'SELECT status, expires_at, org_id FROM public.activation_keys WHERE id = $1 FOR UPDATE',
+      'SELECT status, expires_at, org_id, max_uses FROM public.activation_keys WHERE id = $1 FOR UPDATE',
       [key.id]
     );
     const dbKey = keyRes.rows[0];
     if (!dbKey) throw new Error('Activation key not found in transaction.');
-    if (dbKey.status !== 'unused') throw new Error('This activation key has already been used.');
-    if (dbKey.expires_at && new Date(dbKey.expires_at) < new Date()) {
+    if (dbKey.status === 'revoked') throw new Error('This activation key has been revoked.');
+    if (dbKey.status === 'expired' || (dbKey.expires_at && new Date(dbKey.expires_at) < new Date())) {
       throw new Error('This activation key has expired.');
+    }
+
+    // Check count of profiles already activated by this key
+    const pCountRes = await pgClient.query(
+      'SELECT COUNT(*) as count FROM public.profiles WHERE key_id = $1',
+      [key.id]
+    );
+    const activatedCount = parseInt(pCountRes.rows[0].count, 10);
+    const maxUses = dbKey.max_uses ?? 5;
+    if (activatedCount >= maxUses) {
+      throw new Error(`This activation key has reached its maximum activation limit of ${maxUses} users.`);
     }
 
     // 2. Lock organisation row to serialize owner checks and seat usage verification
@@ -572,11 +608,11 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
       throw new Error(`Failed to initialize user metadata: ${metaError.message}`);
     }
 
-    // 6. Create Profile
+    // 6. Create Profile (with key_id link)
     await pgClient.query(
-      `INSERT INTO public.profiles (id, org_id, full_name, role, phone, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [userId, key.org_id, payload.fullName, assignedRole, payload.phone ?? null, true]
+      `INSERT INTO public.profiles (id, org_id, full_name, role, phone, is_active, key_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [userId, key.org_id, payload.fullName, assignedRole, payload.phone ?? null, true, key.id]
     );
 
     // 7. Create Org Member
@@ -586,29 +622,12 @@ export async function redeemActivationKey(input: z.input<typeof redeemKeySchema>
       [key.org_id, userId, assignedRole, 'active']
     );
 
-    // 8. Create User Device
-    await pgClient.query(
-      `INSERT INTO public.user_devices (id, org_id, user_id, device_secret_hash, device_name, browser, os, public_key, fingerprint_hash)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [
-        deviceId,
-        key.org_id,
-        userId,
-        secretHash,
-        payload.deviceName ?? 'Activation Device',
-        payload.browser ?? null,
-        payload.os ?? null,
-        payload.publicKey ?? null,
-        payload.fingerprintHash ?? null,
-      ]
-    );
-
-    // 9. Mark activation key as activated
+    // 8. Mark activation key as activated (setting device_id to null)
     await pgClient.query(
       `UPDATE public.activation_keys
-       SET status = 'activated', activated_by = $1, device_id = $2, activated_at = NOW(), updated_at = NOW()
-       WHERE id = $3`,
-      [userId, deviceId, key.id]
+       SET status = 'activated', activated_by = $1, device_id = NULL, activated_at = NOW(), updated_at = NOW()
+       WHERE id = $2`,
+      [userId, key.id]
     );
 
     // 10. Log audit event
@@ -656,16 +675,17 @@ export async function listOrgActivationKeys(orgId: string): Promise<MaskedKeyIte
   ]);
 
   const supabase = createAdminClient();
-  const { data: deviceCounts } = await supabase
-    .from('user_devices')
-    .select('user_id')
-    .eq('status', 'active');
+  const { data: profileActivations } = await supabase
+    .from('profiles')
+    .select('id, key_id')
+    .eq('org_id', orgId)
+    .not('key_id', 'is', null);
 
   const countMap = new Map<string, number>();
-  if (deviceCounts) {
-    for (const d of deviceCounts) {
-      if (d.user_id) {
-        countMap.set(d.user_id, (countMap.get(d.user_id) ?? 0) + 1);
+  if (profileActivations) {
+    for (const p of profileActivations) {
+      if (p.key_id) {
+        countMap.set(p.key_id, (countMap.get(p.key_id) ?? 0) + 1);
       }
     }
   }
@@ -673,7 +693,7 @@ export async function listOrgActivationKeys(orgId: string): Promise<MaskedKeyIte
   return keys.map(k => ({
     ...k,
     max_uses: (k as any).max_uses ?? 5,
-    active_devices_count: k.activated_by ? (countMap.get(k.activated_by) ?? 0) : 0,
+    active_devices_count: countMap.get(k.id) ?? 0,
     activated_by_email: k.activated_by ? (emailMap.get(k.activated_by) ?? null) : null,
     activated_by_name: k.activated_by ? (profiles.get(k.activated_by)?.full_name ?? null) : null,
   }));
@@ -689,16 +709,16 @@ export async function listAllActivationKeys(page = 1, limit = 100): Promise<Mask
   ]);
 
   const supabase = createAdminClient();
-  const { data: deviceCounts } = await supabase
-    .from('user_devices')
-    .select('user_id')
-    .eq('status', 'active');
+  const { data: profileActivations } = await supabase
+    .from('profiles')
+    .select('id, key_id')
+    .not('key_id', 'is', null);
 
   const countMap = new Map<string, number>();
-  if (deviceCounts) {
-    for (const d of deviceCounts) {
-      if (d.user_id) {
-        countMap.set(d.user_id, (countMap.get(d.user_id) ?? 0) + 1);
+  if (profileActivations) {
+    for (const p of profileActivations) {
+      if (p.key_id) {
+        countMap.set(p.key_id, (countMap.get(p.key_id) ?? 0) + 1);
       }
     }
   }
@@ -706,7 +726,7 @@ export async function listAllActivationKeys(page = 1, limit = 100): Promise<Mask
   return keys.map(k => ({
     ...k,
     max_uses: (k as any).max_uses ?? 5,
-    active_devices_count: k.activated_by ? (countMap.get(k.activated_by) ?? 0) : 0,
+    active_devices_count: countMap.get(k.id) ?? 0,
     activated_by_email: k.activated_by ? (emailMap.get(k.activated_by) ?? null) : null,
     activated_by_name: k.activated_by ? (profiles.get(k.activated_by)?.full_name ?? null) : null,
   }));
