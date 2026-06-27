@@ -10,7 +10,7 @@ const schema = z.object({
   orgId: z.string().uuid().optional(),
   count: z.number().int().min(1).max(100),
   maxUses: z.number().int().min(1).max(9999).optional(),
-  expiresAt: z.string().datetime().optional(),
+  expiresAt: z.string().datetime({ offset: true }).optional(),
 });
 
 /**

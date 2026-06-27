@@ -812,7 +812,7 @@ export async function recordManualPaymentAsSuperAdmin(input: {
     paymentStatus: paymentStatusSchema,
     paymentMethod: paymentMethodSchema,
     invoiceNumber: z.string().nullable().optional(),
-    paidAt: z.string().datetime().nullable().optional(),
+    paidAt: z.string().datetime({ offset: true }).nullable().optional(),
     activateSubscription: z.boolean().optional(),
   }).parse(input);
 

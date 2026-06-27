@@ -207,10 +207,10 @@ const subscriptionCreateSchema = z.object({
   status: subscriptionStatusSchema.optional(),
   seat_limit: z.number().int().positive().optional(),
   billing_cycle: billingCycleSchema.optional(),
-  current_period_start: z.string().datetime().nullable().optional(),
-  current_period_end: z.string().datetime().nullable().optional(),
-  trial_ends_at: z.string().datetime().nullable().optional(),
-  cancelled_at: z.string().datetime().nullable().optional(),
+  current_period_start: z.string().datetime({ offset: true }).nullable().optional(),
+  current_period_end: z.string().datetime({ offset: true }).nullable().optional(),
+  trial_ends_at: z.string().datetime({ offset: true }).nullable().optional(),
+  cancelled_at: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
 export class OrgSubscriptionRepository extends RepositoryBase<'org_subscriptions'> {
@@ -443,7 +443,7 @@ export class DeviceResetRequestRepository extends RepositoryBase<'device_reset_r
     return this.patch(id, z.object({
       status: resetStatusSchema.optional(),
       reviewed_by: uuidSchema.nullable().optional(),
-      reviewed_at: z.string().datetime().nullable().optional(),
+      reviewed_at: z.string().datetime({ offset: true }).nullable().optional(),
     }).parse(input) as TableUpdate<'device_reset_requests'>);
   }
 
@@ -465,7 +465,7 @@ const paymentCreateSchema = z.object({
   payment_status: paymentStatusSchema.optional(),
   payment_method: paymentMethodSchema.optional(),
   invoice_number: z.string().nullable().optional(),
-  paid_at: z.string().datetime().nullable().optional(),
+  paid_at: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
 export class SubscriptionPaymentRepository extends RepositoryBase<'subscription_payments'> {

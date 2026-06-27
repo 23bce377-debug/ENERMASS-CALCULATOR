@@ -28,7 +28,7 @@ const generateKeysSchema = z.object({
   orgId: z.string().uuid(),
   count: z.number().int().min(1).max(100),
   createdBy: z.string().uuid(),
-  expiresAt: z.string().datetime().optional(),
+  expiresAt: z.string().datetime({ offset: true }).optional(),
   maxUses: z.number().int().min(1).max(9999).optional(),
 });
 
