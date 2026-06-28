@@ -383,6 +383,30 @@ export const createQuoteSlice: StateCreator<
       console.error('[quoteStore] Error uploading quote to storage bucket:', err);
     }
 
+    // Trigger PDF generation on the backend
+    try {
+      console.log('[quoteStore] Triggering server-side PDF generation for:', quote.quoteId);
+      const response = await fetch('/api/quotes/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quoteId: quote.quoteId,
+          orgId,
+        }),
+      });
+
+      const resData = await response.json();
+      if (!response.ok || !resData.success) {
+        console.error('[quoteStore] Failed to generate PDF:', resData.error || resData.message || 'Unknown backend error');
+      } else {
+        console.log('[quoteStore] PDF generated successfully. Signed URL:', resData.signedUrl);
+      }
+    } catch (pdfErr) {
+      console.error('[quoteStore] Network error during PDF generation trigger:', pdfErr);
+    }
+
     return quote;
   },
 

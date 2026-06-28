@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Solar Power Plant Proposal — Mr. Linjith</title>
+<style>
+  :root{
+    /* ---- color tokens ---- */
+    --navy:        #15294A;
+    --navy-deep:   #0E1F38;
+    --navy-tint:   #1F3D66;
+    --gold:        #C2842A;
+    --gold-deep:   #A06A1C;
+    --gold-soft:   #F8E9D2;
+    --green:       #1E7D4F;
+    --green-soft:  #E3F4EA;
+    --teal:        #0E7C66;
+    --teal-soft:   #E1F3EF;
+    --blue-soft:   #EAF0F8;
+    --gray-soft:   #F1F3F5;
+    --ink:         #16212F;
+    --ink-muted:   #5C6B7C;
+    --ink-faint:   #8B97A3;
+    --line:        #E2E7EC;
+    --white:       #FFFFFF;
+
+    /* ---- spacing scale ---- */
+    --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+    --sp-5: 20px; --sp-6: 28px; --sp-7: 36px; --sp-8: 48px;
+
+    /* ---- type ---- */
+    --font-sans: "Inter", "Segoe UI", Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", "Courier New", monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ margin:0; padding:0; }
+  body{
+    font-family: var(--font-sans);
+    color: var(--ink);
+    font-size: 12.5px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3,h4,p,ul,ol{ margin:0; }
+  ul{ padding-left: 0; list-style:none; }
+  strong{ font-weight:700; }
+
+  /* =========================================================
+     PAGE / PRINT SETUP
+     ========================================================= */
+  @page { size: A4; margin: 0; }
+
+  .page{
+    width: 210mm;
+    min-height: 297mm;
+    padding: 13mm 14mm 11mm 14mm;
+    display: flex;
+    flex-direction: column;
+    page-break-after: always;
+    background: var(--white);
+    position: relative;
+  }
+  .page:last-of-type{ page-break-after: auto; }
+
+  @media print{
+    .screen-only{ display:none !important; }
+  }
+
+  /* =========================================================
+     PRIMITIVES
+     ========================================================= */
+  .eyebrow{
+    font-size:9.5px; font-weight:700; letter-spacing:.09em;
+    text-transform:uppercase; color: var(--ink-faint);
+  }
+  .rule{ height:1px; background:var(--line); border:0; margin:0; }
+
+  .pill{
+    display:inline-flex; align-items:center;
+    padding: 5px 12px; border-radius:999px;
+    font-size:10.5px; font-weight:600;
+    border:1px solid var(--line); color:var(--ink-muted);
+    background:var(--white);
+  }
+  .pill--solid{ background:var(--gold); border-color:var(--gold); color:#fff; }
+
+  .grid{ display:grid; gap: var(--sp-4); }
+
+  .stat-card{
+    border:1px solid var(--line); border-radius:6px;
+    padding: var(--sp-4) var(--sp-5);
+    background:var(--white);
+    border-left-width:3px;
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .stat-card__value{ font-size:19px; font-weight:800; line-height:1.15; }
+  .stat-card__label{
+    margin-top:3px; font-size:9.5px; font-weight:700;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint);
+  }
+  .stat-card__note{ margin-top:2px; font-size:9.5px; color:var(--ink-faint); font-style:italic; }
+  .stat-card--navy{ border-left-color:var(--navy);  } .stat-card--navy  .stat-card__value{ color:var(--navy); }
+  .stat-card--gold{ border-left-color:var(--gold);  } .stat-card--gold  .stat-card__value{ color:var(--gold-deep); }
+  .stat-card--green{border-left-color:var(--green); } .stat-card--green .stat-card__value{ color:var(--green); }
+  .stat-card--ink{  border-left-color:var(--ink);   } .stat-card--ink   .stat-card__value{ color:var(--ink); }
+
+  .callout{
+    border-radius:6px; padding: var(--sp-4) var(--sp-5);
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .callout--gold{ background:var(--gold-soft); }
+  .callout--blue{ background:var(--blue-soft); }
+  .callout--green{ background:var(--green-soft); }
+  .callout--teal{ background:var(--teal-soft); }
+  .callout--gray{ background:var(--gray-soft); }
+  .callout__title{ font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-muted); margin-bottom:6px; }
+
+  .meta-row{
+    display:flex; justify-content:space-between; gap:var(--sp-3);
+    padding: 7px 0; border-bottom:1px solid var(--line);
+    font-size:11.5px;
+  }
+  .meta-row:last-child{ border-bottom:0; }
+  .meta-row__label{ color:var(--ink-muted); }
+  .meta-row__value{ font-weight:700; text-align:right; }
+
+  .field-grid{ display:grid; grid-template-columns:1fr 1fr; gap: 0 var(--sp-6); }
+  .field{ padding: 8px 0; border-bottom:1px solid var(--line); }
+  .field__label{ font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); }
+  .field__value{ font-size:12.5px; font-weight:600; margin-top:2px; }
+
+  table{ width:100%; border-collapse:collapse; font-size:11px; }
+  thead{ display: table-header-group; }
+  tr{ page-break-inside: avoid; break-inside: avoid; }
+  th{
+    text-align:left; font-size:9px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--white); background:var(--navy);
+    padding:8px 10px;
+  }
+  td{ padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tbody tr:nth-child(even){ background:#FAFBFC; }
+  .table-group-head td{
+    background:var(--navy-tint); color:#fff; font-weight:700;
+    font-size:9.5px; letter-spacing:.05em; text-transform:uppercase;
+  }
+  .row--highlight td{ background:var(--green-soft); font-weight:700; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  .section-head{ margin-bottom: var(--sp-5); }
+  .section-head__top{ display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
+  .section-num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:4px;
+    background:var(--navy); color:#fff; font-size:10px; font-weight:800;
+    flex:none;
+  }
+  .section-head__title{ font-size:16px; font-weight:800; color:var(--navy); }
+  .section-head__desc{ font-size:10.5px; color:var(--ink-faint); margin-left:30px; }
+
+  .check-list li{ position:relative; padding-left:18px; margin-bottom:6px; font-size:11.5px; }
+  .check-list li::before{ content:"✓"; position:absolute; left:0; color:var(--green); font-weight:800; }
+
+  /* =========================================================
+     SHARED CHROME
+     ========================================================= */
+  .brand-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:var(--sp-5); }
+  .brand-id{ display:flex; align-items:flex-start; gap:10px; }
+  .brand-logo{ width:34px; height:34px; flex:none; }
+  .brand-name{ font-size:14.5px; font-weight:800; color:var(--navy); line-height:1.2; }
+  .brand-tagline{ font-size:7.6px; font-weight:700; letter-spacing:.09em; color:var(--ink-faint); margin-top:2px; }
+  .brand-contact{ font-size:9.5px; color:var(--ink-muted); margin-top:5px; }
+
+  .ref-badge{
+    background:var(--gold-soft); border:1px solid var(--gold);
+    border-radius:6px; padding:8px 14px; min-width:170px; text-align:center;
+  }
+  .ref-badge__eyebrow{ font-size:8px; font-weight:700; letter-spacing:.08em; color:var(--gold-deep); text-transform:uppercase; }
+  .ref-badge__ref{ font-size:12px; font-weight:800; color:var(--navy); margin-top:2px; }
+  .ref-badge__dates{ font-size:9px; color:var(--ink-muted); margin-top:5px; }
+
+  .page-footer{
+    margin-top:auto; padding-top: var(--sp-4);
+    border-top:1px solid var(--line);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:9px; color:var(--ink-faint);
+  }
+  .page-footer strong{ color:var(--ink-muted); }
+
+  .dark-band{ background:var(--navy); color:#fff; }
+
+  /* =========================================================
+     PAGE 1 — COVER
+     ========================================================= */
+  .cover-strip{
+    width: 210mm;
+    max-width: none !important;
+    margin-left: -14mm;
+    margin-top: var(--sp-6);
+    margin-bottom: 0;
+    padding: var(--sp-6) 14mm var(--sp-5) 14mm;
+  }
+  .cover-strip .eyebrow{ color:#9FB0C6; }
+  .cover-title{ font-size:32px; font-weight:800; color:#fff; margin-top:10px; line-height:1.1; }
+  .cover-title small{ display:block; font-size:32px; font-weight:300; color:#9FB0C6; }
+  .cover-subtitle{ font-size:12px; color:#C7D2DF; margin-top:8px; }
+  .cover-pills{ display:flex; gap:8px; flex-wrap:wrap; margin-top: var(--sp-5); }
+  .cover-pills .pill{ background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.25); color:#E7ECF2; }
+  .cover-pills .pill--solid{ background:var(--gold); border-color:var(--gold); color:#fff; }
+
+  .kpi-strip{
+    margin: 0 -14mm; padding: var(--sp-6) 14mm;
+    display:grid; grid-template-columns:repeat(4,1fr);
+  }
+  .kpi-strip__item{ text-align:center; border-left:1px solid rgba(255,255,255,.15); }
+  .kpi-strip__item:first-child{ border-left:0; }
+  .kpi-strip__value{ font-size:21px; font-weight:800; color:#fff; }
+  .kpi-strip__label{ font-size:8.5px; letter-spacing:.07em; text-transform:uppercase; color:#9FB0C6; margin-top:4px; }
+
+  .overview-eyebrow{ margin-top:var(--sp-7); margin-bottom:var(--sp-3); }
+  .overview-grid{ grid-template-columns:repeat(4,1fr); }
+  .overview-grid .stat-card{ padding: var(--sp-3) var(--sp-4); }
+  .overview-grid .stat-card__value{ font-size:16px; }
+
+  .cover-footer{
+    width: 210mm;
+    max-width: none !important;
+    margin-left: -14mm;
+    margin-top: auto;
+    margin-bottom: 0;
+    padding: var(--sp-4) 14mm;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:10px; color:#C7D2DF;
+  }
+  .cover-footer strong{ color:#white; display:block; font-size:11px; }
+  .cover-footer .right{ text-align:right; }
+  .cover-footer .right .eyebrow{ color:#9FB0C6; }
+
+  /* =========================================================
+     PAGE 2 — INTRO LETTER
+     ========================================================= */
+  .letter-layout{ display:grid; grid-template-columns: 1.7fr 1fr; gap: var(--sp-6); margin-top:var(--sp-5); flex:1; }
+  .letter-meta{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-4); background:var(--gray-soft); border-radius:6px; padding:var(--sp-4); margin-bottom:var(--sp-5); }
+  .letter-meta__label{ font-size:8.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); }
+  .letter-meta__value{ font-size:12px; font-weight:700; margin-top:2px; }
+  .letter-ref{ font-size:11px; margin-bottom:var(--sp-4); }
+  .letter-ref code{ font-family:var(--font-mono); background:var(--gray-soft); padding:1px 5px; border-radius:3px; color:var(--gold-deep); }
+  .letter-body p{ margin-bottom: var(--sp-4); font-size:11.5px; text-align:justify; }
+  .signature-block{ margin-top:var(--sp-6); }
+  .signature-script{ font-family:"Segoe Script","Brush Script MT",cursive; font-size:24px; color:var(--navy-tint); }
+  .signature-name{ font-weight:800; font-size:12px; border-top:1px solid var(--ink); padding-top:4px; display:inline-block; margin-top:2px; }
+  .signature-role{ font-size:10.5px; color:var(--ink-muted); }
+
+  .side-box{ border:1px solid var(--line); border-radius:6px; padding:var(--sp-4); margin-bottom:var(--sp-4); }
+  .side-box__title{ font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--navy); margin-bottom:var(--sp-2); }
+
+  /* =========================================================
+     QUADRANT GRID — "Why Solar" page
+     ========================================================= */
+  .quad-grid{ grid-template-columns:1fr 1fr; }
+  .quad-box{ border-radius:6px; padding:var(--sp-4) var(--sp-5); break-inside:avoid; page-break-inside:avoid; }
+  .quad-box__title{ font-weight:800; font-size:12px; margin-bottom:var(--sp-3); display:flex; align-items:center; gap:6px; }
+
+  /* workflow strip */
+  .workflow-strip{ display:flex; align-items:center; justify-content:space-between; background:var(--navy); color:#fff; border-radius:6px; padding:var(--sp-4) var(--sp-5); font-size:10.5px; font-weight:600; }
+  .workflow-strip .seg{ display:flex; align-items:center; gap:6px; }
+  .workflow-strip .arrow{ color:#7E92AA; }
+
+  .timeline-row{ display:flex; justify-content:space-between; gap:var(--sp-3); }
+  .timeline-step{ text-align:center; flex:1; }
+  .timeline-step__icon{ font-size:18px; }
+  .timeline-step__week{ font-size:9px; color:var(--ink-faint); font-weight:700; margin-top:4px; }
+  .timeline-step__label{ font-size:10.5px; font-weight:700; margin-top:2px; }
+
+  .disclaimer-box{ background:var(--gray-soft); border-radius:6px; padding:var(--sp-4) var(--sp-5); font-size:9.5px; color:var(--ink-muted); text-align:justify; }
+  .disclaimer-box__title{ font-weight:800; color:var(--ink); font-size:11px; margin-bottom:6px; }
+
+  .signature-pad{ display:flex; justify-content:space-between; margin-top:var(--sp-6); padding-top:var(--sp-5); }
+  .signature-pad__col{ width:45%; }
+  .signature-pad__line{ border-top:1px solid var(--ink); margin-top:34px; padding-top:5px; font-size:10px; color:var(--ink-muted); }
+
+  .qr-box{ width:62px; height:62px; border:1px solid var(--line); border-radius:4px; background:
+    repeating-linear-gradient(0deg, #16212F 0 3px, transparent 3px 6px),
+    repeating-linear-gradient(90deg, #16212F 0 3px, transparent 3px 6px);
+    background-blend-mode: multiply; background-color:#fff;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PAGE 1 — COVER                                                -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="brand-header">
+    <div class="brand-id">
+      <svg class="brand-logo" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <g fill="none" stroke="#3FA75C" stroke-width="3.4" stroke-linecap="round">
+          <line x1="24" y1="2" x2="24" y2="11"/>
+          <line x1="24" y1="37" x2="24" y2="46"/>
+          <line x1="2" y1="24" x2="11" y2="24"/>
+          <line x1="37" y1="24" x2="46" y2="24"/>
+          <line x1="8.5" y1="8.5" x2="14.7" y2="14.7"/>
+          <line x1="33.3" y1="33.3" x2="39.5" y2="39.5"/>
+          <line x1="39.5" y1="8.5" x2="33.3" y2="14.7"/>
+          <line x1="14.7" y1="33.3" x2="8.5" y2="39.5"/>
+        </g>
+        <circle cx="24" cy="24" r="9" fill="#E8862B"/>
+      </svg>
+      <div>
+        <div class="brand-name">Enermass Power Solutions Pvt. Ltd.</div>
+        <div class="brand-tagline">INTEGRATED&nbsp; SOLAR&nbsp; AND&nbsp; POWER&nbsp; ENGINEERING&nbsp; SOLUTIONS</div>
+        <div class="brand-contact">First Floor, AVM Complex · Chirangara Koratty Post · Thrissur, Kerala – 680 308<br/>
+        +91-81 380 27336 · info@enermass.in · www.enermass.in</div>
+      </div>
+    </div>
+    <div class="ref-badge">
+      <div class="ref-badge__eyebrow">Proposal Reference</div>
+      <div class="ref-badge__ref">EPS-COKL-002992627</div>
+      <div class="ref-badge__dates">Date: 28 June 2026<br/>Valid: 28 July 2026</div>
+    </div>
+  </div>
+
+  <div class="cover-strip dark-band">
+    <div class="eyebrow">Techno-Commercial Proposal &nbsp;·&nbsp; Kerala &nbsp;·&nbsp; Residential</div>
+    <h1 class="cover-title">Solar Power Plant<small>Proposal</small></h1>
+    <div class="cover-subtitle">Grid-Connected Rooftop Solar Power Plant — Net Metering</div>
+    <div class="cover-pills">
+      <span class="pill pill--solid">3 kWp</span>
+      <span class="pill">Kerala</span>
+      <span class="pill">Mr. Linjith</span>
+      <span class="pill">Residential</span>
+      <span class="pill">Valid 30 Days</span>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="kpi-strip__item"><div class="kpi-strip__value">₹0</div><div class="kpi-strip__label">Annual Savings</div></div>
+      <div class="kpi-strip__item"><div class="kpi-strip__value">5.2 yrs</div><div class="kpi-strip__label">Payback Period</div></div>
+      <div class="kpi-strip__item"><div class="kpi-strip__value">₹5,11,912</div><div class="kpi-strip__label">25-Year Returns</div></div>
+      <div class="kpi-strip__item"><div class="kpi-strip__value">3.6 T/yr</div><div class="kpi-strip__label">CO₂/Year</div></div>
+    </div>
+  </div>
+
+  <div class="overview-eyebrow eyebrow">Proposal Overview</div>
+  <div class="grid overview-grid">
+    <div class="stat-card stat-card--ink"><div class="stat-card__value">3 kWp</div><div class="stat-card__label">System Capacity</div></div>
+    <div class="stat-card stat-card--navy"><div class="stat-card__value">₹2,18,000</div><div class="stat-card__label">Total Project Cost</div><div class="stat-card__note">Before subsidy deduction</div></div>
+    <div class="stat-card stat-card--gold"><div class="stat-card__value">₹1,40,000</div><div class="stat-card__label">Customer Commitment</div><div class="stat-card__note">After subsidy — net payment</div></div>
+    <div class="stat-card stat-card--green"><div class="stat-card__value">5.2 yrs</div><div class="stat-card__label">Payback Period</div></div>
+    <div class="stat-card stat-card--green"><div class="stat-card__value">₹0</div><div class="stat-card__label">Total Annual Benefit</div></div>
+    <div class="stat-card stat-card--navy"><div class="stat-card__value">₹5,11,912</div><div class="stat-card__label">25-Year Returns</div></div>
+    <div class="stat-card stat-card--gold"><div class="stat-card__value">30 Days</div><div class="stat-card__label">Proposal Validity</div></div>
+  </div>
+
+  <div class="cover-footer dark-band">
+    <div>
+      Residential · Kerala · Grid-Connected Rooftop Solar Power Plant — Net Metering<br/>
+      <strong>Mr. Linjith · 28 June 2026</strong>
+    </div>
+    <div class="right">
+      <div class="eyebrow" style="color:#9FB0C6;">Prepared by</div>
+      <strong>Enermass Power Solutions Pvt. Ltd.</strong>
+      +91-81 380 27336 · www.enermass.in
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 2 — INTRODUCTION LETTER                                  -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="section-head">
+    <div class="section-head__top">
+      <span class="section-num">01</span>
+      <span class="section-head__title">Introduction Letter</span>
+    </div>
+    <div class="section-head__desc">Formal cover letter from the Chief Executive Officer</div>
+    <hr class="rule" style="margin-top:10px;"/>
+  </div>
+
+  <div class="letter-layout">
+    <div>
+      <div class="letter-meta">
+        <div><div class="letter-meta__label">To</div><div class="letter-meta__value">Mr. Linjith</div></div>
+        <div><div class="letter-meta__label">Date</div><div class="letter-meta__value">28 June 2026</div></div>
+        <div><div class="letter-meta__label">Valid Until</div><div class="letter-meta__value">28 July 2026</div></div>
+      </div>
+
+      <div class="letter-ref">
+        Ref: <code>EPS-COKL-002992627</code> &nbsp;&nbsp;
+        <strong>Subject:</strong>
+        Solar Power Plant Proposal — 3 kWp On-Grid System, Kerala
+      </div>
+
+      <div class="letter-body">
+        <p style="font-weight:700;">Dear Mr. Linjith,</p>
+        <p>Greetings,</p>
+        <p>Thank you for your interest in Enermass Power Solutions Pvt. Ltd.. We are pleased to present our tailored Solar Energy System proposal for your solar power plant requirement.</p>
+        <p>Established in 2018, Enermass Power Solutions Pvt. Ltd. is a forward-thinking renewable energy company committed to the 3P philosophy (People, Planet, Profit), delivering sustainable, cost-effective, and high-performance energy solutions across India. Headquartered in Kerala, we have successfully executed a wide range of solar projects nationwide, covering on-grid, off-grid, and hybrid systems across residential, commercial, industrial, and institutional sectors.</p>
+        <p>As an MNRE-empanelled EPC firm, with empanelments from ANERT, KSEBL, MSME, JRDEA, IOCL, JNKEL, KEL, and others, we provide comprehensive end-to-end services including design, engineering, procurement, installation, commissioning, and maintenance of rooftop and ground-mounted solar power plants.</p>
+        <p>We are committed to helping you reduce energy costs, lower your carbon footprint, and achieve strong returns through reliable green energy solutions.</p>
+        <p>This proposal outlines our best techno-commercial offering for your solar requirements. We look forward to your confirmation and the opportunity to partner with you on this sustainable journey.</p>
+      </div>
+
+      <div class="signature-block">
+        <p style="margin-bottom:2px;">Yours sincerely,</p>
+          <div class="signature-script">Manoj</div>
+        <div class="signature-name">Mr. Manoj M S</div>
+        <div class="signature-role">Chief Executive Officer<br/>Enermass Power Solutions Pvt. Ltd.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="side-box">
+        <div class="side-box__title">Proposal At-a-Glance</div>
+        <div class="meta-row"><span class="meta-row__label">System</span><span class="meta-row__value">3 kWp</span></div>
+        <div class="meta-row"><span class="meta-row__label">Total Project Cost</span><span class="meta-row__value">₹2,18,000</span></div>
+        <div class="meta-row"><span class="meta-row__label">Your Commitment</span><span class="meta-row__value">₹1,40,000</span></div>
+        <div class="meta-row"><span class="meta-row__label">Payback</span><span class="meta-row__value">5.2 yrs</span></div>
+        <div class="meta-row"><span class="meta-row__label">Annual Benefit</span><span class="meta-row__value">₹0</span></div>
+        <div class="meta-row"><span class="meta-row__label">25-yr Returns</span><span class="meta-row__value">₹5,11,912</span></div>
+        <div class="meta-row"><span class="meta-row__label">Validity</span><span class="meta-row__value">30 Days</span></div>
+      </div>
+
+      <div class="callout callout--gold" style="margin-bottom:var(--sp-4);">
+        <div class="callout__title">System Type</div>
+        <div style="font-weight:800; font-size:13px;">⚡ On-Grid System</div>
+        <div style="font-size:10.5px; color:var(--ink-muted); margin-top:2px;">Kerala · KSEB (Kerala State Electricity Board)</div>
+      </div>
+
+      <div class="callout callout--blue">
+        <div class="callout__title">Sales Contact</div>
+        <div style="font-weight:800; font-size:12.5px;">Gigit Antony</div>
+        <div style="font-size:10.5px; color:var(--ink-muted);">Sales Manager</div>
+        <div style="font-size:11px; font-weight:700; margin-top:3px;">7594933374</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <div>Proposal Ref: <strong>EPS-COKL-002992627</strong> &nbsp;·&nbsp; Prepared for: <strong>Mr. Linjith</strong></div>
+    <div>Page 2 of 10</div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 3 — COMPANY PROFILE & CUSTOMER PROFILE                   -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="section-head">
+    <div class="section-head__top"><span class="section-num">02</span><span class="section-head__title">Company &amp; Customer Profile</span></div>
+    <div class="section-head__desc">Entity details and installation site profiles</div>
+    <hr class="rule" style="margin-top:10px;"/>
+  </div>
+
+  <div class="eyebrow" style="margin-bottom:var(--sp-2);">Enermass Profile</div>
+  <div class="grid" style="grid-template-columns:repeat(3,1fr); margin-bottom:var(--sp-4);">
+    <div class="stat-card stat-card--green" style="text-align:center;"><div class="stat-card__value" style="font-size:24px;">13+</div><div class="stat-card__label">Years Experience</div></div>
+    <div class="stat-card stat-card--navy" style="text-align:center;"><div class="stat-card__value" style="font-size:24px;">5500+</div><div class="stat-card__label">Projects Commissioned</div></div>
+    <div class="stat-card stat-card--gold" style="text-align:center;"><div class="stat-card__value" style="font-size:24px;">25+ MW</div><div class="stat-card__label">Capacity Installed</div></div>
+  </div>
+
+  <div class="field-grid" style="margin-bottom:var(--sp-4);">
+    <div class="field"><div class="field__label">Company Name</div><div class="field__value">Enermass Power Solutions Pvt. Ltd.</div></div>
+    <div class="field"><div class="field__label">CIN / Registration</div><div class="field__value">U74999KL2018PTC053947</div></div>
+    <div class="field"><div class="field__label">GST Number</div><div class="field__value">32AAFCE1087R1ZA</div></div>
+    <div class="field"><div class="field__label">PAN Number</div><div class="field__value">AAFCE1087R</div></div>
+    <div class="field"><div class="field__label">Phone / Email</div><div class="field__value">+91-81 380 27336 / info@enermass.in</div></div>
+    <div class="field"><div class="field__label">Website / Address</div><div class="field__value">www.enermass.in <br/> First Floor, AVM Complex · Chirangara Koratty Post · Thrissur, Kerala – 680 308</div></div>
+  </div>
+
+  <div class="rule" style="margin: var(--sp-3) 0;"></div>
+
+  <div class="eyebrow" style="margin-bottom:var(--sp-2);">Customer &amp; Site Details</div>
+  <div class="field-grid" style="margin-bottom:var(--sp-4);">
+    <div class="field"><div class="field__label">Customer Name</div><div class="field__value">Mr. Linjith</div></div>
+    <div class="field"><div class="field__label">Phone / Email</div><div class="field__value">9876543210 / linjith@example.com</div></div>
+    <div class="field"><div class="field__label">Site Address</div><div class="field__value">Nellayi House, Nellayi P.O., Thrissur, Kerala - 680301</div></div>
+    <div class="field"><div class="field__label">Category / State</div><div class="field__value">Residential / Kerala</div></div>
+    <div class="field"><div class="field__label">DISCOM / Connection Meter No.</div><div class="field__value">KSEB (Kerala State Electricity Board) / KSEB-1002345</div></div>
+    <div class="field"><div class="field__label">Sanctioned Load / Roof Area</div><div class="field__value">3 kW / 360 Sq.Ft.</div></div>
+  </div>
+
+  <div class="page-footer">
+    <div>Proposal Ref: <strong>EPS-COKL-002992627</strong> &nbsp;·&nbsp; Prepared for: <strong>Mr. Linjith</strong></div>
+    <div>Page 3 of 10</div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 4 — SYSTEM DESIGN & EQUIPMENT SPECIFICATIONS            -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="section-head">
+    <div class="section-head__top">
+      <span class="section-num">03</span>
+      <span class="section-head__title">System Design &amp; Equipment Specifications</span>
+    </div>
+    <div class="section-head__desc">Technical configuration, sizing metrics, and equipment selection</div>
+    <hr class="rule" style="margin-top:10px;"/>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:var(--sp-6);">
+    <div class="stat-card stat-card--green" style="text-align:center;"><div class="stat-card__value">3 kWp</div><div class="stat-card__label">System capacity</div></div>
+    <div class="stat-card stat-card--navy" style="text-align:center;"><div class="stat-card__value">360 kWh</div><div class="stat-card__label">Est. Generation / Mth</div></div>
+    <div class="stat-card stat-card--gold" style="text-align:center;"><div class="stat-card__value">4380 kWh</div><div class="stat-card__label">Est. Generation / Yr</div></div>
+    <div class="stat-card stat-card--ink" style="text-align:center;"><div class="stat-card__value">360 Sq.Ft.</div><div class="stat-card__label">Required Roof Area</div></div>
+  </div>
+
+  <div class="eyebrow" style="margin-bottom:var(--sp-3);">Key Component Specifications (Equipment Description &amp; Warranty)</div>
+  <table style="margin-bottom: var(--sp-5);">
+    <thead>
+      <tr>
+        <th style="width: 30%;">Component</th>
+        <th style="width: 70%;">Description &amp; Warranty Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>A. Solar PV Modules</strong></td>
+        <td>
+          <div style="font-weight: 700; margin-bottom: 4px;">Adani / Waaree / V Guard / Panasonic, 610 Wp × 5 Nos</div>
+          <div style="font-size: 10.5px; line-height: 1.4; color: var(--ink-muted);">Tec-N-type TOPCON Bifacial Mono. Efficiency: ~21.5% -22.4%. Bifacil Gain~30% Low Degradation Y1~1%,After~0.4%. Product Warranty 10-12Y ,Performance Warranty 30Y</div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>B. Inverter</strong></td>
+        <td>
+          <div style="font-weight: 700; margin-bottom: 4px;">On-Grid String Inverter | Deye-5 — 5Kw</div>
+          <div style="font-size: 10.5px; line-height: 1.4; color: var(--ink-muted);">On-Grid (Grid-Tied) String Inverter Maximum Efficiency ≥ 97.5% Total Harmonic Distortion (THD) &lt; 3% .Warranty Minimum 10 years</div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>C. Module Mounting Structure (MMS)</strong></td>
+        <td>
+          <div style="font-weight: 700; margin-bottom: 4px;">Module Mounting Structure (MMS) Make-Appolo GI</div>
+          <div style="font-size: 10.5px; line-height: 1.4; color: var(--ink-muted);">Module Mounting Structure (MMS) GI.</div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-footer">
+    <div>Proposal Ref: <strong>EPS-COKL-002992627</strong> &nbsp;·&nbsp; Prepared for: <strong>Mr. Linjith</strong></div>
+    <div>Page 4 of 10</div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 5 — BILL OF MATERIALS (BOM)                              -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="section-head">
+    <div class="section-head__top">
+      <span class="section-num">04</span>
+      <span class="section-head__title">Bill of Materials (BOM) — Scope of Supply</span>
+    </div>
+    <div class="section-head__desc">Complete line item specifications mapped to your quotation</div>
+    <hr class="rule" style="margin-top:10px;"/>
+  </div>
+
+  <table style="margin-bottom: var(--sp-5);">
+    <thead>
+      <tr>
+        <th style="width: 6%;">Line No</th>
+        <th style="width: 25%;">Component</th>
+        <th style="width: 54%;">Specification details</th>
+        <th style="width: 8%; text-align: right;">Qty</th>
+        <th style="width: 7%;">Unit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="table-group-head">
+        <td colspan="5">A. SOLAR PV MODULES</td>
+      </tr>
+      <tr>
+        <td class="num">01</td>
+        <td><strong>Solar PV Module</strong></td>
+        <td>Tec-N-type TOPCON Bifacial Mono. Efficiency: ~21.5% -22.4%. Bifacil Gain~30% Low Degradation Y1~1%,After~0.4%. Product Warranty 10-12Y ,Performance Warranty 30Y</td>
+        <td class="num">5</td>
+        <td>Nos</td>
+      </tr>
+      <tr class="table-group-head">
+        <td colspan="5">B. INVERTER</td>
+      </tr>
+      <tr>
+        <td class="num">02</td>
+        <td><strong>On-Grid String Inverter</strong></td>
+        <td>On-Grid (Grid-Tied) String Inverter Maximum Efficiency ≥ 97.5% Total Harmonic Distortion (THD) &lt; 3% .Warranty Minimum 10 years</td>
+        <td class="num">1</td>
+        <td>Lot</td>
+      </tr>
+      <tr class="table-group-head">
+        <td colspan="5">C. MODULE MOUNTING STRUCTURE</td>
+      </tr>
+      <tr>
+        <td class="num">03</td>
+        <td><strong>Module Mounting Structure (MMS) Make-Appolo GI</strong></td>
+        <td>Module Mounting Structure (MMS) GI.</td>
+        <td class="num">1</td>
+        <td>Lot</td>
+      </tr>
+      <tr class="table-group-head">
+        <td colspan="5">D. DC ELECTRICAL</td>
+      </tr>
+      <tr>
+        <td class="num">04</td>
+        <td><strong>DC Cables – 4 sqmm UV Resistant Solar Cable- Polycab, Havells, Lumicon</strong></td>
+        <td>TÜV certified, double insulation, UV-resistant, 1500V DC, IS:694</td>
+        <td class="num">24</td>
+        <td>Meters</td>
+      </tr>
+      <tr>
+        <td class="num">05</td>
+        <td><strong>DC Distribution Box (DCDB) with SPD</strong></td>
+        <td>IP65, MC4 connectors, DC MCB, SPD Class II 1000V, fuse holder</td>
+        <td class="num">1</td>
+        <td>Set</td>
+      </tr>
+      <tr class="table-group-head">
+        <td colspan="5">E. AC ELECTRICAL &amp; PROTECTION</td>
+      </tr>
+      <tr>
+        <td class="num">06</td>
+        <td><strong>AC Cables Polycab, Havells, VGuard</strong></td>
+        <td>Multi-Stranded Flexible Cable</td>
+        <td class="num">15</td>
+        <td>Meters</td>
+      </tr>
+      <tr>
+        <td class="num">07</td>
+        <td><strong>AC Distribution Box (ACDB) with MCB</strong></td>
+        <td>IP65, , MCB,2P,4P, 32A, per system rating, 40kA SPD Class II</td>
+        <td class="num">1</td>
+        <td>Set</td>
+      </tr>
+      <tr class="table-group-head">
+        <td colspan="5">F. EARTHING &amp; LIGHTNING PROTECTION</td>
+      </tr>
+      <tr>
+        <td class="num">08</td>
+        <td><strong>Earthing Kit (Copper- Bonded Rod + Chemical)</strong></td>
+        <td>IS:3043, Copper bonded electrode</td>
+        <td class="num">2</td>
+        <td>Nos</td>
+      </tr>
+      <tr>
+        <td class="num">09</td>
+        <td><strong>Lightning Arrester with Down Conductor</strong></td>
+        <td>Class I+II combined, IS:3043,Multi Spike Copper Coated or Brass LA</td>
+        <td class="num">1</td>
+        <td>Set</td>
+      </tr>
+      <tr class="table-group-head">
+        <td colspan="5">G. METERING &amp; MONITORING</td>
+      </tr>
+      <tr>
+        <td class="num">10</td>
+        <td><strong>Solar Energy Meter</strong></td>
+        <td>DISCOM/CEIG approved, MID certified, IS:14697</td>
+        <td class="num">1</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <td class="num">11</td>
+        <td><strong>Remote Monitoring System – Wi-Fi/GSM Data Logger</strong></td>
+        <td>Real-time cloud dashboard, mobile app, alerts</td>
+        <td class="num">1</td>
+        <td>No</td>
+      </tr>
+      <tr class="table-group-head">
+        <td colspan="5">H. CIVIL &amp; INSTALLATION</td>
+      </tr>
+      <tr>
+        <td class="num">12</td>
+        <td><strong>Civil Work Foundation &amp; Grouting</strong></td>
+        <td>As per structural drawings.</td>
+        <td class="num">1</td>
+        <td>Lot</td>
+      </tr>
+      <tr>
+        <td class="num">13</td>
+        <td><strong>Installation, Cable Tray &amp; Conduit</strong></td>
+        <td>Skilled labour, safety PPE, Cable tray, ISI Wiring Conduit</td>
+        <td class="num">1</td>
+        <td>Lot</td>
+      </tr>
+      <tr>
+        <td class="num">14</td>
+        <td><strong>Commissioning, Testing &amp; Handover</strong></td>
+        <td>String test, IR test, functional test, owner training</td>
+        <td class="num">1</td>
+        <td>Lot</td>
+      </tr>
+      <tr class="table-group-head">
+        <td colspan="5">I. DOCUMENTATION &amp; LIAISON</td>
+      </tr>
+      <tr>
+        <td class="num">15</td>
+        <td><strong>Bi-Directional Net Metering Application &amp; DISCOM Liaison</strong></td>
+        <td>SLD, DPR, DISCOM application, follow-up till net meter commissioning</td>
+        <td class="num">1</td>
+        <td>Set</td>
+      </tr>
+      <tr>
+        <td class="num">16</td>
+        <td><strong>CFA / State Subsidy Documentation</strong></td>
+        <td>MNRE portal registration, subsidy application, bank linkage</td>
+        <td class="num">1</td>
+        <td>Set</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-footer">
+    <div>Proposal Ref: <strong>EPS-COKL-002992627</strong> &nbsp;·&nbsp; Prepared for: <strong>Mr. Linjith</strong></div>
+    <div>Page 5 of 10</div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 6 — FINANCIAL ANALYSIS                                   -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="section-head">
+    <div class="section-head__top">
+      <span class="section-num">05</span>
+      <span class="section-head__title">Financial Savings &amp; Cash Flow Projection</span>
+    </div>
+    <div class="section-head__desc">Projected returns, lifetime benefits, and payback period</div>
+    <hr class="rule" style="margin-top:10px;"/>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:var(--sp-6);">
+    <div class="stat-card stat-card--navy">
+      <div class="stat-card__value">₹0</div>
+      <div class="stat-card__label">Annual Bill Savings</div>
+      <div class="stat-card__note">At current tariffs</div>
+    </div>
+    <div class="stat-card stat-card--green">
+      <div class="stat-card__value">5.2 yrs</div>
+      <div class="stat-card__label">Payback Period</div>
+      <div class="stat-card__note">Breakeven estimate</div>
+    </div>
+    <div class="stat-card stat-card--gold">
+      <div class="stat-card__value">₹5,11,912</div>
+      <div class="stat-card__label">25-Year Returns</div>
+      <div class="stat-card__note">Lifespan estimation</div>
+    </div>
+    <div class="stat-card stat-card--ink">
+      <div class="stat-card__value">266%</div>
+      <div class="stat-card__label">25-Year ROI</div>
+      <div class="stat-card__note">Total yield ratio</div>
+    </div>
+  </div>
+
+  <div class="eyebrow" style="margin-bottom:var(--sp-3);">10-Year Cash Flow Projection (4% annual tariff hike, 0.8% panel degradation)</div>
+  <table style="margin-bottom: var(--sp-4);">
+    <thead>
+      <tr>
+        <th style="width: 10%;">Year</th>
+        <th style="width: 20%; text-align: right;">Est. Generation</th>
+        <th style="width: 22%; text-align: right;">Annual Savings</th>
+        <th style="width: 23%; text-align: right;">Cumulative Savings</th>
+        <th style="width: 25%; text-align: right;">Net Position (INR)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Year 1</strong></td>
+        <td class="num">4,380 kWh</td>
+        <td class="num">₹24,090</td>
+        <td class="num">₹24,090</td>
+        <td class="num" style="font-weight: 700; color: var(--gold-deep);">
+          -₹1,15,910
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Year 2</strong></td>
+        <td class="num">4,345 kWh</td>
+        <td class="num">₹25,054</td>
+        <td class="num">₹49,144</td>
+        <td class="num" style="font-weight: 700; color: var(--gold-deep);">
+          -₹90,856
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Year 3</strong></td>
+        <td class="num">4,310 kWh</td>
+        <td class="num">₹26,056</td>
+        <td class="num">₹75,200</td>
+        <td class="num" style="font-weight: 700; color: var(--gold-deep);">
+          -₹64,800
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Year 4</strong></td>
+        <td class="num">4,276 kWh</td>
+        <td class="num">₹27,098</td>
+        <td class="num">₹1,02,298</td>
+        <td class="num" style="font-weight: 700; color: var(--gold-deep);">
+          -₹37,702
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Year 5</strong></td>
+        <td class="num">4,242 kWh</td>
+        <td class="num">₹28,182</td>
+        <td class="num">₹1,30,480</td>
+        <td class="num" style="font-weight: 700; color: var(--gold-deep);">
+          -₹9,520
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Year 6</strong></td>
+        <td class="num">4,208 kWh</td>
+        <td class="num">₹29,309</td>
+        <td class="num">₹1,59,789</td>
+        <td class="num" style="font-weight: 700; color: var(--green);">
+          +₹19,789
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Year 7</strong></td>
+        <td class="num">4,174 kWh</td>
+        <td class="num">₹30,482</td>
+        <td class="num">₹1,90,271</td>
+        <td class="num" style="font-weight: 700; color: var(--green);">
+          +₹50,271
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Year 8</strong></td>
+        <td class="num">4,141 kWh</td>
+        <td class="num">₹31,701</td>
+        <td class="num">₹2,21,972</td>
+        <td class="num" style="font-weight: 700; color: var(--green);">
+          +₹81,972
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Year 9</strong></td>
+        <td class="num">4,107 kWh</td>
+        <td class="num">₹32,969</td>
+        <td class="num">₹2,54,941</td>
+        <td class="num" style="font-weight: 700; color: var(--green);">
+          +₹1,14,941
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Year 10</strong></td>
+        <td class="num">4,075 kWh</td>
+        <td class="num">₹34,288</td>
+        <td class="num">₹2,89,229</td>
+        <td class="num" style="font-weight: 700; color: var(--green);">
+          +₹1,49,229
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout--green">
+    <div class="callout__title">Environmental Impact</div>
+    <div>Over 25 years, this solar system will offset approximately <strong>90.0 Tons of CO₂ emissions</strong>, which is equivalent to planting approximately <strong>171 trees</strong>.</div>
+  </div>
+
+  <div class="page-footer">
+    <div>Proposal Ref: <strong>EPS-COKL-002992627</strong> &nbsp;·&nbsp; Prepared for: <strong>Mr. Linjith</strong></div>
+    <div>Page 6 of 10</div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 7 — NET METERING & SUBSIDY                               -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="section-head">
+    <div class="section-head__top">
+      <span class="section-num">06</span>
+      <span class="section-head__title">Net Metering &amp; Government Subsidy Process</span>
+    </div>
+    <div class="section-head__desc">Subsidy credit flow and bidirectional net meter integration</div>
+    <hr class="rule" style="margin-top:10px;"/>
+  </div>
+
+  <div class="letter-layout">
+    <div>
+      <div class="eyebrow" style="margin-bottom:var(--sp-2);">PM Surya Ghar: Muft Bijli Yojana</div>
+      <p style="margin-bottom:var(--sp-3); font-size:11.5px; text-align:justify;">
+        The Central Government provides financial assistance (CFA) under the PM Surya Ghar national portal. 
+        As an MNRE-empanelled EPC vendor, Enermass facilitates complete document submission and structural validation. 
+        Once the net meter is commissioned and inspected by DISCOM authorities, the subsidy amount is credited directly to the customer's linked bank account.
+      </p>
+
+      <div class="callout callout--teal" style="margin-bottom:var(--sp-4);">
+        <div class="callout__title">Subsidy Details for Your Quote</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span>PM Surya Ghar Subsidy Amount:</span>
+          <strong>₹78,000</strong>
+        </div>
+        <div style="font-size:10px; color:var(--ink-muted); margin-top:2px;">
+          Note: Subsidy calculations are based on official government guidelines: ₹30,000 per kW for first 2 kW, and ₹18,000 for the 3rd kW.
+        </div>
+      </div>
+
+      <div class="eyebrow" style="margin-bottom:var(--sp-2);">Net Metering Integration &amp; Export</div>
+      <p style="font-size:11.5px; text-align:justify;">
+        Net metering allows you to export excess solar energy generated during daytime hours back to the grid. 
+        Your DISCOM bi-directional meter records both import (grid consumption) and export (solar excess). 
+        You will receive credits on your monthly billing invoice for all exported units, substantially dropping your net cost.
+      </p>
+    </div>
+
+    <div>
+      <div class="side-box">
+        <div class="side-box__title">Step-by-Step Timeline</div>
+        <ul class="check-list" style="font-size:11px;">
+          <li>1. Site survey & feasibility</li>
+          <li>2. DISCOM Feasibility approval</li>
+          <li>3. Plant installation (EPC)</li>
+          <li>4. Work completion report</li>
+          <li>5. Joint inspection & Net Metering</li>
+          <li>6. Subsidy release (60-90 days)</li>
+        </ul>
+      </div>
+
+      <div class="callout callout--blue">
+        <div class="callout__title">Liaison Support</div>
+        <div style="font-size:10.5px; line-height:1.5; color:var(--ink-muted);">
+          Enermass manages all application filings on the PM Surya Ghar and DISCOM portals, handling structural clearances and liaison with the electrical inspectorate.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>Proposal Ref: <strong>EPS-COKL-002992627</strong> &nbsp;·&nbsp; Prepared for: <strong>Mr. Linjith</strong></div>
+    <div>Page 7 of 10</div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 8 — PROJECT EXECUTION TIMELINE                           -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="section-head">
+    <div class="section-head__top">
+      <span class="section-num">07</span>
+      <span class="section-head__title">Project Execution &amp; Milestones</span>
+    </div>
+    <div class="section-head__desc">Implementation timeline and standard execution milestones</div>
+    <hr class="rule" style="margin-top:10px;"/>
+  </div>
+
+  <p style="margin-bottom:var(--sp-5); font-size:11.5px; text-align:justify;">
+    We coordinate the entire execution phase with qualified installers and engineers to ensure complete adherence to safety standards. 
+    The typical commissioning duration for a grid-connected system is 30–45 days, subject to DISCOM feasibility clearances and material dispatch timelines.
+  </p>
+
+  <div class="eyebrow" style="margin-top:var(--sp-4); margin-bottom:var(--sp-4);">Execution Phases &amp; Milestones</div>
+  
+  <div class="grid" style="grid-template-columns: repeat(6, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-6); text-align: center;">
+    <div style="padding: 10px 5px; background: var(--gray-soft); border-radius: 6px;">
+      <div style="font-size: 16px;">🔍</div>
+      <div style="font-size: 9px; font-weight: 700; margin-top: 5px; text-transform: uppercase;">Phase 1</div>
+      <div style="font-size: 10px; font-weight: 600; margin-top: 2px;">Site Feasibility</div>
+      <div style="font-size: 9px; color: var(--ink-faint); margin-top: 1px;">Days 1-3</div>
+    </div>
+    <div style="padding: 10px 5px; background: var(--gray-soft); border-radius: 6px;">
+      <div style="font-size: 16px;">📝</div>
+      <div style="font-size: 9px; font-weight: 700; margin-top: 5px; text-transform: uppercase;">Phase 2</div>
+      <div style="font-size: 10px; font-weight: 600; margin-top: 2px;">DISCOM Apply</div>
+      <div style="font-size: 9px; color: var(--ink-faint); margin-top: 1px;">Days 4-7</div>
+    </div>
+    <div style="padding: 10px 5px; background: var(--gray-soft); border-radius: 6px;">
+      <div style="font-size: 16px;">🚚</div>
+      <div style="font-size: 9px; font-weight: 700; margin-top: 5px; text-transform: uppercase;">Phase 3</div>
+      <div style="font-size: 10px; font-weight: 600; margin-top: 2px;">Material Delivery</div>
+      <div style="font-size: 9px; color: var(--ink-faint); margin-top: 1px;">Days 8-15</div>
+    </div>
+    <div style="padding: 10px 5px; background: var(--gray-soft); border-radius: 6px;">
+      <div style="font-size: 16px;">🔧</div>
+      <div style="font-size: 9px; font-weight: 700; margin-top: 5px; text-transform: uppercase;">Phase 4</div>
+      <div style="font-size: 10px; font-weight: 600; margin-top: 2px;">Structure &amp; Panels</div>
+      <div style="font-size: 9px; color: var(--ink-faint); margin-top: 1px;">Days 16-22</div>
+    </div>
+    <div style="padding: 10px 5px; background: var(--gray-soft); border-radius: 6px;">
+      <div style="font-size: 16px;">⚡</div>
+      <div style="font-size: 9px; font-weight: 700; margin-top: 5px; text-transform: uppercase;">Phase 5</div>
+      <div style="font-size: 10px; font-weight: 600; margin-top: 2px;">Inverter &amp; Wiring</div>
+      <div style="font-size: 9px; color: var(--ink-faint); margin-top: 1px;">Days 23-28</div>
+    </div>
+    <div style="padding: 10px 5px; background: var(--gray-soft); border-radius: 6px;">
+      <div style="font-size: 16px;">🤝</div>
+      <div style="font-size: 9px; font-weight: 700; margin-top: 5px; text-transform: uppercase;">Phase 6</div>
+      <div style="font-size: 10px; font-weight: 600; margin-top: 2px;">Net Meter &amp; On</div>
+      <div style="font-size: 9px; color: var(--ink-faint); margin-top: 1px;">Days 29-40</div>
+    </div>
+  </div>
+
+  <div class="eyebrow" style="margin-bottom:var(--sp-2);">Quality Checks during Execution</div>
+  <ul class="check-list" style="margin-bottom:var(--sp-4); font-size:11.5px;">
+    <li>Structural validation for wind load calculations and roof integrity.</li>
+    <li>High-quality double insulated DC solar cables with MC4 connectors to ensure waterproof connections.</li>
+    <li>Proper surge protection devices (SPDs) and earthings to protect the solar components from lightning.</li>
+    <li>Site curing check on concrete foundations before mounting heavier frame assemblies.</li>
+  </ul>
+
+  <div class="page-footer">
+    <div>Proposal Ref: <strong>EPS-COKL-002992627</strong> &nbsp;·&nbsp; Prepared for: <strong>Mr. Linjith</strong></div>
+    <div>Page 8 of 10</div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 9 — TERMS & CONDITIONS + BANK DETAILS                     -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="section-head">
+    <div class="section-head__top">
+      <span class="section-num">08</span>
+      <span class="section-head__title">Commercial Terms &amp; Bank Details</span>
+    </div>
+    <div class="section-head__desc">Payment schedule, warranties, and official banking coordinates</div>
+    <hr class="rule" style="margin-top:10px;"/>
+  </div>
+
+  <div class="letter-layout">
+    <div>
+      <div class="eyebrow" style="margin-bottom:var(--sp-2);">Terms &amp; Conditions</div>
+      <ol style="padding-left:14px; margin-bottom:var(--sp-4); font-size:10.5px; line-height:1.6; list-style-type: decimal;">
+        <li style="margin-bottom: 4px;">This proposal is valid for 30 days from the date of issue. Post expiry, all prices are subject to revision.</li>
+        <li style="margin-bottom: 4px;">Payment milestones: 50% advance booking, 40% before material dispatch, 10% on grid commissioning &amp; handover.</li>
+        <li style="margin-bottom: 4px;">Installation completes within 15 working days from advance payment. Commissioning subject to DISCOM clearances (approx 30-45 days).</li>
+        <li style="margin-bottom: 4px;">Solar PV Modules carry a 12-year product warranty and a 30-year linear performance output warranty.</li>
+        <li style="margin-bottom: 4px;">Inverter carries a 10-year manufacturer warranty. Structural mounting MMS carries a 5-year warranty.</li>
+        <li style="margin-bottom: 4px;">Includes 1-year free AMC post commissioning. Net metering application liaison support is provided by Enermass.</li>
+        <li style="margin-bottom: 4px;">State Terms - Kerala: Installation complies with KSEB Net Metering Regulations 2014, ANERT/KSEBL empanelment, and requires Electrical Inspectorate approval.</li>
+      </ol>
+    </div>
+
+    <div>
+      <div class="side-box" style="margin-bottom: var(--sp-4);">
+        <div class="side-box__title">Payment Schedule</div>
+        <div class="meta-row"><span class="meta-row__label">1. Booking Advance (50%)</span><span class="meta-row__value">₹70,000</span></div>
+        <div class="meta-row"><span class="meta-row__label">2. Before Delivery (40%)</span><span class="meta-row__value">₹56,000</span></div>
+        <div class="meta-row"><span class="meta-row__label">3. Post Commissioning (10%)</span><span class="meta-row__value">₹14,000</span></div>
+      </div>
+
+      <div class="callout callout--gray" style="margin-bottom: var(--sp-4);">
+        <div class="callout__title">Bank Details</div>
+        <div style="font-size:10.5px; line-height:1.5;">
+          <strong>Account Name:</strong> Enermass Power Solutions Pvt. Ltd.<br/>
+          <strong>Bank / Branch:</strong> Bank of Baroda, Koratty<br/>
+          <strong>Account No:</strong> 85080200000055<br/>
+          <strong>IFSC Code:</strong> BARB0KORATT<br/>
+          <strong>UPI ID:</strong> enermass@barodampay
+        </div>
+      </div>
+
+      <div style="text-align: center; border: 1px solid var(--line); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 8.5px; font-weight: 700; color: var(--ink-muted); text-transform: uppercase; margin-bottom: 6px;">Scan to Pay via UPI</div>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size&#x3D;150x150&amp;data&#x3D;upi%3A%2F%2Fpay%3Fpa%3Denermass%40barodampay%26pn%3DEnermass%2520Power%2520Solutions%2520Pvt%2520Ltd%26am%3D70000%26cu%3DINR" style="width:100px; height:100px; object-fit:contain; display:inline-block;" alt="UPI QR" />
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>Proposal Ref: <strong>EPS-COKL-002992627</strong> &nbsp;·&nbsp; Prepared for: <strong>Mr. Linjith</strong></div>
+    <div>Page 9 of 10</div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 10 — CUSTOMER ACCEPTANCE                                 -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="section-head">
+    <div class="section-head__top">
+      <span class="section-num">09</span>
+      <span class="section-head__title">Customer Acceptance &amp; Sign-off</span>
+    </div>
+    <div class="section-head__desc">Confirmation and order placement signatures</div>
+    <hr class="rule" style="margin-top:10px;"/>
+  </div>
+
+  <p style="font-size:11.5px; text-align:justify; margin-bottom:var(--sp-6);">
+    I hereby accept the techno-commercial proposal referenced herein, including the specified scope of supply (BOM), project timeline, and payment schedules. 
+    You are authorized to proceed with the engineering feasibility approvals and dispatch schedule upon receipt of the advance payment.
+  </p>
+
+  <div class="callout callout--gold" style="margin-bottom:var(--sp-6);">
+    <div class="callout__title">Order Summary</div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:11px;">
+      <span>Solar Plant Capacity:</span>
+      <strong>3 kWp On-Grid</strong>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:11px;">
+      <span>Total Project Value (incl. GST):</span>
+      <strong>₹2,18,000</strong>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:11px;">
+      <span>Govt Subsidy Assistance:</span>
+      <strong>₹78,000</strong>
+    </div>
+    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; border-top:1px solid rgba(0,0,0,0.1); padding-top:4px; margin-top:4px;">
+      <span>Net Customer Commitment:</span>
+      <strong>₹1,40,000</strong>
+    </div>
+  </div>
+
+  <div class="signature-pad" style="margin-top: auto; margin-bottom: var(--sp-6);">
+    <div class="signature-pad__col">
+      <div style="font-size:11px; font-weight:700; color:var(--ink);">For Enermass Power Solutions Pvt. Ltd.</div>
+      <div style="height: 60px; position: relative;">
+      </div>
+      <div class="signature-pad__line">
+        Authorized Signatory<br/>
+        Date: 28 June 2026
+      </div>
+    </div>
+    <div class="signature-pad__col">
+      <div style="font-size:11px; font-weight:700; color:var(--ink);">For Customer Acceptance</div>
+      <div style="height: 60px;"></div>
+      <div class="signature-pad__line">
+        Customer Signature &amp; Stamp<br/>
+        Name: Mr. Linjith
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>Proposal Ref: <strong>EPS-COKL-002992627</strong> &nbsp;·&nbsp; Prepared for: <strong>Mr. Linjith</strong></div>
+    <div>Page 10 of 10</div>
+  </div>
+</section>
+
+</body>
+</html>

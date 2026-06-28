@@ -13,7 +13,6 @@ import {
   ChevronDown, ArrowUpDown, Printer, PenSquare, Copy,
   Mail, MessageCircle, GitPullRequest, History, Paperclip, UploadCloud
 } from 'lucide-react';
-import { QuotePDF } from '@/components/print/QuotePDF';
 import { useConfirm } from '@/components/ui/Confirm';
 import { Select } from '@/components/ui/Select';
 import { useQuotesQuery, useDeleteQuoteMutation, useUpdateQuoteStatusMutation } from '@/lib/hooks/useQuotes';
@@ -84,12 +83,46 @@ function QuoteDetailModal({
   
   const [showHistory, setShowHistory] = useState(false);
   const [showRevise, setShowRevise] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const statusHistory = quote.statusHistory?.length
     ? quote.statusHistory
     : [{ status: quote.status, changedAt: quote.updatedAt || quote.createdAt }];
 
-  const handlePrint = () => window.print();
+  const handleDownloadPdf = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      const response = await fetch('/api/quotes/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quoteId: quote.quoteId,
+          download: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${quote.quoteId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading PDF:', err);
+      alert(err instanceof Error ? err.message : 'Failed to generate PDF.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   const handleEmailShare = () => {
     const subject = `Solar Quote ${quote.quoteId}`;
@@ -160,10 +193,20 @@ function QuoteDetailModal({
               <MessageCircle size={16} /> WhatsApp
             </button>
             <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/10 text-accent text-sm font-medium hover:bg-accent/20 transition-colors"
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/10 text-accent text-sm font-medium hover:bg-accent/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download size={16} /> Download PDF
+              {isGeneratingPdf ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Download size={16} /> Download PDF
+                </>
+              )}
             </button>
             <button
               onClick={onClose}
@@ -315,7 +358,6 @@ function QuoteDetailModal({
         />
       )}
       </div>
-      <QuotePDF quote={quote} companyName={companyName} />
     </>
   );
 }
@@ -365,6 +407,39 @@ export default function QuotesPage() {
   const [statusFilter, setStatusFilter] = useState<Quote['status'] | 'All'>('All');
   const [sortAsc, setSortAsc] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [generatingPdfQuoteId, setGeneratingPdfQuoteId] = useState<string | null>(null);
+
+  const handleDownloadPdf = async (quoteId: string) => {
+    setGeneratingPdfQuoteId(quoteId);
+    try {
+      const response = await fetch('/api/quotes/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ quoteId, download: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${quoteId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading PDF:', err);
+      alert(err instanceof Error ? err.message : 'Failed to generate PDF.');
+    } finally {
+      setGeneratingPdfQuoteId(null);
+    }
+  };
 
   // Survey gate state
   const [surveyGate, setSurveyGate] = useState<{
@@ -595,14 +670,16 @@ export default function QuotesPage() {
                             <Copy size={15} />
                           </button>
                           <button
-                            onClick={() => {
-                              setSelectedQuote(quote);
-                              setTimeout(() => window.print(), 300);
-                            }}
+                            onClick={() => handleDownloadPdf(quote.quoteId)}
+                            disabled={generatingPdfQuoteId !== null}
                             title="Download Quote (PDF)"
-                            className="p-1.5 rounded-md hover:bg-accent/10 text-text-muted hover:text-accent transition-colors"
+                            className="p-1.5 rounded-md hover:bg-accent/10 text-text-muted hover:text-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <Download size={15} />
+                            {generatingPdfQuoteId === quote.quoteId ? (
+                              <div className="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Download size={15} />
+                            )}
                           </button>
                           <button
                             onClick={() => deleteQuote(quote.quoteId)}

@@ -1,0 +1,443 @@
+import { createAdminClient } from '@/lib/supabase/server';
+import type { Database } from '@/lib/types/schema.types';
+
+// Map database sections to human-readable labels for the BOM Table
+const SECTION_MAP: Record<string, string> = {
+  solar_panels: 'A. Solar PV Modules',
+  power_electronics: 'B. Power Electronics (Inverters)',
+  mounting_structure: 'C. Module Mounting Structure (MMS)',
+  electrical_protection: 'D. Electrical Protection (ACDB/DCDB)',
+  earthing: 'E. Earthing & Protection Kits',
+  cabling: 'F. Solar Cables',
+  wiring: 'G. Conduits & Accessories',
+  metering: 'H. Net Metering & Monitoring',
+  services: 'I. Engineering & Liaison Services'
+};
+
+export async function buildQuoteViewModel(quoteId: string, orgId: string) {
+  const supabase = createAdminClient();
+
+  // 1. Fetch Quote
+  const { data: quoteData, error: quoteError } = await supabase
+    .from('quotes')
+    .select('*')
+    .eq('quote_number', quoteId)
+    .eq('org_id', orgId)
+    .single();
+
+  if (quoteError || !quoteData) {
+    throw new Error(`Quote not found: ${quoteId}. Error: ${quoteError?.message}`);
+  }
+
+  const quote = quoteData as any;
+
+  // 2. Fetch Quote Items
+  const { data: items, error: itemsError } = await supabase
+    .from('quote_items')
+    .select('*')
+    .eq('quote_id', quote.id)
+    .eq('is_included', true)
+    .order('sort_order', { ascending: true });
+
+  if (itemsError) {
+    throw new Error(`Failed to fetch items for quote: ${quoteId}. Error: ${itemsError.message}`);
+  }
+
+  // 3. Fetch Organization Details
+  const { data: org, error: orgError } = await supabase
+    .from('organisations')
+    .select('*')
+    .eq('id', orgId)
+    .single();
+
+  if (orgError) {
+    console.warn(`Failed to fetch organisation details for ${orgId}. Using default info.`);
+  }
+
+  // 4. Resolve date values
+  const dateStr = quote.created_at || new Date().toISOString();
+  const proposalDateObj = new Date(dateStr);
+  const validUntilDateObj = quote.valid_until 
+    ? new Date(quote.valid_until) 
+    : new Date(proposalDateObj.getTime() + 30 * 86400 * 1000);
+
+  // 5. Build BOM Groups & Equipment Specifications using a Summarizer
+  const capacityKW = Number(quote.system_capacity_kw || 0) || 3;
+  const panelQty = Number(quote.panel_qty || 0) || Math.ceil(capacityKW * 1000 / 610);
+
+  // Helper to find a dynamic item in dbItems matching standard terms
+  const findDbItem = (keywords: string[]) => {
+    return items.find(item => {
+      const desc = (item.description || '').toLowerCase();
+      const spec = (item.remarks || '').toLowerCase();
+      return keywords.some(k => desc.includes(k) || spec.includes(k));
+    });
+  };
+
+  const getSpec = (dbItem: any, defaultSpec: string) => {
+    if (dbItem && (dbItem.remarks || dbItem.specification)) {
+      return dbItem.remarks || dbItem.specification;
+    }
+    return defaultSpec;
+  };
+  const getQty = (dbItem: any, defaultQty: number) => {
+    if (dbItem && dbItem.qty) {
+      return Number(dbItem.qty);
+    }
+    return defaultQty;
+  };
+  const getUnit = (dbItem: any, defaultUnit: string) => {
+    if (dbItem && dbItem.unit) {
+      return dbItem.unit;
+    }
+    return defaultUnit;
+  };
+
+  // Find DB items for override scan
+  const panelDb = findDbItem(['panel', 'module', 'solar pv']);
+  const inverterDb = findDbItem(['inverter', 'string inverter', 'power electronics']);
+  const mmsDb = findDbItem(['mms', 'mounting', 'structure']);
+  const dcCableDb = findDbItem(['dc cable', 'dc cabling', 'solar cable']);
+  const dcdbDb = findDbItem(['dcdb', 'dc distribution', 'dc db']);
+  const acCableDb = findDbItem(['ac cable', 'ac cabling', 'flexible cable']);
+  const acdbDb = findDbItem(['acdb', 'ac distribution', 'ac db']);
+  const earthingDb = findDbItem(['earthing', 'grounding', 'earth rod']);
+  const laDb = findDbItem(['la', 'lightning arrester', 'lightning protection']);
+  const solarMeterDb = findDbItem(['solar energy meter', 'solar meter', 'energy meter']);
+  const rmsDb = findDbItem(['rms', 'remote monitoring', 'monitoring system', 'data logger']);
+  const civilDb = findDbItem(['civil', 'foundation', 'grouting']);
+  const installDb = findDbItem(['installation', 'labour', 'cable tray', 'conduit']);
+  const commDb = findDbItem(['commissioning', 'testing', 'handover']);
+  const liaisonDb = findDbItem(['liaison', 'net metering application', 'discom application']);
+  const subsidyDb = findDbItem(['subsidy', 'cfa', 'portal registration']);
+
+  // Equipment Specs for Page 4
+  const panelBrand = quote.panel_brand_model 
+    ? `${quote.panel_brand_model}, 610 Wp × ${panelQty} Nos` 
+    : `Adani / Waaree / V Guard / Panasonic, 610 Wp × ${panelQty} Nos`;
+  
+  const inverterBrand = quote.inverter_brand_model 
+    ? `${quote.inverter_brand_model}` 
+    : `Deye-5 — 5Kw`;
+
+  const structureBrand = quote.structure_used || 'Module Mounting Structure (MMS) Make-Appolo GI';
+
+  const equipmentSpecs = [
+    {
+      label: 'A. Solar PV Modules',
+      name: panelBrand,
+      details: 'Tec-N-type TOPCON Bifacial Mono. Efficiency: ~21.5% -22.4%. Bifacil Gain~30% Low Degradation Y1~1%,After~0.4%. Product Warranty 10-12Y ,Performance Warranty 30Y'
+    },
+    {
+      label: 'B. Inverter',
+      name: `On-Grid String Inverter | ${inverterBrand}`,
+      details: 'On-Grid (Grid-Tied) String Inverter Maximum Efficiency ≥ 97.5% Total Harmonic Distortion (THD) < 3% .Warranty Minimum 10 years'
+    },
+    {
+      label: 'C. Module Mounting Structure (MMS)',
+      name: structureBrand,
+      details: 'Module Mounting Structure (MMS) GI.'
+    }
+  ];
+
+  // Standardized BOM Groups for Page 5
+  const bomGroups = [
+    {
+      groupLabel: 'A. SOLAR PV MODULES',
+      items: [
+        {
+          lineNo: '01',
+          description: 'Solar PV Module',
+          specification: getSpec(panelDb, 'Tec-N-type TOPCON Bifacial Mono. Efficiency: ~21.5% -22.4%. Bifacil Gain~30% Low Degradation Y1~1%,After~0.4%. Product Warranty 10-12Y ,Performance Warranty 30Y'),
+          qty: getQty(panelDb, panelQty),
+          unit: getUnit(panelDb, 'Nos')
+        }
+      ]
+    },
+    {
+      groupLabel: 'B. INVERTER',
+      items: [
+        {
+          lineNo: '02',
+          description: 'On-Grid String Inverter',
+          specification: getSpec(inverterDb, 'On-Grid (Grid-Tied) String Inverter Maximum Efficiency ≥ 97.5% Total Harmonic Distortion (THD) < 3% .Warranty Minimum 10 years'),
+          qty: getQty(inverterDb, 1),
+          unit: getUnit(inverterDb, 'Lot')
+        }
+      ]
+    },
+    {
+      groupLabel: 'C. MODULE MOUNTING STRUCTURE',
+      items: [
+        {
+          lineNo: '03',
+          description: 'Module Mounting Structure (MMS) Make-Appolo GI',
+          specification: getSpec(mmsDb, 'Module Mounting Structure (MMS) GI.'),
+          qty: getQty(mmsDb, 1),
+          unit: getUnit(mmsDb, 'Lot')
+        }
+      ]
+    },
+    {
+      groupLabel: 'D. DC ELECTRICAL',
+      items: [
+        {
+          lineNo: '04',
+          description: 'DC Cables – 4 sqmm UV Resistant Solar Cable- Polycab, Havells, Lumicon',
+          specification: getSpec(dcCableDb, 'TÜV certified, double insulation, UV-resistant, 1500V DC, IS:694'),
+          qty: getQty(dcCableDb, capacityKW >= 5 ? 40 : 24),
+          unit: getUnit(dcCableDb, 'Meters')
+        },
+        {
+          lineNo: '05',
+          description: 'DC Distribution Box (DCDB) with SPD',
+          specification: getSpec(dcdbDb, 'IP65, MC4 connectors, DC MCB, SPD Class II 1000V, fuse holder'),
+          qty: getQty(dcdbDb, 1),
+          unit: getUnit(dcdbDb, 'Set')
+        }
+      ]
+    },
+    {
+      groupLabel: 'E. AC ELECTRICAL & PROTECTION',
+      items: [
+        {
+          lineNo: '06',
+          description: 'AC Cables Polycab, Havells, VGuard',
+          specification: getSpec(acCableDb, 'Multi-Stranded Flexible Cable'),
+          qty: getQty(acCableDb, capacityKW >= 5 ? 25 : 15),
+          unit: getUnit(acCableDb, 'Meters')
+        },
+        {
+          lineNo: '07',
+          description: 'AC Distribution Box (ACDB) with MCB',
+          specification: getSpec(acdbDb, 'IP65, , MCB,2P,4P, 32A, per system rating, 40kA SPD Class II'),
+          qty: getQty(acdbDb, 1),
+          unit: getUnit(acdbDb, 'Set')
+        }
+      ]
+    },
+    {
+      groupLabel: 'F. EARTHING & LIGHTNING PROTECTION',
+      items: [
+        {
+          lineNo: '08',
+          description: 'Earthing Kit (Copper- Bonded Rod + Chemical)',
+          specification: getSpec(earthingDb, 'IS:3043, Copper bonded electrode'),
+          qty: getQty(earthingDb, capacityKW >= 5 ? 3 : 2),
+          unit: getUnit(earthingDb, 'Nos')
+        },
+        {
+          lineNo: '09',
+          description: 'Lightning Arrester with Down Conductor',
+          specification: getSpec(laDb, 'Class I+II combined, IS:3043,Multi Spike Copper Coated or Brass LA'),
+          qty: getQty(laDb, 1),
+          unit: getUnit(laDb, 'Set')
+        }
+      ]
+    },
+    {
+      groupLabel: 'G. METERING & MONITORING',
+      items: [
+        {
+          lineNo: '10',
+          description: 'Solar Energy Meter',
+          specification: getSpec(solarMeterDb, 'DISCOM/CEIG approved, MID certified, IS:14697'),
+          qty: getQty(solarMeterDb, 1),
+          unit: getUnit(solarMeterDb, 'No')
+        },
+        {
+          lineNo: '11',
+          description: 'Remote Monitoring System – Wi-Fi/GSM Data Logger',
+          specification: getSpec(rmsDb, 'Real-time cloud dashboard, mobile app, alerts'),
+          qty: getQty(rmsDb, 1),
+          unit: getUnit(rmsDb, 'No')
+        }
+      ]
+    },
+    {
+      groupLabel: 'H. CIVIL & INSTALLATION',
+      items: [
+        {
+          lineNo: '12',
+          description: 'Civil Work Foundation & Grouting',
+          specification: getSpec(civilDb, 'As per structural drawings.'),
+          qty: getQty(civilDb, 1),
+          unit: getUnit(civilDb, 'Lot')
+        },
+        {
+          lineNo: '13',
+          description: 'Installation, Cable Tray & Conduit',
+          specification: getSpec(installDb, 'Skilled labour, safety PPE, Cable tray, ISI Wiring Conduit'),
+          qty: getQty(installDb, 1),
+          unit: getUnit(installDb, 'Lot')
+        },
+        {
+          lineNo: '14',
+          description: 'Commissioning, Testing & Handover',
+          specification: getSpec(commDb, 'String test, IR test, functional test, owner training'),
+          qty: getQty(commDb, 1),
+          unit: getUnit(commDb, 'Lot')
+        }
+      ]
+    },
+    {
+      groupLabel: 'I. DOCUMENTATION & LIAISON',
+      items: [
+        {
+          lineNo: '15',
+          description: 'Bi-Directional Net Metering Application & DISCOM Liaison',
+          specification: getSpec(liaisonDb, 'SLD, DPR, DISCOM application, follow-up till net meter commissioning'),
+          qty: getQty(liaisonDb, 1),
+          unit: getUnit(liaisonDb, 'Set')
+        },
+        {
+          lineNo: '16',
+          description: 'CFA / State Subsidy Documentation',
+          specification: getSpec(subsidyDb, 'MNRE portal registration, subsidy application, bank linkage'),
+          qty: getQty(subsidyDb, 1),
+          unit: getUnit(subsidyDb, 'Set')
+        }
+      ]
+    }
+  ];
+
+  // 6. Calculate Financial Savings over 25 Years
+  const annualSavings = Number(quote.annual_savings_inr || 0);
+  const twentyFiveYearSavings = annualSavings * 25 * 0.85;
+  const netInvestment = Number(quote.beneficiary_contribution || 0);
+
+  // Generate 10-Year Cash Flow Projection
+  const cashFlow = [];
+  let gen = Number(quote.annual_generation_kwh || 0);
+  let benefit = annualSavings;
+  let cumulative = 0;
+  
+  for (let y = 1; y <= 10; y++) {
+    if (y > 1) {
+      gen = gen * 0.992; // 0.8% degradation per year
+      benefit = benefit * 1.04; // 4% tariff hike per year
+    }
+    cumulative += benefit;
+    const netAfter = cumulative - netInvestment;
+    cashFlow.push({
+      year: y,
+      generation: Math.round(gen).toLocaleString('en-IN'),
+      benefit: Math.round(benefit),
+      cumulative: Math.round(cumulative),
+      netAfter: Math.round(netAfter),
+      isPositive: netAfter > 0
+    });
+  }
+
+  // 7. Carbon offsets calculations
+  const annualGen = Number(quote.annual_generation_kwh || 0);
+  const co2OffsetTons = (annualGen * 0.82) / 1000;
+  const lifetimeCo2OffsetTons = co2OffsetTons * 25;
+  const treesPlanted = Math.round(lifetimeCo2OffsetTons * 47.5);
+
+  const roiPercent = netInvestment <= 0 
+    ? 0 
+    : Math.round(((twentyFiveYearSavings - netInvestment) / netInvestment) * 100);
+
+  // Calculate dynamic payback years fallback if not present in database
+  let calculatedPaybackYears = quote.payback_years ? Number(quote.payback_years) : 0;
+  if (!calculatedPaybackYears && annualSavings > 0) {
+    calculatedPaybackYears = netInvestment / annualSavings;
+  }
+
+  // Default terms to fall back to if database terms_json is empty
+  const defaultTerms = [
+    "This proposal is valid for the period stated. Post expiry, all prices subject to revision.",
+    "Payment milestones: 50% advance with order booking, 40% before material dispatch, 10% on successful grid commissioning.",
+    "Installation completes within 15 working days from advance receipt. Commissioning subject to DISCOM clearance (approx 30-45 days).",
+    "Solar PV Modules carry a 12-year product warranty and a 30-year linear performance warranty.",
+    "Grid Inverter carries a 10-year manufacturer warranty from commissioning.",
+    "Mounting Structure carries a 5-year structural integrity and galvanization warranty.",
+    "Includes 1-year free AMC support (4 preventive maintenance visits) from date of commissioning.",
+    "Liaison support provided for Feasibility application and Net Metering registration. Timelines are subject to DISCOM authority clearances.",
+    "PM Surya Ghar subsidy release timeline is typically 60-90 days from the date of net meter commissioning.",
+    "Blended GST is calculated at 8.9% (70% equipment value at 5% and 30% construction service value at 18%) per Ministry notifications.",
+    "Kerala State Specific: System installation conforms to KSEB Net Metering Regulations 2014, ANERT/KSEBL empanelled guidelines, and requires approval from the Electrical Inspectorate."
+  ];
+
+  return {
+    company: {
+      name: quote.company_name || org?.name || 'Enermass Power Solutions Pvt. Ltd.',
+      tagline: org?.website || 'INTEGRATED SOLAR AND POWER ENGINEERING SOLUTIONS',
+      address: quote.company_address || org?.address || 'AVM Complex, Chirangara Koratty Post, Thrissur, Kerala – 680 308',
+      phone: quote.company_phone || org?.phone || '+91-81 380 27336',
+      email: quote.company_email || org?.email || 'info@enermass.in',
+      website: quote.company_website || org?.website || 'www.enermass.in',
+      cin: quote.company_cin || 'U74999KL2018PTC053947',
+      gstNumber: quote.company_gstin || '32AAFCE1087R1ZA',
+      panNumber: quote.company_pan || 'AAFCE1087R',
+      ceoName: quote.ceo_name || 'Mr. Manoj M S',
+      ceoTitle: quote.ceo_designation || 'Chief Executive Officer',
+      ceoSignatureUrl: quote.ceo_signature_url || null
+    },
+    customer: {
+      name: quote.customer_name,
+      phone: quote.customer_phone || '—',
+      whatsapp: quote.customer_whatsapp || '—',
+      email: quote.customer_email || '—',
+      category: quote.project_type === 'commercial' ? 'Commercial' : 'Residential',
+      state: quote.state_name || 'Kerala',
+      city: quote.city || 'Nellayi',
+      pin: quote.pincode || '—',
+      billingAddress: `${quote.address_line1 || ''} ${quote.address_line2 || ''}`.trim() || '—',
+      siteAddress: `${quote.address_line1 || ''} ${quote.address_line2 || ''}`.trim() || '—',
+      discomName: quote.state_name === 'Kerala' ? 'KSEB (Kerala State Electricity Board)' : 'Local DISCOM Grid',
+      meterNo: quote.meter_number || '—',
+      sanctionedLoad: quote.sanctioned_load_kw || '—',
+      monthlyBill: quote.monthly_bill_inr || 0,
+      roofArea: quote.roof_area_sqft || 0
+    },
+    proposal: {
+      reference: quote.quote_number,
+      date: proposalDateObj.toISOString(),
+      validUntil: validUntilDateObj.toISOString()
+    },
+    system: {
+      capacityKW: quote.system_capacity_kw || 0,
+      monthlyGeneration: Math.round(annualGen / 12),
+      annualGeneration: Math.round(annualGen),
+      typeLabel: quote.project_type === 'commercial' 
+        ? 'Grid-Connected Commercial Solar Power Plant'
+        : 'Grid-Connected Rooftop Solar Power Plant — Net Metering',
+      totalProjectCost: quote.mrp_incl_gst,
+      beneficiaryContribution: netInvestment,
+      subsidyAmount: quote.subsidy_amount,
+      panelsUsed: quote.panel_brand_model ? `${quote.panel_brand_model} (${quote.panel_qty || 0} Nos)` : 'Standard High-Efficiency Tier-1 Panels',
+      invertersUsed: quote.inverter_brand_model ? `${quote.inverter_brand_model} (${quote.inverter_qty || 0} Nos)` : 'On-Grid String Inverter',
+      structureUsed: 'Galvanized Iron (GI) Structure designed for 150 km/h wind loads'
+    },
+    salesContact: {
+      name: quote.exec_name || 'Gigit Antony',
+      role: quote.sales_exec_role || 'Sales Manager',
+      phone: quote.sales_exec_phone || '7594933374'
+    },
+    bank: {
+      accountHolder: quote.bank_account_holder || 'Enermass Power Solutions Pvt. Ltd.',
+      bankName: quote.bank_name || 'Bank of Baroda, Koratty',
+      accountNo: quote.bank_account_no || '85080200000055',
+      ifsc: quote.bank_ifsc || 'BARB0KORATT',
+      upiId: quote.bank_upi_id || 'enermass@barodampay'
+    },
+    paymentMilestones: {
+      advance: netInvestment * 0.50,
+      delivery: netInvestment * 0.40,
+      commissioning: netInvestment * 0.10
+    },
+    terms: quote.terms_json && quote.terms_json.length > 0 ? quote.terms_json : defaultTerms,
+    equipmentSpecs,
+    bomGroups,
+    cashFlow,
+    twentyFiveYearSavings,
+    paybackYears: calculatedPaybackYears > 0 ? calculatedPaybackYears.toFixed(1) : '—',
+    roiPercent,
+    co2OffsetTons,
+    lifetimeCo2OffsetTons,
+    treesPlanted,
+    upiQrCode: quote.bank_upi_id ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=${quote.bank_upi_id}&pn=${encodeURIComponent(quote.bank_account_holder || 'Enermass')}&am=${netInvestment * 0.5}&cu=INR`)}` : null
+  };
+}

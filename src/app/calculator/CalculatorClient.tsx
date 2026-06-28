@@ -23,7 +23,6 @@ import { SummaryCard } from '@/components/calculator/SummaryCard';
 import { EnergyCard } from '@/components/calculator/EnergyCard';
 import { ConnectedROIDisplay } from '@/components/calculator/ROIDisplay';
 import { QuoteSaveModal } from '@/components/calculator/QuoteSaveModal';
-import { QuotePDF } from '@/components/print/QuotePDF';
 import { Select } from '@/components/ui/Select';
 import { BOMTableSkeleton, SummaryCardSkeleton, CardSkeleton } from '@/components/ui/Skeletons';
 
@@ -339,18 +338,7 @@ export default function CalculatorClient({
   const validationResults = useMemo(() => validateSystemConfig(validationConfig), [validationConfig]);
   const hasBlockingErrors = validationResults.some(r => r.severity === 'blocking');
 
-  useEffect(() => {
-    if (!pendingQuote) return;
-
-    const timer = window.setTimeout(() => window.print(), 200);
-    const handleAfterPrint = () => setPendingQuote(null);
-
-    window.addEventListener('afterprint', handleAfterPrint);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener('afterprint', handleAfterPrint);
-    };
-  }, [pendingQuote]);
+  // Removed client-side printing in favor of server-side PDF generation
 
   const handleOpenModal = (intent: 'print' | 'draft') => {
     setModalIntent(intent);
@@ -360,7 +348,38 @@ export default function CalculatorClient({
   const handleQuoteSaved = async (quote: Quote) => {
     setIsModalOpen(false);
     if (modalIntent === 'print') {
-      setPendingQuote(quote);
+      toast('Quote saved! Downloading PDF...', 'success');
+      try {
+        const response = await fetch('/api/quotes/generate-pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            quoteId: quote.quoteId,
+            download: true,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate PDF');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${quote.quoteId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        
+        toast('PDF downloaded successfully!', 'success');
+      } catch (err) {
+        console.error('Error generating PDF:', err);
+        toast('Quote saved, but PDF download failed.', 'error');
+      }
     } else {
       toast(`Quote ${quote.quoteId} saved as draft!`, 'success');
     }
@@ -555,13 +574,7 @@ export default function CalculatorClient({
         leadId={leadId}
       />
 
-      {pendingQuote && (
-        <QuotePDF
-          quote={pendingQuote}
-          companyName={settings.company.name || 'ENERMASS Solar'}
-          companyAddress={settings.company.address || ''}
-        />
-      )}
+      {/* Client-side PDF rendering removed. Server-side Puppeteer rendering used. */}
     </div>
   );
 }

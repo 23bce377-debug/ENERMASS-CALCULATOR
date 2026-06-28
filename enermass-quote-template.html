@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Solar Power Plant Proposal — Generic Template</title>
+
+<!--
+  ================================================================
+  ENERMASS — MASTER QUOTE TEMPLATE (GENERIC / DE-IDENTIFIED)
+  ================================================================
+  This is the SAME master quote template as the fully-rendered
+  example, with all customer- and quote-specific values replaced
+  by [bracketed] placeholders. The Kerala / KSEB / ANERT branch is
+  intentionally LEFT CONCRETE — it serves as the worked example of
+  the state-specific content path described in the rendering
+  guide (section 3c). Treat it as one fixture, not literal data.
+
+  Every place that should become a dynamic field in your Next.js
+  pipeline is marked with a comment immediately before the value:
+      <!-- @field: customer.name -->
+  Repeating blocks (BOM rows, cash-flow rows, etc.) are marked with:
+      <!-- @each: bomItems as item -->  ... <!-- @endeach -->
+  These are NOT live template tags — they're annotations so you can
+  find/replace them with your templating engine's real syntax
+  (Handlebars {{ }}, EJS <%= %>, etc.) See the guide, section 4.
+
+  Layout rule used throughout: flexbox/grid flow, NEVER absolute
+  positioning for text. This is the fix for the overlap/spacing
+  bug — see guide section 1.
+  ================================================================
+-->
+
+<style>
+  :root{
+    /* ---- color tokens (named, not used raw below) ---- */
+    --navy:        #15294A;
+    --navy-deep:   #0E1F38;
+    --navy-tint:   #1F3D66;
+    --gold:        #C2842A;
+    --gold-deep:   #A06A1C;
+    --gold-soft:   #F8E9D2;
+    --green:       #1E7D4F;
+    --green-soft:  #E3F4EA;
+    --teal:        #0E7C66;
+    --teal-soft:   #E1F3EF;
+    --blue-soft:   #EAF0F8;
+    --gray-soft:   #F1F3F5;
+    --ink:         #16212F;
+    --ink-muted:   #5C6B7C;
+    --ink-faint:   #8B97A3;
+    --line:        #E2E7EC;
+    --white:       #FFFFFF;
+
+    /* ---- spacing scale ---- */
+    --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+    --sp-5: 20px; --sp-6: 28px; --sp-7: 36px; --sp-8: 48px;
+
+    /* ---- type ---- */
+    --font-sans: "Inter", "Segoe UI", Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", "Courier New", monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ margin:0; padding:0; }
+  body{
+    font-family: var(--font-sans);
+    color: var(--ink);
+    font-size: 12.5px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3,h4,p,ul,ol{ margin:0; }
+  ul{ padding-left: 0; list-style:none; }
+  strong{ font-weight:700; }
+
+  /* =========================================================
+     PAGE / PRINT SETUP
+     - One .page per logical section of the proposal.
+     - page-break-after:always forces a fresh sheet between
+       sections. If a section's content is taller than one
+       physical page, Chromium's print engine simply flows the
+       overflow onto the next physical page on its own — you do
+       NOT need to pre-split content into exact page heights.
+       That manual pre-splitting is what causes overlap bugs.
+     ========================================================= */
+  @page { size: A4; margin: 0; }
+
+  .page{
+    width: 210mm;
+    min-height: 297mm;
+    padding: 13mm 14mm 11mm 14mm;
+    display: flex;
+    flex-direction: column;
+    page-break-after: always;
+    background: var(--white);
+  }
+  .page:last-of-type{ page-break-after: auto; }
+
+  /* Screen-only preview chrome (stripped automatically at print time) */
+  @media screen{
+    body{ background:#dde3e9; padding: 28px 0 60px; }
+    .page{
+      margin: 0 auto 26px auto;
+      box-shadow: 0 6px 28px rgba(15,30,50,.18);
+    }
+    .page-tag{
+      position:absolute; top:-22px; left:0;
+      font-family:var(--font-mono); font-size:10px; color:#5b6b7c;
+    }
+  }
+  @media print{
+    .screen-only{ display:none !important; }
+  }
+
+  /* =========================================================
+     PRIMITIVES
+     ========================================================= */
+  .eyebrow{
+    font-size:9.5px; font-weight:700; letter-spacing:.09em;
+    text-transform:uppercase; color: var(--ink-faint);
+  }
+  .rule{ height:1px; background:var(--line); border:0; margin:0; }
+
+  .pill{
+    display:inline-flex; align-items:center;
+    padding: 5px 12px; border-radius:999px;
+    font-size:10.5px; font-weight:600;
+    border:1px solid var(--line); color:var(--ink-muted);
+    background:var(--white);
+  }
+  .pill--solid{ background:var(--gold); border-color:var(--gold); color:#fff; }
+
+  .grid{ display:grid; gap: var(--sp-4); }
+
+  /* generic stat / kpi card, used in many sections */
+  .stat-card{
+    border:1px solid var(--line); border-radius:6px;
+    padding: var(--sp-4) var(--sp-5);
+    background:var(--white);
+    border-left-width:3px;
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .stat-card__value{ font-size:19px; font-weight:800; line-height:1.15; }
+  .stat-card__label{
+    margin-top:3px; font-size:9.5px; font-weight:700;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint);
+  }
+  .stat-card__note{ margin-top:2px; font-size:9.5px; color:var(--ink-faint); font-style:italic; }
+  .stat-card--navy{ border-left-color:var(--navy);  } .stat-card--navy  .stat-card__value{ color:var(--navy); }
+  .stat-card--gold{ border-left-color:var(--gold);  } .stat-card--gold  .stat-card__value{ color:var(--gold-deep); }
+  .stat-card--green{border-left-color:var(--green); } .stat-card--green .stat-card__value{ color:var(--green); }
+  .stat-card--ink{  border-left-color:var(--ink);   } .stat-card--ink   .stat-card__value{ color:var(--ink); }
+
+  .callout{
+    border-radius:6px; padding: var(--sp-4) var(--sp-5);
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .callout--gold{ background:var(--gold-soft); }
+  .callout--blue{ background:var(--blue-soft); }
+  .callout--green{ background:var(--green-soft); }
+  .callout--teal{ background:var(--teal-soft); }
+  .callout--gray{ background:var(--gray-soft); }
+  .callout__title{ font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-muted); margin-bottom:6px; }
+
+  .meta-row{
+    display:flex; justify-content:space-between; gap:var(--sp-3);
+    padding: 7px 0; border-bottom:1px solid var(--line);
+    font-size:11.5px;
+  }
+  .meta-row:last-child{ border-bottom:0; }
+  .meta-row__label{ color:var(--ink-muted); }
+  .meta-row__value{ font-weight:700; text-align:right; }
+
+  .field-grid{ display:grid; grid-template-columns:1fr 1fr; gap: 0 var(--sp-6); }
+  .field{ padding: 8px 0; border-bottom:1px solid var(--line); }
+  .field__label{ font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); }
+  .field__value{ font-size:12.5px; font-weight:600; margin-top:2px; }
+
+  table{ width:100%; border-collapse:collapse; font-size:11px; }
+  thead{ display: table-header-group; } /* repeats header row on every printed page the table spans */
+  tr{ page-break-inside: avoid; break-inside: avoid; }
+  th{
+    text-align:left; font-size:9px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--white); background:var(--navy);
+    padding:8px 10px;
+  }
+  td{ padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tbody tr:nth-child(even){ background:#FAFBFC; }
+  .table-group-head td{
+    background:var(--navy-tint); color:#fff; font-weight:700;
+    font-size:9.5px; letter-spacing:.05em; text-transform:uppercase;
+  }
+  .row--highlight td{ background:var(--green-soft); font-weight:700; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  .section-head{ margin-bottom: var(--sp-5); }
+  .section-head__top{ display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
+  .section-num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:4px;
+    background:var(--navy); color:#fff; font-size:10px; font-weight:800;
+    flex:none;
+  }
+  .section-head__title{ font-size:16px; font-weight:800; color:var(--navy); }
+  .section-head__desc{ font-size:10.5px; color:var(--ink-faint); margin-left:30px; }
+
+  .check-list li{ position:relative; padding-left:18px; margin-bottom:6px; font-size:11.5px; }
+  .check-list li::before{ content:"✓"; position:absolute; left:0; color:var(--green); font-weight:800; }
+
+  /* =========================================================
+     SHARED CHROME — header / footer used across pages
+     ========================================================= */
+  .brand-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:var(--sp-5); }
+  .brand-id{ display:flex; align-items:flex-start; gap:10px; }
+  .brand-logo{ width:34px; height:34px; flex:none; }
+  .brand-name{ font-size:14.5px; font-weight:800; color:var(--navy); line-height:1.2; }
+  .brand-tagline{ font-size:7.6px; font-weight:700; letter-spacing:.09em; color:var(--ink-faint); margin-top:2px; }
+  .brand-contact{ font-size:9.5px; color:var(--ink-muted); margin-top:5px; }
+
+  .ref-badge{
+    background:var(--gold-soft); border:1px solid var(--gold);
+    border-radius:6px; padding:8px 14px; min-width:170px; text-align:center;
+  }
+  .ref-badge__eyebrow{ font-size:8px; font-weight:700; letter-spacing:.08em; color:var(--gold-deep); text-transform:uppercase; }
+  .ref-badge__ref{ font-size:12px; font-weight:800; color:var(--navy); margin-top:2px; }
+  .ref-badge__dates{ font-size:9px; color:var(--ink-muted); margin-top:5px; }
+
+  .page-footer{
+    margin-top:auto; padding-top: var(--sp-4);
+    border-top:1px solid var(--line);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:9px; color:var(--ink-faint);
+  }
+  .page-footer strong{ color:var(--ink-muted); }
+
+  .dark-band{ background:var(--navy); color:#fff; }
+
+  /* =========================================================
+     PAGE 1 — COVER
+     ========================================================= */
+  .cover-strip{
+    margin: var(--sp-6) -14mm 0 -14mm; padding: var(--sp-6) 14mm var(--sp-5) 14mm;
+  }
+  .cover-strip .eyebrow{ color:#9FB0C6; }
+  .cover-title{ font-size:32px; font-weight:800; color:#fff; margin-top:10px; line-height:1.1; }
+  .cover-title small{ display:block; font-size:32px; font-weight:300; color:#9FB0C6; }
+  .cover-subtitle{ font-size:12px; color:#C7D2DF; margin-top:8px; }
+  .cover-pills{ display:flex; gap:8px; flex-wrap:wrap; margin-top: var(--sp-5); }
+  .cover-pills .pill{ background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.25); color:#E7ECF2; }
+  .cover-pills .pill--solid{ background:var(--gold); border-color:var(--gold); color:#fff; }
+
+  .kpi-strip{
+    margin: 0 -14mm; padding: var(--sp-6) 14mm;
+    display:grid; grid-template-columns:repeat(4,1fr);
+  }
+  .kpi-strip__item{ text-align:center; border-left:1px solid rgba(255,255,255,.15); }
+  .kpi-strip__item:first-child{ border-left:0; }
+  .kpi-strip__value{ font-size:21px; font-weight:800; color:#fff; }
+  .kpi-strip__label{ font-size:8.5px; letter-spacing:.07em; text-transform:uppercase; color:#9FB0C6; margin-top:4px; }
+
+  .overview-eyebrow{ margin-top:var(--sp-7); margin-bottom:var(--sp-3); }
+  .overview-grid{ grid-template-columns:repeat(4,1fr); }
+  .overview-grid .stat-card{ padding: var(--sp-3) var(--sp-4); }
+  .overview-grid .stat-card__value{ font-size:16px; }
+
+  .cover-footer{
+    margin: auto -14mm 0 -14mm; padding: var(--sp-4) 14mm;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:10px; color:#C7D2DF;
+  }
+  .cover-footer strong{ color:#fff; display:block; font-size:11px; }
+  .cover-footer .right{ text-align:right; }
+  .cover-footer .right .eyebrow{ color:#9FB0C6; }
+
+  /* =========================================================
+     PAGE 2 — INTRO LETTER (two column)
+     ========================================================= */
+  .letter-layout{ display:grid; grid-template-columns: 1.7fr 1fr; gap: var(--sp-6); margin-top:var(--sp-5); flex:1; }
+  .letter-meta{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-4); background:var(--gray-soft); border-radius:6px; padding:var(--sp-4); margin-bottom:var(--sp-5); }
+  .letter-meta__label{ font-size:8.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); }
+  .letter-meta__value{ font-size:12px; font-weight:700; margin-top:2px; }
+  .letter-ref{ font-size:11px; margin-bottom:var(--sp-4); }
+  .letter-ref code{ font-family:var(--font-mono); background:var(--gray-soft); padding:1px 5px; border-radius:3px; color:var(--gold-deep); }
+  .letter-body p{ margin-bottom: var(--sp-4); font-size:11.5px; text-align:justify; }
+  .signature-block{ margin-top:var(--sp-6); }
+  .signature-script{ font-family:"Segoe Script","Brush Script MT",cursive; font-size:24px; color:var(--navy-tint); }
+  .signature-name{ font-weight:800; font-size:12px; border-top:1px solid var(--ink); padding-top:4px; display:inline-block; margin-top:2px; }
+  .signature-role{ font-size:10.5px; color:var(--ink-muted); }
+
+  .side-box{ border:1px solid var(--line); border-radius:6px; padding:var(--sp-4); margin-bottom:var(--sp-4); }
+  .side-box__title{ font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--navy); margin-bottom:var(--sp-2); }
+
+  /* =========================================================
+     QUADRANT GRID — "Why Solar / Why Enermass" page
+     ========================================================= */
+  .quad-grid{ grid-template-columns:1fr 1fr; }
+  .quad-box{ border-radius:6px; padding:var(--sp-4) var(--sp-5); break-inside:avoid; page-break-inside:avoid; }
+  .quad-box__title{ font-weight:800; font-size:12px; margin-bottom:var(--sp-3); display:flex; align-items:center; gap:6px; }
+
+  /* workflow strip */
+  .workflow-strip{ display:flex; align-items:center; justify-content:space-between; background:var(--navy); color:#fff; border-radius:6px; padding:var(--sp-4) var(--sp-5); font-size:10.5px; font-weight:600; }
+  .workflow-strip .seg{ display:flex; align-items:center; gap:6px; }
+  .workflow-strip .arrow{ color:#7E92AA; }
+
+  .timeline-row{ display:flex; justify-content:space-between; gap:var(--sp-3); }
+  .timeline-step{ text-align:center; flex:1; }
+  .timeline-step__icon{ font-size:18px; }
+  .timeline-step__week{ font-size:9px; color:var(--ink-faint); font-weight:700; margin-top:4px; }
+  .timeline-step__label{ font-size:10.5px; font-weight:700; margin-top:2px; }
+
+  .disclaimer-box{ background:var(--gray-soft); border-radius:6px; padding:var(--sp-4) var(--sp-5); font-size:9.5px; color:var(--ink-muted); text-align:justify; }
+  .disclaimer-box__title{ font-weight:800; color:var(--ink); font-size:11px; margin-bottom:6px; }
+
+  .signature-pad{ display:flex; justify-content:space-between; margin-top:var(--sp-6); padding-top:var(--sp-5); }
+  .signature-pad__col{ width:45%; }
+  .signature-pad__line{ border-top:1px solid var(--ink); margin-top:34px; padding-top:5px; font-size:10px; color:var(--ink-muted); }
+
+  /* qr placeholder */
+  .qr-box{ width:62px; height:62px; border:1px solid var(--line); border-radius:4px; background:
+    repeating-linear-gradient(0deg, #16212F 0 3px, transparent 3px 6px),
+    repeating-linear-gradient(90deg, #16212F 0 3px, transparent 3px 6px);
+    background-blend-mode: multiply; background-color:#fff;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PAGE 1 — COVER                                                -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="brand-header">
+    <div class="brand-id">
+      <svg class="brand-logo" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <g fill="none" stroke="#3FA75C" stroke-width="3.4" stroke-linecap="round">
+          <line x1="24" y1="2" x2="24" y2="11"/>
+          <line x1="24" y1="37" x2="24" y2="46"/>
+          <line x1="2" y1="24" x2="11" y2="24"/>
+          <line x1="37" y1="24" x2="46" y2="24"/>
+          <line x1="8.5" y1="8.5" x2="14.7" y2="14.7"/>
+          <line x1="33.3" y1="33.3" x2="39.5" y2="39.5"/>
+          <line x1="39.5" y1="8.5" x2="33.3" y2="14.7"/>
+          <line x1="14.7" y1="33.3" x2="8.5" y2="39.5"/>
+        </g>
+        <circle cx="24" cy="24" r="9" fill="#E8862B"/>
+      </svg>
+      <div>
+        <!-- @field: company.name -->
+        <div class="brand-name">Enermass Power Solutions Pvt. Ltd.</div>
+        <!-- @field: company.tagline -->
+        <div class="brand-tagline">INTEGRATED&nbsp; SOLAR&nbsp; AND&nbsp; POWER&nbsp; ENGINEERING&nbsp; SOLUTIONS</div>
+        <!-- @field: company.address / company.phone / company.email / company.website -->
+        <div class="brand-contact">First Floor, AVM Complex · Chirangara Koratty Post · Thrissur, Kerala – 680 308<br/>
+        +91-81 380 27336 · info@enermass.in · www.enermass.in</div>
+      </div>
+    </div>
+    <div class="ref-badge">
+      <div class="ref-badge__eyebrow">Proposal Reference</div>
+      <!-- @field: proposal.reference -->
+      <div class="ref-badge__ref">[Proposal Reference]</div>
+      <!-- @field: proposal.date / proposal.validUntil -->
+      <div class="ref-badge__dates">Date: [Proposal Date]<br/>Valid: [Valid Until]</div>
+    </div>
+  </div>
+
+  <div class="cover-strip dark-band">
+    <!-- @field: proposal.type / customer.state / customer.category (joined) -->
+    <div class="eyebrow">Techno-Commercial Proposal &nbsp;·&nbsp; Kerala &nbsp;·&nbsp; Residential</div>
+    <h1 class="cover-title">Solar Power Plant<small>Proposal</small></h1>
+    <!-- @field: system.typeLabel -->
+    <div class="cover-subtitle">Grid-Connected Rooftop Solar Power Plant — Net Metering</div>
+    <div class="cover-pills">
+      <!-- @each: coverTags as tag -->
+      <span class="pill pill--solid">[System Size] kWp</span>
+      <span class="pill">Kerala</span>
+      <span class="pill">[Customer Name]</span>
+      <span class="pill">Residential</span>
+      <span class="pill">Valid 30 Days</span>
+      <!-- @endeach -->
+    </div>
+
+    <div class="kpi-strip">
+      <!-- @each: heroKpis as kpi -->
+      <div class="kpi-strip__item"><div class="kpi-strip__value">₹[Annual Savings]</div><div class="kpi-strip__label">Annual Savings</div></div>
+      <div class="kpi-strip__item"><div class="kpi-strip__value">[Payback] yrs</div><div class="kpi-strip__label">Payback Period</div></div>
+      <div class="kpi-strip__item"><div class="kpi-strip__value">₹[25-Year Returns]</div><div class="kpi-strip__label">25-Year Returns</div></div>
+      <div class="kpi-strip__item"><div class="kpi-strip__value">[CO2/Yr] T/yr</div><div class="kpi-strip__label">CO₂/Year</div></div>
+      <!-- @endeach -->
+    </div>
+  </div>
+
+  <div class="overview-eyebrow eyebrow">Proposal Overview</div>
+  <div class="grid overview-grid">
+    <!-- @each: overviewCards as card -->
+    <div class="stat-card stat-card--ink"><div class="stat-card__value">[System Size] kWp</div><div class="stat-card__label">System Capacity</div></div>
+    <div class="stat-card stat-card--navy"><div class="stat-card__value">₹[Total Project Cost]</div><div class="stat-card__label">Total Project Cost</div><div class="stat-card__note">Before subsidy deduction</div></div>
+    <div class="stat-card stat-card--gold"><div class="stat-card__value">₹[Customer Commitment]</div><div class="stat-card__label">Customer Commitment</div><div class="stat-card__note">After subsidy — net payment</div></div>
+    <div class="stat-card stat-card--green"><div class="stat-card__value">[Payback] yrs</div><div class="stat-card__label">Payback Period</div></div>
+    <div class="stat-card stat-card--green"><div class="stat-card__value">₹[Annual Savings]</div><div class="stat-card__label">Total Annual Benefit</div></div>
+    <div class="stat-card stat-card--navy"><div class="stat-card__value">₹[25-Year Returns]</div><div class="stat-card__label">25-Year Returns</div></div>
+    <div class="stat-card stat-card--gold"><div class="stat-card__value">[Validity] Days</div><div class="stat-card__label">Proposal Validity</div></div>
+    <!-- @endeach -->
+  </div>
+
+  <div class="cover-footer dark-band">
+    <div>
+      <!-- @field: customer.category / customer.state / system.typeLabel -->
+      Residential · Kerala · Grid-Connected Rooftop Solar Power Plant — Net Metering<br/>
+      <!-- @field: customer.name / proposal.date -->
+      <strong>[Customer Name] · [Proposal Date]</strong>
+    </div>
+    <div class="right">
+      <div class="eyebrow">Prepared by</div>
+      <!-- @field: company.name / company.phone / company.website -->
+      <strong>Enermass Power Solutions Pvt. Ltd.</strong>
+      +91-81 380 27336 · www.enermass.in
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 2 — INTRODUCTION LETTER                                  -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="section-head">
+    <div class="section-head__top">
+      <span class="section-num">01</span>
+      <span class="section-head__title">Introduction Letter</span>
+    </div>
+    <div class="section-head__desc">Formal cover letter from the Chief Executive Officer</div>
+    <hr class="rule" style="margin-top:10px;"/>
+  </div>
+
+  <div class="letter-layout">
+    <div>
+      <div class="letter-meta">
+        <div><div class="letter-meta__label">To</div><!-- @field: customer.name --><div class="letter-meta__value">[Customer Name]</div></div>
+        <div><div class="letter-meta__label">Date</div><!-- @field: proposal.date --><div class="letter-meta__value">[Proposal Date]</div></div>
+        <div><div class="letter-meta__label">Valid Until</div><!-- @field: proposal.validUntil --><div class="letter-meta__value">[Valid Until]</div></div>
+      </div>
+
+      <div class="letter-ref">
+        <!-- @field: proposal.reference -->
+        Ref: <code>[Proposal Reference]</code> &nbsp;&nbsp;
+        <strong>Subject:</strong>
+        <!-- @field: system.sizeKw / system.typeLabel / customer.state -->
+        Solar Power Plant Proposal — [System Size] kWp On-Grid System, Kerala
+      </div>
+
+      <div class="letter-body">
+        <!-- @field: customer.name -->
+        <p style="font-weight:700;">Dear [Customer Name],</p>
+        <p>Greetings,</p>
+        <p>Thank you for your interest in Enermass Power Solutions Pvt. Ltd. We are pleased to present our tailored Solar Energy System proposal for your solar power plant requirement.</p>
+        <p>Established in 2018, Enermass Power Solutions Pvt. Ltd. is a forward-thinking renewable energy company committed to the 3P philosophy (People, Planet, Profit), delivering sustainable, cost-effective, and high-performance energy solutions across India. Headquartered in Kerala, we have successfully executed a wide range of solar projects nationwide, covering on-grid, off-grid, and hybrid systems across residential, commercial, industrial, and institutional sectors.</p>
+        <p>As an MNRE-empanelled EPC firm, with empanelments from ANERT, KSEBL, MSME, JRDEA, IOCL, JNKEL, KEL, and others, we provide comprehensive end-to-end services including design, engineering, procurement, installation, commissioning, and maintenance of rooftop and ground-mounted solar power plants.</p>
+        <p>We are committed to helping you reduce energy costs, lower your carbon footprint, and achieve strong returns through reliable green energy solutions.</p>
+        <p>This proposal outlines our best techno-commercial offering for your solar requirements. We look forward to your confirmation and the opportunity to partner with you on this sustainable journey.</p>
+      </div>
+
+      <div class="signature-block">
+        <p style="margin-bottom:2px;">Yours sincerely,</p>
+        <div class="signature-script">Manoj</div>
+        <!-- replace with: <img src="{{company.ceoSignatureUrl}}" style="height:40px;" /> -->
+        <div class="signature-name"><!-- @field: company.ceoName -->Mr. Manoj M S</div>
+        <div class="signature-role"><!-- @field: company.ceoTitle -->Chief Executive Officer<br/><!-- @field: company.name -->Enermass Power Solutions Pvt. Ltd.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="side-box">
+        <div class="side-box__title">Proposal At-a-Glance</div>
+        <!-- @each: atAGlanceRows as row -->
+        <div class="meta-row"><span class="meta-row__label">System</span><span class="meta-row__value">[System Size] kWp</span></div>
+        <div class="meta-row"><span class="meta-row__label">Total Project Cost</span><span class="meta-row__value">₹[Total Project Cost]</span></div>
+        <div class="meta-row"><span class="meta-row__label">Your Commitment</span><span class="meta-row__value">₹[Customer Commitment]</span></div>
+        <div class="meta-row"><span class="meta-row__label">Payback</span><span class="meta-row__value">[Payback] yrs</span></div>
+        <div class="meta-row"><span class="meta-row__label">Annual Benefit</span><span class="meta-row__value">₹[Annual Savings]</span></div>
+        <div class="meta-row"><span class="meta-row__label">25-yr Returns</span><span class="meta-row__value">₹[25-Year Returns]</span></div>
+        <div class="meta-row"><span class="meta-row__label">Validity</span><span class="meta-row__value">[Validity] Days</span></div>
+        <!-- @endeach -->
+      </div>
+
+      <div class="callout callout--gold" style="margin-bottom:var(--sp-4);">
+        <div class="callout__title">System Type</div>
+        <!-- @field: system.typeLabel -->
+        <div style="font-weight:800; font-size:13px;">⚡ On-Grid System</div>
+        <!-- @field: customer.state / customer.discomName -->
+        <div style="font-size:10.5px; color:var(--ink-muted); margin-top:2px;">Kerala · KSEB (Kerala State Electricity Board)</div>
+      </div>
+
+      <div class="callout callout--blue">
+        <div class="callout__title">Sales Contact</div>
+        <!-- @field: salesContact.name -->
+        <div style="font-weight:800; font-size:12.5px;">[Sales Contact Name]</div>
+        <!-- @field: salesContact.role -->
+        <div style="font-size:10.5px; color:var(--ink-muted);">Sales Manager</div>
+        <!-- @field: salesContact.phone -->
+        <div style="font-size:11px; font-weight:700; margin-top:3px;">[Sales Contact Phone]</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 3 — COMPANY PROFILE + CUSTOMER PROFILE                   -->
+<!-- ============================================================ -->
+<section class="page">
+  <div class="section-head">
+    <div class="section-head__top"><span class="section-num">02</span><span class="section-head__title">Company Profile</span></div>
+    <div class="section-head__desc">About Enermass Power Solutions Pvt. Ltd.</div>
+    <hr class="rule" style="margin-top:10px;"/>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(3,1fr); margin-bottom:var(--sp-6);">
+    <!-- @each: companyStats as stat -->
+    <div class="stat-card stat-card--green" style="text-align:center;"><div class="stat-card__value" style="font-size:24px;">13+</div><div class="stat-card__label">Years Experience</div></div>
+    <div class="stat-card stat-card--navy" style="text-align:center;"><div class="stat-card__value" style="font-size:24px;">5500+</div><div class="stat-card__label">Projects Commissioned</div></div>
+    <div class="stat-card stat-card--gold" style="text-align:center;"><div class="stat-card__value" style="font-size:24px;">25+ MW</div><div class="stat-card__label">Capacity Installed</div></div>
+    <!-- @endeach -->
+  </div>
+
+  <div class="field-grid" style="margin-bottom:var(--sp-5);">
+    <div class="field"><div class="field__label">Company Name</div><!-- @field: company.name --><div class="field__value">Enermass Power Solutions Pvt. Ltd.</div></div>
+    <div class="field"><div class="field__label">CIN / Registration</div><!-- @field: company.cin --><div class="field__value">U74999KL2018PTC053947</div></div>
+    <div class="field"><div class="field__label">GST Number</div><!-- @field: company.gstNumber --><div class="field__value">32AAFCE1087R1ZA</div></div>
+    <div class="field"><div class="field__label">PAN Number</div><!-- @field: company.panNumber --><div class="field__value">AAFCE1087R</div></div>
+    <div class="field"><div class="field__label">Phone</div><!-- @field: company.phone --><div class="field__value">+91-81 380 27336</div></div>
+    <div class="field"><div class="field__label">Email</div><!-- @field: company.email --><div class="field__value">info@enermass.in</div></div>
+    <div class="field"><div class="field__label">Website</div><!-- @field: company.website --><div class="field__value">www.enermass.in</div></div>
+    <div class="field"><div class="field__label">Address</div><!-- @field: company.address --><div class="field__value">First Floor, AVM Complex, Chirangara Koratty Post, Thrissur, Kerala – 680 308</div></div>
+  </div>
+
+  <div style="margin-bottom:var(--sp-5);">
+    <div class="callout__title" style="margin-bottom:6px;">Business Activities &amp; Coverage</div>
+    <!-- @field: company.businessActivitiesText -->
+    <p style="font-size:11.5px; text-align:justify;">Comprehensive services including design, engineering, supply, installation, testing, and commissioning of grid-tied, hybrid, and off-grid solar power systems, along with net metering facilitation and liaison with DISCOM authorities.</p>
+    <!-- @field: company.serviceAreas (joined list) -->
+    <p style="font-size:11px; margin-top:6px;"><strong>Service Areas:</strong> Kerala, Rajasthan, Uttarakhand, Uttar Pradesh, Tamil Nadu &amp; PAN India</p>
+    <div style="display:flex; gap:8px; margin-top:var(--sp-3);">
+      <!-- @each: company.certifications as cert -->
+      <span class="pill">MNRE Empanelled</span>
+      <span class="pill">DISCOM Approved</span>
+      <span class="pill">MSME Registered</span>
+      <!-- @
+<truncated 39159 bytes>
+
+NOTE: The output was truncated because it was too long. Use a more targeted query or a smaller range to get the information you need.

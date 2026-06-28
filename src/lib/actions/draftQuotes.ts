@@ -32,12 +32,12 @@ export async function saveDraftQuote(params: {
   } else {
     const { data, error } = await supabase
       .from('draft_quotes' as any)
-      .insert({
+      .upsert({
         org_id: orgId,
         user_id: user.id,
         state_json: JSON.parse(params.calculatorState),
         updated_at: new Date().toISOString(),
-      })
+      }, { onConflict: 'user_id' })
       .select('id')
       .single();
 
