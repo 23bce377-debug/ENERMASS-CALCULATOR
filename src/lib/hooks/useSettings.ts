@@ -389,7 +389,7 @@ export function useSettings() {
         ...DEFAULT_SETTINGS,
         ...current,
         company: {
-          name: (org as any)?.name ?? current.company?.name ?? DEFAULT_SETTINGS.company.name,
+          name: (org as any)?.name === 'Pitbull Corporations' ? 'Enermass' : ((org as any)?.name ?? current.company?.name ?? DEFAULT_SETTINGS.company.name),
           address: (org as any)?.address ?? current.company?.address ?? DEFAULT_SETTINGS.company.address,
           logoUrl: (org as any)?.logo_url ?? current.company?.logoUrl ?? DEFAULT_SETTINGS.company.logoUrl,
         },

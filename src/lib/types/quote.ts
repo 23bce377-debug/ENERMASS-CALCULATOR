@@ -83,6 +83,9 @@ export interface Quote {
   systemName: string;
   category: string;
   selectedState: string;
+  systemCapacityKW?: number;
+  panelQty?: number;
+  panelBrandModel?: string;
 
   // Equipment brand selections
   equipment: {

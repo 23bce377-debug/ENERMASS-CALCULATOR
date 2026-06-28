@@ -95,8 +95,11 @@ function mapDbQuoteToQuote(q: any): Quote {
       saleType: (q.sale_type === 'new' ? 'New' : q.sale_type === 'upgrade' ? 'Upgrade' : 'Referral') as any,
     },
     systemId: q.system_id || '',
-    systemName: q.system_name || '',
+    systemName: q.system_name || (q.system_capacity_kw ? `${Number(q.system_capacity_kw)} kWp System` : 'Custom System'),
     category: (q.system_category || '').replace('_', '-'),
+    systemCapacityKW: q.system_capacity_kw ? Number(q.system_capacity_kw) : undefined,
+    panelQty: q.panel_qty ? Number(q.panel_qty) : undefined,
+    panelBrandModel: q.panel_brand_model || undefined,
     selectedState: q.state_name || 'Gujarat',
     equipment: {
       panelBrandId: q.panel_brand_model || undefined,

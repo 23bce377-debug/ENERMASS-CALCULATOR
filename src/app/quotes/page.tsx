@@ -260,8 +260,8 @@ function QuoteDetailModal({
           <InfoSection title="System">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatBox label="System" value={quote.systemName} />
-              <StatBox label="Capacity" value={`${system?.capacityKW ?? '—'} kW`} />
-              <StatBox label="Panels" value={`${system?.panelQty ?? '—'} × ${system?.panelWattage ?? ''}W`} />
+              <StatBox label="Capacity" value={`${quote.systemCapacityKW ?? system?.capacityKW ?? '—'} kW`} />
+              <StatBox label="Panels" value={quote.panelQty ? `${quote.panelQty} Nos` : `${system?.panelQty ?? '—'} × ${system?.panelWattage ?? ''}W`} />
               <StatBox label="Category" value={quote.category} />
             </div>
           </InfoSection>
@@ -636,7 +636,7 @@ export default function QuotesPage() {
                       <td className="px-4 py-3 text-text-secondary">{quote.date}</td>
                       <td className="px-4 py-3 text-text-primary font-medium">{quote.customer.name}</td>
                       <td className="px-4 py-3 text-text-secondary hidden md:table-cell truncate max-w-40">{quote.systemName}</td>
-                      <td className="px-4 py-3 text-right text-text-secondary hidden lg:table-cell">{system?.capacityKW ?? '—'} kW</td>
+                      <td className="px-4 py-3 text-right text-text-secondary hidden lg:table-cell">{quote.systemCapacityKW ?? system?.capacityKW ?? '—'} kW</td>
                       <td className="px-4 py-3 text-right font-semibold text-text-primary font-mono">{formatINR(quote.calculations.finalCustomerPrice)}</td>
                       <td className="px-4 py-3 text-center">
                         <button

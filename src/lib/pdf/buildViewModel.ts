@@ -362,7 +362,7 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
 
   return {
     company: {
-      name: quote.company_name || org?.name || 'Enermass Power Solutions Pvt. Ltd.',
+      name: quote.company_name || (org?.name && org.name !== 'Pitbull Corporations' ? org.name : 'Enermass') || 'Enermass',
       tagline: org?.website || 'INTEGRATED SOLAR AND POWER ENGINEERING SOLUTIONS',
       address: quote.company_address || org?.address || 'AVM Complex, Chirangara Koratty Post, Thrissur, Kerala – 680 308',
       phone: quote.company_phone || org?.phone || '+91-81 380 27336',
@@ -433,6 +433,7 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
     bomGroups,
     cashFlow,
     twentyFiveYearSavings,
+    annualSavings,
     paybackYears: calculatedPaybackYears > 0 ? calculatedPaybackYears.toFixed(1) : '—',
     roiPercent,
     co2OffsetTons,

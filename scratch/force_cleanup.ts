@@ -6,7 +6,7 @@ import path from 'path';
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const KEEP_EMAIL = 'hrushibhanvadiya@gmail.com';
-const KEEP_ORG_NAME = 'Pitbull Corporations';
+const KEEP_ORG_NAME = 'Enermass';
 
 async function forceCleanup() {
   const adminClient = createClient(

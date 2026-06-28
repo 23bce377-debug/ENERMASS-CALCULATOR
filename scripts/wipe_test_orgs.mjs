@@ -17,7 +17,7 @@ async function main() {
   console.log('Fetching orgs...');
   const res = await client.query('SELECT id, name FROM organisations');
   
-  const toDelete = res.rows.filter(r => r.name !== 'Pitbull Corporations' && r.name !== 'Demo');
+  const toDelete = res.rows.filter(r => r.name !== 'Pitbull Corporations' && r.name !== 'Enermass' && r.name !== 'Demo');
   console.log(`Found ${toDelete.length} orgs to delete:`, toDelete.map(r => r.name).join(', '));
 
   for (const org of toDelete) {

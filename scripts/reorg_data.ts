@@ -45,7 +45,7 @@ async function main() {
 
   // Create new Orgs
   console.log('Creating new organisations...');
-  const { data: pitbullOrg } = await supabase.from('organisations').insert({ name: 'Pitbull Corporations', email: 'founder@pitbullcorporations.com' }).select().single();
+  const { data: pitbullOrg } = await supabase.from('organisations').insert({ name: 'Enermass', email: 'founder@pitbullcorporations.com' }).select().single();
   const { data: demoOrg } = await supabase.from('organisations').insert({ name: 'Demo', email: 'demo@example.com' }).select().single();
 
   if (!pitbullOrg || !demoOrg) throw new Error('Failed to create orgs');
@@ -94,7 +94,7 @@ async function main() {
       user_metadata: { ...hrushi.user_metadata, org_id: pitbullOrg.id },
       app_metadata: { ...hrushi.app_metadata, org_id: pitbullOrg.id, role: 'owner' }
     });
-    console.log(`Moved Hrushi to Pitbull Corporations`);
+    console.log(`Moved Hrushi to Enermass`);
   }
 
   // Move rest to Demo
