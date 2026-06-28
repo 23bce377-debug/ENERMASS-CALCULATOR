@@ -17,7 +17,7 @@ async function getBrowser(): Promise<Browser> {
 
       // chromium-min downloads the binary at runtime from this URL
       // instead of requiring bundled binaries in node_modules
-      const remoteUrl = 'https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.tar';
+      const remoteUrl = 'https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar';
       console.log('[renderPdf] Step 3: Downloading chromium binary from:', remoteUrl);
       const executablePath = await chromium.executablePath(remoteUrl);
       console.log('[renderPdf] Step 4: Got executablePath:', executablePath);
