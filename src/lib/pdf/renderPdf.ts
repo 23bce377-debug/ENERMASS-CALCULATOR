@@ -10,9 +10,15 @@ async function getBrowser(): Promise<Browser> {
   if (isServerless) {
     console.log('[renderPdf] Launching serverless Chromium (production)...');
     try {
-      const chromium = (await import('@sparticuz/chromium')).default as any;
+      const chromium = (await import('@sparticuz/chromium-min')).default as any;
       const puppeteerCore = (await import('puppeteer-core')).default;
-      
+
+      // chromium-min downloads the binary at runtime from this URL
+      // instead of requiring bundled binaries in node_modules
+      const executablePath = await chromium.executablePath(
+        'https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.tar'
+      );
+
       browserPromise = puppeteerCore.launch({
         args: [
           ...chromium.args,
@@ -22,7 +28,7 @@ async function getBrowser(): Promise<Browser> {
           '--font-render-hinting=none'
         ],
         defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath(),
+        executablePath,
         headless: true
       }) as unknown as Promise<Browser>;
     } catch (err) {

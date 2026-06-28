@@ -3,6 +3,7 @@ import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 import { generateQuotePdf } from '@/lib/pdf';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // Allow up to 60s for chromium-min binary download on cold start
 
 export const POST = withLicensedApiRoute(async (request, context) => {
   const { orgId } = context.session;
