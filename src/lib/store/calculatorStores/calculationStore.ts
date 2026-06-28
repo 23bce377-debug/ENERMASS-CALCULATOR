@@ -10,6 +10,46 @@ import { SYSTEMS, type SolarSystem, type BomItem } from '../../data/bom';
 import { type ProjectType, type RowOverride, type DiscountType } from '../../engine/calculator';
 import { TAX_CONSTANTS } from '@/lib/tax-constants';
 
+/** Key used in dbStateTerms for the global default T&C template (state_id IS NULL). */
+export const DEFAULT_TERMS_KEY = '__default__';
+
+/**
+ * Build the state-scoped lookup maps from a master-data bootstrap payload.
+ * - dbSystemStateMap: systemId → [stateName...] (empty/absent = global preset).
+ * - dbStateTerms: stateName → ordered clauses, plus DEFAULT_TERMS_KEY for the global default.
+ * Both are derived purely from data, so adding a state requires no code changes.
+ */
+function buildStateScopedMaps(bootstrap: any): {
+  systemStateMap: Record<string, string[]>;
+  stateTerms: Record<string, string[]>;
+} {
+  const stateIdToName: Record<string, string> = {};
+  for (const rule of bootstrap?.stateRules ?? []) {
+    if (rule?.id) stateIdToName[rule.id] = rule.state_name;
+  }
+
+  const systemStateMap: Record<string, string[]> = {};
+  for (const row of bootstrap?.systemStateAvailability ?? []) {
+    const name = stateIdToName[row?.state_id];
+    if (!row?.system_id || !name) continue;
+    (systemStateMap[row.system_id] ??= []).push(name);
+  }
+
+  const stateTerms: Record<string, string[]> = {};
+  for (const tpl of bootstrap?.stateTermsTemplates ?? []) {
+    if (tpl?.is_active === false) continue;
+    const clauses = Array.isArray(tpl?.clauses) ? tpl.clauses : [];
+    if (tpl?.state_id == null) {
+      stateTerms[DEFAULT_TERMS_KEY] = clauses;
+    } else {
+      const name = stateIdToName[tpl.state_id];
+      if (name) stateTerms[name] = clauses;
+    }
+  }
+
+  return { systemStateMap, stateTerms };
+}
+
 export const createCalculationSlice: StateCreator<
   CalculatorState,
   [],
@@ -42,6 +82,8 @@ export const createCalculationSlice: StateCreator<
     | 'calcError'
     | 'dbSystems'
     | 'dbStateData'
+    | 'dbSystemStateMap'
+    | 'dbStateTerms'
     | 'dbPanels'
     | 'dbInverters'
     | 'dbBatteries'
@@ -124,6 +166,8 @@ export const createCalculationSlice: StateCreator<
 
   dbSystems: [],
   dbStateData: {},
+  dbSystemStateMap: {},
+  dbStateTerms: {},
   dbPanels: [],
   dbInverters: [],
   dbBatteries: [],
@@ -642,9 +686,13 @@ export const createCalculationSlice: StateCreator<
         };
       });
 
+      const { systemStateMap, stateTerms } = buildStateScopedMaps(bootstrap);
+
       set({
         dbSystems: mappedSystems,
         dbStateData: mappedStateData,
+        dbSystemStateMap: systemStateMap,
+        dbStateTerms: stateTerms,
         dbPanels: mappedPanels,
         dbInverters: mappedInverters,
         dbBatteries: mappedBatteries,
@@ -766,6 +814,13 @@ export const createCalculationSlice: StateCreator<
           };
         }
         stateUpdate.dbStateData = mappedStateData;
+      }
+
+      // State-scoped presets + T&C templates (derived from data; safe if absent).
+      if (bootstrap.stateRules && (bootstrap.systemStateAvailability || bootstrap.stateTermsTemplates)) {
+        const { systemStateMap, stateTerms } = buildStateScopedMaps(bootstrap);
+        if (bootstrap.systemStateAvailability) stateUpdate.dbSystemStateMap = systemStateMap;
+        if (bootstrap.stateTermsTemplates) stateUpdate.dbStateTerms = stateTerms;
       }
 
       if (bootstrap.schemes) {

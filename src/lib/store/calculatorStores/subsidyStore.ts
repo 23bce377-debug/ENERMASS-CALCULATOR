@@ -84,20 +84,27 @@ export const createSubsidySlice: StateCreator<
 
     try {
       const { supabase } = await import('../../supabase/client');
-      const { data, error } = await (supabase.rpc as any)('calculate_subsidy', {
-        p_scheme_code: 'PM_SURYA_GHAR_2024',
+      // State-driven: the RPC auto-resolves the applicable scheme from the project
+      // type and folds in any per-state top-up. No scheme code is passed.
+      const { data, error } = await (supabase.rpc as any)('calculate_state_subsidy', {
+        p_state_code: stateCode,
         p_capacity_kw: eligibleCapacityKW,
-        p_state_code: stateCode
+        p_project_type: state.projectType,
       });
       if (error) throw error;
-      
+
       set({ rpcSubsidyAmount: Number(data ?? 0) });
-      
+
       // Trigger recalculate so it uses the new subsidy
       const { result, error: calcErr } = runCalculation(get());
       set({ calcResult: result, calcError: calcErr });
     } catch (err) {
-      console.error('Failed to fetch subsidy RPC:', err);
+      console.error('Failed to fetch state subsidy RPC:', err);
+      // Clear the server value so the engine falls back to its local slab
+      // computation rather than using a stale amount from a previous state.
+      set({ rpcSubsidyAmount: null });
+      const { result, error: calcErr } = runCalculation(get());
+      set({ calcResult: result, calcError: calcErr });
     }
   },
 });

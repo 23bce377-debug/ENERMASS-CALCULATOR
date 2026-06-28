@@ -30,7 +30,7 @@ import type {
   CachedAppSettings,
 } from './masterCacheTypes';
 
-export const CACHE_VERSION = '3.0.0';
+export const CACHE_VERSION = '3.1.0';
 export const CACHE_TAG = 'master-data';
 
 /** Global TTL: 5 minutes (org-independent tables change infrequently) */
@@ -83,6 +83,7 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
     structureMaterialRatesRes, structureTemplatesRes, structureTemplateItemsRes,
     walkwayTemplatesRes, ladderTemplatesRes, structureAccessoryRatesRes,
     rateMasterRes, categoryMarginsRes, appSettingsRes,
+    systemStateAvailRes, stateTermsRes,
   ] = await Promise.all([
     // Equipment
     supabase
@@ -101,7 +102,7 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
     // State / Subsidy
     supabase
       .from('state_rules')
-      .select('id, state_code, state_name, is_active')
+      .select('id, state_code, state_name, discom_name, is_active')
       .eq('is_active', true),
     supabase
       .from('scheme_slabs')
@@ -187,6 +188,17 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
           .eq('org_id', orgId)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
+
+    // State-driven pipeline (global tables). Cast to any: these tables are added
+    // by the state-driven pipeline migration and are not yet in the generated
+    // Database types until `supabase gen types` is re-run post-migration.
+    (supabase as any)
+      .from('system_state_availability')
+      .select('system_id, state_id'),
+    (supabase as any)
+      .from('state_terms_templates')
+      .select('id, state_id, clauses, is_active, version')
+      .eq('is_active', true),
   ]);
 
   // ── Log any non-fatal errors (missing tables, RLS blocks) ───────────────
@@ -228,6 +240,8 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
     slabs: (slabsRes.data ?? []) as any,
     schemes: (schemesRes.data ?? []) as any,
     schemeOverrides: (schemeOverridesRes.data ?? []) as any,
+    systemStateAvailability: (systemStateAvailRes.data ?? []) as any,
+    stateTermsTemplates: (stateTermsRes.data ?? []) as any,
     bomCategories: (bomCategoriesRes.data ?? []) as any,
     bomTemplateItems: (bomTemplateItemsRes.data ?? []) as any,
     meters: (metersRes.data ?? []) as any,

@@ -8,7 +8,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  serverExternalPackages: ['@sparticuz/chromium-min', 'puppeteer-core'],
+  // handlebars is a server-only dependency (PDF generation). Externalizing it
+  // avoids webpack bundling it — which otherwise emits a benign but noisy
+  // "require.extensions is not supported by webpack" warning.
+  serverExternalPackages: ['@sparticuz/chromium-min', 'puppeteer-core', 'handlebars'],
 };
 
 export default nextConfig;

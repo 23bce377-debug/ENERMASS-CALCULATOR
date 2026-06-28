@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
@@ -21,28 +21,21 @@ interface QuoteSaveModalProps {
 
 const STEPS = ['Project', 'Address', 'Site', 'Sales', 'Proposal Customization'];
 
+// Last-resort, state-agnostic fallback used only when the database has no T&C
+// template (global or state-specific). The authoritative source is the
+// state_terms_templates table, surfaced via the store's dbStateTerms map.
 const DEFAULT_TERMS = [
-  "This proposal is valid for the period stated. Post expiry, all prices subject to revision.",
-  "Payment: 50% advance with order; 40% before dispatch; 10% on commissioning & handover.",
-  "Installation within 15 working days of 50% advance. Commissioning within 45–60 days.",
-  "Solar PV Modules: 12-year product warranty + 30-year linear power output warranty (min 80% at year 30).",
-  "Inverter: 10-year manufacturer warranty. Extended AMC packages available.",
-  "MMS: 5-year structural warranty on galvanization and workmanship.",
-  "1-year free AMC post commissioning. Annual AMC packages available thereafter.",
-  "Net metering application assistance provided. DISCOM approval timelines as per DISCOM.",
-  "CFA/state subsidy documentation assistance. Subsidy credited directly to consumer by Govt.",
-  "Proposal based on standard site conditions. Additional civil/structural work quoted separately.",
-  "Force Majeure: Not liable for delays due to acts of God, government restrictions, or supply disruptions.",
-  "Disputes subject to courts at registered office. Governed by Indian law.",
-  "GST @ 8.9% blended (70%@5% + 30%@18%) per Govt. notification on solar equipment.",
-  "Contractor maintains workmen's compensation and public liability insurance during installation.",
-  "Binding only upon written acceptance and receipt of advance payment.",
-  "STATE TERMS – KERALA:",
-  "Comply with KSEB Net Metering Regulations 2014.",
-  "ANERT-empanelled / KSEB-approved installer required.",
-  "Kerala Electrical Inspector (EI) approval before grid connectivity.",
-  "KSEB bi-directional net meter subject to KSEB approval timeline.",
-  "PM Surya Ghar subsidy application post-commissioning. Timeline 60–90 days typically."
+  "This proposal is valid for the period stated herein. Upon expiry, all quoted prices are subject to revision at the Company's sole discretion.",
+  "Payment schedule: 50% advance against a confirmed purchase order, 40% prior to dispatch of material, and the balance 10% upon successful grid commissioning.",
+  "Installation shall be completed within 15 working days of receipt of the advance payment. Final commissioning remains subject to DISCOM inspection and approval, which typically requires 30 to 45 days.",
+  "Solar PV modules are covered by a 12-year manufacturer product warranty and a 30-year linear performance warranty.",
+  "The grid-tie inverter carries a 10-year manufacturer warranty from the date of commissioning.",
+  "The mounting structure is warranted for 5 years against structural integrity and galvanisation defects.",
+  "The scope of supply includes one (1) year of complimentary maintenance support, comprising four (4) scheduled preventive maintenance visits from the date of commissioning.",
+  "The Company shall provide liaison assistance for feasibility approval and net-metering registration. All statutory timelines remain subject to clearances from the concerned DISCOM and electrical authorities.",
+  "Disbursement of the PM Surya Ghar Central Financial Assistance is administered through the National Portal and is typically credited within 60 to 90 days of net-meter commissioning.",
+  "Applicable Goods and Services Tax is levied in accordance with prevailing Government of India notifications and is included in the quoted value.",
+  "Any civil, electrical, or structural work beyond the agreed scope of supply shall be treated as a separately chargeable additional item."
 ];
 
 const DEFAULT_WHY_SOLAR = {
@@ -86,7 +79,20 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
   const activeQuoteId = useCalculatorStore((s) => s.activeQuoteId);
   const itcEligible = useCalculatorStore((s) => s.itcEligible);
   const dbStateData = useCalculatorStore((s) => s.dbStateData);
+  const storeSelectedState = useCalculatorStore((s) => s.selectedState);
+  const dbStateTerms = useCalculatorStore((s) => s.dbStateTerms);
   const queryClient = useQueryClient();
+
+  // Resolve the editable T&C for the current state: state template → global
+  // default → hardcoded last-resort fallback. The master template is never mutated;
+  // edits made here are snapshotted into the quote's own terms_json on save.
+  const resolveStateTerms = useCallback((): string[] => {
+    const forState = dbStateTerms?.[storeSelectedState];
+    if (forState && forState.length > 0) return forState;
+    const globalDefault = dbStateTerms?.['__default__'];
+    if (globalDefault && globalDefault.length > 0) return globalDefault;
+    return DEFAULT_TERMS;
+  }, [dbStateTerms, storeSelectedState]);
   
   const [step, setStep] = useState(0);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
@@ -354,7 +360,8 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
         setBankAccountNo(activeQuote.bank_account_no || '85080200000055');
         setBankIfsc(activeQuote.bank_ifsc || 'BARB0KORATT');
         setBankUpiId(activeQuote.bank_upi_id || 'enermass@barodampay');
-        setTerms(activeQuote.terms_json || DEFAULT_TERMS);
+        // Existing quote: keep its saved snapshot; otherwise load the state template.
+        setTerms(activeQuote.terms_json && activeQuote.terms_json.length > 0 ? activeQuote.terms_json : resolveStateTerms());
         setWhySolar(activeQuote.why_solar_json || DEFAULT_WHY_SOLAR);
       }
     } else if (isOpen && !activeQuoteId) {
@@ -375,10 +382,11 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
       setBankAccountNo('85080200000055');
       setBankIfsc('BARB0KORATT');
       setBankUpiId('enermass@barodampay');
-      setTerms(DEFAULT_TERMS);
+      // New quote: auto-load the selected state's T&C (editable before generating).
+      setTerms(resolveStateTerms());
       setWhySolar(DEFAULT_WHY_SOLAR);
     }
-  }, [isOpen, activeQuoteId]);
+  }, [isOpen, activeQuoteId, resolveStateTerms]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -611,7 +619,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                               setBankAccountNo(q.bank_account_no || '85080200000055');
                               setBankIfsc(q.bank_ifsc || 'BARB0KORATT');
                               setBankUpiId(q.bank_upi_id || 'enermass@barodampay');
-                              setTerms(q.terms_json || DEFAULT_TERMS);
+                              setTerms(q.terms_json && q.terms_json.length > 0 ? q.terms_json : resolveStateTerms());
                               setWhySolar(q.why_solar_json || DEFAULT_WHY_SOLAR);
                             } else {
                               // If project exists but no quote is linked yet
@@ -641,7 +649,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                               setBankAccountNo('85080200000055');
                               setBankIfsc('BARB0KORATT');
                               setBankUpiId('enermass@barodampay');
-                              setTerms(DEFAULT_TERMS);
+                              setTerms(resolveStateTerms());
                               setWhySolar(DEFAULT_WHY_SOLAR);
                             }
                           }

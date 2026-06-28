@@ -77,7 +77,24 @@ export interface CachedStateRule {
   id: string;
   state_code: string;
   state_name: string;
+  /** Distribution utility name shown on the quotation (e.g. 'KSEB') */
+  discom_name: string | null;
   is_active: boolean;
+}
+
+/** State-scoped preset availability. No rows for a system = global (all states). */
+export interface CachedSystemStateAvailability {
+  system_id: string;
+  state_id: string;
+}
+
+/** State-specific Terms & Conditions master template. state_id NULL = global default. */
+export interface CachedStateTermsTemplate {
+  id: string;
+  state_id: string | null;
+  clauses: string[];
+  is_active: boolean;
+  version: number;
 }
 
 export interface CachedSlab {
@@ -259,6 +276,8 @@ export interface MasterData {
   slabs: CachedSlab[];
   schemes: CachedScheme[];
   schemeOverrides: CachedSchemeOverride[];
+  systemStateAvailability: CachedSystemStateAvailability[];
+  stateTermsTemplates: CachedStateTermsTemplate[];
 
   // BOM
   bomCategories: CachedBomCategory[];

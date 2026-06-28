@@ -15,6 +15,8 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
   const selectSystem = useCalculatorStore((s) => s.selectSystem);
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
   const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
+  const selectedState = useCalculatorStore((s) => s.selectedState);
+  const dbSystemStateMap = useCalculatorStore((s) => s.dbSystemStateMap);
 
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,17 +43,28 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
 
   const activeSystem = useMemo(() => systems.find(s => s.id === selectedSystemId), [systems, selectedSystemId]);
 
+  // A preset is shown for the selected state when it is either global (no state
+  // mapping) or explicitly mapped to that state. This keeps the list relevant and
+  // is fully data-driven — assigning a preset to states needs no code change.
+  const isVisibleForState = (systemId: string) => {
+    const states = dbSystemStateMap[systemId];
+    if (!states || states.length === 0) return true; // global preset
+    return !selectedState || states.includes(selectedState);
+  };
+
   const filteredSystems = useMemo(() => {
     return systems.filter(sys => {
+      if (!isVisibleForState(sys.id)) return false;
       if (filterType !== 'all' && sys.category !== filterType) return false;
       if (searchQuery && !sys.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
-  }, [systems, filterType, searchQuery]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [systems, filterType, searchQuery, selectedState, dbSystemStateMap]);
 
   const recentSystems = useMemo(() => {
-    return systems.slice(0, 5); // Just a mock for recently used
-  }, [systems]);
+    return filteredSystems.slice(0, 5); // Recently used, scoped to the selected state
+  }, [filteredSystems]);
 
   const categories = [
     { id: 'all', label: 'All' },

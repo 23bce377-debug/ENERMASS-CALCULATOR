@@ -51,17 +51,23 @@
      ========================================================= */
   @page { size: A4; margin: 0; }
 
+  /* Sections flow naturally and paginate via the print engine. Inner blocks
+     (tables rows, stat-cards, callouts) use break-inside:avoid so content is
+     never split awkwardly. Only the cover is pinned to a full dedicated page. */
   .page{
     width: 210mm;
-    min-height: 297mm;
-    padding: 13mm 14mm 11mm 14mm;
+    padding: 13mm 14mm 10mm 14mm;
     display: flex;
     flex-direction: column;
-    page-break-after: always;
     background: var(--white);
     position: relative;
   }
-  .page:last-of-type{ page-break-after: auto; }
+  .page + .page{ padding-top: 6mm; }
+  .page--cover{
+    min-height: 297mm;
+    padding-top: 13mm;
+    page-break-after: always;
+  }
 
   @media print{
     .screen-only{ display:none !important; }
@@ -180,10 +186,11 @@
   .ref-badge__dates{ font-size:9px; color:var(--ink-muted); margin-top:5px; }
 
   .page-footer{
-    margin-top:auto; padding-top: var(--sp-4);
+    margin-top: var(--sp-6); padding-top: var(--sp-3);
     border-top:1px solid var(--line);
     display:flex; justify-content:space-between; align-items:center;
     font-size:9px; color:var(--ink-faint);
+    break-inside: avoid; page-break-inside: avoid;
   }
   .page-footer strong{ color:var(--ink-muted); }
 
@@ -291,7 +298,7 @@
 <!-- ============================================================ -->
 <!-- PAGE 1 — COVER                                                -->
 <!-- ============================================================ -->
-<section class="page">
+<section class="page page--cover">
   <div class="brand-header">
     <div class="brand-id">
       <svg class="brand-logo" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
@@ -395,12 +402,11 @@
 
       <div class="letter-body">
         <p style="font-weight:700;">Dear {{customer.name}},</p>
-        <p>Greetings,</p>
-        <p>Thank you for your interest in {{company.name}}. We are pleased to present our tailored Solar Energy System proposal for your solar power plant requirement.</p>
-        <p>Established in 2018, {{company.name}} is a forward-thinking renewable energy company committed to the 3P philosophy (People, Planet, Profit), delivering sustainable, cost-effective, and high-performance energy solutions across India. Headquartered in Kerala, we have successfully executed a wide range of solar projects nationwide, covering on-grid, off-grid, and hybrid systems across residential, commercial, industrial, and institutional sectors.</p>
-        <p>As an MNRE-empanelled EPC firm, with empanelments from ANERT, KSEBL, MSME, JRDEA, IOCL, JNKEL, KEL, and others, we provide comprehensive end-to-end services including design, engineering, procurement, installation, commissioning, and maintenance of rooftop and ground-mounted solar power plants.</p>
-        <p>We are committed to helping you reduce energy costs, lower your carbon footprint, and achieve strong returns through reliable green energy solutions.</p>
-        <p>This proposal outlines our best techno-commercial offering for your solar requirements. We look forward to your confirmation and the opportunity to partner with you on this sustainable journey.</p>
+        <p>We thank you for considering {{company.name}} for your solar energy requirement, and are pleased to present the following techno-commercial proposal prepared specifically for your installation.</p>
+        <p>Established in 2018, {{company.name}} is a renewable-energy enterprise guided by the 3P philosophy — People, Planet, Profit — delivering sustainable, cost-effective, and high-performance energy solutions across India. From our headquarters in Kerala, we have successfully executed solar projects nationwide, spanning on-grid, off-grid, and hybrid systems across the residential, commercial, industrial, and institutional sectors.</p>
+        <p>As an MNRE-empanelled EPC firm — with empanelments from ANERT, KSEBL, MSME, JRDEA, IOCL, JNKEL, and KEL, among others — we provide comprehensive, end-to-end services encompassing design, engineering, procurement, installation, commissioning, and maintenance of rooftop and ground-mounted solar power plants.</p>
+        <p>Our objective is to help you reduce energy costs, lower your carbon footprint, and realise strong, predictable returns through reliable clean-energy infrastructure.</p>
+        <p>The following pages detail our recommended solution and its commercial terms. We would be privileged to partner with you on this initiative, and look forward to your confirmation.</p>
       </div>
 
       <div class="signature-block">
@@ -443,7 +449,7 @@
   </div>
   <div class="page-footer">
     <div>Proposal Ref: <strong>{{proposal.reference}}</strong> &nbsp;·&nbsp; Prepared for: <strong>{{customer.name}}</strong></div>
-    <div>Page 2 of 10</div>
+    <div>{{company.name}} &middot; Confidential Proposal</div>
   </div>
 </section>
 
@@ -488,7 +494,7 @@
 
   <div class="page-footer">
     <div>Proposal Ref: <strong>{{proposal.reference}}</strong> &nbsp;·&nbsp; Prepared for: <strong>{{customer.name}}</strong></div>
-    <div>Page 3 of 10</div>
+    <div>{{company.name}} &middot; Confidential Proposal</div>
   </div>
 </section>
 
@@ -536,7 +542,7 @@
 
   <div class="page-footer">
     <div>Proposal Ref: <strong>{{proposal.reference}}</strong> &nbsp;·&nbsp; Prepared for: <strong>{{customer.name}}</strong></div>
-    <div>Page 4 of 10</div>
+    <div>{{company.name}} &middot; Confidential Proposal</div>
   </div>
 </section>
 
@@ -584,7 +590,7 @@
 
   <div class="page-footer">
     <div>Proposal Ref: <strong>{{proposal.reference}}</strong> &nbsp;·&nbsp; Prepared for: <strong>{{customer.name}}</strong></div>
-    <div>Page 5 of 10</div>
+    <div>{{company.name}} &middot; Confidential Proposal</div>
   </div>
 </section>
 
@@ -658,7 +664,7 @@
 
   <div class="page-footer">
     <div>Proposal Ref: <strong>{{proposal.reference}}</strong> &nbsp;·&nbsp; Prepared for: <strong>{{customer.name}}</strong></div>
-    <div>Page 6 of 10</div>
+    <div>{{company.name}} &middot; Confidential Proposal</div>
   </div>
 </section>
 
@@ -728,7 +734,7 @@
 
   <div class="page-footer">
     <div>Proposal Ref: <strong>{{proposal.reference}}</strong> &nbsp;·&nbsp; Prepared for: <strong>{{customer.name}}</strong></div>
-    <div>Page 7 of 10</div>
+    <div>{{company.name}} &middot; Confidential Proposal</div>
   </div>
 </section>
 
@@ -802,7 +808,7 @@
 
   <div class="page-footer">
     <div>Proposal Ref: <strong>{{proposal.reference}}</strong> &nbsp;·&nbsp; Prepared for: <strong>{{customer.name}}</strong></div>
-    <div>Page 8 of 10</div>
+    <div>{{company.name}} &middot; Confidential Proposal</div>
   </div>
 </section>
 
@@ -860,7 +866,7 @@
 
   <div class="page-footer">
     <div>Proposal Ref: <strong>{{proposal.reference}}</strong> &nbsp;·&nbsp; Prepared for: <strong>{{customer.name}}</strong></div>
-    <div>Page 9 of 10</div>
+    <div>{{company.name}} &middot; Confidential Proposal</div>
   </div>
 </section>
 
@@ -928,7 +934,7 @@
 
   <div class="page-footer">
     <div>Proposal Ref: <strong>{{proposal.reference}}</strong> &nbsp;·&nbsp; Prepared for: <strong>{{customer.name}}</strong></div>
-    <div>Page 10 of 10</div>
+    <div>{{company.name}} &middot; Confidential Proposal</div>
   </div>
 </section>
 

@@ -48,7 +48,7 @@ describe('masterCache Coherency and SWR Verification', () => {
     const data = await getCachedMasterData('org-123');
     expect(createClient).toHaveBeenCalledTimes(1);
     expect(data.orgId).toBe('org-123');
-    expect(data.version).toBe('3.0.0');
+    expect(data.version).toBe('3.1.0');
   });
 
   it('serves from cache on subsequent hits within TTL', async () => {

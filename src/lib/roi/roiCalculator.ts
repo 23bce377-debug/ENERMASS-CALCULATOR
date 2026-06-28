@@ -122,7 +122,7 @@ export function calculateROI(inputs: ROIInputs): ROIResult {
   const npv = calculateNPV(cashFlows, inputs.discountRate / 100);
   const irr = calculateIRR(cashFlows);
   const totalGeneration = yearlyData.reduce((sum, y) => sum + y.annualGeneration, 0);
-  const lcoe = inputs.systemCost / totalGeneration; // ₹/kWh
+  const lcoe = totalGeneration > 0 ? inputs.systemCost / totalGeneration : 0; // ₹/kWh
 
   return { yearlyData, paybackYear, npv, irr, lcoe, totalGeneration };
 }

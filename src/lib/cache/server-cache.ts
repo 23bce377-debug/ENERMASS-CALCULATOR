@@ -71,14 +71,20 @@ export const getStructuresMaster = unstable_cache(
 export const getRulesMaster = unstable_cache(
   async (orgId: string | null) => {
     const supabase = createAdminClient();
-    const [stateRules, slabs, schemes, systems, taxHsn, taxGstRates, bomItems] = await Promise.all([
+    const [
+      stateRules, slabs, schemes, systems, taxHsn, taxGstRates, bomItems,
+      systemStateAvailability, stateTermsTemplates,
+    ] = await Promise.all([
       supabase.from('state_rules').select('*').eq('is_active', true),
       supabase.from('scheme_slabs').select('*'),
       supabase.from('calculation_schemes').select('*').eq('is_active', true),
       supabase.from('systems').select('*, system_items(*)').eq('is_active', true).order('capacity_kw', { ascending: true }),
       (supabase as any).from('tax_hsn_sac').select('*').eq('is_active', true),
       (supabase as any).from('tax_gst_rates').select('*'),
-      supabase.from('bom_template_items').select('*').limit(1000)
+      supabase.from('bom_template_items').select('*').limit(1000),
+      // State-driven pipeline datasets (graceful empty fallback if tables absent)
+      (supabase as any).from('system_state_availability').select('system_id, state_id'),
+      (supabase as any).from('state_terms_templates').select('id, state_id, clauses, is_active, version').eq('is_active', true),
     ]);
     return {
       stateRules: stateRules.data || [],
@@ -87,10 +93,13 @@ export const getRulesMaster = unstable_cache(
       systems: systems.data || [],
       taxHsnCodes: taxHsn?.data || [],
       taxGstRates: taxGstRates?.data || [],
-      bomItems: bomItems.data || []
+      bomItems: bomItems.data || [],
+      systemStateAvailability: systemStateAvailability?.data || [],
+      stateTermsTemplates: stateTermsTemplates?.data || [],
     };
   },
-  ['master-rules'],
+  // Cache key bumped to v2 — the payload shape now includes the state-driven datasets.
+  ['master-rules-v2'],
   { tags: ['master-data', 'rules'], revalidate: 600 }
 );
 

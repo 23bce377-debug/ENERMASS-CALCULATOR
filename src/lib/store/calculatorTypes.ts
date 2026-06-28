@@ -177,6 +177,10 @@ export interface EquipmentSliceState {
 export interface DbCacheSliceState {
   dbSystems: SolarSystem[];
   dbStateData: Record<string, any>;
+  /** systemId → [stateName...]. Empty/absent = global preset (shown for all states). */
+  dbSystemStateMap: Record<string, string[]>;
+  /** stateName → ordered T&C clauses. Key '__default__' holds the global default. */
+  dbStateTerms: Record<string, string[]>;
   dbPanels: any[];
   dbInverters: any[];
   dbBatteries: any[];
@@ -355,6 +359,8 @@ export const INITIAL_STATE = {
   // Database integrations
   dbSystems: [] as SolarSystem[],
   dbStateData: {} as Record<string, any>,
+  dbSystemStateMap: {} as Record<string, string[]>,
+  dbStateTerms: {} as Record<string, string[]>,
   dbPanels: [] as any[],
   dbInverters: [] as any[],
   dbBatteries: [] as any[],
@@ -696,6 +702,9 @@ const result = calculateSystem({
       rpcSubsidyAmount: state.rpcSubsidyAmount ?? undefined,
       maxSubsidyCapacityKW: state.dbActiveScheme?.max_capacity_kw ? Number(state.dbActiveScheme.max_capacity_kw) : undefined,
       maxAbsoluteSubsidy: state.dbActiveScheme?.max_absolute_subsidy ? Number(state.dbActiveScheme.max_absolute_subsidy) : undefined,
+      // State-driven subsidy: applySubsidy is the source of truth (auto-applied from
+      // the selected state). selectedScheme is retained for backward compatibility.
+      applySubsidy: state.applySubsidy,
       selectedScheme: state.selectedScheme,
       structureType: state.structureType,
       structureVendorId: state.structureVendorId ?? undefined,

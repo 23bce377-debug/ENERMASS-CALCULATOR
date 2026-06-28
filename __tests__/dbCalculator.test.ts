@@ -83,6 +83,8 @@ describe('calculateSystemFromDb (Blocker 3 & 4)', () => {
       structureAccessoryRates: [],
       schemes: [],
       schemeOverrides: [],
+      systemStateAvailability: [],
+      stateTermsTemplates: [],
       slabs: [],
       stateRules: [],
       bomCategories: [],

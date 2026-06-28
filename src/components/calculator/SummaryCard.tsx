@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
-import { Select } from '@/components/ui/Select';
 import { SYSTEMS } from '@/lib/data/bom';
 import { formatINR } from '@/lib/engine/calculator';
 import { useSettings } from '@/lib/hooks/useSettings';
@@ -15,7 +14,9 @@ export function SummaryCard() {
   const projectType = useCalculatorStore((s) => s.projectType);
   const itcEligible = useCalculatorStore((s) => s.itcEligible);
   const selectedGoalWattage = useCalculatorStore((s) => s.selectedGoalWattage);
-  const selectedScheme = useCalculatorStore((s) => s.selectedScheme);
+  const applySubsidy = useCalculatorStore((s) => s.applySubsidy);
+  const setApplySubsidy = useCalculatorStore((s) => s.setApplySubsidy);
+  const selectedState = useCalculatorStore((s) => s.selectedState);
 
   const { settings } = useSettings();
 
@@ -69,9 +70,13 @@ export function SummaryCard() {
     }
   });
 
-  // Subsidy eligibility based on capacity
-  const showNoSubsidy = selectedScheme === 'state' && capacityKW > 10;
-  const subsidyLabel = showNoSubsidy ? 'No Subsidy (>10 kW)' : (selectedScheme === 'state' ? 'State Subsidy' : 'PM Surya Ghar Subsidy');
+  // Subsidy is auto-applied from the selected state; the label reflects what was
+  // resolved server-side. The toggle below only enables/disables application.
+  const isCommercial = projectType === 'commercial';
+  const subsidyApplied = applySubsidy && (calcResult.subsidyAmount ?? 0) > 0;
+  const subsidyLabel = subsidyApplied
+    ? `${selectedState} Subsidy`
+    : (isCommercial ? 'No Subsidy (Commercial)' : 'No Subsidy');
 
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden shadow-lg shadow-black/20" id="summary-card">
@@ -165,20 +170,31 @@ export function SummaryCard() {
         <div className="space-y-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-text-secondary">Subsidy Scheme</span>
-              <Select
-                value={selectedScheme}
-                onChange={(val) => useCalculatorStore.getState().setSelectedScheme(val as any)}
-                options={[
-                  { value: 'none', label: 'No Subsidy' },
-                  { value: 'pm_suryaghar', label: 'PM Surya Ghar' },
-                  { value: 'state', label: 'State Scheme' }
-                ]}
-                size="sm"
-                className="w-40"
-              />
+              <div className="flex flex-col">
+                <span className="text-xs text-text-secondary">Apply Subsidy</span>
+                <span className="text-[10px] text-text-muted leading-tight">
+                  Auto-applied from {selectedState}
+                </span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={applySubsidy}
+                aria-label="Apply subsidy"
+                disabled={isCommercial}
+                onClick={() => setApplySubsidy(!applySubsidy)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  applySubsidy && !isCommercial ? 'bg-accent' : 'bg-border'
+                } ${isCommercial ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    applySubsidy && !isCommercial ? 'translate-x-4' : 'translate-x-0.5'
+                  }`}
+                />
+              </button>
             </div>
-            {selectedScheme !== 'none' && (
+            {applySubsidy && !isCommercial && (
               <>
                 <div title={calcResult.subsidyResult?.breakdown} className="mt-2">
                   <Row label={subsidyLabel} value={`-${formatINR(calcResult.subsidyAmount)}`} success={calcResult.subsidyAmount > 0} />

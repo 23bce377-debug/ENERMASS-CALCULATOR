@@ -112,6 +112,7 @@ CREATE TABLE state_rules (
   -- Output GST: 13.8% for most states, 13.8% for Kerala/TN/MH
   gst_on_output      NUMERIC(6,5) NOT NULL DEFAULT 0.13800,
   grid_tariff_inr    NUMERIC(6,4) NOT NULL DEFAULT 8.0000, -- ₹/kWh, state-specific default
+  discom_name        TEXT,                    -- Distribution utility shown on the quote (e.g. 'KSEB')
   is_active          BOOLEAN NOT NULL DEFAULT TRUE,
   version            INTEGER NOT NULL DEFAULT 1,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -180,6 +181,27 @@ CREATE TABLE state_scheme_overrides (
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT uq_state_scheme UNIQUE (state_id, scheme_id)
 );
+
+-- State-specific Terms & Conditions master templates.
+-- clauses JSONB = array of strings (same shape as quotes.terms_json).
+-- Exactly one active row per state; the row with state_id IS NULL is the global default.
+-- Loaded on state selection into an editable T&C panel; saving a quote snapshots the
+-- (possibly edited) clauses into quotes.terms_json without touching this master.
+CREATE TABLE state_terms_templates (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  state_id   UUID REFERENCES state_rules(id) ON DELETE CASCADE,  -- NULL = global default
+  clauses    JSONB NOT NULL DEFAULT '[]'::jsonb,
+  is_active  BOOLEAN NOT NULL DEFAULT TRUE,
+  version    INTEGER NOT NULL DEFAULT 1,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX uq_state_terms_active_state
+  ON state_terms_templates(state_id)
+  WHERE is_active = TRUE AND state_id IS NOT NULL;
+CREATE UNIQUE INDEX uq_state_terms_active_global
+  ON state_terms_templates((state_id IS NULL))
+  WHERE is_active = TRUE AND state_id IS NULL;
 
 -- ============================================================
 -- SECTION 5: EQUIPMENT CATALOG
@@ -672,6 +694,18 @@ CREATE TABLE system_items (
 CREATE INDEX idx_system_items_system ON system_items(system_id, sort_order);
 CREATE INDEX idx_system_items_section ON system_items(system_id, section);
 
+-- State-scoped preset availability (many-to-many).
+-- Backward-compat rule (enforced in application code): a system with NO rows here
+-- is GLOBAL — shown for every state. Add rows to restrict a preset to specific states.
+CREATE TABLE system_state_availability (
+  system_id  UUID NOT NULL REFERENCES systems(id)     ON DELETE CASCADE,
+  state_id   UUID NOT NULL REFERENCES state_rules(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (system_id, state_id)
+);
+CREATE INDEX idx_system_state_avail_state  ON system_state_availability(state_id);
+CREATE INDEX idx_system_state_avail_system ON system_state_availability(system_id);
+
 -- ============================================================
 -- SECTION 8: CATEGORY MARGIN CONFIG (per-org, per-category)
 -- Redis: "category_margins:org:{org_id}" → TTL 1h
@@ -1106,6 +1140,74 @@ BEGIN
 END;
 $$;
 
+-- 16e-2. State-driven subsidy — resolves the scheme automatically from project_type
+-- (no scheme code passed by the client) and folds in any per-state additional subsidy
+-- and cap override. Returns the same amount as calculate_subsidy() for a residential
+-- state with no override. Usage: SELECT calculate_state_subsidy('GJ', 3.1, 'residential')
+CREATE OR REPLACE FUNCTION calculate_state_subsidy(
+  p_state_code   TEXT,
+  p_capacity_kw  NUMERIC,
+  p_project_type project_type DEFAULT 'residential'
+)
+RETURNS NUMERIC LANGUAGE plpgsql STABLE AS $$
+DECLARE
+  v_scheme         RECORD;
+  v_override       RECORD;
+  v_slab           RECORD;
+  v_base           NUMERIC := 0;
+  v_applicable_kw  NUMERIC;
+  v_effective_max  NUMERIC;
+  v_additional     NUMERIC := 0;
+BEGIN
+  SELECT id, max_capacity_kw, max_absolute_subsidy
+  INTO v_scheme
+  FROM calculation_schemes
+  WHERE is_active = TRUE AND applies_to = p_project_type
+  ORDER BY effective_from DESC NULLS LAST
+  LIMIT 1;
+
+  IF NOT FOUND THEN RETURN 0; END IF;
+  IF p_capacity_kw > v_scheme.max_capacity_kw THEN RETURN 0; END IF;
+
+  v_effective_max := v_scheme.max_absolute_subsidy;
+
+  IF p_state_code IS NOT NULL THEN
+    SELECT sso.max_absolute_override, sso.additional_state_subsidy
+    INTO v_override
+    FROM state_scheme_overrides sso
+    JOIN state_rules sr ON sso.state_id = sr.id
+    WHERE sr.state_code = p_state_code
+      AND sso.scheme_id = v_scheme.id
+      AND sso.is_active = TRUE
+    LIMIT 1;
+
+    IF FOUND THEN
+      IF v_override.max_absolute_override IS NOT NULL THEN
+        v_effective_max := v_override.max_absolute_override;
+      END IF;
+      v_additional := COALESCE(v_override.additional_state_subsidy, 0);
+    END IF;
+  END IF;
+
+  FOR v_slab IN
+    SELECT start_kw, end_kw, rate_per_kw, is_fixed_amount, fixed_amount
+    FROM scheme_slabs
+    WHERE scheme_id = v_scheme.id
+    ORDER BY slab_index ASC
+  LOOP
+    IF p_capacity_kw <= v_slab.start_kw THEN EXIT; END IF;
+    IF v_slab.is_fixed_amount THEN
+      v_base := v_base + COALESCE(v_slab.fixed_amount, 0);
+    ELSE
+      v_applicable_kw := LEAST(p_capacity_kw, COALESCE(v_slab.end_kw, p_capacity_kw)) - v_slab.start_kw;
+      v_base := v_base + (v_applicable_kw * v_slab.rate_per_kw);
+    END IF;
+  END LOOP;
+
+  RETURN LEAST(v_base, v_effective_max) + v_additional;
+END;
+$$;
+
 -- 16f. Compute formula-based structure rate for a given system
 -- Formula: Total Weight = ((LookupWeight + BaseWeight) * (1+Wastage) * (1+Fasteners))
 -- Formula: Total Cost = Total Weight * (MaterialRate + FabricationRate + GalvanizingRate)
@@ -1431,6 +1533,23 @@ INSERT INTO scheme_slabs (scheme_id, slab_index, start_kw, end_kw, rate_per_kw, 
   ('10000000-0000-0000-0000-000000000001', 1, 0.000,  2.000, 30000.00, FALSE),
   ('10000000-0000-0000-0000-000000000001', 2, 2.000,  3.000, 18000.00, FALSE),
   ('10000000-0000-0000-0000-000000000001', 3, 3.000,  NULL,      0.00, FALSE);
+
+-- 19c-2. Terms & Conditions master templates (global default + state-specific).
+-- See migration 202607040000_state_driven_pipeline.sql for the canonical seed.
+INSERT INTO state_terms_templates (state_id, clauses, is_active, version)
+VALUES (NULL, $json$[
+  "This proposal is valid for the period stated herein. Upon expiry, all quoted prices are subject to revision at the Company's sole discretion.",
+  "Payment schedule: 50% advance against a confirmed purchase order, 40% prior to dispatch of material, and the balance 10% upon successful grid commissioning.",
+  "Installation shall be completed within 15 working days of receipt of the advance payment. Final commissioning remains subject to DISCOM inspection and approval, which typically requires 30 to 45 days.",
+  "Solar PV modules are covered by a 12-year manufacturer product warranty and a 30-year linear performance warranty.",
+  "The grid-tie inverter carries a 10-year manufacturer warranty from the date of commissioning.",
+  "The mounting structure is warranted for 5 years against structural integrity and galvanisation defects.",
+  "The scope of supply includes one (1) year of complimentary maintenance support, comprising four (4) scheduled preventive maintenance visits from the date of commissioning.",
+  "The Company shall provide liaison assistance for feasibility approval and net-metering registration. All statutory timelines remain subject to clearances from the concerned DISCOM and electrical authorities.",
+  "Disbursement of the PM Surya Ghar Central Financial Assistance is administered through the National Portal and is typically credited within 60 to 90 days of net-meter commissioning.",
+  "Applicable Goods and Services Tax is levied in accordance with prevailing Government of India notifications and is included in the quoted value.",
+  "Any civil, electrical, or structural work beyond the agreed scope of supply shall be treated as a separately chargeable additional item."
+]$json$::jsonb, TRUE, 1);
 
 -- 19d. Category default margins
 INSERT INTO category_margins (org_id, category, default_margin_pct) VALUES

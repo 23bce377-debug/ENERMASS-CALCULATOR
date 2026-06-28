@@ -31,7 +31,9 @@ export const GET = withLicensedApiRoute(
       );
     }
     const { bomLimit } = parseResult.data;
-    const cacheKey = `erp:master:rules:global:bomLimit_${bomLimit}`;
+    // Bump the version suffix whenever the payload shape changes (v2 adds the
+    // state-driven pipeline datasets) so stale cached payloads are not served.
+    const cacheKey = `erp:master:rules:global:v2:bomLimit_${bomLimit}`;
 
     try {
       const data = await getOrSetCache(
@@ -49,7 +51,10 @@ export const GET = withLicensedApiRoute(
             }
           };
 
-          const [stateRulesRes, slabsRes, schemesRes, systemsRes, taxHsnRes, taxGstRatesRes, bomItemsRes] =
+          const [
+            stateRulesRes, slabsRes, schemesRes, systemsRes, taxHsnRes, taxGstRatesRes, bomItemsRes,
+            schemeOverridesRes, systemStateAvailRes, stateTermsRes,
+          ] =
             await Promise.all([
               safeQuery(
                 supabase
@@ -81,6 +86,24 @@ export const GET = withLicensedApiRoute(
               safeQuery(
                 supabase.from('bom_template_items').select('*').limit(bomLimit)
               ),
+              // State-driven pipeline datasets
+              safeQuery(
+                (supabase as any)
+                  .from('state_scheme_overrides')
+                  .select('id, scheme_id, state_id, max_absolute_override, additional_state_subsidy')
+                  .eq('is_active', true)
+              ),
+              safeQuery(
+                (supabase as any)
+                  .from('system_state_availability')
+                  .select('system_id, state_id')
+              ),
+              safeQuery(
+                (supabase as any)
+                  .from('state_terms_templates')
+                  .select('id, state_id, clauses, is_active, version')
+                  .eq('is_active', true)
+              ),
             ]);
 
           return {
@@ -91,6 +114,9 @@ export const GET = withLicensedApiRoute(
             taxHsnCodes: (taxHsnRes as any)?.data ?? [],
             taxGstRates: (taxGstRatesRes as any)?.data ?? [],
             bomItems: bomItemsRes.data ?? [],
+            schemeOverrides: schemeOverridesRes.data ?? [],
+            systemStateAvailability: systemStateAvailRes.data ?? [],
+            stateTermsTemplates: stateTermsRes.data ?? [],
           };
         },
         600 // 10 minutes

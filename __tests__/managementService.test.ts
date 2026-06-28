@@ -100,6 +100,7 @@ function mkDevice(overrides: Partial<UserDevice> = {}): UserDevice {
     last_seen_at: '2026-06-01T00:00:00.000Z',
     revoked_at: null,
     public_key: null,
+    fingerprint_hash: null,
     ...overrides,
   };
 }

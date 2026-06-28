@@ -54,6 +54,45 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
     console.warn(`Failed to fetch organisation details for ${orgId}. Using default info.`);
   }
 
+  // 3b. Resolve state-driven DISCOM name + T&C master template (data-driven).
+  //     Fallback chain for terms: quote.terms_json → state template → global default.
+  let stateDiscomName: string | null = null;
+  let stateTermsTemplate: string[] | null = null;
+  let globalTermsTemplate: string[] | null = null;
+  try {
+    if (quote.state_name) {
+      const { data: stateRow } = await supabase
+        .from('state_rules')
+        .select('id, discom_name')
+        .eq('state_name', quote.state_name)
+        .maybeSingle();
+      const sr = stateRow as any;
+      stateDiscomName = sr?.discom_name ?? null;
+      if (sr?.id) {
+        const { data: tpl } = await (supabase as any)
+          .from('state_terms_templates')
+          .select('clauses')
+          .eq('state_id', sr.id)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (tpl?.clauses && Array.isArray(tpl.clauses) && tpl.clauses.length > 0) {
+          stateTermsTemplate = tpl.clauses as string[];
+        }
+      }
+    }
+    const { data: globalTpl } = await (supabase as any)
+      .from('state_terms_templates')
+      .select('clauses')
+      .is('state_id', null)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (globalTpl?.clauses && Array.isArray(globalTpl.clauses) && globalTpl.clauses.length > 0) {
+      globalTermsTemplate = globalTpl.clauses as string[];
+    }
+  } catch (e) {
+    console.warn('[buildViewModel] State T&C/DISCOM lookup failed; using defaults.', e);
+  }
+
   // 4. Resolve date values
   const dateStr = quote.created_at || new Date().toISOString();
   const proposalDateObj = new Date(dateStr);
@@ -345,20 +384,25 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
     calculatedPaybackYears = netInvestment / annualSavings;
   }
 
-  // Default terms to fall back to if database terms_json is empty
+  // Final T&C fallback when neither the quote snapshot nor any DB template exists.
+  // State-agnostic and professional; the authoritative source is state_terms_templates.
   const defaultTerms = [
-    "This proposal is valid for the period stated. Post expiry, all prices subject to revision.",
-    "Payment milestones: 50% advance with order booking, 40% before material dispatch, 10% on successful grid commissioning.",
-    "Installation completes within 15 working days from advance receipt. Commissioning subject to DISCOM clearance (approx 30-45 days).",
-    "Solar PV Modules carry a 12-year product warranty and a 30-year linear performance warranty.",
-    "Grid Inverter carries a 10-year manufacturer warranty from commissioning.",
-    "Mounting Structure carries a 5-year structural integrity and galvanization warranty.",
-    "Includes 1-year free AMC support (4 preventive maintenance visits) from date of commissioning.",
-    "Liaison support provided for Feasibility application and Net Metering registration. Timelines are subject to DISCOM authority clearances.",
-    "PM Surya Ghar subsidy release timeline is typically 60-90 days from the date of net meter commissioning.",
-    "Blended GST is calculated at 8.9% (70% equipment value at 5% and 30% construction service value at 18%) per Ministry notifications.",
-    "Kerala State Specific: System installation conforms to KSEB Net Metering Regulations 2014, ANERT/KSEBL empanelled guidelines, and requires approval from the Electrical Inspectorate."
+    "This proposal is valid for the period stated herein. Upon expiry, all quoted prices are subject to revision at the Company's sole discretion.",
+    "Payment schedule: 50% advance against a confirmed purchase order, 40% prior to dispatch of material, and the balance 10% upon successful grid commissioning.",
+    "Installation shall be completed within 15 working days of receipt of the advance payment. Final commissioning remains subject to DISCOM inspection and approval, which typically requires 30 to 45 days.",
+    "Solar PV modules are covered by a 12-year manufacturer product warranty and a 30-year linear performance warranty.",
+    "The grid-tie inverter carries a 10-year manufacturer warranty from the date of commissioning.",
+    "The mounting structure is warranted for 5 years against structural integrity and galvanisation defects.",
+    "The scope of supply includes one (1) year of complimentary maintenance support, comprising four (4) scheduled preventive maintenance visits from the date of commissioning.",
+    "The Company shall provide liaison assistance for feasibility approval and net-metering registration. All statutory timelines remain subject to clearances from the concerned DISCOM and electrical authorities.",
+    "Disbursement of the PM Surya Ghar Central Financial Assistance is administered through the National Portal and is typically credited within 60 to 90 days of net-meter commissioning.",
+    "Applicable Goods and Services Tax is levied in accordance with prevailing Government of India notifications and is included in the quoted value."
   ];
+
+  // Resolve the effective T&C: quote snapshot → state template → global default → fallback.
+  const effectiveTerms = (quote.terms_json && quote.terms_json.length > 0)
+    ? quote.terms_json
+    : (stateTermsTemplate ?? globalTermsTemplate ?? defaultTerms);
 
   return {
     company: {
@@ -386,7 +430,7 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
       pin: quote.pincode || '—',
       billingAddress: `${quote.address_line1 || ''} ${quote.address_line2 || ''}`.trim() || '—',
       siteAddress: `${quote.address_line1 || ''} ${quote.address_line2 || ''}`.trim() || '—',
-      discomName: quote.state_name === 'Kerala' ? 'KSEB (Kerala State Electricity Board)' : 'Local DISCOM Grid',
+      discomName: stateDiscomName || (quote.state_name ? `${quote.state_name} State DISCOM` : 'Local DISCOM Grid'),
       meterNo: quote.meter_number || '—',
       sanctionedLoad: quote.sanctioned_load_kw || '—',
       monthlyBill: quote.monthly_bill_inr || 0,
@@ -428,7 +472,7 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
       delivery: netInvestment * 0.40,
       commissioning: netInvestment * 0.10
     },
-    terms: quote.terms_json && quote.terms_json.length > 0 ? quote.terms_json : defaultTerms,
+    terms: effectiveTerms,
     equipmentSpecs,
     bomGroups,
     cashFlow,

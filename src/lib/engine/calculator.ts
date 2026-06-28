@@ -171,6 +171,14 @@ export interface CalcInput {
   maxAbsoluteSubsidy?: number;
   // FIX CALC-02: Additional state subsidy from state_scheme_overrides
   additionalStateSubsidy?: number;
+  /**
+   * Source of truth for the state-driven pipeline: when true the subsidy is
+   * auto-applied from the selected state (via the server-computed rpcSubsidyAmount,
+   * with a local slab fallback for offline). When false, no subsidy is applied.
+   * Falls back to deriving from selectedScheme when undefined (legacy callers).
+   */
+  applySubsidy?: boolean;
+  /** @deprecated Retained for backward compatibility; superseded by applySubsidy + state. */
   selectedScheme?: 'none' | 'pm_suryaghar' | 'state';
   dbLoaded?: boolean;
 }
@@ -1476,9 +1484,12 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
   // ── Step 12: Final customer price ──
   const finalCustomerPrice = roundToINR(Math.max(0, mrpInclGST - discountAmount + additionalCostTotal));
 
-  // ── Step 13: Subsidy ──
-  // FIX: selectedScheme is the source of truth. 'none' always means zero subsidy.
-  // rpcSubsidyAmount is only used as a FALLBACK within the pm_suryaghar path.
+  // ── Step 13: Subsidy (state-driven) ──
+  // The selected state is the single source of truth. `applySubsidy` (a simple
+  // on/off toggle for ineligible/commercial customers) decides whether to apply it;
+  // the actual amount is computed server-side by the calculate_state_subsidy RPC
+  // (PM Surya Ghar central assistance + any per-state top-up), surfaced as
+  // rpcSubsidyAmount. A local slab computation is used as an offline fallback.
   let subsidyResult: SubsidyResult = {
     amount: 0,
     breakdown: 'No subsidy applied',
@@ -1486,26 +1497,32 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
     schemeNote: ''
   };
 
-  const isSubsidyEnabled = input.selectedScheme && input.selectedScheme !== 'none';
+  // Source of truth: applySubsidy. Legacy callers that only set selectedScheme
+  // continue to work (selectedScheme !== 'none' ⇒ apply).
+  const isSubsidyEnabled = input.applySubsidy !== undefined
+    ? input.applySubsidy
+    : (input.selectedScheme !== undefined && input.selectedScheme !== 'none');
 
   if (isSubsidyEnabled) {
     const panelCapKW = capacityKW;
+    const aggregateInverterKW = input.totalInverterCapacityKW ?? input.inverterCapacityKW ?? panelCapKW;
+    const eligibleKw = Math.min(panelCapKW, aggregateInverterKW);
 
-    if (input.selectedScheme === 'pm_suryaghar') {
-      const aggregateInverterKW = input.totalInverterCapacityKW ?? input.inverterCapacityKW ?? panelCapKW;
-      const eligibleKw = Math.min(panelCapKW, aggregateInverterKW);
-      if (input.rpcSubsidyAmount !== undefined && input.rpcSubsidyAmount > 0) {
-        subsidyResult = {
-          amount: input.rpcSubsidyAmount,
-          breakdown: `PM Surya Ghar — ₹${input.rpcSubsidyAmount.toLocaleString('en-IN')} for ${panelCapKW.toFixed(2)} kW system (server-computed)`,
-          isEligible: true,
-          schemeNote: 'PM Surya Ghar Muft Bijli Yojana · MNRE 2024 · DISCOM approval required',
-        };
-      } else {
-        subsidyResult = calculatePMSuryaGharSubsidy(eligibleKw, input.projectType);
-      }
-    } else if (input.selectedScheme === 'state') {
-      const aggregateInverterKW = input.totalInverterCapacityKW ?? input.inverterCapacityKW;
+    if (input.rpcSubsidyAmount !== undefined && input.rpcSubsidyAmount !== null) {
+      // Server-computed, state-driven amount (authoritative).
+      const amt = input.rpcSubsidyAmount;
+      subsidyResult = {
+        amount: amt,
+        breakdown: amt > 0
+          ? `${input.state} subsidy — ₹${amt.toLocaleString('en-IN')} for ${panelCapKW.toFixed(2)} kW system (server-computed)`
+          : `${input.state} — No subsidy applicable for this configuration`,
+        isEligible: amt > 0,
+        schemeNote: amt > 0
+          ? `Auto-applied from ${input.state} · PM Surya Ghar + state policy · DISCOM approval required`
+          : '',
+      };
+    } else {
+      // Offline / fallback — compute locally from the state's slab config.
       const computedSubsidy = getSubsidyAmount(
         panelCapKW,
         aggregateInverterKW,
@@ -1520,10 +1537,10 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
       subsidyResult = {
         amount: computedSubsidy,
         breakdown: computedSubsidy > 0
-          ? `${input.state} State Scheme — ₹${computedSubsidy.toLocaleString('en-IN')} for ${panelCapKW.toFixed(2)} kW`
-          : `${input.state} — No state subsidy applicable for this configuration`,
+          ? `${input.state} subsidy — ₹${computedSubsidy.toLocaleString('en-IN')} for ${panelCapKW.toFixed(2)} kW`
+          : `${input.state} — No subsidy applicable for this configuration`,
         isEligible: computedSubsidy > 0,
-        schemeNote: `${input.state} State Subsidy Scheme`,
+        schemeNote: computedSubsidy > 0 ? `Auto-applied from ${input.state} state policy` : '',
       };
     }
   }
@@ -1578,7 +1595,12 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
     electricityInflationRate: input.electricityInflationRate,
     systemLifetimeYears: 25
   });
-  const paybackYears = roundTo5(financialProjections.paybackYears);
+  // Preserve a non-finite payback (system never recovers its cost) as Infinity.
+  // roundTo5/sanitizeNumber would otherwise coerce it to 0, which the UI reads as
+  // an instant payback. Downstream consumers explicitly check `=== Infinity`.
+  const paybackYears = isFinite(financialProjections.paybackYears)
+    ? roundTo5(financialProjections.paybackYears)
+    : Infinity;
   const lcoe = roundToINR(financialProjections.lcoe);
   const lifetimeSavingsINR = roundToINR(financialProjections.lifetimeSavingsINR);
   const npv = roundToINR(financialProjections.npv);

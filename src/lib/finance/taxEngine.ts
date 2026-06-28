@@ -31,13 +31,14 @@ export async function getGstRateForHsnSac(orgId: string, hsnSacCode: string, dat
     throw new Error(`GST Configuration missing: No active HSN/SAC code found for '${hsnSacCode}'. Do not guess GST rates. Please configure the tax master.`);
   }
 
-  // Find active rate for the date
+  // Find the active rate for the date: of all rates effective on/before the target
+  // date, pick the MOST RECENT one. (find() alone returns whichever row happens to
+  // be first in the array, which can be an older, superseded rate.)
   const rates: any[] = Array.isArray(data.tax_gst_rates) ? data.tax_gst_rates : [data.tax_gst_rates];
-  const activeRate = rates.find(r => {
-    const from = new Date(r.effective_from);
-    const target = new Date(date);
-    return target >= from; // Removed effective_to since it doesn't exist in schema
-  });
+  const target = new Date(date);
+  const activeRate = rates
+    .filter(r => r && r.effective_from && target >= new Date(r.effective_from))
+    .sort((a, b) => new Date(b.effective_from).getTime() - new Date(a.effective_from).getTime())[0];
 
   if (!activeRate) {
     throw new Error(`GST Configuration missing: No active rate found for HSN/SAC '${hsnSacCode}' on date ${date}.`);
