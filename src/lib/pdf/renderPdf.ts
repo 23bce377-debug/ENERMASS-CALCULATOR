@@ -10,14 +10,17 @@ async function getBrowser(): Promise<Browser> {
   if (isServerless) {
     console.log('[renderPdf] Launching serverless Chromium (production)...');
     try {
+      console.log('[renderPdf] Step 1: Importing @sparticuz/chromium-min...');
       const chromium = (await import('@sparticuz/chromium-min')).default as any;
+      console.log('[renderPdf] Step 2: Importing puppeteer-core...');
       const puppeteerCore = (await import('puppeteer-core')).default;
 
       // chromium-min downloads the binary at runtime from this URL
       // instead of requiring bundled binaries in node_modules
-      const executablePath = await chromium.executablePath(
-        'https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.tar'
-      );
+      const remoteUrl = 'https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.tar';
+      console.log('[renderPdf] Step 3: Downloading chromium binary from:', remoteUrl);
+      const executablePath = await chromium.executablePath(remoteUrl);
+      console.log('[renderPdf] Step 4: Got executablePath:', executablePath);
 
       browserPromise = puppeteerCore.launch({
         args: [
@@ -31,8 +34,10 @@ async function getBrowser(): Promise<Browser> {
         executablePath,
         headless: true
       }) as unknown as Promise<Browser>;
-    } catch (err) {
-      console.error('[renderPdf] Failed to launch serverless Chromium:', err);
+      console.log('[renderPdf] Step 5: Browser launched successfully');
+    } catch (err: any) {
+      console.error('[renderPdf] Failed to launch serverless Chromium:', err?.message || err);
+      console.error('[renderPdf] Error stack:', err?.stack);
       throw err;
     }
   } else {
