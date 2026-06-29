@@ -54,7 +54,7 @@ describe('Master API route', () => {
   it('rejects unauthenticated direct API requests before route logic runs', async () => {
     routeAuth.shouldReject = true;
 
-    const res = await GET(new Request('http://localhost:3000/api/master'), { params: {} });
+    const res = await GET(new Request('http://localhost:3000/api/master'), { params: Promise.resolve({}) });
 
     expect(res.status).toBe(401);
     await expect(res.json()).resolves.toMatchObject({
@@ -65,7 +65,7 @@ describe('Master API route', () => {
   });
 
   it('accepts licensed requests and scopes getCachedMasterData to the session org', async () => {
-    const res = await GET(new Request('http://localhost:3000/api/master'), { params: {} });
+    const res = await GET(new Request('http://localhost:3000/api/master'), { params: Promise.resolve({}) });
 
     expect(res.status).toBe(200);
     expect(getCachedMasterData).toHaveBeenCalledWith('org-abc-123');
@@ -76,7 +76,7 @@ describe('Master API route', () => {
   });
 
   it('ignores any client-supplied org_id query parameter', async () => {
-    const res = await GET(new Request('http://localhost:3000/api/master?org_id=attacker-org'), { params: {} });
+    const res = await GET(new Request('http://localhost:3000/api/master?org_id=attacker-org'), { params: Promise.resolve({}) });
 
     expect(res.status).toBe(200);
     expect(getCachedMasterData).toHaveBeenCalledWith('org-abc-123');
@@ -84,7 +84,7 @@ describe('Master API route', () => {
   });
 
   it('ignores any client-supplied orgId query parameter', async () => {
-    const res = await GET(new Request('http://localhost:3000/api/master?orgId=attacker-org'), { params: {} });
+    const res = await GET(new Request('http://localhost:3000/api/master?orgId=attacker-org'), { params: Promise.resolve({}) });
 
     expect(res.status).toBe(200);
     expect(getCachedMasterData).toHaveBeenCalledWith('org-abc-123');

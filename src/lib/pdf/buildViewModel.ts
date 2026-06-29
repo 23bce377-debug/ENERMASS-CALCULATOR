@@ -103,6 +103,66 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
   // 5. Build BOM Groups & Equipment Specifications using a Summarizer
   const capacityKW = Number(quote.system_capacity_kw || 0) || 3;
   const panelQty = Number(quote.panel_qty || 0) || Math.ceil(capacityKW * 1000 / 610);
+  const inverterQty = Number(quote.inverter_qty || 0) || 1;
+
+  const looksLikeId = (value: unknown) =>
+    typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value);
+
+  const appendQty = (label: string, qty: number, unit: string) => {
+    if (!label || qty <= 0) return label;
+    return /\b\d+\s*(nos|no|pcs|pieces|lot|lots)\b/i.test(label)
+      ? label
+      : `${label} (${qty} ${unit})`;
+  };
+
+  const formatResolvedEquipment = (row: any, metaKey: 'wattage_w' | 'capacity_kw' | 'capacity_kwh') => {
+    if (!row) return null;
+    const name = [row.brand, row.model].filter(Boolean).join(' ').trim();
+    const metaValue = row[metaKey];
+    const meta =
+      metaKey === 'wattage_w' && metaValue ? `${metaValue} Wp` :
+      metaKey === 'capacity_kw' && metaValue ? `${metaValue} kW` :
+      metaKey === 'capacity_kwh' && metaValue ? `${metaValue} kWh` :
+      null;
+
+    return [name, meta ? `(${meta})` : null].filter(Boolean).join(' ');
+  };
+
+  const resolveEquipmentLabel = async (
+    tableName: 'eq_panels' | 'eq_inverters' | 'eq_batteries',
+    displayValue: string | null,
+    fallbackId: string | null,
+    metaKey: 'wattage_w' | 'capacity_kw' | 'capacity_kwh',
+  ) => {
+    if (displayValue && !looksLikeId(displayValue)) return displayValue;
+
+    const id = looksLikeId(displayValue) ? displayValue : fallbackId;
+    if (!id) return displayValue || null;
+
+    const { data } = await (supabase as any)
+      .from(tableName)
+      .select(`brand, model, ${metaKey}`)
+      .eq('id', id)
+      .maybeSingle();
+
+    return formatResolvedEquipment(data, metaKey) || displayValue || id;
+  };
+
+  const equipmentSnapshot = quote.equipment_json && typeof quote.equipment_json === 'object'
+    ? quote.equipment_json
+    : {};
+  const panelDisplayName = await resolveEquipmentLabel(
+    'eq_panels',
+    quote.panel_brand_model,
+    equipmentSnapshot.panelBrandId ?? null,
+    'wattage_w',
+  );
+  const inverterDisplayName = await resolveEquipmentLabel(
+    'eq_inverters',
+    quote.inverter_brand_model,
+    equipmentSnapshot.inverterBrandId ?? null,
+    'capacity_kw',
+  );
 
   // Helper to find a dynamic item in dbItems matching standard terms
   const findDbItem = (keywords: string[]) => {
@@ -151,12 +211,12 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
   const subsidyDb = findDbItem(['subsidy', 'cfa', 'portal registration']);
 
   // Equipment Specs for Page 4
-  const panelBrand = quote.panel_brand_model 
-    ? `${quote.panel_brand_model}, 610 Wp × ${panelQty} Nos` 
-    : `Adani / Waaree / V Guard / Panasonic, 610 Wp × ${panelQty} Nos`;
+  const panelBrand = panelDisplayName
+    ? appendQty(panelDisplayName, panelQty, 'Nos')
+    : `Adani / Waaree / V Guard / Panasonic, 610 Wp x ${panelQty} Nos`;
   
-  const inverterBrand = quote.inverter_brand_model 
-    ? `${quote.inverter_brand_model}` 
+  const inverterBrand = inverterDisplayName
+    ? appendQty(inverterDisplayName, inverterQty, 'Lot')
     : `Deye-5 — 5Kw`;
 
   const structureBrand = quote.structure_used || 'Module Mounting Structure (MMS) Make-Appolo GI';
@@ -451,8 +511,8 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
       totalProjectCost: quote.mrp_incl_gst,
       beneficiaryContribution: netInvestment,
       subsidyAmount: quote.subsidy_amount,
-      panelsUsed: quote.panel_brand_model ? `${quote.panel_brand_model} (${quote.panel_qty || 0} Nos)` : 'Standard High-Efficiency Tier-1 Panels',
-      invertersUsed: quote.inverter_brand_model ? `${quote.inverter_brand_model} (${quote.inverter_qty || 0} Nos)` : 'On-Grid String Inverter',
+      panelsUsed: panelDisplayName ? appendQty(panelDisplayName, panelQty, 'Nos') : 'Standard High-Efficiency Tier-1 Panels',
+      invertersUsed: inverterDisplayName ? appendQty(inverterDisplayName, inverterQty, 'Lot') : 'On-Grid String Inverter',
       structureUsed: 'Galvanized Iron (GI) Structure designed for 150 km/h wind loads'
     },
     salesContact: {

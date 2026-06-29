@@ -52,7 +52,7 @@ describe('Audit & Security Hardening', () => {
       const wrapped = withLicensedApiRoute(handler, { feature: 'test' });
       
       const req = new Request('http://localhost/api/test?orgId=org-2');
-      const response = await wrapped(req, {});
+      const response = await wrapped(req, { params: Promise.resolve({}) });
       
       expect(response.status).toBe(403);
       expect(handler).not.toHaveBeenCalled();
@@ -67,7 +67,7 @@ describe('Audit & Security Hardening', () => {
       const wrapped = withLicensedApiRoute(handler, { feature: 'test' });
       
       const req = new Request('http://localhost/api/test?orgId=org-1');
-      const response = await wrapped(req, {});
+      const response = await wrapped(req, { params: Promise.resolve({}) });
       
       expect(response.status).toBe(200);
       expect(handler).toHaveBeenCalled();

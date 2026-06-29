@@ -15,9 +15,12 @@ import {
   Zap,
   Building2,
   Shield,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { useTheme } from '@/lib/hooks/useTheme';
 
 // --- Nav Config -------------------------------------------------------------
 
@@ -33,7 +36,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/systems',     label: 'Systems',     icon: <Cpu         size={18} /> },
   { href: '/quotes',      label: 'Quotes',      icon: <FileText    size={18} />, mobileVisible: true  },
   { href: '/master',      label: 'Price Masters', icon: <Building2   size={18} />, mobileVisible: true  },
-
   { href: '/settings',    label: 'Settings',    icon: <Settings    size={18} />, mobileVisible: true  },
   { href: '/profile',     label: 'Profile',     icon: <User        size={18} /> },
 ];
@@ -335,6 +337,8 @@ interface HeaderProps {
 }
 
 export function Header({ contextLabel = 'System', contextValue, quoteCount = 0 }: HeaderProps) {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <header className={[
       'sticky top-0 z-30 h-14 flex items-center justify-between',
@@ -358,6 +362,18 @@ export function Header({ contextLabel = 'System', contextValue, quoteCount = 0 }
 
       {/* Right */}
       <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-text-muted hover:text-text-primary hover:bg-surface-hover active:scale-95 transition-all"
+          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+        >
+          {theme === 'light' ? <Moon size={13} /> : <Sun size={13} />}
+          <span className="hidden sm:inline text-xs font-medium">
+            {theme === 'light' ? 'Dark' : 'Light'}
+          </span>
+        </button>
         <Link
           href="/quotes"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-dim border border-accent/20 cursor-pointer hover:bg-accent/12 active:scale-95 transition-all"

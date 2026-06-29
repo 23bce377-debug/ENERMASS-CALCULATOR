@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import { formatINR } from '@/lib/engine/calculator';
 import type { Quote } from '@/lib/types/quote';
 import { useSettings } from '@/lib/hooks/useSettings';
-import { useCalculatorAutoSave } from '@/lib/hooks/useCalculatorAutoSave';
+import { pickCalculatorDraftState, useCalculatorAutoSave } from '@/lib/hooks/useCalculatorAutoSave';
 import { supabase } from '@/lib/supabase/client';
 import { type SystemConfig, validateSystemConfig } from '@/lib/validation/systemValidation';
 import { EquipmentSelector } from '@/components/calculator/EquipmentSelector';
@@ -221,7 +221,7 @@ export default function CalculatorClient({
         setInitialDraftId(data.id);
         setRestoredDate(new Date(data.updated_at));
         const store = useCalculatorStore as any;
-        store.setState(data.state_json);
+        store.setState(pickCalculatorDraftState(data.state_json));
         store.getState().recalculate();
       }
       setDraftLoaded(true);

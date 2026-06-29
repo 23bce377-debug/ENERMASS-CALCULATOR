@@ -19,6 +19,9 @@ export interface SolarSystem {
   capacityKW: number;
   panelWattage: number;
   panelQty: number;
+  stateId?: string | null;
+  stateName?: string | null;
+  stateCode?: string | null;
   targetMarginPct: number;
   items: BomItem[];
   defaultEquipment?: {

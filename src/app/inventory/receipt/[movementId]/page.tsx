@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { use, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { confirmSiteReceipt } from '@/lib/inventory/transitions';
 import { Truck, CheckCircle, Package, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function MobileReceiptConfirmation({ params }: { params: { movementId: string } }) {
+export default function MobileReceiptConfirmation({ params }: { params: Promise<{ movementId: string }> }) {
+  const { movementId } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [movement, setMovement] = useState<any>(null);
@@ -26,7 +27,7 @@ export default function MobileReceiptConfirmation({ params }: { params: { moveme
         const { data: mv, error: mvErr } = await supabase
           .from('inventory_movements')
           .select('*')
-          .eq('id', params.movementId)
+          .eq('id', movementId)
           .single();
 
         if (mvErr) throw mvErr;
@@ -50,7 +51,7 @@ export default function MobileReceiptConfirmation({ params }: { params: { moveme
       }
     }
     fetchData();
-  }, [params.movementId]);
+  }, [movementId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +61,7 @@ export default function MobileReceiptConfirmation({ params }: { params: { moveme
     setError(null);
     try {
       await confirmSiteReceipt(
-        params.movementId,
+        movementId,
         receivedBy.trim(),
         parseFloat(actualQty),
         notes.trim()

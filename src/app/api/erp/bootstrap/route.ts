@@ -22,7 +22,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
 
   try {
     // Include limits in the cache key to prevent collision/poisoning (P0-7)
-    const cacheKey = `erp:bootstrap:${orgId}:bomLimit_${bomLimit}:invLimit_${invLimit}`;
+    const cacheKey = `erp:bootstrap:${orgId}:v2:bomLimit_${bomLimit}:invLimit_${invLimit}`;
     const data = await getOrSetCache(cacheKey, async () => {
       const { createClient } = await import('@/lib/supabase/server');
       const supabase = await createClient();
@@ -57,7 +57,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
       ]);
 
       // Chunk 3: Rules, Schemes, Vendors, Systems, and GST Master
-      const [stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes, taxHsnRes, taxGstRatesRes] = await Promise.all([
+      const [stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes, taxHsnRes, taxGstRatesRes, systemStateAvailRes, stateTermsRes] = await Promise.all([
         safeQuery(supabase.from('state_rules').select('*').eq('is_active', true)),
         safeQuery(supabase.from('scheme_slabs').select('*')),
         safeQuery(supabase.from('calculation_schemes').select('*').eq('is_active', true)),
@@ -65,7 +65,9 @@ export const GET = withLicensedApiRoute(async (request, context) => {
         safeQuery(supabase.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true })),
         safeQuery(supabase.from('systems').select('*, system_items(*)').eq('is_active', true).order('capacity_kw', { ascending: true })),
         safeQuery((supabase as any).from('tax_hsn_sac').select('*').eq('is_active', true)),
-        safeQuery((supabase as any).from('tax_gst_rates').select('*'))
+        safeQuery((supabase as any).from('tax_gst_rates').select('*')),
+        safeQuery((supabase as any).from('system_state_availability').select('system_id, state_id')),
+        safeQuery((supabase as any).from('state_terms_templates').select('id, state_id, clauses, is_active, version').eq('is_active', true))
       ]);
 
       // Chunk 4: Heavy BOM & Structural Templates
@@ -106,6 +108,8 @@ export const GET = withLicensedApiRoute(async (request, context) => {
         bomItems: bomItemsRes.data || [],
         commDevices: commDevicesRes.data || [],
         systems: systemsRes.data || [],
+        systemStateAvailability: (systemStateAvailRes as any)?.data || [],
+        stateTermsTemplates: (stateTermsRes as any)?.data || [],
         weightLookups: weightLookupsRes.data || [],
         stateRules: stateRulesRes.data || [],
         slabs: slabsRes.data || [],

@@ -7,6 +7,17 @@ import { reviseQuote } from '../quotes/reviseQuote'
 
 // Map a DB quote row to the frontend Quote type
 function mapDbQuoteToQuote(q: any): Quote {
+  const looksLikeId = (value: unknown) =>
+    typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value)
+
+  const equipment = q.equipment_json && typeof q.equipment_json === 'object'
+    ? q.equipment_json
+    : {
+        panelBrandId: looksLikeId(q.panel_brand_model) ? q.panel_brand_model : undefined,
+        inverterBrandId: looksLikeId(q.inverter_brand_model) ? q.inverter_brand_model : undefined,
+        batteryBrandId: looksLikeId(q.battery_brand_model) ? q.battery_brand_model : undefined,
+      }
+
   const overrides: any = {}
   ;(q.quote_items || []).forEach((item: any) => {
     if (item.is_qty_overridden || item.is_rate_overridden || item.is_gst_overridden) {
@@ -65,6 +76,7 @@ function mapDbQuoteToQuote(q: any): Quote {
   }
 
   return {
+    dbId: q.id,
     quoteId: q.quote_number,
     date: q.date || q.created_at.split('T')[0],
     projectType: q.project_type,
@@ -101,11 +113,7 @@ function mapDbQuoteToQuote(q: any): Quote {
     panelQty: q.panel_qty ? Number(q.panel_qty) : undefined,
     panelBrandModel: q.panel_brand_model || undefined,
     selectedState: q.state_name || 'Gujarat',
-    equipment: {
-      panelBrandId: q.panel_brand_model || undefined,
-      inverterBrandId: q.inverter_brand_model || undefined,
-      batteryBrandId: q.battery_brand_model || undefined,
-    },
+    equipment,
     additionalCosts: (q.quote_additional_costs || []).map((c: any) => ({
       id: c.id,
       description: c.description,

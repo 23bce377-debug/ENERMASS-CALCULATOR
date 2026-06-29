@@ -7,12 +7,14 @@ import {
 } from './requireLicensedSession';
 import type { OrgMemberRole } from '@/lib/saas/types';
 
-export interface AuthenticatedOrgApiContext<RouteContext extends object = { params?: unknown }> {
+type EmptyRouteContext = { params: Promise<Record<string, never>> };
+
+export interface AuthenticatedOrgApiContext<RouteContext extends object = EmptyRouteContext> {
   session: AuthenticatedOrgSession;
   route: RouteContext;
 }
 
-export type AuthenticatedOrgApiHandler<RouteContext extends object = { params?: unknown }> = (
+export type AuthenticatedOrgApiHandler<RouteContext extends object = EmptyRouteContext> = (
   request: Request,
   context: AuthenticatedOrgApiContext<RouteContext>
 ) => Promise<Response> | Response;
@@ -40,7 +42,7 @@ export function jsonForLicensedError(error: unknown) {
   return NextResponse.json({ error: 'InternalServerError', message: 'Internal server error' }, { status: 500 });
 }
 
-export function withAuthenticatedOrgApiRoute<RouteContext extends object = { params?: unknown }>(
+export function withAuthenticatedOrgApiRoute<RouteContext extends object = EmptyRouteContext>(
   handler: AuthenticatedOrgApiHandler<RouteContext>,
   options: AuthenticatedOrgApiRouteOptions = {}
 ) {

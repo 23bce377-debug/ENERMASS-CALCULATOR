@@ -12,7 +12,8 @@ import {
   Tag,
   Percent,
   LayoutDashboard,
-  FileText
+  FileText,
+  TrendingUp
 } from 'lucide-react';
 
 interface TabItem {
@@ -26,6 +27,7 @@ const TABS: TabItem[] = [
   { href: '/master/inverters', label: 'Inverters', icon: <Cpu size={15} /> },
   { href: '/master/batteries', label: 'Batteries', icon: <Battery size={15} /> },
   { href: '/master/pricing', label: 'Pricing Master', icon: <Tag size={15} /> },
+  { href: '/master/rate-master', label: 'Rate Overrides', icon: <TrendingUp size={15} /> },
   { href: '/master/structures', label: 'Structures', icon: <Wrench size={15} /> },
   { href: '/master/accessories', label: 'Accessories', icon: <Package size={15} /> },
   { href: '/master/vendors', label: 'Vendors', icon: <Truck size={15} /> },

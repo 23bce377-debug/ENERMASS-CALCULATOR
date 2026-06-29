@@ -1,8 +1,47 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { saveDraftQuote } from '@/lib/actions/draftQuotes';
+import type { CalculatorState } from '@/lib/store/calculatorTypes';
 
 export type SyncState = 'saved' | 'saving' | 'error';
+
+const DRAFT_KEYS: Array<keyof CalculatorState> = [
+  'selectedSystemId',
+  'selectedState',
+  'projectType',
+  'selectedPanelId',
+  'panelMix',
+  'selectedInverterMix',
+  'selectedBatteryMix',
+  'selectedStructureId',
+  'structurePricingMode',
+  'solarMeterId',
+  'solarMeterQty',
+  'netMeterId',
+  'netMeterQty',
+  'lightningArresterId',
+  'lightningArresterQty',
+  'overrides',
+  'customItems',
+  'disabledItemIndices',
+  'additionalCosts',
+  'discountType',
+  'discountVal',
+  'targetMarginPct',
+  'gstOnOutputOverride',
+  'targetMRPInclGST',
+  'targetMRPPerWatt',
+  'itcEligible',
+  'activeVariantId',
+  'activeQuoteId',
+];
+
+export function pickCalculatorDraftState(snapshot: CalculatorState) {
+  return DRAFT_KEYS.reduce((draft, key) => {
+    (draft as any)[key] = snapshot[key];
+    return draft;
+  }, {} as Partial<CalculatorState>);
+}
 
 export function useCalculatorAutoSave(initialDraftId: string | null) {
   const state = useCalculatorStore();
@@ -16,9 +55,10 @@ export function useCalculatorAutoSave(initialDraftId: string | null) {
     setSyncState('saving');
     try {
       const snapshot = useCalculatorStore.getState();
+      const draftSnapshot = pickCalculatorDraftState(snapshot);
       const result = await saveDraftQuote({
         draftId: currentDraftId.current,
-        calculatorState: JSON.stringify(snapshot),
+        calculatorState: JSON.stringify(draftSnapshot),
         systemName: snapshot.dbSystems.find(s => s.id === snapshot.selectedSystemId)?.name ?? 'Untitled System',
         systemKw: snapshot.dbSystems.find(s => s.id === snapshot.selectedSystemId)?.capacityKW ?? 0,
         estimatedTotal: snapshot.calcResult?.finalCustomerPrice ?? 0,

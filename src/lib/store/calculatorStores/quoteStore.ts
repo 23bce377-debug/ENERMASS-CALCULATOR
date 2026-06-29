@@ -84,6 +84,62 @@ export const createQuoteSlice: StateCreator<
 
     const inverterMixEntries = normalizeMixEntries(state.selectedInverterMix).map(([inverterBrandId, qty]) => ({ inverterBrandId, qty }));
     const batteryMixEntries = normalizeMixEntries(state.selectedBatteryMix).map(([batteryBrandId, qty]) => ({ batteryBrandId, qty }));
+    const panelQty = panelMixEntries.reduce((sum, e) => sum + e.qty, 0);
+    const inverterQty = inverterMixEntries.reduce((sum, e) => sum + e.qty, 0);
+    const batteryQty = batteryMixEntries.reduce((sum, e) => sum + e.qty, 0);
+    const selectedPanelBrandId =
+      panelMixEntries.length === 1
+        ? panelMixEntries[0].panelBrandId
+        : state.selectedPanelId ?? undefined;
+
+    const getReadableEquipmentName = (
+      collection: Array<Record<string, any>>,
+      id: string | undefined,
+      metaKeys: string[] = [],
+    ) => {
+      if (!id) return undefined;
+      const item = collection.find((entry) => entry.id === id);
+      if (!item) return id;
+
+      const brandModel = [item.brand, item.model].filter(Boolean).join(' ').trim();
+      const baseName = brandModel || item.name || item.label || id;
+      const meta = metaKeys
+        .map((key) => {
+          const value = item[key];
+          if (value === undefined || value === null || value === '') return null;
+          if (key === 'wattage') return `${value} Wp`;
+          if (key === 'capacityKW') return `${value} kW`;
+          if (key === 'capacityKWh') return `${value} kWh`;
+          return value;
+        })
+        .filter((value) => value !== undefined && value !== null && value !== '')
+        .join(', ');
+
+      return meta ? `${baseName} (${meta})` : baseName;
+    };
+
+    const formatMixLabel = <T extends Record<string, any>>(
+      entries: T[],
+      idKey: keyof T,
+      collection: Array<Record<string, any>>,
+      metaKeys: string[] = [],
+      unit = 'Nos',
+    ) => {
+      if (entries.length === 0) return undefined;
+      return entries
+        .map((entry) => {
+          const label = getReadableEquipmentName(collection, String(entry[idKey]), metaKeys);
+          return entries.length > 1 ? `${label} - ${entry.qty} ${unit}` : label;
+        })
+        .filter(Boolean)
+        .join(', ');
+    };
+
+    const panelBrandModel =
+      formatMixLabel(panelMixEntries, 'panelBrandId', state.dbPanels, ['wattage']) ??
+      getReadableEquipmentName(state.dbPanels, selectedPanelBrandId, ['wattage']);
+    const inverterBrandModel = formatMixLabel(inverterMixEntries, 'inverterBrandId', state.dbInverters, ['capacityKW']);
+    const batteryBrandModel = formatMixLabel(batteryMixEntries, 'batteryBrandId', state.dbBatteries, ['capacityKWh']);
 
     // Check if updating existing quote
     let quoteIdToUse = state.activeQuoteId || generateQuoteId();
@@ -129,12 +185,11 @@ export const createQuoteSlice: StateCreator<
       systemName: system.name,
       category: system.category,
       selectedState: state.selectedState,
+      panelQty: panelQty || undefined,
+      panelBrandModel,
 
       equipment: {
-        panelBrandId:
-          panelMixEntries.length === 1
-            ? panelMixEntries[0].panelBrandId
-            : state.selectedPanelId ?? undefined,
+        panelBrandId: selectedPanelBrandId,
         panelMix: panelMixEntries.length > 0 ? panelMixEntries : undefined,
         inverterBrandId: inverterMixEntries.length === 1 ? inverterMixEntries[0].inverterBrandId : undefined,
         inverterMix: inverterMixEntries.length > 0 ? inverterMixEntries : undefined,
@@ -234,12 +289,13 @@ export const createQuoteSlice: StateCreator<
       system_name: quote.systemName,
       system_category: system.category.replace('-', '_'),
       system_capacity_kw: system.capacityKW,
-      panel_brand_model: quote.equipment.panelBrandId || null,
-      panel_qty: panelMixEntries.reduce((sum, e) => sum + e.qty, 0) || null,
-      inverter_brand_model: quote.equipment.inverterBrandId || null,
-      inverter_qty: inverterMixEntries.reduce((sum, e) => sum + e.qty, 0) || null,
-      battery_brand_model: quote.equipment.batteryBrandId || null,
-      battery_qty: batteryMixEntries.reduce((sum, e) => sum + e.qty, 0) || null,
+      equipment_json: quote.equipment,
+      panel_brand_model: panelBrandModel || null,
+      panel_qty: panelQty || null,
+      inverter_brand_model: inverterBrandModel || null,
+      inverter_qty: inverterQty || null,
+      battery_brand_model: batteryBrandModel || null,
+      battery_qty: batteryQty || null,
       discount_type: quote.discountType,
       discount_val: quote.discountVal,
       cost_before_gst: quote.calculations.costBeforeGST,
@@ -311,6 +367,7 @@ export const createQuoteSlice: StateCreator<
 
     // Insert new items
     const dbItems = quote.calculations.lines.map((line: any) => ({
+      org_id: orgId,
       quote_id: existingDbId,
       sort_order: line.index,
       section: (
@@ -385,30 +442,6 @@ export const createQuoteSlice: StateCreator<
       }
     } catch (err) {
       console.error('[quoteStore] Error uploading quote to storage bucket:', err);
-    }
-
-    // Trigger PDF generation on the backend
-    try {
-      console.log('[quoteStore] Triggering server-side PDF generation for:', quote.quoteId);
-      const response = await fetch('/api/quotes/generate-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          quoteId: quote.quoteId,
-          orgId,
-        }),
-      });
-
-      const resData = await response.json();
-      if (!response.ok || !resData.success) {
-        console.error('[quoteStore] Failed to generate PDF:', resData.error || resData.message || 'Unknown backend error');
-      } else {
-        console.log('[quoteStore] PDF generated successfully. Signed URL:', resData.signedUrl);
-      }
-    } catch (pdfErr) {
-      console.error('[quoteStore] Network error during PDF generation trigger:', pdfErr);
     }
 
     return quote;

@@ -9,6 +9,9 @@ export interface PresetRow {
   author_id: string | null;
   is_org_template: boolean;
   calculator_state: any;
+  state_id?: string | null;
+  state_name?: string | null;
+  state_code?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +47,11 @@ export const PresetORM: any = {
     }
 
     const results: any[] = [];
+    const { data: stateRows } = await supabase
+      .from('state_rules')
+      .select('id, state_name, state_code')
+      .eq('is_active', true);
+    const stateById = new Map((stateRows || []).map((state: any) => [state.id, state]));
 
     // 1. Fetch built-in systems if applicable
     if (!options.authorId && !options.isFavoriteFor) {
@@ -57,6 +65,7 @@ export const PresetORM: any = {
       const { data: sysData, error: sysError } = await sysQuery;
       if (!sysError && sysData) {
         sysData.forEach((row: any) => {
+          const state = row.state_id ? stateById.get(row.state_id) : null;
           results.push({
             id: row.id,
             name: row.name,
@@ -66,6 +75,9 @@ export const PresetORM: any = {
             author_id: null,
             is_org_template: !row.org_id,
             calculator_state: null,
+            state_id: row.state_id ?? null,
+            state_name: state?.state_name ?? null,
+            state_code: state?.state_code ?? null,
             created_at: row.created_at,
             updated_at: row.updated_at
           });
@@ -94,6 +106,9 @@ export const PresetORM: any = {
           author_id: row.user_id,
           is_org_template: false,
           calculator_state: row.config_json,
+          state_id: row.config_json?.stateId ?? null,
+          state_name: row.config_json?.selectedState ?? null,
+          state_code: null,
           created_at: row.created_at,
           updated_at: row.updated_at
         });
@@ -151,6 +166,9 @@ export const PresetORM: any = {
         author_id: null,
         is_org_template: !sysData.org_id,
         calculator_state: null,
+        state_id: (sysData as any).state_id ?? null,
+        state_name: null,
+        state_code: null,
         created_at: sysData.created_at,
         updated_at: sysData.updated_at
       };
@@ -164,6 +182,9 @@ export const PresetORM: any = {
       author_id: data.user_id,
       is_org_template: false,
       calculator_state: data.config_json,
+      state_id: data.config_json?.stateId ?? null,
+      state_name: data.config_json?.selectedState ?? null,
+      state_code: null,
       created_at: data.created_at,
       updated_at: data.updated_at
     };

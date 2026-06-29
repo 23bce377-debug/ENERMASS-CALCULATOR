@@ -98,8 +98,8 @@ export const getRulesMaster = unstable_cache(
       stateTermsTemplates: stateTermsTemplates?.data || [],
     };
   },
-  // Cache key bumped to v2 — the payload shape now includes the state-driven datasets.
-  ['master-rules-v2'],
+  // Cache key bumped to v3 — systems now include state_id for state-wise presets.
+  ['master-rules-v3'],
   { tags: ['master-data', 'rules'], revalidate: 600 }
 );
 

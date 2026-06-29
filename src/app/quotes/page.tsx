@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { formatINR } from '@/lib/engine/calculator';
@@ -632,7 +633,15 @@ export default function QuotesPage() {
                   const system = SYSTEMS.find((s) => s.id === quote.systemId) || settings.customSystems?.find((s) => s.id === quote.systemId);
                   return (
                     <tr key={quote.quoteId} className="border-b border-border/50 hover:bg-surface-hover/30 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-accent">{quote.quoteId}</td>
+                      <td className="px-4 py-3 font-mono text-xs">
+                        {quote.dbId ? (
+                          <Link href={`/quotes/${quote.dbId}`} className="text-accent hover:underline underline-offset-4">
+                            {quote.quoteId}
+                          </Link>
+                        ) : (
+                          <span className="text-accent">{quote.quoteId}</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-text-secondary">{quote.date}</td>
                       <td className="px-4 py-3 text-text-primary font-medium">{quote.customer.name}</td>
                       <td className="px-4 py-3 text-text-secondary hidden md:table-cell truncate max-w-40">{quote.systemName}</td>

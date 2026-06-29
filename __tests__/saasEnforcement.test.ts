@@ -223,7 +223,7 @@ describe('withLicensedApiRoute HTTP responses', () => {
         },
       }
     );
-    const response = await handler(makeRequest(validHeaders()), {});
+    const response = await handler(makeRequest(validHeaders()), { params: Promise.resolve({}) });
     expect(response.status).toBe(401);
     const body = await response.json();
     expect(body.error).toBe('AuthenticationRequiredError');
@@ -242,7 +242,7 @@ describe('withLicensedApiRoute HTTP responses', () => {
         },
       }
     );
-    const response = await handler(makeRequest(validHeaders()), {});
+    const response = await handler(makeRequest(validHeaders()), { params: Promise.resolve({}) });
     expect(response.status).toBeGreaterThanOrEqual(402);
     expect(response.status).toBeLessThanOrEqual(403);
   });
@@ -260,7 +260,7 @@ describe('withLicensedApiRoute HTTP responses', () => {
         },
       }
     );
-    const response = await handler(makeRequest(validHeaders()), {});
+    const response = await handler(makeRequest(validHeaders()), { params: Promise.resolve({}) });
     expect(response.status).toBe(403);
     const body = await response.json();
     expect(body.error).toBe('FeatureNotEnabledError');
@@ -279,7 +279,7 @@ describe('withLicensedApiRoute HTTP responses', () => {
         },
       }
     );
-    const response = await handler(makeRequest(validHeaders()), {});
+    const response = await handler(makeRequest(validHeaders()), { params: Promise.resolve({}) });
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.ok).toBe(true);
@@ -297,7 +297,7 @@ describe('withLicensedApiRoute HTTP responses', () => {
         },
       }
     );
-    const response = await handler(makeRequest(validHeaders()), {});
+    const response = await handler(makeRequest(validHeaders()), { params: Promise.resolve({}) });
     expect(response.status).toBe(403);
     const body = await response.json();
     expect(body.error).toBe('UnauthorizedRoleError');
@@ -315,7 +315,7 @@ describe('withLicensedApiRoute HTTP responses', () => {
         deps: happyDeps(),
       }
     );
-    const response = await handler(makeRequest(validHeaders()), {});
+    const response = await handler(makeRequest(validHeaders()), { params: Promise.resolve({}) });
     expect(response.status).toBe(200);
     expect(capturedOrgId).toBe(orgId);
   });

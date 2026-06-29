@@ -26,33 +26,33 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
   }, [category, search]);
 
   return (
-    <div className="absolute z-[200] mt-1 left-0 w-80 bg-[#111] border border-[#2a2a2a] rounded-lg shadow-xl">
-      <div className="p-2 border-b border-[#1e1e1e]">
+    <div className="absolute z-[200] mt-1 left-0 w-80 bg-surface border border-border rounded-lg shadow-xl">
+      <div className="p-2 border-b border-border">
         <input
           autoFocus
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder={`Search ${category}...`}
-          className="w-full bg-[#0d0d0d] text-white text-sm px-3 py-2
-                     rounded border border-[#2a2a2a] focus:border-[#f0a500]
-                     outline-none placeholder:text-[#444]"
+          className="w-full bg-background text-text-primary text-sm px-3 py-2
+                     rounded border border-border focus:border-accent
+                     outline-none placeholder:text-text-muted"
         />
       </div>
       <div className="max-h-56 overflow-y-auto">
         {loading ? (
-          <p className="text-xs text-[#444] text-center py-6">Loading...</p>
+          <p className="text-xs text-text-muted text-center py-6">Loading...</p>
         ) : items.map(item => (
           <button key={item.id}
             onClick={() => { onSelect(item, category); onClose(); }}
-            className="w-full text-left px-3 py-2.5 hover:bg-[#1a1a1a]
-                       transition-colors border-b border-[#1a1a1a] last:border-0 block">
-            <p className="text-sm text-white">{item.description}</p>
+            className="w-full text-left px-3 py-2.5 hover:bg-surface-hover
+                       transition-colors border-b border-border last:border-0 block">
+            <p className="text-sm text-text-primary">{item.description}</p>
             <div className="flex items-center justify-between mt-0.5">
-              <p className="text-[10px] text-[#555]">
+              <p className="text-[10px] text-text-muted">
                 {item.brand} {item.unit && ` per ${item.unit}`}
               </p>
               {item.defaultRate > 0 && (
-                <p className="text-[10px] text-[#888]">
+                <p className="text-[10px] text-text-secondary">
                   ₹{item.defaultRate?.toLocaleString('en-IN')}
                 </p>
               )}
@@ -60,7 +60,7 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
           </button>
         ))}
         {!loading && items.length === 0 && (
-          <p className="text-xs text-[#444] text-center py-6">No items found</p>
+          <p className="text-xs text-text-muted text-center py-6">No items found</p>
         )}
       </div>
     </div>

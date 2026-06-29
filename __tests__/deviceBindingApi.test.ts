@@ -122,7 +122,7 @@ describe('device binding API routes (simplified)', () => {
       device_name: 'Work laptop',
       browser: 'Chrome',
       os: 'Windows',
-    }), {});
+    }), { params: Promise.resolve({}) });
 
     expect(response.status).toBe(200);
     const json = await response.json();
@@ -148,7 +148,7 @@ describe('device binding API routes (simplified)', () => {
       browser: 'Chrome',
       os: 'Windows',
       reason: 'Lost browser cookies',
-    }), {});
+    }), { params: Promise.resolve({}) });
 
     const approveResponse = await approveRoute.POST(jsonRequest('https://example.test/api/admin/devices/reset-approve', {
       request_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',

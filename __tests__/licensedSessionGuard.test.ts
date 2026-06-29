@@ -137,7 +137,7 @@ describe('requireLicensedSession', () => {
       deps: licensedDeps({ getAuthenticatedUser: vi.fn().mockResolvedValue(null) }),
     });
 
-    const response = await GET(new Request('https://app.test/api/master', { headers: { 'cookie': 'enermass_device_token=token' } }), {});
+    const response = await GET(new Request('https://app.test/api/master', { headers: { 'cookie': 'enermass_device_token=token' } }), { params: Promise.resolve({}) });
     await expect(response.json()).resolves.toMatchObject({
       error: 'AuthenticationRequiredError',
       redirectTo: '/login',
@@ -235,7 +235,7 @@ describe('requireLicensedSession', () => {
         headers: { 'cookie': 'enermass_device_token=token' },
         body: JSON.stringify({ org_id: spoofedOrgId, orgId: spoofedOrgId }),
       }),
-      {}
+      { params: Promise.resolve({}) }
     );
 
     expect(response.status).toBe(403);
@@ -255,7 +255,7 @@ describe('requireLicensedSession', () => {
       }),
     });
 
-    const response = await GET(new Request('https://app.test/api/master', { headers: { 'cookie': 'enermass_device_token=token' } }), {});
+    const response = await GET(new Request('https://app.test/api/master', { headers: { 'cookie': 'enermass_device_token=token' } }), { params: Promise.resolve({}) });
 
     expect(response.status).toBe(403);
     expect(handler).not.toHaveBeenCalled();

@@ -56,7 +56,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       '/dashboards',
       '/erp',
       '/inventory',
+      '/procurement',
       '/reports',
+      '/amc',
+      '/warranty',
     ];
 
     return bootstrapPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -162,7 +165,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         contextValue: 'Quote Management',
       };
     }
-
     if (pathname.startsWith('/rate-master')) {
       return {
         contextLabel: 'Finance',

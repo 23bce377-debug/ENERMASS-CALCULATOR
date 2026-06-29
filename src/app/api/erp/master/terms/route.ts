@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { revalidateTag } from 'next/cache';
 import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 import { createAdminClient } from '@/lib/supabase/server';
 import { invalidateCacheKeys } from '@/lib/cache/redisCache';
@@ -100,6 +101,8 @@ export const PUT = withLicensedApiRoute<EmptyRouteContext>(
       }
 
       await invalidateCacheKeys('erp:master:rules:global:v3:bomLimit_500');
+      revalidateTag('rules', 'max');
+      revalidateTag('master-data', 'max');
       return NextResponse.json(await loadTerms());
     } catch (err: any) {
       console.error('[PUT /api/erp/master/terms] Error:', err);

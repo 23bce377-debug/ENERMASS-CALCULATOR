@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search, BarChart3, Calculator, Settings, ShieldCheck,
-  UserPlus, Laptop, Database, X, Sparkles, AlertCircle, FileText
+  UserPlus, Laptop, Database, X, Sparkles, AlertCircle, FileText,
+  Cpu, CreditCard, Wrench, TrendingUp
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
@@ -44,6 +45,30 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
       action: () => { router.push('/calculator'); onClose(); }
     },
     {
+      id: 'quotes',
+      title: 'Go to Quotes',
+      subtitle: 'Search, revise, share, and download saved quotations',
+      category: 'Navigation',
+      icon: <FileText size={15} />,
+      action: () => { router.push('/quotes'); onClose(); }
+    },
+    {
+      id: 'systems',
+      title: 'Go to Systems',
+      subtitle: 'Manage system presets and engineering assumptions',
+      category: 'Navigation',
+      icon: <Cpu size={15} />,
+      action: () => { router.push('/systems'); onClose(); }
+    },
+    {
+      id: 'master-dashboard',
+      title: 'Go to Price Masters Dashboard',
+      subtitle: 'Open all editable pricing and master data sections',
+      category: 'Price Masters',
+      icon: <Database size={15} />,
+      action: () => { router.push('/master'); onClose(); }
+    },
+    {
       id: 'master-panels',
       title: 'Go to Solar Panels Directory',
       subtitle: 'Manage PV module catalogs, wattages, and master inventories',
@@ -60,12 +85,36 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
       action: () => { router.push('/master/terms'); onClose(); }
     },
     {
+      id: 'master-rate-overrides',
+      title: 'Go to Rate Overrides',
+      subtitle: 'Edit audited BOM item override rates',
+      category: 'Price Masters',
+      icon: <TrendingUp size={15} />,
+      action: () => { router.push('/master/rate-master'); onClose(); }
+    },
+    {
       id: 'settings',
       title: 'Go to Organization Settings',
       subtitle: 'Modify default margin percentages, tariffs, and region rates',
       category: 'Administration',
       icon: <Settings size={15} />,
       action: () => { router.push('/settings'); onClose(); }
+    },
+    {
+      id: 'settings-presets',
+      title: 'Go to Presets Settings',
+      subtitle: 'Manage saved bundles and reusable system configurations',
+      category: 'Administration',
+      icon: <Wrench size={15} />,
+      action: () => { router.push('/settings/presets'); onClose(); }
+    },
+    {
+      id: 'billing',
+      title: 'Go to Billing Settings',
+      subtitle: 'Review subscription, plan limits, and billing state',
+      category: 'Administration',
+      icon: <CreditCard size={15} />,
+      action: () => { router.push('/settings/billing'); onClose(); }
     },
     {
       id: 'team',
@@ -132,6 +181,14 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
     );
   }, [search, items]);
 
+  useEffect(() => {
+    if (filtered.length === 0) {
+      setActiveIndex(0);
+    } else if (activeIndex >= filtered.length) {
+      setActiveIndex(filtered.length - 1);
+    }
+  }, [activeIndex, filtered.length]);
+
   // Auto-focus input on open
   useEffect(() => {
     if (isOpen) {
@@ -155,9 +212,11 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
       if (e.key === 'ArrowDown') {
         e.preventDefault();
+        if (filtered.length === 0) return;
         setActiveIndex(prev => (prev + 1) % filtered.length);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
+        if (filtered.length === 0) return;
         setActiveIndex(prev => (prev - 1 + filtered.length) % filtered.length);
       } else if (e.key === 'Enter') {
         e.preventDefault();

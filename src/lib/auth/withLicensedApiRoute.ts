@@ -9,12 +9,14 @@ import {
   type RequireLicensedSessionOptions,
 } from './requireLicensedSession';
 
-export interface LicensedApiContext<RouteContext extends object = { params?: unknown }> {
+type EmptyRouteContext = { params: Promise<Record<string, never>> };
+
+export interface LicensedApiContext<RouteContext extends object = EmptyRouteContext> {
   session: LicensedSession;
   route: RouteContext;
 }
 
-export type LicensedApiHandler<RouteContext extends object = { params?: unknown }> = (
+export type LicensedApiHandler<RouteContext extends object = EmptyRouteContext> = (
   request: Request,
   context: LicensedApiContext<RouteContext>
 ) => Promise<Response> | Response;
@@ -43,7 +45,7 @@ function jsonForAuthError(error: unknown) {
 
 
 
-export function withLicensedApiRoute<RouteContext extends object = { params?: unknown }>(
+export function withLicensedApiRoute<RouteContext extends object = EmptyRouteContext>(
   handler: LicensedApiHandler<RouteContext>,
   options: LicensedApiRouteOptions
 ) {

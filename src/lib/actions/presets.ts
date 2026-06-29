@@ -19,6 +19,24 @@ export interface LineItem {
   sortOrder: number;
 }
 
+export interface PresetStateOption {
+  id: string;
+  state_name: string;
+  state_code: string;
+}
+
+export async function getPresetStates(): Promise<PresetStateOption[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('state_rules')
+    .select('id, state_name, state_code')
+    .eq('is_active', true)
+    .order('state_name', { ascending: true });
+
+  if (error) throw new Error('Failed to fetch states: ' + error.message);
+  return (data || []) as PresetStateOption[];
+}
+
 export async function getPresetWithComponents(presetId: string) {
   if (presetId.startsWith('custom_')) {
     throw new Error('Cannot fetch local custom presets from the database.');
@@ -200,6 +218,8 @@ export async function getPresetWithComponents(presetId: string) {
     id: presetData.id,
     name: presetData.name,
     system_type: presetData.category ?? 'on_grid',
+    capacity_kw: Number(presetData.capacity_kw || 0),
+    state_id: presetData.state_id ?? null,
     lineItems: mappedItems.sort((a, b) => a.sortOrder - b.sortOrder)
   };
 }
@@ -209,31 +229,69 @@ export async function savePresetWithComponents(
   updates: {
     name: string;
     systemType: string;
+    capacityKw: number;
+    stateId?: string | null;
     notes?: string;
     lineItems: LineItem[];
   }
 ) {
   const supabase = await createClient();
+  let targetPresetId = presetId;
 
-  // 1. Update preset metadata in systems table
-  const { error: presetErr } = await supabase
-    .from('systems' as any)
-    .update({
-      name: updates.name,
-      category: updates.systemType,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', presetId);
+  if (targetPresetId) {
+    // 1. Update preset metadata in systems table
+    const { error: presetErr } = await supabase
+      .from('systems' as any)
+      .update({
+        name: updates.name,
+        category: updates.systemType,
+        capacity_kw: Number(updates.capacityKw) || 0,
+        state_id: updates.stateId || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', targetPresetId);
 
-  if (presetErr) throw new Error('Failed to update system metadata: ' + presetErr.message);
+    if (presetErr) throw new Error('Failed to update system metadata: ' + presetErr.message);
 
-  // 2. Delete old system items
-  const { error: delErr } = await supabase
-    .from('system_items' as any)
-    .delete()
-    .eq('system_id', presetId);
+    // 2. Delete old system items
+    const { error: delErr } = await supabase
+      .from('system_items' as any)
+      .delete()
+      .eq('system_id', targetPresetId);
 
-  if (delErr) throw new Error('Failed to delete old system items: ' + delErr.message);
+    if (delErr) throw new Error('Failed to delete old system items: ' + delErr.message);
+  } else {
+    const { data: { user } } = await supabase.auth.getUser();
+    let orgId: string | null = null;
+    if (user?.id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('org_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      orgId = profile?.org_id ?? null;
+    }
+
+    const { data: newPreset, error: presetErr } = await supabase
+      .from('systems' as any)
+      .insert({
+        org_id: orgId,
+        name: updates.name,
+        category: updates.systemType,
+        capacity_kw: Number(updates.capacityKw) || 0,
+        state_id: updates.stateId || null,
+        target_margin_pct: 20,
+        is_active: true,
+        is_custom: true,
+      })
+      .select('id')
+      .maybeSingle();
+
+    if (presetErr) throw new Error('Failed to create system preset: ' + presetErr.message);
+    targetPresetId = (newPreset as any)?.id;
+  }
+
+  if (!targetPresetId) throw new Error('Failed to determine preset ID.');
 
   // Helper function to map category to section
   function mapCategoryToSection(category: string): string {
@@ -261,7 +319,7 @@ export async function savePresetWithComponents(
     const isLA = (item.category === 'dc_protection' || item.category === 'ac_protection') && item.description.toLowerCase().includes('lightning');
 
     return {
-      system_id: presetId,
+      system_id: targetPresetId,
       section: mapCategoryToSection(item.category),
       description: item.description,
       unit: item.unit || 'Nos',
@@ -284,14 +342,30 @@ export async function savePresetWithComponents(
     };
   });
 
-  const { error: insErr } = await supabase
-    .from('system_items' as any)
-    .insert(itemsToInsert);
+  if (itemsToInsert.length > 0) {
+    const { error: insErr } = await supabase
+      .from('system_items' as any)
+      .insert(itemsToInsert);
 
-  if (insErr) throw new Error('Failed to insert new system items: ' + insErr.message);
+    if (insErr) throw new Error('Failed to insert new system items: ' + insErr.message);
+  }
+
+  await supabase
+    .from('system_state_availability' as any)
+    .delete()
+    .eq('system_id', targetPresetId);
+
+  if (updates.stateId) {
+    const { error: stateErr } = await supabase
+      .from('system_state_availability' as any)
+      .insert({ system_id: targetPresetId, state_id: updates.stateId });
+    if (stateErr) throw new Error('Failed to update preset state: ' + stateErr.message);
+  }
 
   revalidatePath('/');
   revalidatePath('/systems');
+  revalidatePath('/settings/presets');
+  return targetPresetId;
 }
 
 export async function getCatalogItems(category: string, search?: string) {

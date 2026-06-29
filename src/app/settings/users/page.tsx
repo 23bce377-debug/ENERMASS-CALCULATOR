@@ -1,10 +1,5 @@
-import React from 'react';
+import { redirect } from 'next/navigation';
 
-export default function UsersSettingsPage() {
-  return (
-    <div>
-      <h1>Users Management</h1>
-      <p>Management interface for organisation users.</p>
-    </div>
-  );
+export default function UsersSettingsRedirectPage() {
+  redirect('/settings/team');
 }

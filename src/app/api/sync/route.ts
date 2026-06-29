@@ -56,13 +56,15 @@ export const GET = withLicensedApiRoute(async (request, context) => {
     ]);
 
     // Chunk 3: Rules, Schemes, Vendors, and Systems
-    const [stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes] = await Promise.all([
+    const [stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes, systemStateAvailRes, stateTermsRes] = await Promise.all([
       applySyncFilter(supabase.from('state_rules').select('*').eq('is_active', true)),
       supabase.from('scheme_slabs').select('*'), // static mostly
       applySyncFilter(supabase.from('calculation_schemes').select('*').eq('is_active', true)),
       supabase.from('inventory_summary').select('*').eq('org_id', orgId).limit(invLimit), // Refresh all or handle separately
       applySyncFilter(supabase.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true })),
-      applySyncFilter(supabase.from('systems').select('*, system_items(*)').eq('is_active', true).order('capacity_kw', { ascending: true }))
+      applySyncFilter(supabase.from('systems').select('*, system_items(*)').eq('is_active', true).order('capacity_kw', { ascending: true })),
+      (supabase as any).from('system_state_availability').select('system_id, state_id'),
+      (supabase as any).from('state_terms_templates').select('id, state_id, clauses, is_active, version').eq('is_active', true)
     ]);
 
     // Chunk 4: Heavy BOM & Structural Templates
@@ -89,7 +91,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
     const errors = [
       panelsRes, invertersRes, batteriesRes, metersRes, laRes, commDevicesRes,
       structuresRes, weightLookupsRes, structureComponentsRes, structureBomRes, structureAddonsRes, appSettingsRes,
-      stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes,
+      stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes, systemStateAvailRes, stateTermsRes,
       bomItemsRes, structureAccessoryRatesRes, structureMaterialRatesRes, structureTemplatesRes, structureTemplateItemsRes, walkwayTemplatesRes, ladderTemplatesRes, structureComponentMasterRes
     ].filter(res => res.error);
 
@@ -114,6 +116,8 @@ export const GET = withLicensedApiRoute(async (request, context) => {
         bomItems: bomItemsRes.data || [],
         commDevices: commDevicesRes.data || [],
         systems: systemsRes.data || [],
+        systemStateAvailability: (systemStateAvailRes as any)?.data || [],
+        stateTermsTemplates: (stateTermsRes as any)?.data || [],
         weightLookups: weightLookupsRes.data || [],
         stateRules: stateRulesRes.data || [],
         slabs: slabsRes.data || [],

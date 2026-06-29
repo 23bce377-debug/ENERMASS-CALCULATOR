@@ -68,6 +68,7 @@ export interface QuoteEquipmentMixEntry {
 // ─── Main Quote Interface ───────────────────────────────────────────────────────
 
 export interface Quote {
+  dbId?: string;
   quoteId: string;
   date: string;
   projectType: 'residential' | 'commercial';

@@ -34,6 +34,12 @@ function buildStateScopedMaps(bootstrap: any): {
     if (!row?.system_id || !name) continue;
     (systemStateMap[row.system_id] ??= []).push(name);
   }
+  for (const system of bootstrap?.systems ?? []) {
+    const name = stateIdToName[system?.state_id];
+    if (!system?.id || !name) continue;
+    const states = (systemStateMap[system.id] ??= []);
+    if (!states.includes(name)) states.push(name);
+  }
 
   const stateTerms: Record<string, string[]> = {};
   for (const tpl of bootstrap?.stateTermsTemplates ?? []) {
@@ -220,6 +226,7 @@ export const createCalculationSlice: StateCreator<
     if (system && system.defaultEquipment) {
       set({
         selectedSystemId: id,
+        selectedState: system.stateName || state.selectedState,
         selectedPanelId: null,
         selectedGoalWattage: system.capacityKW * 1000,
         panelMix: system.defaultEquipment.panelMix ?? {},
@@ -285,6 +292,7 @@ export const createCalculationSlice: StateCreator<
     const isCommercial = system?.category === 'commercial';
     set({
       selectedSystemId: id,
+      selectedState: system?.stateName || state.selectedState,
       selectedGoalWattage: system ? system.capacityKW * 1000 : null,
       projectType: isCommercial ? 'commercial' : 'residential',
       overrides: {},
@@ -595,6 +603,12 @@ export const createCalculationSlice: StateCreator<
           subsidyRules: [],
         };
       }
+      const stateById = new Map<string, { stateName: string; stateCode: string }>(
+        (bootstrap.stateRules || []).map((rule: any) => [
+          rule.id,
+          { stateName: rule.state_name, stateCode: rule.state_code },
+        ]),
+      );
 
       // Default orientation multipliers - loaded from app_settings
       const factor = bootstrap.appSettings?.orientation_factor !== undefined && bootstrap.appSettings?.orientation_factor !== null
@@ -681,6 +695,9 @@ export const createCalculationSlice: StateCreator<
           capacityKW: Number(sys.capacity_kw),
           panelWattage: Number(sys.panel_wattage_w ?? 0),
           panelQty: Number(sys.panel_qty ?? 0),
+          stateId: sys.state_id ?? null,
+          stateName: sys.state_id ? stateById.get(sys.state_id)?.stateName ?? null : null,
+          stateCode: sys.state_id ? stateById.get(sys.state_id)?.stateCode ?? null : null,
           targetMarginPct: Number(sys.target_margin_pct),
           items
         };
@@ -815,11 +832,17 @@ export const createCalculationSlice: StateCreator<
         }
         stateUpdate.dbStateData = mappedStateData;
       }
+      const stateById = new Map<string, { stateName: string; stateCode: string }>(
+        (bootstrap.stateRules || []).map((rule: any) => [
+          rule.id,
+          { stateName: rule.state_name, stateCode: rule.state_code },
+        ]),
+      );
 
       // State-scoped presets + T&C templates (derived from data; safe if absent).
-      if (bootstrap.stateRules && (bootstrap.systemStateAvailability || bootstrap.stateTermsTemplates)) {
+      if (bootstrap.stateRules && (bootstrap.systemStateAvailability || bootstrap.stateTermsTemplates || bootstrap.systems)) {
         const { systemStateMap, stateTerms } = buildStateScopedMaps(bootstrap);
-        if (bootstrap.systemStateAvailability) stateUpdate.dbSystemStateMap = systemStateMap;
+        if (bootstrap.systemStateAvailability || bootstrap.systems) stateUpdate.dbSystemStateMap = systemStateMap;
         if (bootstrap.stateTermsTemplates) stateUpdate.dbStateTerms = stateTerms;
       }
 
@@ -974,6 +997,9 @@ export const createCalculationSlice: StateCreator<
             capacityKW: Number(sys.capacity_kw),
             panelWattage: Number(sys.panel_wattage_w ?? 0),
             panelQty: Number(sys.panel_qty ?? 0),
+            stateId: sys.state_id ?? null,
+            stateName: sys.state_id ? stateById.get(sys.state_id)?.stateName ?? null : null,
+            stateCode: sys.state_id ? stateById.get(sys.state_id)?.stateCode ?? null : null,
             targetMarginPct: Number(sys.target_margin_pct),
             items
           };

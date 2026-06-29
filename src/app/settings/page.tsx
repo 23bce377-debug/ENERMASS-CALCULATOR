@@ -512,7 +512,7 @@ export default function SettingsPage() {
               Custom solar systems and equipment presets have moved to their own dedicated page.
             </p>
           </div>
-          <Link href="/presets" className="shrink-0 px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background text-sm font-semibold transition-colors">
+          <Link href="/settings/presets" className="shrink-0 px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background text-sm font-semibold transition-colors">
             Go to Presets
           </Link>
         </div>

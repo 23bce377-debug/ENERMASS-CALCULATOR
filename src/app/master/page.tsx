@@ -70,6 +70,17 @@ const CARDS = [
     iconBgHover: 'group-hover:bg-rose-500/10',
   },
   {
+    href: '/master/rate-master',
+    label: 'Rate Overrides',
+    desc: 'Edit audited BOM item override rates used by quote costing and finance review.',
+    icon: <TrendingUp size={24} className="text-lime-500" />,
+    entity: 'rateOverrides',
+    table: 'rate_master',
+    hoverBorder: 'hover:border-lime-500/30 group-hover:border-lime-500/30',
+    glow: 'bg-lime-500/5',
+    iconBgHover: 'group-hover:bg-lime-500/10',
+  },
+  {
     href: '/master/structures',
     label: 'Structures Master',
     desc: 'Set mounting structure weight lookup values and metal raw material rates.',
@@ -169,6 +180,7 @@ export default function MastersDashboardPage() {
         fetchCount('bom_template_items').then(c => countsMap.accessories = c),
         fetchCount('vendors', true).then(c => countsMap.vendors = c),
         fetchCount('rate_master', true).then(c => countsMap.pricing = c),
+        fetchCount('rate_master', true).then(c => countsMap.rateOverrides = c),
         fetchCount('calculation_schemes').then(c => countsMap.subsidy = c),
         fetchCount('state_terms_templates').then(c => countsMap.terms = c),
       ]);
@@ -243,7 +255,7 @@ export default function MastersDashboardPage() {
                     {card.icon}
                   </div>
                   <span className="text-xs font-mono font-medium px-2.5 py-0.5 rounded-full bg-surface-2 border border-border text-text-primary transition-colors group-hover:border-accent/30 group-hover:text-accent">
-                    {itemCount} {card.entity === 'vendors' ? 'vendors' : card.entity === 'subsidy' ? 'schemes' : card.entity === 'pricing' ? 'overrides' : card.entity === 'terms' ? 'templates' : 'items'}
+                    {itemCount} {card.entity === 'vendors' ? 'vendors' : card.entity === 'subsidy' ? 'schemes' : card.entity === 'pricing' || card.entity === 'rateOverrides' ? 'overrides' : card.entity === 'terms' ? 'templates' : 'items'}
                   </span>
                 </div>
 
