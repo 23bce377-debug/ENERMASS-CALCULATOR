@@ -14,7 +14,8 @@ import {
   History,
   ArrowRight,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  FileText
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
@@ -112,6 +113,17 @@ const CARDS = [
     glow: 'bg-teal-500/5',
     iconBgHover: 'group-hover:bg-teal-500/10',
   },
+  {
+    href: '/master/terms',
+    label: 'Terms Master',
+    desc: 'Edit global and state-wise quotation terms printed in proposal PDFs.',
+    icon: <FileText size={24} className="text-orange-500" />,
+    entity: 'terms',
+    table: 'state_terms_templates',
+    hoverBorder: 'hover:border-orange-500/30 group-hover:border-orange-500/30',
+    glow: 'bg-orange-500/5',
+    iconBgHover: 'group-hover:bg-orange-500/10',
+  },
 ];
 
 export default function MastersDashboardPage() {
@@ -158,6 +170,7 @@ export default function MastersDashboardPage() {
         fetchCount('vendors', true).then(c => countsMap.vendors = c),
         fetchCount('rate_master', true).then(c => countsMap.pricing = c),
         fetchCount('calculation_schemes').then(c => countsMap.subsidy = c),
+        fetchCount('state_terms_templates').then(c => countsMap.terms = c),
       ]);
 
       return countsMap;
@@ -230,7 +243,7 @@ export default function MastersDashboardPage() {
                     {card.icon}
                   </div>
                   <span className="text-xs font-mono font-medium px-2.5 py-0.5 rounded-full bg-surface-2 border border-border text-text-primary transition-colors group-hover:border-accent/30 group-hover:text-accent">
-                    {itemCount} {card.entity === 'vendors' ? 'vendors' : card.entity === 'subsidy' ? 'schemes' : card.entity === 'pricing' ? 'overrides' : 'items'}
+                    {itemCount} {card.entity === 'vendors' ? 'vendors' : card.entity === 'subsidy' ? 'schemes' : card.entity === 'pricing' ? 'overrides' : card.entity === 'terms' ? 'templates' : 'items'}
                   </span>
                 </div>
 

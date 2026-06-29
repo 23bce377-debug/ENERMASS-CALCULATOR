@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Search, BarChart3, Calculator, Settings, ShieldCheck, 
-  UserPlus, Laptop, Database, Keyboard, X, Sparkles, AlertCircle 
+import {
+  Search, BarChart3, Calculator, Settings, ShieldCheck,
+  UserPlus, Laptop, Database, X, Sparkles, AlertCircle, FileText
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
@@ -50,6 +50,14 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
       category: 'Price Masters',
       icon: <Database size={15} />,
       action: () => { router.push('/master/panels'); onClose(); }
+    },
+    {
+      id: 'master-terms',
+      title: 'Go to Terms & Conditions Master',
+      subtitle: 'Edit global and state-wise quotation terms for generated PDFs',
+      category: 'Price Masters',
+      icon: <FileText size={15} />,
+      action: () => { router.push('/master/terms'); onClose(); }
     },
     {
       id: 'settings',

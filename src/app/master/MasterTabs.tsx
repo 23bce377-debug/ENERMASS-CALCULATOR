@@ -11,7 +11,8 @@ import {
   Truck,
   Tag,
   Percent,
-  LayoutDashboard
+  LayoutDashboard,
+  FileText
 } from 'lucide-react';
 
 interface TabItem {
@@ -29,6 +30,7 @@ const TABS: TabItem[] = [
   { href: '/master/accessories', label: 'Accessories', icon: <Package size={15} /> },
   { href: '/master/vendors', label: 'Vendors', icon: <Truck size={15} /> },
   { href: '/master/subsidy', label: 'Subsidy Master', icon: <Percent size={15} /> },
+  { href: '/master/terms', label: 'Terms', icon: <FileText size={15} /> },
 ];
 
 export function MasterTabs() {

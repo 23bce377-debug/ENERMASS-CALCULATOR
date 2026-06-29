@@ -74,6 +74,10 @@ export const createQuoteSlice: StateCreator<
     }
 
     const now = new Date().toISOString();
+    const syncedAddress = {
+      ...info.address,
+      state: state.selectedState || info.address.state,
+    };
     const panelMixEntries = Object.entries(state.panelMix)
       .filter(([, qty]) => Number.isFinite(qty) && qty > 0)
       .map(([panelBrandId, qty]) => ({ panelBrandId, qty }));
@@ -117,7 +121,7 @@ export const createQuoteSlice: StateCreator<
       projectType: state.projectType,
 
       customer: info.customer,
-      address: info.address,
+      address: syncedAddress,
       site: info.site,
       sales: info.sales,
 
@@ -215,7 +219,7 @@ export const createQuoteSlice: StateCreator<
       address_line1: quote.address.line1 || null,
       address_line2: quote.address.line2 || null,
       city: quote.address.city || null,
-      state_name: quote.address.state,
+      state_name: quote.selectedState,
       pincode: quote.address.pin || null,
       meter_number: quote.site.meterNo || null,
       sanctioned_load_kw: parseFloat(quote.site.sanctionedLoad) || null,
