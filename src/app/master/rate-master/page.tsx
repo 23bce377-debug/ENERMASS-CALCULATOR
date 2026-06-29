@@ -59,7 +59,7 @@ export default function RateMasterPage() {
     try {
       const [ratesRes, auditRes] = await Promise.all([
         supabase.from('rate_master').select('*').eq('org_id', orgId).eq('is_active', true).order('item_name'),
-        (supabase as any).from('rate_master_audit_log').select('*').eq('org_id', orgId).order('changed_at', { ascending: false }).limit(100),
+        (supabase as any).from('rate_master_audit_logs').select('*').eq('org_id', orgId).order('changed_at', { ascending: false }).limit(100),
       ]);
       if (ratesRes.error) throw ratesRes.error;
       setRates(ratesRes.data || []);
@@ -95,7 +95,7 @@ export default function RateMasterPage() {
       if (error) throw error;
 
       // Also insert audit log entry with reason
-      await (supabase as any).from('rate_master_audit_log').insert({
+      await (supabase as any).from('rate_master_audit_logs').insert({
         org_id: orgId,
         rate_master_id: item.id,
         item_name: item.item_name,

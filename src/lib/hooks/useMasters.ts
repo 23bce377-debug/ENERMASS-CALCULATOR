@@ -55,13 +55,125 @@ function getEntityTable(entity: string): string {
   return `eq_${entity}`;
 }
 
+function isPlaceholderMaster(entity: string, item: any): boolean {
+  if (!['panels', 'inverters', 'batteries'].includes(entity) || !item) return false;
+  const brand = String(item.brand ?? '').trim().toLowerCase();
+  const model = String(item.model ?? '').trim().toLowerCase();
+  return (
+    brand === 'unknown' ||
+    brand === 'unknown brand' ||
+    model === 'unknown' ||
+    model === 'unknown model' ||
+    (entity === 'inverters' && model === 'inverter')
+  );
+}
+
+function assertValidMasterPayload(entity: string, item: any) {
+  if (!['panels', 'inverters', 'batteries'].includes(entity) || !item) return;
+  if (isPlaceholderMaster(entity, item)) {
+    throw new Error('Please enter a real brand and model. Placeholder names like Unknown are not allowed in masters.');
+  }
+}
+
+const entityReferenceChecks: Record<string, Array<{ table: string; column: string }>> = {
+  panels: [{ table: 'system_items', column: 'panel_id' }],
+  inverters: [{ table: 'system_items', column: 'inverter_id' }],
+  batteries: [{ table: 'system_items', column: 'battery_id' }],
+  structures: [{ table: 'system_items', column: 'structure_id' }],
+  pricing: [{ table: 'system_items', column: 'bom_item_id' }],
+  accessories: [{ table: 'system_items', column: 'bom_item_id' }],
+};
+
+const activeFlagEntities = new Set([
+  'panels',
+  'inverters',
+  'batteries',
+  'accessories',
+  'structures',
+  'pricing',
+  'subsidy',
+]);
+
+const overrideableEntities = new Set(['panels', 'inverters', 'batteries', 'structures', 'accessories']);
+
+const mutableColumnsByEntity: Record<string, string[]> = {
+  panels: ['brand', 'model', 'wattage_w', 'panel_type', 'gst_pct', 'description', 'buy_price', 'selling_price', 'is_active', 'is_custom'],
+  inverters: ['brand', 'model', 'capacity_kw', 'inverter_type', 'phases', 'gst_pct', 'description', 'buy_price', 'selling_price', 'is_active', 'is_custom'],
+  batteries: ['brand', 'model', 'capacity_kwh', 'voltage_v', 'chemistry', 'dod_pct', 'gst_pct', 'description', 'buy_price', 'selling_price', 'is_active', 'is_custom'],
+  structures: ['name', 'material', 'roof_mount_type', 'elevation_height_mm', 'raw_material_rate', 'fabrication_rate', 'galvanizing_rate', 'wastage_pct', 'fastener_weight_pct', 'base_weight_kg', 'selling_price', 'buy_price', 'per_watt_rate', 'gst_pct', 'description', 'is_active', 'is_custom'],
+  accessories: ['category_id', 'sku_code', 'description', 'unit', 'unit_rate_min', 'unit_rate_max', 'default_rate', 'qty_formula', 'is_survey_dependent', 'civil_required_only', 'notes', 'is_active', 'is_custom'],
+  pricing: ['category_id', 'sku_code', 'description', 'unit', 'unit_rate_min', 'unit_rate_max', 'default_rate', 'qty_formula', 'is_survey_dependent', 'civil_required_only', 'notes', 'is_active', 'is_custom'],
+};
+
+async function isReferenced(entity: string, id: string): Promise<boolean> {
+  const checks = entityReferenceChecks[entity] ?? [];
+  for (const check of checks) {
+    const { count, error } = await (supabase
+      .from(check.table as any)
+      .select('id', { count: 'exact', head: true })
+      .eq(check.column, id) as any);
+    if (error) throw error;
+    if ((count ?? 0) > 0) return true;
+  }
+  return false;
+}
+
+function pickMutablePayload(entity: string, source: any) {
+  const allowed = mutableColumnsByEntity[entity];
+  if (!allowed) return { ...source };
+  return Object.fromEntries(
+    allowed
+      .filter((column) => Object.prototype.hasOwnProperty.call(source, column))
+      .map((column) => [column, source[column]]),
+  );
+}
+
+function buildOverridePayload(entity: string, beforeState: any, updates: any, orgId: string, sourceGlobalId: string) {
+  return {
+    ...pickMutablePayload(entity, beforeState),
+    ...pickMutablePayload(entity, updates),
+    org_id: orgId,
+    source_global_id: sourceGlobalId,
+    is_active: true,
+    is_custom: true,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function fetchHiddenGlobalIds(entity: string, orgId: string | null): Promise<Set<string>> {
+  if (!orgId || !overrideableEntities.has(entity)) return new Set();
+  const { data, error } = await (supabase as any)
+    .from('master_hidden_items')
+    .select('global_id')
+    .eq('org_id', orgId)
+    .eq('entity', entity);
+  if (error) throw error;
+  return new Set((data || []).map((row: any) => row.global_id));
+}
+
+function filterOrgVisibleRows(entity: string, rows: any[], hiddenGlobalIds: Set<string>) {
+  if (!overrideableEntities.has(entity)) return rows;
+  const overriddenGlobalIds = new Set(
+    rows
+      .filter((row) => row.org_id && row.source_global_id)
+      .map((row) => row.source_global_id),
+  );
+  return rows.filter((row) => {
+    if (!row.org_id && hiddenGlobalIds.has(row.id)) return false;
+    if (!row.org_id && overriddenGlobalIds.has(row.id)) return false;
+    return true;
+  });
+}
+
 function transformFromDb(entity: string, item: any): any {
   if (!item) return item;
   const copy = { ...item };
   if (entity === 'panels') {
     copy.rate_per_watt = copy.selling_price && copy.wattage_w ? Number(copy.selling_price) / Number(copy.wattage_w) : 0;
-  } else if (entity === 'batteries' || entity === 'inverters' || entity === 'accessories') {
+  } else if (entity === 'batteries' || entity === 'inverters') {
     copy.rate = copy.selling_price ?? 0;
+  } else if (entity === 'accessories' || entity === 'pricing') {
+    copy.rate = copy.default_rate ?? 0;
   } else if (entity === 'structures') {
     copy.flat_rate = copy.selling_price;
   }
@@ -78,12 +190,14 @@ function transformToDb(entity: string, item: any, currentItem?: any): any {
       copy.selling_price = Number(ratePerWatt) * Number(wattage);
       delete copy.rate_per_watt;
     }
-  } else if (entity === 'batteries' || entity === 'inverters' || entity === 'accessories') {
+  } else if (entity === 'batteries' || entity === 'inverters') {
     if ('rate' in copy) {
       copy.selling_price = copy.rate;
-      if (entity === 'accessories' && !('buy_price' in copy)) {
-        copy.buy_price = copy.rate;
-      }
+      delete copy.rate;
+    }
+  } else if (entity === 'accessories' || entity === 'pricing') {
+    if ('rate' in copy) {
+      copy.default_rate = copy.rate;
       delete copy.rate;
     }
   } else if (entity === 'structures') {
@@ -105,7 +219,7 @@ export function useMasterQuery<T>(entity: string, options?: any) {
       let query = supabase.from(table as any).select('*');
       
       // Enforce organisation filtering safely
-      if (entity === 'vendors' || entity === 'pricing') {
+      if (entity === 'vendors') {
         if (orgId) {
           query = query.eq('org_id', orgId);
         } else {
@@ -127,13 +241,20 @@ export function useMasterQuery<T>(entity: string, options?: any) {
         }
       }
 
-      if (entity !== 'pricing' && entity !== 'vendors' && entity !== 'bom_categories') {
+      if (entity !== 'vendors' && entity !== 'bom_categories' && entity !== 'pricing') {
+        query = query.eq('is_active', true);
+      } else if (entity === 'pricing') {
         query = query.eq('is_active', true);
       }
 
-      const { data, error } = await query;
+      const [{ data, error }, hiddenGlobalIds] = await Promise.all([
+        query,
+        fetchHiddenGlobalIds(entity, orgId),
+      ]);
       if (error) throw error;
-      return (data || []).map((item: any) => transformFromDb(entity, item)) as T[];
+      return filterOrgVisibleRows(entity, data || [], hiddenGlobalIds)
+        .filter((item: any) => !isPlaceholderMaster(entity, item))
+        .map((item: any) => transformFromDb(entity, item)) as T[];
     },
     staleTime: 24 * 60 * 60 * 1000, // 24 hours cache validity
     ...options
@@ -156,10 +277,12 @@ export function useMasterCreateMutation<T>(entity: string) {
       return { previousData };
     },
     mutationFn: async (newItem: any) => {
+      assertValidMasterPayload(entity, newItem);
       const { orgId, userId } = await getOrgContext();
       const table = getEntityTable(entity);
 
       const payload = { ...transformToDb(entity, newItem), org_id: orgId };
+      if (activeFlagEntities.has(entity)) payload.is_active = true;
       const { data, error } = await (supabase
         .from(table as any)
         .insert(payload)
@@ -206,6 +329,7 @@ export function useMasterUpdateMutation<T>(entity: string) {
       return { previousData };
     },
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      assertValidMasterPayload(entity, updates);
       const { orgId, userId } = await getOrgContext();
       const table = getEntityTable(entity);
 
@@ -215,25 +339,33 @@ export function useMasterUpdateMutation<T>(entity: string) {
       // If modifying a global template as an org user, FORK it into an org override
       if (beforeState && beforeState.org_id === null && orgId !== null) {
         const payloadToApply = transformToDb(entity, updates, beforeState);
-        const insertPayload = { 
-          ...beforeState, 
-          ...payloadToApply, 
-          org_id: orgId,
-          updated_at: new Date().toISOString()
-        };
-        // Ensure we create a new row by removing id and created_at
-        delete insertPayload.id;
-        delete insertPayload.created_at;
-
-        const { data, error } = await (supabase
+        const overridePayload = buildOverridePayload(entity, beforeState, payloadToApply, orgId, id);
+        const { data: existingOverride, error: overrideLookupError } = await (supabase
           .from(table as any)
-          .insert(insertPayload)
+          .select('id')
+          .eq('org_id', orgId)
+          .eq('source_global_id', id)
+          .maybeSingle() as any);
+        if (overrideLookupError) throw overrideLookupError;
+
+        const write = existingOverride?.id
+          ? supabase.from(table as any).update(overridePayload).eq('id', existingOverride.id)
+          : supabase.from(table as any).insert(overridePayload);
+
+        const { data, error } = await (write
           .select()
           .maybeSingle() as any);
 
         if (error) throw error;
+
+        await (supabase as any)
+          .from('master_hidden_items')
+          .delete()
+          .eq('org_id', orgId)
+          .eq('entity', entity)
+          .eq('global_id', id);
         
-        await logAudit(orgId, userId, 'masters', table, data.id, 'create_override', beforeState, data);
+        await logAudit(orgId, userId, 'masters', table, data.id, existingOverride?.id ? 'update_override' : 'create_override', beforeState, data);
         
         await supabase.from('master_data_changes_log').insert({
           entity_type: table,
@@ -310,16 +442,29 @@ export function useMasterDeleteMutation(entity: string) {
       // Fetch before deleting
       const { data: beforeState } = await (supabase.from(table as any).select('*').eq('id', id).maybeSingle() as any);
 
+      if (!beforeState) return id;
+
       let error;
-      // Perform soft delete by default or hard delete for rate overrides / connections
-      if (entity === 'pricing' || entity === 'vendors') {
+      const hasActiveFlag = Object.prototype.hasOwnProperty.call(beforeState, 'is_active');
+      const hasRefs = await isReferenced(entity, id);
+      const canHardDelete = !hasRefs && (beforeState.org_id === orgId || entity === 'vendors' || entity === 'pricing');
+
+      if (beforeState.org_id === null && orgId !== null && overrideableEntities.has(entity)) {
+        const res = await (supabase as any)
+          .from('master_hidden_items')
+          .upsert({ org_id: orgId, entity, global_id: id, hidden_by: userId }, { onConflict: 'org_id,entity,global_id' });
+        error = res.error;
+      } else if (canHardDelete) {
         const res = await supabase.from(table as any).delete().eq('id', id);
         error = res.error;
-      } else {
+      } else if (hasActiveFlag) {
         const res = await supabase
           .from(table as any)
           .update({ is_active: false, updated_at: new Date().toISOString() })
           .eq('id', id);
+        error = res.error;
+      } else {
+        const res = await supabase.from(table as any).delete().eq('id', id);
         error = res.error;
       }
 
@@ -332,7 +477,7 @@ export function useMasterDeleteMutation(entity: string) {
       await supabase.from('master_data_changes_log').insert({
         entity_type: table,
         entity_id: id,
-        change_type: 'deleted',
+        change_type: beforeState.org_id === null ? 'hidden' : canHardDelete ? 'deleted' : 'deactivated',
         old_values: beforeState,
         new_values: null,
       });
@@ -353,6 +498,7 @@ export function useMasterDeleteMutation(entity: string) {
       }
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
       queryClient.invalidateQueries({ queryKey: ['masters', 'dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['bom-items-pricing'] });
     }
   });
 }
@@ -362,6 +508,7 @@ export function useMasterBulkUpdateMutation(entity: string) {
 
   return useMutation({
     mutationFn: async ({ ids, updates }: { ids: string[]; updates: any }) => {
+      assertValidMasterPayload(entity, updates);
       const { orgId, userId } = await getOrgContext();
       const table = getEntityTable(entity);
 
@@ -378,23 +525,32 @@ export function useMasterBulkUpdateMutation(entity: string) {
         
         if (before && before.org_id === null && orgId !== null) {
           const payloadToApply = transformToDb(entity, updates, before);
-          const insertPayload = {
-            ...before,
-            ...payloadToApply,
-            org_id: orgId,
-            updated_at: new Date().toISOString()
-          };
-          delete insertPayload.id;
-          delete insertPayload.created_at;
-
-          const { data, error } = await (supabase
+          const overridePayload = buildOverridePayload(entity, before, payloadToApply, orgId, id);
+          const { data: existingOverride, error: overrideLookupError } = await (supabase
             .from(table as any)
-            .insert(insertPayload)
+            .select('id')
+            .eq('org_id', orgId)
+            .eq('source_global_id', id)
+            .maybeSingle() as any);
+          if (overrideLookupError) throw overrideLookupError;
+
+          const write = existingOverride?.id
+            ? supabase.from(table as any).update(overridePayload).eq('id', existingOverride.id)
+            : supabase.from(table as any).insert(overridePayload);
+
+          const { data, error } = await (write
             .select()
             .maybeSingle() as any);
           if (error) throw error;
 
-          await logAudit(orgId, userId, 'masters', table, data.id, 'bulk_create_override', before, data);
+          await (supabase as any)
+            .from('master_hidden_items')
+            .delete()
+            .eq('org_id', orgId)
+            .eq('entity', entity)
+            .eq('global_id', id);
+
+          await logAudit(orgId, userId, 'masters', table, data.id, existingOverride?.id ? 'bulk_update_override' : 'bulk_create_override', before, data);
           
           await supabase.from('master_data_changes_log').insert({
             entity_type: table,

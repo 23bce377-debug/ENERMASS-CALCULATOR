@@ -10,6 +10,13 @@ const bootstrapQuerySchema = z.object({
 
 export const dynamic = 'force-dynamic';
 
+function applyOrgVisibility(rows: any[], hidden: Set<string>) {
+  const overridden = new Set(
+    rows.filter((row) => row.org_id && row.source_global_id).map((row) => row.source_global_id)
+  );
+  return rows.filter((row) => !(!row.org_id && (hidden.has(row.id) || overridden.has(row.id))));
+}
+
 export const GET = withLicensedApiRoute(async (request, context) => {
   const orgId = context.session.orgId;
 
@@ -22,7 +29,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
 
   try {
     // Include limits in the cache key to prevent collision/poisoning (P0-7)
-    const cacheKey = `erp:bootstrap:${orgId}:v2:bomLimit_${bomLimit}:invLimit_${invLimit}`;
+    const cacheKey = `erp:bootstrap:${orgId}:v3:bomLimit_${bomLimit}:invLimit_${invLimit}`;
     const data = await getOrSetCache(cacheKey, async () => {
       const { createClient } = await import('@/lib/supabase/server');
       const supabase = await createClient();
@@ -57,7 +64,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
       ]);
 
       // Chunk 3: Rules, Schemes, Vendors, Systems, and GST Master
-      const [stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes, taxHsnRes, taxGstRatesRes, systemStateAvailRes, stateTermsRes] = await Promise.all([
+      const [stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes, taxHsnRes, taxGstRatesRes, systemStateAvailRes, stateTermsRes, hiddenItemsRes] = await Promise.all([
         safeQuery(supabase.from('state_rules').select('*').eq('is_active', true)),
         safeQuery(supabase.from('scheme_slabs').select('*')),
         safeQuery(supabase.from('calculation_schemes').select('*').eq('is_active', true)),
@@ -67,7 +74,8 @@ export const GET = withLicensedApiRoute(async (request, context) => {
         safeQuery((supabase as any).from('tax_hsn_sac').select('*').eq('is_active', true)),
         safeQuery((supabase as any).from('tax_gst_rates').select('*')),
         safeQuery((supabase as any).from('system_state_availability').select('system_id, state_id')),
-        safeQuery((supabase as any).from('state_terms_templates').select('id, state_id, clauses, is_active, version').eq('is_active', true))
+        safeQuery((supabase as any).from('state_terms_templates').select('id, state_id, clauses, is_active, version').eq('is_active', true)),
+        safeQuery((supabase as any).from('master_hidden_items').select('entity, global_id').eq('org_id', orgId))
       ]);
 
       // Chunk 4: Heavy BOM & Structural Templates
@@ -98,14 +106,19 @@ export const GET = withLicensedApiRoute(async (request, context) => {
         throw coreErrors[0].error;
       }
 
+      const hiddenRows = (hiddenItemsRes as any)?.data || [];
+      const hiddenIds = (entity: string): Set<string> => new Set<string>(
+        hiddenRows.filter((row: any) => row.entity === entity).map((row: any) => String(row.global_id))
+      );
+
       return {
-        panels: panelsRes.data || [],
-        inverters: invertersRes.data || [],
-        batteries: batteriesRes.data || [],
+        panels: applyOrgVisibility(panelsRes.data || [], hiddenIds('panels')),
+        inverters: applyOrgVisibility(invertersRes.data || [], hiddenIds('inverters')),
+        batteries: applyOrgVisibility(batteriesRes.data || [], hiddenIds('batteries')),
         meters: metersRes.data || [],
         lightningArresters: laRes.data || [],
-        structures: structuresRes.data || [],
-        bomItems: bomItemsRes.data || [],
+        structures: applyOrgVisibility(structuresRes.data || [], hiddenIds('structures')),
+        bomItems: applyOrgVisibility(bomItemsRes.data || [], hiddenIds('accessories')),
         commDevices: commDevicesRes.data || [],
         systems: systemsRes.data || [],
         systemStateAvailability: (systemStateAvailRes as any)?.data || [],

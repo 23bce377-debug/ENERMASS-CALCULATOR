@@ -25,6 +25,21 @@ export interface PresetStateOption {
   state_code: string;
 }
 
+function isPlaceholderEquipment(item: { brand?: string | null; model?: string | null; name?: string | null }) {
+  const brand = String(item.brand ?? '').trim().toLowerCase();
+  const model = String(item.model ?? '').trim().toLowerCase();
+  const name = String(item.name ?? '').trim().toLowerCase();
+  return (
+    brand === 'unknown' ||
+    model === 'unknown' ||
+    name === 'unknown' ||
+    (brand === 'unknown brand') ||
+    (model === 'unknown model') ||
+    (brand === '' && (model === '' || model === 'inverter')) ||
+    model === 'inverter'
+  );
+}
+
 export async function getPresetStates(): Promise<PresetStateOption[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -77,9 +92,9 @@ export async function getPresetWithComponents(presetId: string) {
     panelsRes, invertersRes, batteriesRes, metersRes, laRes,
     structuresRes, bomItemsRes, commDevicesRes, componentMasterRes
   ] = await Promise.all([
-    supabase.from('eq_panels').select('id, brand, model, selling_price'),
-    supabase.from('eq_inverters').select('id, brand, model, selling_price'),
-    supabase.from('eq_batteries').select('id, brand, model, selling_price'),
+    supabase.from('eq_panels').select('id, brand, model, selling_price').eq('is_active', true),
+    supabase.from('eq_inverters').select('id, brand, model, selling_price').eq('is_active', true),
+    supabase.from('eq_batteries').select('id, brand, model, selling_price').eq('is_active', true),
     supabase.from('eq_meters').select('id, brand, model, selling_price'),
     supabase.from('eq_lightning_arresters').select('id, brand, model, selling_price'),
     supabase.from('eq_mounting_structures').select('id, name, selling_price'),
@@ -88,9 +103,9 @@ export async function getPresetWithComponents(presetId: string) {
     supabase.from('structure_component_master').select('id, name, selling_price'),
   ]);
 
-  const panels = panelsRes.data || [];
-  const inverters = invertersRes.data || [];
-  const batteries = batteriesRes.data || [];
+  const panels = (panelsRes.data || []).filter((item: any) => !isPlaceholderEquipment(item));
+  const inverters = (invertersRes.data || []).filter((item: any) => !isPlaceholderEquipment(item));
+  const batteries = (batteriesRes.data || []).filter((item: any) => !isPlaceholderEquipment(item));
   const meters = metersRes.data || [];
   const las = laRes.data || [];
   const structures = structuresRes.data || [];
@@ -237,41 +252,92 @@ export async function savePresetWithComponents(
 ) {
   const supabase = await createClient();
   let targetPresetId = presetId;
+  const { data: { user } } = await supabase.auth.getUser();
+  let orgId: string | null = null;
+  if (user?.id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('org_id')
+      .eq('id', user.id)
+      .maybeSingle();
+    orgId = profile?.org_id ?? null;
+  }
+
+  const inverterIds = updates.lineItems
+    .filter((item) => item.category === 'inverter' && item.catalogItemId)
+    .map((item) => item.catalogItemId as string);
+
+  if (inverterIds.length > 0) {
+    const { data: selectedInverters, error: inverterError } = await supabase
+      .from('eq_inverters' as any)
+      .select('id, brand, model, is_active')
+      .in('id', inverterIds);
+
+    if (inverterError) throw new Error('Failed to validate preset inverters: ' + inverterError.message);
+
+    const realActiveIds = new Set(
+      (selectedInverters || [])
+        .filter((item: any) => item.is_active !== false && !isPlaceholderEquipment(item))
+        .map((item: any) => item.id),
+    );
+    const invalidCount = inverterIds.filter((id) => !realActiveIds.has(id)).length;
+    if (invalidCount > 0) {
+      throw new Error('Preset contains an inactive or placeholder inverter. Please select a real inverter from masters.');
+    }
+  }
 
   if (targetPresetId) {
-    // 1. Update preset metadata in systems table
-    const { error: presetErr } = await supabase
+    const { data: existingPreset, error: existingErr } = await supabase
       .from('systems' as any)
-      .update({
-        name: updates.name,
-        category: updates.systemType,
-        capacity_kw: Number(updates.capacityKw) || 0,
-        state_id: updates.stateId || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', targetPresetId);
+      .select('id, org_id, target_margin_pct')
+      .eq('id', targetPresetId)
+      .maybeSingle();
 
-    if (presetErr) throw new Error('Failed to update system metadata: ' + presetErr.message);
+    if (existingErr) throw new Error('Failed to check existing preset: ' + existingErr.message);
+    if (!existingPreset) throw new Error('Preset not found in system presets.');
 
-    // 2. Delete old system items
-    const { error: delErr } = await supabase
-      .from('system_items' as any)
-      .delete()
-      .eq('system_id', targetPresetId);
+    const shouldForkGlobalPreset = (existingPreset as any).org_id === null && orgId !== null;
 
-    if (delErr) throw new Error('Failed to delete old system items: ' + delErr.message);
-  } else {
-    const { data: { user } } = await supabase.auth.getUser();
-    let orgId: string | null = null;
-    if (user?.id) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('org_id')
-        .eq('id', user.id)
+    if (shouldForkGlobalPreset) {
+      const { data: newPreset, error: presetErr } = await supabase
+        .from('systems' as any)
+        .insert({
+          org_id: orgId,
+          name: updates.name,
+          category: updates.systemType,
+          capacity_kw: Number(updates.capacityKw) || 0,
+          state_id: updates.stateId || null,
+          target_margin_pct: Number((existingPreset as any).target_margin_pct ?? 20),
+          is_active: true,
+          is_custom: true,
+        })
+        .select('id')
         .maybeSingle();
-      orgId = profile?.org_id ?? null;
-    }
 
+      if (presetErr) throw new Error('Failed to create organisation preset: ' + presetErr.message);
+      targetPresetId = (newPreset as any)?.id;
+    } else {
+      const { error: presetErr } = await supabase
+        .from('systems' as any)
+        .update({
+          name: updates.name,
+          category: updates.systemType,
+          capacity_kw: Number(updates.capacityKw) || 0,
+          state_id: updates.stateId || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', targetPresetId);
+
+      if (presetErr) throw new Error('Failed to update system metadata: ' + presetErr.message);
+
+      const { error: delErr } = await supabase
+        .from('system_items' as any)
+        .delete()
+        .eq('system_id', targetPresetId);
+
+      if (delErr) throw new Error('Failed to delete old system items: ' + delErr.message);
+    }
+  } else {
     const { data: newPreset, error: presetErr } = await supabase
       .from('systems' as any)
       .insert({
@@ -368,6 +434,55 @@ export async function savePresetWithComponents(
   return targetPresetId;
 }
 
+export async function deleteSystemPreset(presetId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) throw new Error('Unauthorized');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('org_id')
+    .eq('id', user.id)
+    .maybeSingle();
+  const orgId = profile?.org_id ?? null;
+  if (!orgId) throw new Error('Organisation context not found.');
+
+  const { data: preset, error: presetError } = await supabase
+    .from('systems' as any)
+    .select('id, org_id')
+    .eq('id', presetId)
+    .maybeSingle();
+  if (presetError) throw new Error('Failed to load preset: ' + presetError.message);
+  if (!preset) throw new Error('Preset not found.');
+  if ((preset as any).org_id !== orgId) {
+    throw new Error('Built-in presets cannot be deleted. Save edits first to create an organisation copy.');
+  }
+
+  const { count, error: refError } = await (supabase
+    .from('quotes' as any)
+    .select('id', { count: 'exact', head: true })
+    .eq('system_id', presetId) as any);
+  if (refError) throw new Error('Failed to check preset usage: ' + refError.message);
+
+  if ((count ?? 0) > 0) {
+    const { error } = await supabase
+      .from('systems' as any)
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', presetId);
+    if (error) throw new Error('Failed to deactivate preset: ' + error.message);
+  } else {
+    const { error } = await supabase
+      .from('systems' as any)
+      .delete()
+      .eq('id', presetId)
+      .eq('org_id', orgId);
+    if (error) throw new Error('Failed to delete preset: ' + error.message);
+  }
+
+  revalidatePath('/settings/presets');
+  revalidatePath('/systems');
+}
+
 export async function getCatalogItems(category: string, search?: string) {
   const supabase = await createClient();
 
@@ -376,15 +491,15 @@ export async function getCatalogItems(category: string, search?: string) {
     let tableName = `eq_${category}s`;
     if (category === 'battery') tableName = 'eq_batteries';
     
-    let query = supabase.from(tableName as any).select('*');
+    let query = supabase.from(tableName as any).select('*').eq('is_active', true);
     if (search) {
-      query = query.ilike('model', `%${search}%`); // assuming search by model
+      query = query.or(`brand.ilike.%${search}%,model.ilike.%${search}%`);
     }
     const { data } = await query.limit(50);
-    return (data || []).map((item: any) => ({
+    return (data || []).filter((item: any) => !isPlaceholderEquipment(item)).map((item: any) => ({
       id: item.id,
       type: category,
-      description: item.model ? `${item.brand} ${item.model}` : item.name || 'Unknown',
+      description: [item.brand, item.model].filter(Boolean).join(' ') || item.name || 'Unnamed item',
       brand: item.brand,
       model: item.model,
       unit: 'Nos',

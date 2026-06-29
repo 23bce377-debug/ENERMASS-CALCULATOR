@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { PresetORM, type PresetRow } from '@/backend/orm/presets';
 import { PresetEditorDialog } from '@/components/presets/PresetEditorDialog';
+import { deleteSystemPreset } from '@/lib/actions/presets';
 import {
   Settings2, Plus, Box, Zap, Search,
   ToggleLeft, ToggleRight, Edit3, Trash2, MapPin
@@ -46,7 +47,12 @@ export default function SystemPresetsPage() {
   const handleDelete = async (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
       try {
-        await PresetORM.delete(id);
+        const preset = presets.find((row) => row.id === id);
+        if (preset?.source === 'custom_presets') {
+          await PresetORM.delete(id);
+        } else {
+          await deleteSystemPreset(id);
+        }
         fetchPresets();
       } catch (err: any) {
         alert('Failed to delete: ' + err.message);
@@ -134,6 +140,9 @@ export default function SystemPresetsPage() {
                       {preset.is_org_template && (
                         <span className="px-2 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-600 border border-blue-500/20 uppercase tracking-wider">Built-in</span>
                       )}
+                      {preset.source === 'custom_presets' && (
+                        <span className="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-600 border border-amber-500/20 uppercase tracking-wider">Legacy</span>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-center text-text-secondary">
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-hover px-2.5 py-1 text-xs font-semibold">
@@ -157,13 +166,15 @@ export default function SystemPresetsPage() {
                       </div>
                     </td>
                     <td className="px-5 py-4 text-right space-x-2">
-                      <button 
+                      <button
                         onClick={() => {
+                          if (preset.source === 'custom_presets') return;
                           setComposerSystemId(preset.id);
                           setComposerOpen(true);
                         }}
-                        className="p-1.5 text-text-muted hover:text-accent hover:bg-accent-dim rounded transition-colors" 
-                        title="Edit Preset"
+                        disabled={preset.source === 'custom_presets'}
+                        className="p-1.5 text-text-muted hover:text-accent hover:bg-accent-dim rounded transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-text-muted"
+                        title={preset.source === 'custom_presets' ? 'Legacy calculator presets are read-only here' : 'Edit Preset'}
                       >
                         <Edit3 size={16} />
                       </button>

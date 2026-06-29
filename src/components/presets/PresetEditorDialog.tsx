@@ -48,6 +48,15 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
+const SYSTEM_TYPE_OPTIONS = [
+  { value: 'on_grid', label: 'On-Grid' },
+  { value: '3_phase', label: '3-Phase' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'micro_inverter', label: 'Micro' },
+  { value: 'commercial', label: 'Commercial' },
+  { value: 'upgrade', label: 'Upgrade' },
+];
+
 function newBlankItem(catalogItem: any, category: string, sortOrder: number): LineItem {
   return {
     id: `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
@@ -225,18 +234,18 @@ export function PresetEditorDialog({ presetId, open, onClose, onSaved }: PresetE
             </label>
 
             <div className="flex rounded-lg border border-border bg-surface p-1">
-              {['on_grid', 'off_grid', 'hybrid'].map((type) => (
+              {SYSTEM_TYPE_OPTIONS.map((option) => (
                 <button
                   type="button"
-                  key={type}
-                  onClick={() => setSystemType(type)}
+                  key={option.value}
+                  onClick={() => setSystemType(option.value)}
                   className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                    systemType === type
+                    systemType === option.value
                       ? 'bg-accent text-background'
                       : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'
                   }`}
                 >
-                  {type === 'on_grid' ? 'On-Grid' : type === 'off_grid' ? 'Off-Grid' : 'Hybrid'}
+                  {option.label}
                 </button>
               ))}
             </div>

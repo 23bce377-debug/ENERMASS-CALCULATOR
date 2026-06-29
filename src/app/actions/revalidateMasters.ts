@@ -40,6 +40,8 @@ export async function revalidateMasterCache(
       orgCacheKey(targetOrgId, 'batteries'),
       `rate_master:org:${targetOrgId}`,
       `erp:bootstrap:${targetOrgId}`,
+      `erp:master:equipment:${targetOrgId}:v2`,
+      'erp:master:structures:global',
       `category_margins:org:${targetOrgId}`
     );
     await invalidateMasterCache(targetOrgId);
@@ -51,6 +53,7 @@ export async function revalidateMasterCache(
       'eq:global:panels:active',
       'eq:global:inverters:active',
       'eq:global:batteries:active',
+      'erp:master:structures:global',
       'state_rules:all',
       'subsidy_schemes:active'
     );

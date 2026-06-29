@@ -6,6 +6,7 @@ import { Shield, Key, User, Mail, Lock, Phone, ArrowRight, CheckCircle, XCircle,
 import { useToast } from '@/components/ui/Toast';
 import { supabase } from '@/lib/supabase/client';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import { DeviceClientError, registerOrVerifyDevice } from '@/lib/device/deviceClient';
 
 const PASSWORD_RULES = [
   { test: (p: string) => p.length >= 12,           label: 'At least 12 characters' },
@@ -193,9 +194,15 @@ export default function ActivatePage() {
   const [assignedRole, setAssignedRole] = useState<'owner' | 'staff'>('staff');
 
   // Step 1: Key entry
+  const [entryMode, setEntryMode] = useState<'activation' | 'login'>('activation');
   const [rawKey, setRawKey] = useState('');
   const [validating, setValidating] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginEmailError, setLoginEmailError] = useState('');
+  const [loginPasswordError, setLoginPasswordError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
 
   // Step 2: Registration
   const [fullName, setFullName] = useState('');
@@ -274,6 +281,7 @@ export default function ActivatePage() {
       if (savedRawKey) setRawKey(savedRawKey);
       if (savedEmail) setEmail(savedEmail);
       else if (emailParam) setEmail(emailParam);
+      if (savedEmail || emailParam) setLoginEmail(savedEmail || emailParam || '');
 
       if (savedFullName) setFullName(savedFullName);
       if (savedPhone) setPhone(savedPhone);
@@ -355,6 +363,72 @@ export default function ActivatePage() {
       toast('Key pasted from clipboard!', 'success');
     } catch {
       toast('Could not access clipboard. Please paste manually.', 'error');
+    }
+  };
+
+  const validateLoginEmail = (value: string) => {
+    if (!value.trim()) {
+      setLoginEmailError('Email address is required.');
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
+      setLoginEmailError('Please enter a valid email address.');
+      return false;
+    }
+    setLoginEmailError('');
+    return true;
+  };
+
+  const validateLoginPassword = (value: string) => {
+    if (!value) {
+      setLoginPasswordError('Password is required.');
+      return false;
+    }
+    setLoginPasswordError('');
+    return true;
+  };
+
+  const handleLoginDeviceError = (error: unknown) => {
+    if (error instanceof DeviceClientError && error.redirectTo) {
+      router.replace(`${error.redirectTo}?reason=device`);
+      return;
+    }
+    toast(error instanceof Error ? error.message : 'Device verification failed. Please try again.', 'error');
+  };
+
+  const handleCredentialLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const isEmailValid = validateLoginEmail(loginEmail);
+    const isPasswordValid = validateLoginPassword(loginPassword);
+    if (!isEmailValid || !isPasswordValid) return;
+
+    setLoginLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail.trim(),
+        password: loginPassword,
+      });
+
+      if (error) {
+        const message = error.message || 'Sign in failed.';
+        if (message.toLowerCase().includes('email') || message.toLowerCase().includes('user')) {
+          setLoginEmailError(message);
+        } else {
+          setLoginPasswordError(message);
+        }
+        toast(message, 'error');
+        return;
+      }
+
+      if (data.session) {
+        await registerOrVerifyDevice();
+        toast('Signed in successfully.', 'success');
+        router.replace('/calculator');
+      }
+    } catch (err) {
+      handleLoginDeviceError(err);
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -688,6 +762,33 @@ export default function ActivatePage() {
 
             {/* ── Step 1: Key Entry ───────────────────────────────────────── */}
             {step === 'key-entry' && !showAdminBypass && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-2 rounded-xl border border-border bg-background/40 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setEntryMode('activation')}
+                    className={`rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+                      entryMode === 'activation'
+                        ? 'bg-accent text-background shadow-sm'
+                        : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'
+                    }`}
+                  >
+                    Activation Key
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEntryMode('login')}
+                    className={`rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+                      entryMode === 'login'
+                        ? 'bg-accent text-background shadow-sm'
+                        : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'
+                    }`}
+                  >
+                    Email Login
+                  </button>
+                </div>
+
+                {entryMode === 'activation' ? (
               <form onSubmit={handleValidateKey} className="space-y-6" id="key-entry-form" noValidate>
                 <div>
                   <h2 className="text-lg font-bold text-text-primary mb-1">Enter Your Activation Key</h2>
@@ -788,7 +889,7 @@ export default function ActivatePage() {
                 <div className="flex items-center justify-between border-t border-border/40 pt-4">
                   <button
                     type="button"
-                    onClick={() => router.push('/login')}
+                    onClick={() => setEntryMode('login')}
                     className="text-xs text-text-muted hover:text-text-primary transition-colors cursor-pointer"
                   >
                     Already registered? <span className="text-accent underline">Sign in</span>
@@ -803,6 +904,113 @@ export default function ActivatePage() {
                   </button>
                 </div>
               </form>
+                ) : (
+                  <form onSubmit={handleCredentialLogin} className="space-y-6" id="activation-login-form" noValidate>
+                    <div>
+                      <h2 className="text-lg font-bold text-text-primary mb-1">Sign In With Email</h2>
+                      <p className="text-sm text-text-muted">
+                        Already activated this account? Use your email and password here. Device verification will run after sign-in.
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label htmlFor="activation-login-email" className="block text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                          Email Address
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-text-muted">
+                            <Mail size={16} />
+                          </div>
+                          <input
+                            id="activation-login-email"
+                            type="email"
+                            value={loginEmail}
+                            disabled={loginLoading}
+                            onChange={(e) => {
+                              setLoginEmail(e.target.value);
+                              if (loginEmailError) validateLoginEmail(e.target.value);
+                            }}
+                            onBlur={(e) => validateLoginEmail(e.target.value)}
+                            placeholder="name@company.com"
+                            className={`w-full pl-10 pr-3.5 py-3 rounded-xl border bg-background/50
+                              text-sm text-text-primary placeholder:text-text-muted
+                              focus:outline-none focus:ring-2 focus:ring-accent/20 focus:bg-background transition-all duration-200 ${
+                                loginEmailError ? 'border-red-500/60 focus:border-red-500/80 focus:ring-red-500/10' : 'border-border focus:border-accent/50'
+                              }`}
+                            required
+                          />
+                        </div>
+                        {loginEmailError && (
+                          <p className="text-[10px] text-red-400 flex items-center gap-1.5 mt-1 font-medium animate-slide-down">
+                            <AlertCircle size={12} className="shrink-0" />
+                            {loginEmailError}
+                          </p>
+                        )}
+                      </div>
+
+                      <PasswordInput
+                        id="activation-login-password"
+                        label="Password"
+                        icon={<Lock size={16} />}
+                        value={loginPassword}
+                        disabled={loginLoading}
+                        onChange={(e) => {
+                          setLoginPassword(e.target.value);
+                          if (loginPasswordError) validateLoginPassword(e.target.value);
+                        }}
+                        onBlur={(e) => validateLoginPassword(e.target.value)}
+                        placeholder="Enter password"
+                        error={loginPasswordError}
+                        required
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => router.push('/forgot-password')}
+                        className="text-xs text-accent hover:text-accent-hover font-semibold hover:underline transition-colors"
+                      >
+                        Forgot password?
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEntryMode('activation')}
+                        className="text-xs text-text-muted hover:text-accent font-semibold transition-colors"
+                      >
+                        Use activation key
+                      </button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loginLoading}
+                      className="w-full gold-gradient py-3 px-4 rounded-xl text-background font-bold text-sm transition-all duration-200 active:scale-[0.98] shadow-lg shadow-accent/20 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {loginLoading ? (
+                        <><Loader2 size={16} className="animate-spin" /> Signing In...</>
+                      ) : (
+                        <><Shield size={16} /> Sign In & Verify Device</>
+                      )}
+                    </button>
+
+                    <div className="flex items-center justify-between border-t border-border/40 pt-4">
+                      <p className="text-[10px] text-text-muted leading-relaxed">
+                        New user? Enter the activation key first to create and bind your account.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminBypass(true)}
+                        className="text-xs text-text-muted hover:text-accent transition-colors cursor-pointer flex items-center gap-1 font-semibold"
+                      >
+                        <Terminal size={14} />
+                        Super Admin
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
             )}
 
             {/* ── Super Admin Bypass Tab ───────────────────────────────────── */}

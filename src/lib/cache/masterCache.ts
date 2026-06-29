@@ -30,7 +30,7 @@ import type {
   CachedAppSettings,
 } from './masterCacheTypes';
 
-export const CACHE_VERSION = '3.1.0';
+export const CACHE_VERSION = '3.2.0';
 export const CACHE_TAG = 'master-data';
 
 /** Global TTL: 5 minutes (org-independent tables change infrequently) */
@@ -53,19 +53,30 @@ function cacheKey(orgId: string | null): string {
 }
 
 function computeEtag(data: MasterData, version: string): string {
-  // Use a stable subset (counts + version) instead of full JSON for performance.
-  const signature = [
-    version,
-    data.panels.length,
-    data.inverters.length,
-    data.batteries.length,
-    data.bomCategories.length,
-    data.bomTemplateItems.length,
-    data.structures.length,
-    data.rateMaster.length,
-    data.categoryMargins.length,
-  ].join(':');
+  const signature = JSON.stringify({ version, data });
   return crypto.createHash('md5').update(signature).digest('hex');
+}
+
+function applyOrgVisibility(rows: any[], hidden: Set<string>) {
+  const overridden = new Set(
+    rows
+      .filter((row) => row.org_id && row.source_global_id)
+      .map((row) => row.source_global_id),
+  );
+
+  return rows.filter((row) => {
+    if (!row.org_id && hidden.has(row.id)) return false;
+    if (!row.org_id && overridden.has(row.id)) return false;
+    return true;
+  });
+}
+
+function hiddenIdsByEntity(rows: any[], entity: string) {
+  return new Set(
+    rows
+      .filter((row) => row.entity === entity)
+      .map((row) => row.global_id),
+  );
 }
 
 // ─── Core Loader ──────────────────────────────────────────────────────────────
@@ -83,20 +94,20 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
     structureMaterialRatesRes, structureTemplatesRes, structureTemplateItemsRes,
     walkwayTemplatesRes, ladderTemplatesRes, structureAccessoryRatesRes,
     rateMasterRes, categoryMarginsRes, appSettingsRes,
-    systemStateAvailRes, stateTermsRes,
+    systemStateAvailRes, stateTermsRes, hiddenItemsRes,
   ] = await Promise.all([
     // Equipment
     supabase
       .from('eq_panels')
-      .select('id, brand, model, wattage_w, rate_per_watt, gst_pct, is_active')
+      .select('id, org_id, source_global_id, brand, model, wattage_w, rate_per_watt, gst_pct, is_active, updated_at')
       .eq('is_active', true),
     supabase
       .from('eq_inverters')
-      .select('id, brand, model, capacity_kw, phases, rate, gst_pct, is_active')
+      .select('id, org_id, source_global_id, brand, model, capacity_kw, phases, rate, gst_pct, is_active, updated_at')
       .eq('is_active', true),
     supabase
       .from('eq_batteries')
-      .select('id, brand, model, capacity_kwh, voltage_v, rate, gst_pct, is_active')
+      .select('id, org_id, source_global_id, brand, model, capacity_kwh, voltage_v, rate, gst_pct, is_active, updated_at')
       .eq('is_active', true),
 
     // State / Subsidy
@@ -121,9 +132,10 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
       .from('bom_categories')
       .select('id, org_id, name, display_order, is_optional')
       .order('display_order'),
-    supabase
+    (supabase as any)
       .from('bom_template_items')
-      .select('id, org_id, category_id, sku_code, description, unit, unit_rate_min, unit_rate_max, default_rate, qty_formula, is_survey_dependent, civil_required_only, notes'),
+      .select('id, org_id, source_global_id, category_id, sku_code, description, unit, unit_rate_min, unit_rate_max, default_rate, qty_formula, is_survey_dependent, civil_required_only, notes, is_active, updated_at')
+      .eq('is_active', true),
 
     // Equipment (continued)
     supabase
@@ -134,7 +146,8 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
       .select('id, brand, model, selling_price, gst_pct, description, max_capacity_kw'),
     supabase
       .from('eq_mounting_structures')
-      .select('id, name, material, roof_mount_type, selling_price, per_watt_rate, gst_pct, raw_material_rate, fabrication_rate, galvanizing_rate, base_weight_kg, wastage_pct, fastener_weight_pct, rate_per_kg'),
+      .select('id, org_id, source_global_id, name, material, roof_mount_type, selling_price, per_watt_rate, gst_pct, raw_material_rate, fabrication_rate, galvanizing_rate, base_weight_kg, wastage_pct, fastener_weight_pct, rate_per_kg, is_active, updated_at')
+      .eq('is_active', true),
 
     // Structure lookups
     supabase
@@ -199,6 +212,12 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
       .from('state_terms_templates')
       .select('id, state_id, clauses, is_active, version')
       .eq('is_active', true),
+    orgId
+      ? (supabase as any)
+          .from('master_hidden_items')
+          .select('entity, global_id')
+          .eq('org_id', orgId)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   // ── Log any non-fatal errors (missing tables, RLS blocks) ───────────────
@@ -210,7 +229,7 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
     weightLookupsRes, orientationMultipliersRes, structureVendorsRes,
     structureMaterialRatesRes, structureTemplatesRes, structureTemplateItemsRes,
     walkwayTemplatesRes, ladderTemplatesRes, structureAccessoryRatesRes,
-    rateMasterRes, categoryMarginsRes,
+    rateMasterRes, categoryMarginsRes, hiddenItemsRes,
   ];
 
   for (const res of results) {
@@ -231,11 +250,12 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
   }>;
 
   const appSettingsRow = (appSettingsRes.data ?? null) as CachedAppSettings | null;
+  const hiddenRows = (hiddenItemsRes.data ?? []) as any[];
 
   const data: MasterData = {
-    panels: (panelsRes.data ?? []) as any,
-    inverters: (invertersRes.data ?? []) as any,
-    batteries: (batteriesRes.data ?? []) as any,
+    panels: applyOrgVisibility((panelsRes.data ?? []) as any[], hiddenIdsByEntity(hiddenRows, 'panels')) as any,
+    inverters: applyOrgVisibility((invertersRes.data ?? []) as any[], hiddenIdsByEntity(hiddenRows, 'inverters')) as any,
+    batteries: applyOrgVisibility((batteriesRes.data ?? []) as any[], hiddenIdsByEntity(hiddenRows, 'batteries')) as any,
     stateRules: (stateRulesRes.data ?? []) as any,
     slabs: (slabsRes.data ?? []) as any,
     schemes: (schemesRes.data ?? []) as any,
@@ -243,10 +263,10 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
     systemStateAvailability: (systemStateAvailRes.data ?? []) as any,
     stateTermsTemplates: (stateTermsRes.data ?? []) as any,
     bomCategories: (bomCategoriesRes.data ?? []) as any,
-    bomTemplateItems: (bomTemplateItemsRes.data ?? []) as any,
+    bomTemplateItems: applyOrgVisibility((bomTemplateItemsRes.data ?? []) as any[], hiddenIdsByEntity(hiddenRows, 'accessories')) as any,
     meters: (metersRes.data ?? []) as any,
     lightningArresters: (lightningArrestersRes.data ?? []) as any,
-    structures: (structuresRes.data ?? []) as any,
+    structures: applyOrgVisibility((structuresRes.data ?? []) as any[], hiddenIdsByEntity(hiddenRows, 'structures')) as any,
     weightLookups: (weightLookupsRes.data ?? []) as any,
     orientationMultipliers: (orientationMultipliersRes.data ?? []) as any,
     structureVendors: (structureVendorsRes.data ?? []) as any,

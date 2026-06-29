@@ -8,6 +8,7 @@ export interface PresetRow {
   status: string;
   author_id: string | null;
   is_org_template: boolean;
+  source: 'systems' | 'custom_presets';
   calculator_state: any;
   state_id?: string | null;
   state_name?: string | null;
@@ -74,6 +75,7 @@ export const PresetORM: any = {
             status: 'published',
             author_id: null,
             is_org_template: !row.org_id,
+            source: 'systems',
             calculator_state: null,
             state_id: row.state_id ?? null,
             state_name: state?.state_name ?? null,
@@ -105,6 +107,7 @@ export const PresetORM: any = {
           status: 'published',
           author_id: row.user_id,
           is_org_template: false,
+          source: 'custom_presets',
           calculator_state: row.config_json,
           state_id: row.config_json?.stateId ?? null,
           state_name: row.config_json?.selectedState ?? null,
@@ -165,6 +168,7 @@ export const PresetORM: any = {
         status: 'published',
         author_id: null,
         is_org_template: !sysData.org_id,
+        source: 'systems',
         calculator_state: null,
         state_id: (sysData as any).state_id ?? null,
         state_name: null,
@@ -181,6 +185,7 @@ export const PresetORM: any = {
       status: 'published',
       author_id: data.user_id,
       is_org_template: false,
+      source: 'custom_presets',
       calculator_state: data.config_json,
       state_id: data.config_json?.stateId ?? null,
       state_name: data.config_json?.selectedState ?? null,

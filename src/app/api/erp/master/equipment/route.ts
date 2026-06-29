@@ -12,10 +12,17 @@ import { getOrSetCache } from '@/lib/cache/redisCache';
  */
 export const dynamic = 'force-dynamic';
 
+function applyOrgVisibility(rows: any[], hidden: Set<string>) {
+  const overridden = new Set(
+    rows.filter((row) => row.org_id && row.source_global_id).map((row) => row.source_global_id)
+  );
+  return rows.filter((row) => !(!row.org_id && (hidden.has(row.id) || overridden.has(row.id))));
+}
+
 export const GET = withLicensedApiRoute(
   async (_request, context) => {
     const orgId = context.session.orgId;
-    const cacheKey = `erp:master:equipment:${orgId}`;
+    const cacheKey = `erp:master:equipment:${orgId}:v2`;
 
     try {
       const data = await getOrSetCache(
@@ -33,13 +40,13 @@ export const GET = withLicensedApiRoute(
             }
           };
 
-          const [panelsRes, invertersRes, batteriesRes, metersRes, laRes, commDevicesRes] =
+          const [panelsRes, invertersRes, batteriesRes, metersRes, laRes, commDevicesRes, hiddenRes] =
             await Promise.all([
               safeQuery(
                 supabase
                   .from('eq_panels')
                   .select(
-                    'id, brand, model, wattage_w, panel_type, selling_price, gst_pct, is_active, created_at'
+                    'id, org_id, source_global_id, brand, model, wattage_w, panel_type, selling_price, gst_pct, is_active, created_at'
                   )
                   .eq('is_active', true)
                   .order('wattage_w', { ascending: true })
@@ -48,7 +55,7 @@ export const GET = withLicensedApiRoute(
                 supabase
                   .from('eq_inverters')
                   .select(
-                    'id, brand, model, capacity_kw, inverter_type, phases, selling_price, gst_pct, is_active, created_at'
+                    'id, org_id, source_global_id, brand, model, capacity_kw, inverter_type, phases, selling_price, gst_pct, is_active, created_at'
                   )
                   .eq('is_active', true)
                   .order('capacity_kw', { ascending: true })
@@ -57,7 +64,7 @@ export const GET = withLicensedApiRoute(
                 supabase
                   .from('eq_batteries')
                   .select(
-                    'id, brand, model, capacity_kwh, chemistry, dod_pct, selling_price, gst_pct, is_active, created_at'
+                    'id, org_id, source_global_id, brand, model, capacity_kwh, chemistry, dod_pct, selling_price, gst_pct, is_active, created_at'
                   )
                   .eq('is_active', true)
               ),
@@ -79,6 +86,12 @@ export const GET = withLicensedApiRoute(
                   .select('id, brand, model, selling_price, gst_pct, is_active')
                   .eq('is_active', true)
               ),
+              safeQuery(
+                (supabase as any)
+                  .from('master_hidden_items')
+                  .select('entity, global_id')
+                  .eq('org_id', orgId)
+              ),
             ]);
 
           const coreErrors = [panelsRes, invertersRes, batteriesRes].filter(
@@ -86,10 +99,15 @@ export const GET = withLicensedApiRoute(
           );
           if (coreErrors.length > 0) throw coreErrors[0].error;
 
+          const hiddenRows = hiddenRes.data ?? [];
+          const hiddenIds = (entity: string): Set<string> => new Set<string>(
+            hiddenRows.filter((row: any) => row.entity === entity).map((row: any) => String(row.global_id))
+          );
+
           return {
-            panels: panelsRes.data ?? [],
-            inverters: invertersRes.data ?? [],
-            batteries: batteriesRes.data ?? [],
+            panels: applyOrgVisibility(panelsRes.data ?? [], hiddenIds('panels')),
+            inverters: applyOrgVisibility(invertersRes.data ?? [], hiddenIds('inverters')),
+            batteries: applyOrgVisibility(batteriesRes.data ?? [], hiddenIds('batteries')),
             meters: metersRes.data ?? [],
             lightningArresters: laRes.data ?? [],
             commDevices: commDevicesRes.data ?? [],
