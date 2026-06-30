@@ -40,6 +40,37 @@ function isPlaceholderEquipment(item: { brand?: string | null; model?: string | 
   );
 }
 
+const CATALOG_CATEGORY_ALIASES: Record<string, string[]> = {
+  structure: ['Mounting Structure', 'Structure', 'Structures'],
+  dc_protection: ['DC Protection', 'DC Side Protection', 'Electrical Protection', 'Monitoring & Safety'],
+  ac_protection: ['AC Protection', 'AC Side Protection', 'Electrical Protection'],
+  cable: ['Cables', 'Cables & Conduit', 'Cabling', 'Cable', 'Wiring'],
+  earthing: ['Earthing', 'Earthings', 'Monitoring & Safety'],
+  civil: ['Civil Works', 'Civil', 'Services'],
+  logistics: ['Logistics', 'Logistics & Handling', 'Handling', 'Services'],
+  accessory: ['Accessories', 'Accessory', 'Monitoring & Safety', 'Wiring'],
+  other: ['Other'],
+};
+
+function normalizeCatalogName(value: string) {
+  return value.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function categoryFromCatalogName(name: string | null | undefined, fallback: string) {
+  const normalizedName = normalizeCatalogName(name ?? '');
+  const fallbackAliases = CATALOG_CATEGORY_ALIASES[fallback] ?? [];
+  if (fallbackAliases.map(normalizeCatalogName).includes(normalizedName)) {
+    return fallback;
+  }
+
+  for (const [category, aliases] of Object.entries(CATALOG_CATEGORY_ALIASES)) {
+    if (aliases.map(normalizeCatalogName).includes(normalizedName)) {
+      return category;
+    }
+  }
+  return fallback;
+}
+
 export async function getPresetStates(): Promise<PresetStateOption[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -98,7 +129,7 @@ export async function getPresetWithComponents(presetId: string) {
     supabase.from('eq_meters').select('id, brand, model, selling_price'),
     supabase.from('eq_lightning_arresters').select('id, brand, model, selling_price'),
     supabase.from('eq_mounting_structures').select('id, name, selling_price'),
-    supabase.from('bom_template_items').select('id, description, default_rate'),
+    supabase.from('bom_template_items').select('id, description, default_rate, category_id, bom_categories(name)'),
     supabase.from('eq_communication_devices').select('id, brand, model, selling_price'),
     supabase.from('structure_component_master').select('id, name, selling_price'),
   ]);
@@ -192,6 +223,7 @@ export async function getPresetWithComponents(presetId: string) {
       const bom = bomItems.find((x: any) => x.id === item.bom_item_id);
       if (bom) {
         unitRate = Number(bom.default_rate || 0);
+        category = categoryFromCatalogName((bom as any).bom_categories?.name, category);
       }
     } else if (item.comm_device_id) {
       category = 'accessory';
@@ -377,8 +409,79 @@ export async function savePresetWithComponents(
     }
   }
 
+  async function ensureBomCategoryId(category: string) {
+    const aliases = CATALOG_CATEGORY_ALIASES[category] ?? [category];
+    const aliasSet = new Set(aliases.map(normalizeCatalogName));
+
+    const { data: categories, error: categoryLoadErr } = await supabase
+      .from('bom_categories' as any)
+      .select('id, name, display_order')
+      .order('display_order', { ascending: true });
+
+    if (categoryLoadErr) throw new Error('Failed to load BOM categories: ' + categoryLoadErr.message);
+
+    const existing = ((categories || []) as any[]).find((item: any) => aliasSet.has(normalizeCatalogName(item.name || '')));
+    if (existing?.id) return existing.id as string;
+
+    const displayOrder = Object.keys(CATALOG_CATEGORY_ALIASES).indexOf(category) + 1 || 99;
+    const { data: newCategory, error: categoryCreateErr } = await supabase
+      .from('bom_categories' as any)
+      .insert({
+        org_id: orgId,
+        name: aliases[0] ?? category,
+        display_order: displayOrder,
+        is_optional: ['civil', 'logistics', 'accessory', 'other'].includes(category),
+      })
+      .select('id')
+      .maybeSingle();
+
+    if (categoryCreateErr) throw new Error('Failed to create BOM category: ' + categoryCreateErr.message);
+    const id = (newCategory as any)?.id;
+    if (!id) throw new Error('Failed to create BOM category.');
+    return id as string;
+  }
+
+  const preparedLineItems: LineItem[] = [];
+  for (const [index, item] of updates.lineItems.entries()) {
+    if (item.catalogType !== 'custom' || item.catalogItemId) {
+      preparedLineItems.push(item);
+      continue;
+    }
+
+    const categoryId = await ensureBomCategoryId(item.category);
+    const skuCode = item.skuCode || `CUSTOM-${item.category.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}-${Date.now()}-${index + 1}`;
+    const unitRate = Number(item.unitRate || 0);
+    const { data: customCatalogItem, error: customItemErr } = await supabase
+      .from('bom_template_items' as any)
+      .insert({
+        org_id: orgId,
+        category_id: categoryId,
+        sku_code: skuCode,
+        description: item.description,
+        unit: item.unit || 'Nos',
+        unit_rate_min: unitRate,
+        unit_rate_max: unitRate,
+        default_rate: unitRate,
+        is_survey_dependent: item.isSurveyDependent,
+        civil_required_only: item.category === 'civil',
+      })
+      .select('id')
+      .maybeSingle();
+
+    if (customItemErr) throw new Error('Failed to create custom catalog item: ' + customItemErr.message);
+    const catalogItemId = (customCatalogItem as any)?.id;
+    if (!catalogItemId) throw new Error('Failed to create custom catalog item.');
+
+    preparedLineItems.push({
+      ...item,
+      catalogItemId,
+      catalogType: 'bom_template',
+      skuCode,
+    });
+  }
+
   // 3. Insert new system items
-  const itemsToInsert = updates.lineItems.map((item, idx) => {
+  const itemsToInsert = preparedLineItems.map((item, idx) => {
     const isSolarMeter = item.category === 'accessory' && item.description.toLowerCase().includes('solar');
     const isNetMeter = item.category === 'accessory' && item.description.toLowerCase().includes('net');
     const isCommDevice = item.category === 'accessory' && item.description.toLowerCase().includes('comm');
@@ -485,6 +588,7 @@ export async function deleteSystemPreset(presetId: string) {
 
 export async function getCatalogItems(category: string, search?: string) {
   const supabase = await createClient();
+  const searchTerm = search?.trim();
 
   // Panels, Inverters, Batteries are from their respective tables
   if (['panel', 'inverter', 'battery'].includes(category)) {
@@ -492,8 +596,8 @@ export async function getCatalogItems(category: string, search?: string) {
     if (category === 'battery') tableName = 'eq_batteries';
     
     let query = supabase.from(tableName as any).select('*').eq('is_active', true);
-    if (search) {
-      query = query.or(`brand.ilike.%${search}%,model.ilike.%${search}%`);
+    if (searchTerm) {
+      query = query.or(`brand.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`);
     }
     const { data } = await query.limit(50);
     return (data || []).filter((item: any) => !isPlaceholderEquipment(item)).map((item: any) => ({
@@ -507,37 +611,157 @@ export async function getCatalogItems(category: string, search?: string) {
       defaultRate: Number(item.selling_price || 0),
       isSurveyDependent: false,
     }));
-  } else {
-    let section: string | null = null;
-    switch(category) {
-      case 'structure': section = 'mounting_structure'; break;
-      case 'dc_protection':
-      case 'ac_protection': section = 'electrical_protection'; break;
-      case 'cable': section = 'cabling'; break;
-      case 'earthing': section = 'earthing'; break;
-      case 'civil':
-      case 'logistics': section = 'services'; break;
-      case 'accessory': section = 'wiring'; break;
-    }
-
-    if (!section) return [];
-
-    let query = supabase.from('bom_template_items').select('*').eq('category_id' as any, section);
-    if (search) {
-      query = query.ilike('description', `%${search}%`);
-    }
-
-    const { data } = await query.limit(50);
-    return (data || []).map((item: any) => ({
-      id: item.id,
-      type: 'equipment',
-      description: item.description,
-      brand: '',
-      model: '',
-      unit: item.unit || 'units',
-      defaultQty: 1,
-      defaultRate: Number(item.default_rate || 0),
-      isSurveyDependent: false,
-    }));
   }
+
+  const catalogItems: any[] = [];
+
+  if (category === 'structure') {
+    let structureQuery = supabase
+      .from('eq_mounting_structures' as any)
+      .select('id, name, description, material, roof_mount_type, selling_price, is_active')
+      .eq('is_active', true);
+
+    if (searchTerm) {
+      structureQuery = structureQuery.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+    }
+
+    const { data: structures, error: structureError } = await structureQuery.limit(25);
+    if (structureError) throw new Error('Failed to fetch mounting structures: ' + structureError.message);
+
+    catalogItems.push(...(structures || []).map((item: any) => ({
+      id: item.id,
+      type: 'structure',
+      catalogType: 'eq_structure',
+      description: item.name || item.description || 'Mounting structure',
+      brand: item.material ?? '',
+      model: item.roof_mount_type ?? '',
+      unit: 'set',
+      defaultQty: 1,
+      defaultRate: Number(item.selling_price || 0),
+      isSurveyDependent: false,
+    })));
+  }
+
+  if (category === 'dc_protection' || category === 'ac_protection' || category === 'earthing') {
+    let laQuery = supabase
+      .from('eq_lightning_arresters' as any)
+      .select('id, brand, model, description, selling_price, is_active')
+      .eq('is_active', true);
+
+    if (searchTerm) {
+      laQuery = laQuery.or(`brand.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+    }
+
+    const { data: lightningArresters, error: laError } = await laQuery.limit(25);
+    if (laError) throw new Error('Failed to fetch lightning arresters: ' + laError.message);
+
+    catalogItems.push(...(lightningArresters || []).map((item: any) => ({
+      id: item.id,
+      type: 'lightning_arrester',
+      catalogType: 'equipment',
+      description: item.description || [item.brand, item.model].filter(Boolean).join(' ') || 'Lightning arrester',
+      brand: item.brand ?? '',
+      model: item.model ?? '',
+      unit: 'Nos',
+      defaultQty: 1,
+      defaultRate: Number(item.selling_price || 0),
+      isSurveyDependent: false,
+    })));
+  }
+
+  if (category === 'accessory') {
+    let meterQuery = supabase
+      .from('eq_meters' as any)
+      .select('id, brand, model, description, selling_price, is_active')
+      .eq('is_active', true);
+    let commQuery = supabase
+      .from('eq_communication_devices' as any)
+      .select('id, brand, model, description, selling_price, is_active')
+      .eq('is_active', true);
+
+    if (searchTerm) {
+      meterQuery = meterQuery.or(`brand.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+      commQuery = commQuery.or(`brand.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+    }
+
+    const [metersRes, commRes] = await Promise.all([meterQuery.limit(20), commQuery.limit(20)]);
+    if (metersRes.error) throw new Error('Failed to fetch meters: ' + metersRes.error.message);
+    if (commRes.error) throw new Error('Failed to fetch communication devices: ' + commRes.error.message);
+
+    catalogItems.push(...(metersRes.data || []).map((item: any) => ({
+      id: item.id,
+      type: 'meter',
+      catalogType: 'equipment',
+      description: item.description || [item.brand, item.model].filter(Boolean).join(' ') || 'Meter',
+      brand: item.brand ?? '',
+      model: item.model ?? '',
+      unit: 'Nos',
+      defaultQty: 1,
+      defaultRate: Number(item.selling_price || 0),
+      isSurveyDependent: false,
+    })));
+    catalogItems.push(...(commRes.data || []).map((item: any) => ({
+      id: item.id,
+      type: 'communication_device',
+      catalogType: 'equipment',
+      description: item.description || [item.brand, item.model].filter(Boolean).join(' ') || 'Communication device',
+      brand: item.brand ?? '',
+      model: item.model ?? '',
+      unit: 'Nos',
+      defaultQty: 1,
+      defaultRate: Number(item.selling_price || 0),
+      isSurveyDependent: false,
+    })));
+  }
+
+  const aliases = CATALOG_CATEGORY_ALIASES[category] ?? [];
+  if (aliases.length === 0) return catalogItems;
+
+  const { data: categories, error: categoryError } = await supabase
+    .from('bom_categories' as any)
+    .select('id, name')
+    .order('display_order', { ascending: true });
+
+  if (categoryError) throw new Error('Failed to fetch BOM categories: ' + categoryError.message);
+
+  const aliasSet = new Set(aliases.map(normalizeCatalogName));
+  const categoryIds = (categories || [])
+    .filter((item: any) => aliasSet.has(normalizeCatalogName(item.name || '')))
+    .map((item: any) => item.id);
+
+  if (categoryIds.length === 0) return catalogItems;
+
+  let bomQuery = supabase
+    .from('bom_template_items' as any)
+    .select('id, sku_code, description, unit, default_rate, is_survey_dependent, category_id')
+    .in('category_id', categoryIds);
+
+  if (searchTerm) {
+    bomQuery = bomQuery.ilike('description', `%${searchTerm}%`);
+  }
+
+  const { data: bomItems, error: bomError } = await bomQuery.limit(50);
+  if (bomError) throw new Error('Failed to fetch BOM catalog items: ' + bomError.message);
+
+  catalogItems.push(...(bomItems || []).map((item: any) => ({
+    id: item.id,
+    type: 'bom_template',
+    catalogType: 'bom_template',
+    skuCode: item.sku_code ?? '',
+    description: item.description,
+    brand: '',
+    model: '',
+    unit: item.unit || 'units',
+    defaultQty: 1,
+    defaultRate: Number(item.default_rate || 0),
+    isSurveyDependent: Boolean(item.is_survey_dependent ?? false),
+  })));
+
+  const seen = new Set<string>();
+  return catalogItems.filter((item) => {
+    const key = `${item.catalogType}:${item.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

@@ -6,7 +6,6 @@ import {
   UnauthorizedRoleError,
   MembershipMissingError,
   SubscriptionExpiredError,
-  FeatureNotEnabledError,
   DeviceMismatchError,
   DeviceNotRegisteredError,
 } from '@/lib/saas/errors';
@@ -190,7 +189,7 @@ describe('Subscription enforcement', () => {
 // ─── Feature gate enforcement ──────────────────────────────────────────────────
 
 describe('Feature gate enforcement', () => {
-  it('custom_rates disabled blocks rate overrides', async () => {
+  it('custom_rates disabled in plan metadata still allows rate overrides', async () => {
     const audit = vi.fn();
     await expect(
       assertFeatureAccess(orgId, 'custom_rates', {
@@ -204,10 +203,8 @@ describe('Feature gate enforcement', () => {
         audit,
         now: () => now,
       })
-    ).rejects.toBeInstanceOf(FeatureNotEnabledError);
-    expect(audit).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'feature_access_denied', orgId })
-    );
+    ).resolves.toMatchObject({ feature: 'custom_rates' });
+    expect(audit).not.toHaveBeenCalled();
   });
 
   it('calculator feature enabled allows access', async () => {
@@ -226,7 +223,7 @@ describe('Feature gate enforcement', () => {
     ).resolves.toBeDefined();
   });
 
-  it('erp feature disabled blocks ERP routes', async () => {
+  it('erp feature disabled in plan metadata still allows ERP routes', async () => {
     await expect(
       assertFeatureAccess(orgId, 'erp', {
         orgSubscriptionRepository: {
@@ -239,10 +236,10 @@ describe('Feature gate enforcement', () => {
         audit: vi.fn(),
         now: () => now,
       })
-    ).rejects.toBeInstanceOf(FeatureNotEnabledError);
+    ).resolves.toMatchObject({ feature: 'erp' });
   });
 
-  it('missing plan features deny all feature access', async () => {
+  it('missing plan features still allow feature access', async () => {
     await expect(
       assertFeatureAccess(orgId, 'calculator', {
         orgSubscriptionRepository: {
@@ -255,7 +252,7 @@ describe('Feature gate enforcement', () => {
         audit: vi.fn(),
         now: () => now,
       })
-    ).rejects.toBeInstanceOf(FeatureNotEnabledError);
+    ).resolves.toMatchObject({ feature: 'calculator' });
   });
 });
 

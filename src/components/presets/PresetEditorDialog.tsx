@@ -62,7 +62,7 @@ function newBlankItem(catalogItem: any, category: string, sortOrder: number): Li
     id: `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
     category,
     catalogItemId: catalogItem.id,
-    catalogType: ['panel', 'inverter', 'battery'].includes(catalogItem.type) ? 'equipment' : 'bom_template',
+    catalogType: catalogItem.catalogType ?? (['panel', 'inverter', 'battery'].includes(catalogItem.type) ? 'equipment' : 'bom_template'),
     skuCode: catalogItem.skuCode ?? '',
     description: catalogItem.description,
     brand: catalogItem.brand ?? '',

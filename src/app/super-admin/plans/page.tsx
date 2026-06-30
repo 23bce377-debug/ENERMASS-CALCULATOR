@@ -27,7 +27,7 @@ export default async function SuperAdminPlansPage() {
   const plans = await listSuperAdminPlans();
 
   return (
-    <PageShell title="Plans" description="Create SaaS plans and manage feature entitlements." nav={<AdminTabs items={superAdminTabs} />}>
+    <PageShell title="Plans" description="Create SaaS plans and manage billing metadata. Active users receive all app features." nav={<AdminTabs items={superAdminTabs} />}>
       <Section title="Create Plan">
         <form action={createPlanAction} className="grid gap-3 lg:grid-cols-6 lg:items-end">
           <Field label="Name"><input className={inputClass} name="name" required placeholder="Pro" /></Field>
@@ -37,14 +37,14 @@ export default async function SuperAdminPlansPage() {
           <Field label="Seats"><input className={inputClass} name="seatLimit" type="number" min="1" defaultValue="1" /></Field>
           <button className={buttonClass} type="submit">Create</button>
           <div className="lg:col-span-6">
-            <Field label="Features JSON">
-              <textarea className={inputClass} name="features" rows={4} defaultValue={'{"calculator":true,"inventory":false,"erp":false}'} />
+            <Field label="Plan Metadata JSON">
+              <textarea className={inputClass} name="features" rows={4} defaultValue={'{"calculator":true,"inventory":true,"erp":true,"master_data":true}' } />
             </Field>
           </div>
         </form>
       </Section>
 
-      <Section title="Plan Feature Matrix">
+      <Section title="Plan Metadata">
         {plans.length === 0 ? (
           <EmptyState title="No plans found">Create a plan before assigning subscriptions.</EmptyState>
         ) : (
@@ -55,7 +55,7 @@ export default async function SuperAdminPlansPage() {
                   <th className={thClass}>Plan</th>
                   <th className={thClass}>Seats</th>
                   <th className={thClass}>Status</th>
-                  <th className={thClass}>Features</th>
+                  <th className={thClass}>Metadata</th>
                   <th className={thClass}>Actions</th>
                 </tr>
               </thead>
@@ -76,10 +76,10 @@ export default async function SuperAdminPlansPage() {
                           <option value="true">active</option>
                           <option value="false">inactive</option>
                         </select>
-                        <button className={secondaryButtonClass} type="submit">Update Features</button>
+                        <button className={secondaryButtonClass} type="submit">Update Metadata</button>
                       </form>
                     </td>
-                    <td className={tdClass}>Feature gates read this JSON exactly.</td>
+                    <td className={tdClass}>Stored for plan notes only. Feature modules are unlocked for active users.</td>
                   </tr>
                 ))}
               </tbody>

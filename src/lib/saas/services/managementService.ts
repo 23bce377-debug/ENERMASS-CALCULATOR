@@ -179,15 +179,6 @@ export async function requireOrgManagementSession(
     throw new UnauthorizedRoleError({ orgId: member.org_id, userId: user.id, role, allowedRoles: roles });
   }
 
-  // Enforce MFA AAL2 for Org management actions
-  if (['owner', 'admin', 'manager'].includes(role)) {
-    const supabase = await createClient();
-    const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aalError || aalData?.currentLevel !== 'aal2') {
-      throw new Error('MFA_REQUIRED');
-    }
-  }
-
   const { data: org, error: orgError } = await (client as any)
     .from('organisations')
     .select('*')

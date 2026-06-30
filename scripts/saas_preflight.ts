@@ -378,11 +378,11 @@ async function runPreflight() {
       ]),
     ],
     [
-      'Feature gate blocks disabled features',
+      'Feature gates allow all active licensed users',
       () => sourceContainsAll('src/lib/saas/services/featureAccessService.ts', [
         'assertFeatureAccess',
-        'FeatureNotEnabledError',
-        'feature_access_denied',
+        'assertActiveSubscription',
+        'return { subscription, plan, feature }',
       ]),
     ],
     [

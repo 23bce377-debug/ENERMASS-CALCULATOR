@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   DeviceMismatchError,
-  FeatureNotEnabledError,
   MembershipMissingError,
   SeatLimitReachedError,
   SubscriptionExpiredError,
@@ -252,7 +251,7 @@ describe('SaaS seat service', () => {
 });
 
 describe('SaaS feature access service', () => {
-  it('blocks disabled features', async () => {
+  it('allows disabled plan features for active subscriptions', async () => {
     const audit = vi.fn();
     await expect(
       assertFeatureAccess(orgId, 'inventory', {
@@ -262,8 +261,8 @@ describe('SaaS feature access service', () => {
         audit,
         now: () => now,
       })
-    ).rejects.toBeInstanceOf(FeatureNotEnabledError);
-    expect(audit).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'feature_access_denied' }));
+    ).resolves.toMatchObject({ feature: 'inventory' });
+    expect(audit).not.toHaveBeenCalled();
   });
 });
 

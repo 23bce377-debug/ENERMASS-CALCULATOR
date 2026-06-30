@@ -56,6 +56,92 @@ function buildStateScopedMaps(bootstrap: any): {
   return { systemStateMap, stateTerms };
 }
 
+function normalizeSystemCategory(category: string | null | undefined): SolarSystem['category'] {
+  const normalized = String(category ?? 'on-grid').replace(/_/g, '-').toLowerCase();
+  if (normalized === 'on-grid' || normalized === '3-phase' || normalized === 'micro-inverter' || normalized === 'hybrid' || normalized === 'upgrade' || normalized === 'commercial' || normalized === 'custom') {
+    return normalized;
+  }
+  if (normalized === 'off-grid' || normalized === 'offgrid') return 'hybrid';
+  if (normalized === 'micro') return 'micro-inverter';
+  return 'on-grid';
+}
+
+function buildGeneratedSystems(
+  panels: Array<{ id: string; wattage: number; ratePerWatt: number; gst_pct?: number }>,
+  inverters: Array<{ id: string; capacityKW: number; rate: number; gst_pct?: number; type?: string }>,
+  batteries: Array<{ id: string; capacityKWh: number; rate: number; gst_pct?: number }>,
+): SolarSystem[] {
+  const usablePanels = panels
+    .filter((panel) => Number.isFinite(panel.wattage) && panel.wattage > 0)
+    .sort((a, b) => b.wattage - a.wattage);
+  const usableInverters = inverters
+    .filter((inverter) => Number.isFinite(inverter.capacityKW) && inverter.capacityKW > 0)
+    .sort((a, b) => a.capacityKW - b.capacityKW);
+
+  if (usablePanels.length === 0 || usableInverters.length === 0) return [];
+
+  const panel = usablePanels[0];
+  const capacities = [1, 2, 3, 4, 5, 6, 7, 8, 10];
+  const makeSystem = (capacityKW: number, category: SolarSystem['category'], suffix: string): SolarSystem => {
+    const panelQty = Math.max(1, Math.ceil((capacityKW * 1000) / panel.wattage));
+    const targetInverterKW = category === 'hybrid' ? capacityKW : capacityKW / 1.2;
+    const inverter = usableInverters
+      .filter((item) => category !== 'hybrid' || item.type === 'hybrid')
+      .sort((a, b) => Math.abs(a.capacityKW - targetInverterKW) - Math.abs(b.capacityKW - targetInverterKW))[0] ?? usableInverters[0];
+    const battery = category === 'hybrid' ? batteries.find((item) => Number.isFinite(item.capacityKWh) && item.capacityKWh > 0) : undefined;
+
+    return {
+      id: `generated-${category}-${capacityKW}kw`,
+      name: `${capacityKW} kW ${suffix}`,
+      category,
+      capacityKW,
+      panelWattage: panel.wattage,
+      panelQty,
+      stateId: null,
+      stateName: null,
+      stateCode: null,
+      targetMarginPct: 0.2,
+      defaultEquipment: {
+        panelMix: { [panel.id]: panelQty },
+        inverterMix: { [inverter.id]: 1 },
+        ...(battery ? { batteryMix: { [battery.id]: 1 } } : {}),
+      },
+      items: [
+        {
+          description: 'PANEL',
+          remarks: 'Generated from active panel catalog',
+          qty: panelQty,
+          unit: 'Nos',
+          ratePerUnit: panel.ratePerWatt * panel.wattage,
+          gstPct: panel.gst_pct ?? TAX_CONSTANTS.RESIDENTIAL_GST_RATE,
+        },
+        {
+          description: 'INVERTER',
+          remarks: 'Generated from active inverter catalog',
+          qty: 1,
+          unit: 'Nos',
+          ratePerUnit: inverter.rate,
+          gstPct: inverter.gst_pct ?? TAX_CONSTANTS.COMMERCIAL_GST_RATE,
+        },
+        ...(battery ? [{
+          description: 'BATTERY',
+          remarks: 'Generated from active battery catalog',
+          qty: 1,
+          unit: 'Nos',
+          ratePerUnit: battery.rate,
+          gstPct: battery.gst_pct ?? 0.12,
+        }] : []),
+      ],
+    };
+  };
+
+  const generated = capacities.map((capacityKW) => makeSystem(capacityKW, 'on-grid', 'On-Grid Standard'));
+  if (batteries.length > 0 && usableInverters.some((inverter) => inverter.type === 'hybrid')) {
+    generated.push(...[3, 5, 8, 10].map((capacityKW) => makeSystem(capacityKW, 'hybrid', 'Hybrid Standard')));
+  }
+  return generated;
+}
+
 export const createCalculationSlice: StateCreator<
   CalculatorState,
   [],
@@ -632,7 +718,7 @@ export const createCalculationSlice: StateCreator<
         fixed_amount: s.fixed_amount !== null ? Number(s.fixed_amount) : null,
       }));
 
-      const mappedSystems: SolarSystem[] = bootstrap.systems.map((sys: any) => {
+      const loadedSystems: SolarSystem[] = bootstrap.systems.map((sys: any) => {
         const items = (sys.system_items || []).map((item: any) => {
           let rate = 0;
           let gstPct: any = TAX_CONSTANTS.COMMERCIAL_GST_RATE;
@@ -691,7 +777,7 @@ export const createCalculationSlice: StateCreator<
         return {
           id: sys.id,
           name: sys.name,
-          category: sys.category.replace('_', '-') as any,
+          category: normalizeSystemCategory(sys.category),
           capacityKW: Number(sys.capacity_kw),
           panelWattage: Number(sys.panel_wattage_w ?? 0),
           panelQty: Number(sys.panel_qty ?? 0),
@@ -702,6 +788,9 @@ export const createCalculationSlice: StateCreator<
           items
         };
       });
+      const mappedSystems = loadedSystems.length > 0
+        ? loadedSystems
+        : buildGeneratedSystems(mappedPanels, mappedInverters, mappedBatteries);
 
       const { systemStateMap, stateTerms } = buildStateScopedMaps(bootstrap);
 
@@ -934,7 +1023,7 @@ export const createCalculationSlice: StateCreator<
         const structures = stateUpdate.dbStructures || get().dbStructures;
         const structureComponentMasters = stateUpdate.dbStructureComponentMasters || get().dbStructureComponentMasters;
 
-        stateUpdate.dbSystems = bootstrap.systems.map((sys: any) => {
+        const loadedSystems: SolarSystem[] = bootstrap.systems.map((sys: any) => {
           const items = (sys.system_items || []).map((item: any) => {
             let rate = 0;
             let gstPct: any = TAX_CONSTANTS.COMMERCIAL_GST_RATE;
@@ -993,7 +1082,7 @@ export const createCalculationSlice: StateCreator<
           return {
             id: sys.id,
             name: sys.name,
-            category: sys.category.replace('_', '-') as any,
+            category: normalizeSystemCategory(sys.category),
             capacityKW: Number(sys.capacity_kw),
             panelWattage: Number(sys.panel_wattage_w ?? 0),
             panelQty: Number(sys.panel_qty ?? 0),
@@ -1004,6 +1093,9 @@ export const createCalculationSlice: StateCreator<
             items
           };
         });
+        stateUpdate.dbSystems = loadedSystems.length > 0
+          ? loadedSystems
+          : buildGeneratedSystems(panels, inverters, batteries);
       }
 
       // Mark store loaded if core data is hydrated

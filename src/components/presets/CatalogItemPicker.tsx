@@ -13,6 +13,36 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [customDescription, setCustomDescription] = useState('');
+  const [customUnit, setCustomUnit] = useState('Nos');
+  const [customQty, setCustomQty] = useState('1');
+  const [customRate, setCustomRate] = useState('');
+
+  const categoryLabel = category.replace(/_/g, ' ');
+
+  function addCustomItem() {
+    const description = customDescription.trim() || search.trim();
+    const quantity = Number(customQty);
+    const rate = Number(customRate);
+
+    if (!description) {
+      setError('Enter an item name before adding it.');
+      return;
+    }
+
+    onSelect({
+      type: 'custom',
+      catalogType: 'custom',
+      description,
+      brand: '',
+      model: '',
+      unit: customUnit.trim() || 'Nos',
+      defaultQty: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+      defaultRate: Number.isFinite(rate) && rate >= 0 ? rate : 0,
+      isSurveyDependent: false,
+    }, category);
+    onClose();
+  }
   
   useEffect(() => {
     let mounted = true;
@@ -37,7 +67,7 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
     <div className="w-[min(92vw,28rem)] overflow-hidden rounded-xl border border-border bg-surface shadow-2xl">
       <div className="flex items-center justify-between border-b border-border bg-background/70 px-3 py-2">
         <p className="text-xs font-bold uppercase tracking-wider text-text-muted">
-          Add {category.replace(/_/g, ' ')}
+          Add {categoryLabel}
         </p>
         <button
           type="button"
@@ -52,7 +82,7 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
           autoFocus
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder={`Search ${category.replace(/_/g, ' ')} by brand or model...`}
+          placeholder={`Search ${categoryLabel} by brand or model...`}
           className="w-full bg-background text-text-primary text-sm px-3 py-2.5 rounded-lg border border-border focus:border-accent outline-none placeholder:text-text-muted"
         />
       </div>
@@ -84,8 +114,50 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
           </button>
         ))}
         {!loading && items.length === 0 && (
-          <p className="text-xs text-text-muted text-center py-8">No active catalog items found.</p>
+          <p className="text-xs text-text-muted text-center py-6">No active catalog items found.</p>
         )}
+      </div>
+      <div className="border-t border-border bg-background/60 p-3">
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-text-muted">Add custom item</p>
+        <div className="grid gap-2">
+          <input
+            value={customDescription}
+            onChange={(event) => setCustomDescription(event.target.value)}
+            placeholder={search.trim() || `${categoryLabel} item name`}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+          />
+          <div className="grid grid-cols-[1fr_82px_96px] gap-2">
+            <input
+              value={customUnit}
+              onChange={(event) => setCustomUnit(event.target.value)}
+              placeholder="Unit"
+              className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+            />
+            <input
+              type="number"
+              min="0"
+              value={customQty}
+              onChange={(event) => setCustomQty(event.target.value)}
+              placeholder="Qty"
+              className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+            />
+            <input
+              type="number"
+              min="0"
+              value={customRate}
+              onChange={(event) => setCustomRate(event.target.value)}
+              placeholder="Rate"
+              className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={addCustomItem}
+            className="rounded-lg bg-accent px-3 py-2 text-xs font-bold text-background hover:bg-accent-hover"
+          >
+            Add Custom {categoryLabel}
+          </button>
+        </div>
       </div>
     </div>
   );

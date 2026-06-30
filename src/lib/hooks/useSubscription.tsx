@@ -63,14 +63,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     fetchSubscription();
   }, []);
 
-  const isFeatureEnabled = (feature: string) => {
-    if (!state.features) return false;
-    const value = state.features[feature];
-    if (typeof value === 'boolean') return value;
-    if (typeof value === 'number') return value > 0;
-    if (typeof value === 'string') return value.length > 0;
-    return Boolean(value);
-  };
+  const isFeatureEnabled = (_feature: string) => true;
 
   return (
     <SubscriptionContext.Provider value={{ ...state, isFeatureEnabled, refresh: fetchSubscription }}>
