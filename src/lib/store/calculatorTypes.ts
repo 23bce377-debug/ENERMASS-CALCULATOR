@@ -12,6 +12,7 @@ import {
   type RateMaster,
   type AdditionalCost,
   type DiscountType,
+  type MarginMode,
   type ProjectType,
 } from '../engine/calculator';
 import {
@@ -32,10 +33,13 @@ export interface Variant {
   overrides: Record<number, RowOverride>;
   customItems: BomItem[];
   disabledItemIndices?: Record<number, boolean>;
+  marginMode?: MarginMode;
   targetMarginPct?: number;
+  targetMarginAmount?: number;
   additionalCosts: AdditionalCost[];
   discountType: DiscountType;
   discountVal: number;
+  roundOffToThousand: boolean;
   selectedPanelId: string | null;
   panelMix: Record<string, number>;
   selectedInverterMix: Record<string, number>;
@@ -66,7 +70,9 @@ export interface CalcSliceState {
 
   // Pricing overrides
   itcEligible: boolean;
+  marginMode: MarginMode;
   targetMarginPct: number | null;
+  targetMarginAmount: number | null;
   gstOnOutputOverride: number | null;
   targetMRPInclGST: number | null;
   targetMRPPerWatt: number | null;
@@ -79,6 +85,7 @@ export interface CalcSliceState {
   additionalCosts: AdditionalCost[];
   discountType: DiscountType;
   discountVal: number;
+  roundOffToThousand: boolean;
 
   // Engineering
   orientation: 'South' | 'East/West' | 'Flat';
@@ -95,7 +102,9 @@ export interface CalcSliceState {
   setState: (state: string) => void;
   setProjectType: (type: ProjectType) => void;
   setItcEligible: (eligible: boolean) => void;
+  setMarginMode: (mode: MarginMode) => void;
   setMarginOverride: (pct: number | null) => void;
+  setMarginAmountOverride: (amount: number | null) => void;
   setRowOverride: (index: number, override: Partial<RowOverride>) => void;
   clearRowOverride: (index: number) => void;
   addCustomItem: (item: BomItem) => void;
@@ -105,6 +114,7 @@ export interface CalcSliceState {
   addAdditionalCost: (cost: Omit<AdditionalCost, 'id'>) => void;
   removeAdditionalCost: (id: string) => void;
   setDiscount: (type: DiscountType, val: number) => void;
+  setRoundOffToThousand: (val: boolean) => void;
   setGSTOnOutputOverride: (val: number | null) => void;
   setTargetMRP: (val: number | null, type?: 'total' | 'per_watt') => void;
   setOrientation: (o: 'South' | 'East/West' | 'Flat') => void;
@@ -244,6 +254,8 @@ export interface QuoteSliceState {
     ceo_signature_url?: string;
     sales_exec_role?: string;
     sales_exec_phone?: string;
+    sales_exec_email?: string;
+    sales_exec_id?: string | null;
     bank_account_holder?: string;
     bank_name?: string;
     bank_account_no?: string;
@@ -294,6 +306,8 @@ export const INITIAL_STATE = {
   itcEligible: false as boolean,
 
   targetMarginPct: null as number | null,
+  marginMode: 'percent' as MarginMode,
+  targetMarginAmount: null as number | null,
   overrides: {} as Record<number, RowOverride>,
   customItems: [] as BomItem[],
   rateMaster: {} as RateMaster,
@@ -301,6 +315,7 @@ export const INITIAL_STATE = {
   additionalCosts: [] as AdditionalCost[],
   discountType: 'none' as DiscountType,
   discountVal: 0,
+  roundOffToThousand: false,
 
   selectedPanelId: null as string | null,
   panelMix: {} as Record<string, number>,
@@ -638,12 +653,15 @@ const result = calculateSystem({
       systems,
       state: state.selectedState,
       projectType: state.projectType,
+      marginMode: state.marginMode,
       targetMarginPct: state.targetMarginPct ?? undefined,
+      targetMarginAmount: state.targetMarginAmount ?? undefined,
       overrides: state.overrides,
       rateMaster: state.rateMaster,
       disabledItemIndices: state.disabledItemIndices,
       discountType: state.discountType,
       discountVal: state.discountVal,
+      roundOffToThousand: state.roundOffToThousand,
       additionalCosts: state.additionalCosts,
       panelRateOverride,
       panelQtyOverride,

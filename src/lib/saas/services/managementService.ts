@@ -831,11 +831,22 @@ export async function recordManualPaymentAsSuperAdmin(input: {
     ? (payload.paidAt ?? new Date().toISOString())
     : null;
 
+  // Validate currency (only INR supported)
+  const currency = payload.currency ? payload.currency.toUpperCase() : 'INR';
+  if (currency !== 'INR') {
+    throw new Error(`Unsupported currency "${currency}". Only INR is supported.`);
+  }
+
   if (payload.paymentStatus === 'paid' && payload.activateSubscription === true) {
     const plan = await new SubscriptionPlanRepository(adminClient).getById(subscription.plan_id) as SubscriptionPlan | null;
     const expectedAmount = expectedPlanAmount(plan, subscription.billing_cycle as BillingCycle);
-    if (expectedAmount > 0 && payload.amount < expectedAmount) {
-      throw new Error(`Payment amount ${payload.amount} is below the plan price ${expectedAmount}.`);
+    if (expectedAmount > 0) {
+      if (payload.amount < expectedAmount) {
+        throw new Error(`Payment amount ${payload.amount} is below the plan price ${expectedAmount}.`);
+      }
+      if (payload.amount > expectedAmount) {
+        console.warn(`Payment amount ${payload.amount} exceeds expected plan price ${expectedAmount}. Overpayment allowed.`);
+      }
     }
   }
 
@@ -855,7 +866,8 @@ export async function recordManualPaymentAsSuperAdmin(input: {
     payload.activateSubscription === true &&
     (subscription.status === 'expired' || subscription.status === 'past_due')
   ) {
-    await extendSubscriptionPeriodAsSuperAdmin(subscription.id, periodDaysForCycle(subscription.billing_cycle as BillingCycle), {
+    const baseDate = subscription.current_period_end ? new Date(subscription.current_period_end) : new Date();
+    await extendSubscriptionPeriodAsSuperAdmin(subscription.id, periodDaysForCycle(subscription.billing_cycle as BillingCycle, baseDate), {
       forceStatus: 'active',
       reason: `Reactivated by payment ${payment.id}`,
     });
@@ -878,13 +890,45 @@ export async function recordManualPaymentAsSuperAdmin(input: {
   return payment;
 }
 
-// ─── Period helpers ───────────────────────────────────────────────────────────
+// ─── Period helpers ───────────────────/** Returns how many days correspond to one billing cycle dynamically based on calendar days. */
+export function periodDaysForCycle(cycle: BillingCycle, fromDate: Date = new Date()): number {
+  const end = new Date(fromDate);
+  if (cycle === 'yearly') end.setFullYear(end.getFullYear() + 1);
+  else if (cycle === 'trial') end.setDate(end.getDate() + 14);
+  else end.setMonth(end.getMonth() + 1);
+  const diffTime = Math.abs(end.getTime() - fromDate.getTime());
+  return Math.round(diffTime / (1000 * 60 * 60 * 24));
+}
 
-/** Returns how many days correspond to one billing cycle. */
-function periodDaysForCycle(cycle: BillingCycle): number {
-  if (cycle === 'yearly') return 365;
-  if (cycle === 'trial') return 14;
-  return 30; // monthly / manual
+export function calculateProration(
+  oldPlanPrice: number,
+  newPlanPrice: number,
+  cycle: BillingCycle,
+  currentPeriodStart: string,
+  currentPeriodEnd: string,
+  nowDate: Date = new Date()
+): { creditAmount: number; chargeAmount: number; netAmount: number } {
+  const start = new Date(currentPeriodStart).getTime();
+  const end = new Date(currentPeriodEnd).getTime();
+  const now = nowDate.getTime();
+
+  if (now >= end || now <= start) {
+    return { creditAmount: 0, chargeAmount: newPlanPrice, netAmount: newPlanPrice };
+  }
+
+  const totalPeriodMs = end - start;
+  const remainingMs = end - now;
+
+  const oldProrated = (oldPlanPrice * remainingMs) / totalPeriodMs;
+  const newProrated = (newPlanPrice * remainingMs) / totalPeriodMs;
+
+  const netAmount = newProrated - oldProrated;
+
+  return {
+    creditAmount: Math.round(oldProrated * 100) / 100,
+    chargeAmount: Math.round(newProrated * 100) / 100,
+    netAmount: Math.round(netAmount * 100) / 100,
+  };
 }
 
 function periodEnd(cycle: BillingCycle, from?: Date) {

@@ -13,12 +13,15 @@ import {
   ChevronRight,
   RotateCcw,
   Info,
+  Percent,
+  IndianRupee,
 } from 'lucide-react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { formatINR, roundTo5, type LineResult } from '@/lib/engine/calculator';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useToast } from '@/components/ui/Toast';
 import { Select } from '@/components/ui/Select';
+import { normalizeGstRate } from '@/lib/utils/gst';
 
 // ─── BOM Row Grouping ───────────────────────────────────────────────────────────
 
@@ -685,65 +688,119 @@ function GroupHeader({
 // ─── Margin Slider ──────────────────────────────────────────────────────────────
 
 function MarginControl({
+  mode,
+  amount,
   value,
+  onModeChange,
+  onAmountChange,
   onChange,
 }: {
+  mode: 'percent' | 'flat';
+  amount: number;
   value: number; // as decimal, e.g. 0.20
+  onModeChange: (mode: 'percent' | 'flat') => void;
+  onAmountChange: (val: number | null) => void;
   onChange: (val: number | null) => void;
 }) {
   const pctValue = Math.round(value * 100);
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <div className="flex items-center gap-3">
-      <input
-        type="range"
-        min={0}
-        max={100}
-        step={1}
-        value={pctValue}
-        onChange={(e) => onChange(parseInt(e.target.value) / 100)}
-        className="flex-1 h-1.5 rounded-full appearance-none bg-border
-          [&::-webkit-slider-thumb]:appearance-none
-          [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-          [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent
-          [&::-webkit-slider-thumb]:cursor-pointer
-          [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-accent/30
-          cursor-pointer"
-      />
-      <div className="flex items-center gap-1">
-        <input
-          type="number"
-          min={0}
-          max={100}
-          step={1}
-          value={pctValue}
-          onChange={(e) => {
-            const v = parseInt(e.target.value);
-            if (!isNaN(v) && v >= 0 && v <= 100) onChange(v / 100);
-          }}
-          className="w-14 px-2 py-1 rounded-md bg-background border border-border
-            text-xs font-mono text-right text-text-primary
-            focus:outline-none focus:border-accent/40"
-        />
-        <span className="text-xs text-text-muted">%</span>
-      </div>
-      <div className="relative">
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-background/70 p-1">
         <button
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
-          className="p-1 rounded hover:bg-surface-hover text-text-muted"
+          type="button"
+          onClick={() => onModeChange('percent')}
+          className={`flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+            mode === 'percent' ? 'bg-surface-active text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary hover:bg-surface-hover'
+          }`}
         >
-          <Info size={14} />
+          <Percent size={13} />
+          % Margin
         </button>
-        {showTooltip && (
-          <div className="absolute right-0 top-full mt-1 px-3 py-2 rounded-lg
-            bg-surface-hover border border-border text-[10px] text-text-secondary
-            whitespace-nowrap z-50 shadow-xl">
-            MRP = Cost × (1 + Margin%)
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => onModeChange('flat')}
+          className={`flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+            mode === 'flat' ? 'bg-surface-active text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary hover:bg-surface-hover'
+          }`}
+        >
+          <IndianRupee size={13} />
+          Flat Amount
+        </button>
       </div>
+
+      {mode === 'percent' ? (
+        <div className="flex items-center gap-3">
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={pctValue}
+            onChange={(e) => onChange(parseInt(e.target.value) / 100)}
+            className="flex-1 h-1.5 rounded-full appearance-none bg-border
+              [&::-webkit-slider-thumb]:appearance-none
+              [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+              [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent
+              [&::-webkit-slider-thumb]:cursor-pointer
+              [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-accent/30
+              cursor-pointer"
+          />
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={pctValue}
+              onChange={(e) => {
+                const v = parseInt(e.target.value);
+                if (!isNaN(v) && v >= 0 && v <= 100) onChange(v / 100);
+              }}
+              className="w-14 px-2 py-1 rounded-md bg-background border border-border
+                text-xs font-mono text-right text-text-primary
+                focus:outline-none focus:border-accent/40"
+            />
+            <span className="text-xs text-text-muted">%</span>
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              className="p-1 rounded hover:bg-surface-hover text-text-muted"
+            >
+              <Info size={14} />
+            </button>
+            {showTooltip && (
+              <div className="absolute right-0 top-full mt-1 px-3 py-2 rounded-lg
+                bg-surface-hover border border-border text-[10px] text-text-secondary
+                whitespace-nowrap z-50 shadow-xl">
+                MRP excl GST = Cost + (Cost x Margin%)
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-text-muted">Amount (₹)</span>
+          <input
+            type="number"
+            min={0}
+            step={100}
+            value={amount || ''}
+            onChange={(e) => {
+              const v = parseFloat(e.target.value);
+              onAmountChange(Number.isFinite(v) && v >= 0 ? v : 0);
+            }}
+            className="flex-1 px-3 py-2 rounded-md bg-background border border-border
+              text-sm font-mono text-right text-text-primary
+              focus:outline-none focus:border-accent/40"
+            placeholder="0"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -752,13 +809,19 @@ function MarginControl({
 
 export function BOMTable() {
   const calcResult = useCalculatorStore((s) => s.calcResult);
+  const marginMode = useCalculatorStore((s) => s.marginMode);
   const targetMarginPct = useCalculatorStore((s) => s.targetMarginPct);
+  const targetMarginAmount = useCalculatorStore((s) => s.targetMarginAmount);
+  const roundOffToThousand = useCalculatorStore((s) => s.roundOffToThousand);
+  const setRoundOffToThousand = useCalculatorStore((s) => s.setRoundOffToThousand);
   const projectType = useCalculatorStore((s) => s.projectType);
   const panelMix = useCalculatorStore((s) => s.panelMix);
   const selectedPanelId = useCalculatorStore((s) => s.selectedPanelId);
   const setRowOverride = useCalculatorStore((s) => s.setRowOverride);
   const clearRowOverride = useCalculatorStore((s) => s.clearRowOverride);
+  const setMarginMode = useCalculatorStore((s) => s.setMarginMode);
   const setMarginOverride = useCalculatorStore((s) => s.setMarginOverride);
+  const setMarginAmountOverride = useCalculatorStore((s) => s.setMarginAmountOverride);
   const removeCustomItem = useCalculatorStore((s) => s.removeCustomItem);
   const toggleItemSelection = useCalculatorStore((s) => s.toggleItemSelection);
   const dcCableLengthM = useCalculatorStore((s) => s.dcCableLengthM);
@@ -919,7 +982,29 @@ export function BOMTable() {
             {calcResult ? calcResult.lines.length : 0} items
           </span>
         </div>
-        
+        <button
+          type="button"
+          role="switch"
+          aria-checked={roundOffToThousand}
+          onClick={() => setRoundOffToThousand(!roundOffToThousand)}
+          className="flex items-center gap-3 rounded-lg border border-border bg-background/70 px-3 py-2 text-left hover:border-accent/40 transition-colors"
+        >
+          <span className="flex flex-col leading-tight">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary">Round Pricing</span>
+            <span className="text-[10px] text-text-muted">Nearest 1000</span>
+          </span>
+          <span
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              roundOffToThousand ? 'bg-accent' : 'bg-border'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                roundOffToThousand ? 'translate-x-4' : 'translate-x-0.5'
+              }`}
+            />
+          </span>
+        </button>
       </div>
 
       {/* Table */}
@@ -1027,12 +1112,12 @@ export function BOMTable() {
                         autoFocus
                       />
                     </div>
-                    {/* Remarks */}
+                    {/* Quote specification */}
                     <div className="col-span-2">
-                      <label className="block text-[9px] text-text-muted uppercase font-semibold mb-1">Remarks / Spec</label>
+                      <label className="block text-[9px] text-text-muted uppercase font-semibold mb-1">Specification Details</label>
                       <input
                         type="text"
-                        placeholder="e.g. Brand, Model, Rating"
+                        placeholder="Certifications, warranty, rating"
                         value={newItemRemarks}
                         onChange={e => setNewItemRemarks(e.target.value)}
                         className="w-full bg-background border border-border rounded px-2 py-1.5 text-xs text-text-primary focus:border-accent focus:outline-none"
@@ -1085,16 +1170,14 @@ export function BOMTable() {
                     {/* GST */}
                     <div>
                       <label className="block text-[9px] text-text-muted uppercase font-semibold mb-1">GST %</label>
-                      <Select
-                        size="sm"
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
                         value={newItemGst}
-                        onChange={setNewItemGst}
-                        options={[
-                          { value: '0', label: '0%' },
-                          { value: '5', label: '5%' },
-                          { value: '12', label: '12%' },
-                          { value: '18', label: '18%' },
-                        ]}
+                        onChange={e => setNewItemGst(e.target.value)}
+                        className="w-full bg-background border border-border rounded px-2 py-1.5 text-xs text-right text-text-primary focus:border-accent focus:outline-none"
+                        placeholder="18"
                       />
                     </div>
                     {/* Actions */}
@@ -1107,9 +1190,7 @@ export function BOMTable() {
                           if (hasDuplicate) return toast('An item with the same description already exists.', 'error');
                           const qty = parseFloat(newItemQty) || 0;
                           const rate = parseFloat(newItemRate) || 0;
-                          const gstRaw = parseFloat(newItemGst) / 100;
-                          const VALID_GST: Array<0 | 0.05 | 0.12 | 0.18> = [0, 0.05, 0.12, 0.18];
-                          const gst = VALID_GST.reduce((prev, curr) => Math.abs(curr - gstRaw) < Math.abs(prev - gstRaw) ? curr : prev);
+                          const gst = normalizeGstRate(newItemGst, 0.18);
                           if (qty > 0 && rate >= 0) {
                             useCalculatorStore.getState().addCustomItem({
                               description: newItemDesc.trim(),
@@ -1181,7 +1262,11 @@ export function BOMTable() {
               </span>
             </div>
             <MarginControl
+              mode={marginMode}
+              amount={targetMarginAmount ?? calcResult.marginAmount}
               value={targetMarginPct ?? calcResult.effectiveMarginPct}
+              onModeChange={setMarginMode}
+              onAmountChange={setMarginAmountOverride}
               onChange={setMarginOverride}
             />
           </div>
@@ -1204,6 +1289,21 @@ export function BOMTable() {
             />
           </div>
           <FooterRow label="MRP (incl GST)" value={formatINR(calcResult.mrpInclGST)} gold />
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-border/60" />
+
+        {/* Customer pricing */}
+        <div className="px-4 py-3 space-y-2">
+          <FooterRow label="Discount" value={`-${formatINR(calcResult.discountAmount)}`} muted={calcResult.discountAmount === 0} />
+          <FooterRow label="Additional Costs" value={`+${formatINR(calcResult.additionalCostTotal)}`} muted={calcResult.additionalCostTotal === 0} />
+          <FooterRow label="Final Customer Price" value={formatINR(calcResult.finalCustomerPrice)} gold />
+          {calcResult.roundOffToThousand && calcResult.roundOffAdjustment !== 0 && (
+            <p className="text-[10px] text-text-muted text-right">
+              Rounded to nearest 1000; adjustment included in total panel price.
+            </p>
+          )}
         </div>
 
         {/* Divider */}

@@ -15,6 +15,7 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { PresetEditorDialog } from '@/components/presets/PresetEditorDialog';
+import type { LineItem } from '@/lib/actions/presets';
 
 // ─── Category Config ──────────────────────────────────────────────────────────
 
@@ -27,6 +28,138 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string
   upgrade:          { label: 'Upgrade',       color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
   commercial:       { label: 'Commercial',    color: '#14b8a6', bg: 'rgba(20,184,166,0.12)' },
 };
+
+function categoryFromBomDescription(description: string) {
+  const value = description.toLowerCase();
+  if (value.includes('panel') || value.includes('module')) return 'panel';
+  if (value.includes('inverter') || value.includes('communication')) return 'inverter';
+  if (value.includes('battery')) return 'battery';
+  if (value.includes('structure') || value.includes('mount')) return 'structure';
+  if (value.includes('dcdb') || value.includes('dc protection') || value.includes('isolator') || value.includes('lightning') || value.includes('l/a')) return 'dc_protection';
+  if (value.includes('acdb') || value.includes('ac protection') || value.includes('meter box')) return 'ac_protection';
+  if (value.includes('cable') || value.includes('mc4') || value.includes('copper') || value.includes('wiring pipe')) return 'cable';
+  if (value.includes('earth') || value.includes('gi strip') || value.includes('chamber')) return 'earthing';
+  if (value.includes('civil') || value.includes('foundation') || value.includes('concrete')) return 'civil';
+  if (value.includes('logistic') || value.includes('transport') || value.includes('freight')) return 'logistics';
+  if (value.includes('accessor') || value.includes('meter') || value.includes('wifi') || value.includes('monitor')) return 'accessory';
+  return 'other';
+}
+
+function systemTypeFromCategory(category: SolarSystem['category']) {
+  const mapped = category.replace(/-/g, '_');
+  return mapped === 'custom' ? 'on_grid' : mapped;
+}
+
+function localPresetToEditorData(system: SolarSystem) {
+  const store = useCalculatorStore.getState();
+
+  return {
+    id: system.id,
+    name: system.name,
+    system_type: systemTypeFromCategory(system.category),
+    capacity_kw: system.capacityKW,
+    state_id: system.stateId ?? null,
+    lineItems: system.items.map((item, index): LineItem => {
+      let brand = (item as any).brand || '';
+      let model = (item as any).model || '';
+      let catalogItemId = (item as any).catalogItemId || item.sourceItemId || null;
+      let catalogType = (item as any).catalogType || 'custom';
+
+      const sourceTable = item.sourceTable;
+      const sourceItemId = item.sourceItemId;
+
+      if (sourceTable && sourceItemId) {
+        if (sourceTable === 'eq_panels') {
+          const p = store.dbPanels?.find((x: any) => x.id === sourceItemId);
+          if (p) {
+            brand = p.brand || '';
+            model = p.model || '';
+            catalogType = 'equipment';
+          }
+        } else if (sourceTable === 'eq_inverters') {
+          const inv = store.dbInverters?.find((x: any) => x.id === sourceItemId);
+          if (inv) {
+            brand = inv.brand || '';
+            model = inv.model || '';
+            catalogType = 'equipment';
+          }
+        } else if (sourceTable === 'eq_batteries') {
+          const bat = store.dbBatteries?.find((x: any) => x.id === sourceItemId);
+          if (bat) {
+            brand = bat.brand || '';
+            model = bat.model || '';
+            catalogType = 'equipment';
+          }
+        } else if (sourceTable === 'eq_meters') {
+          const met = store.dbMeters?.find((x: any) => x.id === sourceItemId);
+          if (met) {
+            brand = met.brand || '';
+            model = met.model || '';
+            catalogType = 'equipment';
+          }
+        } else if (sourceTable === 'eq_lightning_arresters') {
+          const la = store.dbLAs?.find((x: any) => x.id === sourceItemId);
+          if (la) {
+            brand = la.brand || '';
+            model = la.model || '';
+            catalogType = 'equipment';
+          }
+        } else if (sourceTable === 'eq_mounting_structures') {
+          const str = store.dbStructures?.find((x: any) => x.id === sourceItemId);
+          if (str) {
+            brand = str.material || '';
+            model = str.roof_mount_type || '';
+            catalogType = 'eq_structure';
+          }
+        } else if (sourceTable === 'bom_template_items') {
+          const bom = store.dbStructureParts?.find((x: any) => x.id === sourceItemId);
+          if (bom) {
+            catalogType = 'bom_template';
+          }
+        }
+      }
+
+      // If we don't have brand/model, but we have sourceLabel, use it
+      if (!brand && !model && item.sourceLabel && item.sourceLabel !== item.description) {
+        brand = item.sourceLabel;
+      }
+
+      return {
+        id: item.id || `${system.id}_${index}`,
+        category: (item as any).category ?? categoryFromBomDescription(item.description),
+        catalogItemId,
+        catalogType,
+        skuCode: (item as any).skuCode ?? '',
+        description: item.description,
+        brand,
+        model,
+        unit: item.unit ?? 'Nos',
+        quantity: Number(item.qty || 0),
+        unitRate: Number(item.ratePerUnit || 0),
+        gstPct: item.gstPct,
+        isIncluded: true,
+        isSurveyDependent: false,
+        sortOrder: index,
+      };
+    }),
+  };
+}
+
+function editorLineItemToBomItem(item: LineItem) {
+  return {
+    description: item.description,
+    unit: item.unit || 'Nos',
+    qty: Number(item.quantity || 0),
+    ratePerUnit: Number(item.unitRate || 0),
+    gstPct: item.gstPct ?? 0.18,
+    category: item.category,
+    catalogItemId: item.catalogItemId,
+    catalogType: item.catalogType,
+    skuCode: item.skuCode,
+    brand: item.brand,
+    model: item.model,
+  };
+}
 
 function CategoryBadge({ category }: { category: string }) {
   const cfg = CATEGORY_CONFIG[category] ?? { label: category, color: '#888', bg: 'rgba(128,128,128,0.12)' };
@@ -157,10 +290,11 @@ function SystemCard({ system, selected, compareMode, isCustom, onToggleCompare, 
         </button>
 
         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          {!isCustom && onEdit && (
+          {onEdit && (
             <button
               onClick={() => onEdit(system.id)}
               className="p-2 rounded-lg bg-surface hover:bg-surface-hover border border-border text-text-secondary hover:text-text-primary transition-all cursor-pointer"
+              title="Edit preset"
             >
               <Edit3 size={14} />
             </button>
@@ -305,6 +439,14 @@ export default function SystemsPage() {
   const [commitMsg, setCommitMsg] = useState('');
 
   const customSystems = settings.customSystems ?? [];
+  const localComposerSystem = useMemo(
+    () => customSystems.find((system) => system.id === composerSystemId),
+    [customSystems, composerSystemId],
+  );
+  const localComposerData = useMemo(
+    () => (localComposerSystem ? localPresetToEditorData(localComposerSystem) : undefined),
+    [localComposerSystem],
+  );
 
   const allSystems = useMemo(() => {
     const builtIn = dbLoaded && dbSystems.length > 0 ? dbSystems : SYSTEMS;
@@ -619,9 +761,34 @@ export default function SystemsPage() {
             setComposerSystemId(null);
           }}
           onSaved={(id, name) => {
-            fetchMasterData();
-            toast(`Preset "${name}" saved to database`, 'success');
+            if (id.startsWith('custom_')) {
+              toast(`Preset "${name}" updated locally. Press Commit to sync.`, 'success');
+            } else {
+              fetchMasterData();
+              toast(`Preset "${name}" saved to database`, 'success');
+            }
           }}
+          initialData={localComposerData}
+          onSaveLocal={localComposerSystem ? (updates) => {
+            const editedItems = updates.lineItems
+              .filter((item) => item.isIncluded)
+              .map(editorLineItemToBomItem);
+            const panelItem = updates.lineItems.find((item) => item.category === 'panel' && item.isIncluded);
+            setSettings({
+              customSystems: customSystems.map((system) => (
+                system.id === localComposerSystem.id
+                  ? {
+                      ...system,
+                      name: updates.name,
+                      capacityKW: updates.capacityKw,
+                      stateId: updates.stateId ?? null,
+                      panelQty: panelItem ? Number(panelItem.quantity || system.panelQty) : system.panelQty,
+                      items: editedItems,
+                    }
+                  : system
+              )),
+            });
+          } : undefined}
         />
       )}
     </div>

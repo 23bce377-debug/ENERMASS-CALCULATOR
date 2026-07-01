@@ -120,7 +120,7 @@ async function loadMasterData(orgId: string | null): Promise<MasterDataPayload> 
       .select('id, scheme_id, slab_index, start_kw, end_kw, rate_per_kw, is_fixed_amount, fixed_amount'),
     supabase
       .from('calculation_schemes')
-      .select('id, name, max_capacity_kw, applies_to')
+      .select('id, name, max_capacity_kw, max_absolute_subsidy, applies_to')
       .eq('is_active', true),
     supabase
       .from('state_scheme_overrides')

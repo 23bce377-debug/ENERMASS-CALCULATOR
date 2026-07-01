@@ -12,7 +12,6 @@ import {
   Bookmark,
   LogOut,
   User,
-  Zap,
   Building2,
   Shield,
   Sun,
@@ -160,9 +159,12 @@ export function Sidebar({ collapsed, setCollapsed, isSuperAdmin }: { collapsed: 
         collapsed ? 'px-3.5 justify-center' : 'px-4',
       ].join(' ')}>
         <div className="flex items-center gap-2.5 overflow-hidden">
-          {/* Icon mark */}
-          <div className="relative shrink-0 w-8 h-8 rounded-lg gold-gradient flex items-center justify-center shadow-md shadow-accent/15">
-            <Zap size={15} strokeWidth={2.5} color="#111" fill="#111" />
+          <div className="relative shrink-0 w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-md shadow-accent/15 overflow-hidden">
+            <img
+              src="/enermass.svg"
+              alt="ENERMASS"
+              className="h-7 w-7 object-contain"
+            />
           </div>
           {!collapsed && (
             <div className="animate-fade-in leading-none">

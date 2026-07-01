@@ -1,6 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { normalizeGstRate } from '@/lib/utils/gst';
 
 export interface LineItem {
   id?: string;
@@ -11,9 +12,11 @@ export interface LineItem {
   description: string;
   brand?: string;
   model?: string;
+  specificationDetails?: string;
   unit: string;
   quantity: number;
   unitRate: number;
+  gstPct?: number;
   isIncluded: boolean;
   isSurveyDependent: boolean;
   sortOrder: number;
@@ -54,6 +57,12 @@ const CATALOG_CATEGORY_ALIASES: Record<string, string[]> = {
 
 function normalizeCatalogName(value: string) {
   return value.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function normalizeMarginPct(value: unknown, fallback = 0.2): number {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return fallback;
+  return num > 1 ? num / 100 : num;
 }
 
 function categoryFromCatalogName(name: string | null | undefined, fallback: string) {
@@ -123,15 +132,15 @@ export async function getPresetWithComponents(presetId: string) {
     panelsRes, invertersRes, batteriesRes, metersRes, laRes,
     structuresRes, bomItemsRes, commDevicesRes, componentMasterRes
   ] = await Promise.all([
-    supabase.from('eq_panels').select('id, brand, model, selling_price').eq('is_active', true),
-    supabase.from('eq_inverters').select('id, brand, model, selling_price').eq('is_active', true),
-    supabase.from('eq_batteries').select('id, brand, model, selling_price').eq('is_active', true),
-    supabase.from('eq_meters').select('id, brand, model, selling_price'),
-    supabase.from('eq_lightning_arresters').select('id, brand, model, selling_price'),
-    supabase.from('eq_mounting_structures').select('id, name, selling_price'),
-    supabase.from('bom_template_items').select('id, description, default_rate, category_id, bom_categories(name)'),
-    supabase.from('eq_communication_devices').select('id, brand, model, selling_price'),
-    supabase.from('structure_component_master').select('id, name, selling_price'),
+    supabase.from('eq_panels').select('id, brand, model, selling_price, gst_pct, description, specification_details').eq('is_active', true),
+    supabase.from('eq_inverters').select('id, brand, model, selling_price, gst_pct, description, specification_details').eq('is_active', true),
+    supabase.from('eq_batteries').select('id, brand, model, selling_price, gst_pct, description, specification_details').eq('is_active', true),
+    supabase.from('eq_meters').select('id, brand, model, selling_price, gst_pct, description, specification_details'),
+    supabase.from('eq_lightning_arresters').select('id, brand, model, selling_price, gst_pct, description, specification_details'),
+    supabase.from('eq_mounting_structures').select('id, name, material, roof_mount_type, selling_price, gst_pct, description, specification_details'),
+    supabase.from('bom_template_items' as any).select('id, description, specification_details, notes, default_rate, gst_pct, category_id, bom_categories(name)'),
+    supabase.from('eq_communication_devices').select('id, brand, model, selling_price, gst_pct, description, specification_details'),
+    supabase.from('structure_component_master').select('id, name, selling_price, gst_pct, specification_details'),
   ]);
 
   const panels = (panelsRes.data || []).filter((item: any) => !isPlaceholderEquipment(item));
@@ -140,7 +149,7 @@ export async function getPresetWithComponents(presetId: string) {
   const meters = metersRes.data || [];
   const las = laRes.data || [];
   const structures = structuresRes.data || [];
-  const bomItems = bomItemsRes.data || [];
+  const bomItems = ((bomItemsRes as any).data || []) as any[];
   const commDevices = commDevicesRes.data || [];
   const structureComponents = componentMasterRes.data || [];
 
@@ -152,6 +161,8 @@ export async function getPresetWithComponents(presetId: string) {
     let unitRate = 0;
     let brand = '';
     let model = '';
+    let sourceSpecification = '';
+    let gstPct = 0.18;
 
     // Map based on section
     if (item.section === 'solar_panels') category = 'panel';
@@ -172,6 +183,8 @@ export async function getPresetWithComponents(presetId: string) {
         brand = p.brand || '';
         model = p.model || '';
         unitRate = Number(p.selling_price || 0);
+        sourceSpecification = p.specification_details || p.description || '';
+        gstPct = normalizeGstRate(p.gst_pct, 0.18);
       }
     } else if (item.inverter_id) {
       category = 'inverter';
@@ -180,8 +193,11 @@ export async function getPresetWithComponents(presetId: string) {
       const inv = inverters.find((x: any) => x.id === item.inverter_id);
       if (inv) {
         brand = inv.brand || '';
+
         model = inv.model || '';
         unitRate = Number(inv.selling_price || 0);
+        sourceSpecification = inv.specification_details || inv.description || '';
+        gstPct = normalizeGstRate(inv.gst_pct, 0.18);
       }
     } else if (item.battery_id) {
       category = 'battery';
@@ -192,6 +208,8 @@ export async function getPresetWithComponents(presetId: string) {
         brand = bat.brand || '';
         model = bat.model || '';
         unitRate = Number(bat.selling_price || 0);
+        sourceSpecification = bat.specification_details || bat.description || '';
+        gstPct = normalizeGstRate(bat.gst_pct, 0.18);
       }
     } else if (item.structure_id) {
       category = 'structure';
@@ -199,7 +217,11 @@ export async function getPresetWithComponents(presetId: string) {
       catalogType = 'eq_structure';
       const str = structures.find((x: any) => x.id === item.structure_id);
       if (str) {
+        brand = str.material || '';
+        model = str.roof_mount_type || '';
         unitRate = Number(str.selling_price || 0);
+        sourceSpecification = str.specification_details || str.description || '';
+        gstPct = normalizeGstRate(str.gst_pct, 0.18);
       }
     } else if (item.solar_meter_id || item.net_meter_id) {
       category = 'accessory';
@@ -207,7 +229,11 @@ export async function getPresetWithComponents(presetId: string) {
       catalogType = 'equipment';
       const met = meters.find((x: any) => x.id === catalogItemId);
       if (met) {
+        brand = met.brand || '';
+        model = met.model || '';
         unitRate = Number(met.selling_price || 0);
+        sourceSpecification = met.specification_details || met.description || '';
+        gstPct = normalizeGstRate(met.gst_pct, 0.18);
       }
     } else if (item.la_id) {
       category = 'dc_protection';
@@ -215,7 +241,11 @@ export async function getPresetWithComponents(presetId: string) {
       catalogType = 'equipment';
       const la = las.find((x: any) => x.id === item.la_id);
       if (la) {
+        brand = la.brand || '';
+        model = la.model || '';
         unitRate = Number(la.selling_price || 0);
+        sourceSpecification = la.specification_details || la.description || '';
+        gstPct = normalizeGstRate(la.gst_pct, 0.18);
       }
     } else if (item.bom_item_id) {
       catalogItemId = item.bom_item_id;
@@ -224,6 +254,8 @@ export async function getPresetWithComponents(presetId: string) {
       if (bom) {
         unitRate = Number(bom.default_rate || 0);
         category = categoryFromCatalogName((bom as any).bom_categories?.name, category);
+        sourceSpecification = bom.specification_details || bom.notes || '';
+        gstPct = normalizeGstRate(bom.gst_pct, 0.18);
       }
     } else if (item.comm_device_id) {
       category = 'accessory';
@@ -231,7 +263,11 @@ export async function getPresetWithComponents(presetId: string) {
       catalogType = 'equipment';
       const comm = commDevices.find((x: any) => x.id === item.comm_device_id);
       if (comm) {
+        brand = comm.brand || '';
+        model = comm.model || '';
         unitRate = Number(comm.selling_price || 0);
+        sourceSpecification = comm.specification_details || comm.description || '';
+        gstPct = normalizeGstRate(comm.gst_pct, 0.18);
       }
     } else if (item.structure_component_id) {
       category = 'structure';
@@ -239,7 +275,10 @@ export async function getPresetWithComponents(presetId: string) {
       catalogType = 'structure_component';
       const comp = structureComponents.find((x: any) => x.id === item.structure_component_id);
       if (comp) {
+        brand = comp.name || '';
         unitRate = Number(comp.selling_price || 0);
+        sourceSpecification = comp.specification_details || '';
+        gstPct = normalizeGstRate(comp.gst_pct, 0.18);
       }
     }
 
@@ -252,9 +291,11 @@ export async function getPresetWithComponents(presetId: string) {
       description: item.description,
       brand,
       model,
+      specificationDetails: item.remarks || sourceSpecification,
       unit: item.unit || 'Nos',
       quantity: Number(item.default_qty || 0),
       unitRate,
+      gstPct,
       isIncluded: item.is_included_by_default ?? true,
       isSurveyDependent: false,
       sortOrder: item.sort_order || 0,
@@ -339,7 +380,7 @@ export async function savePresetWithComponents(
           category: updates.systemType,
           capacity_kw: Number(updates.capacityKw) || 0,
           state_id: updates.stateId || null,
-          target_margin_pct: Number((existingPreset as any).target_margin_pct ?? 20),
+          target_margin_pct: normalizeMarginPct((existingPreset as any).target_margin_pct),
           is_active: true,
           is_custom: true,
         })
@@ -378,7 +419,7 @@ export async function savePresetWithComponents(
         category: updates.systemType,
         capacity_kw: Number(updates.capacityKw) || 0,
         state_id: updates.stateId || null,
-        target_margin_pct: 20,
+        target_margin_pct: 0.2,
         is_active: true,
         is_custom: true,
       })
@@ -462,6 +503,9 @@ export async function savePresetWithComponents(
         unit_rate_min: unitRate,
         unit_rate_max: unitRate,
         default_rate: unitRate,
+        gst_pct: normalizeGstRate(item.gstPct, 0.18),
+        notes: item.specificationDetails || null,
+        specification_details: item.specificationDetails || null,
         is_survey_dependent: item.isSurveyDependent,
         civil_required_only: item.category === 'civil',
       })
@@ -496,6 +540,7 @@ export async function savePresetWithComponents(
       sort_order: idx + 1,
       is_included_by_default: item.isIncluded,
       is_mandatory: true,
+      remarks: item.specificationDetails || null,
 
       // Foreign keys mapping
       panel_id: item.category === 'panel' ? item.catalogItemId : null,
@@ -609,6 +654,8 @@ export async function getCatalogItems(category: string, search?: string) {
       unit: 'Nos',
       defaultQty: 1,
       defaultRate: Number(item.selling_price || 0),
+      specificationDetails: item.specification_details || item.description || '',
+      gstPct: Number(item.gst_pct ?? 0.18),
       isSurveyDependent: false,
     }));
   }
@@ -618,7 +665,7 @@ export async function getCatalogItems(category: string, search?: string) {
   if (category === 'structure') {
     let structureQuery = supabase
       .from('eq_mounting_structures' as any)
-      .select('id, name, description, material, roof_mount_type, selling_price, is_active')
+      .select('id, name, description, specification_details, material, roof_mount_type, selling_price, gst_pct, is_active')
       .eq('is_active', true);
 
     if (searchTerm) {
@@ -638,6 +685,8 @@ export async function getCatalogItems(category: string, search?: string) {
       unit: 'set',
       defaultQty: 1,
       defaultRate: Number(item.selling_price || 0),
+      specificationDetails: item.specification_details || item.description || '',
+      gstPct: Number(item.gst_pct ?? 0.18),
       isSurveyDependent: false,
     })));
   }
@@ -645,7 +694,7 @@ export async function getCatalogItems(category: string, search?: string) {
   if (category === 'dc_protection' || category === 'ac_protection' || category === 'earthing') {
     let laQuery = supabase
       .from('eq_lightning_arresters' as any)
-      .select('id, brand, model, description, selling_price, is_active')
+      .select('id, brand, model, description, specification_details, selling_price, gst_pct, is_active')
       .eq('is_active', true);
 
     if (searchTerm) {
@@ -665,6 +714,8 @@ export async function getCatalogItems(category: string, search?: string) {
       unit: 'Nos',
       defaultQty: 1,
       defaultRate: Number(item.selling_price || 0),
+      specificationDetails: item.specification_details || item.description || '',
+      gstPct: Number(item.gst_pct ?? 0.18),
       isSurveyDependent: false,
     })));
   }
@@ -672,11 +723,11 @@ export async function getCatalogItems(category: string, search?: string) {
   if (category === 'accessory') {
     let meterQuery = supabase
       .from('eq_meters' as any)
-      .select('id, brand, model, description, selling_price, is_active')
+      .select('id, brand, model, description, specification_details, selling_price, gst_pct, is_active')
       .eq('is_active', true);
     let commQuery = supabase
       .from('eq_communication_devices' as any)
-      .select('id, brand, model, description, selling_price, is_active')
+      .select('id, brand, model, description, specification_details, selling_price, gst_pct, is_active')
       .eq('is_active', true);
 
     if (searchTerm) {
@@ -698,6 +749,8 @@ export async function getCatalogItems(category: string, search?: string) {
       unit: 'Nos',
       defaultQty: 1,
       defaultRate: Number(item.selling_price || 0),
+      specificationDetails: item.specification_details || item.description || '',
+      gstPct: Number(item.gst_pct ?? 0.18),
       isSurveyDependent: false,
     })));
     catalogItems.push(...(commRes.data || []).map((item: any) => ({
@@ -710,6 +763,8 @@ export async function getCatalogItems(category: string, search?: string) {
       unit: 'Nos',
       defaultQty: 1,
       defaultRate: Number(item.selling_price || 0),
+      specificationDetails: item.specification_details || item.description || '',
+      gstPct: Number(item.gst_pct ?? 0.18),
       isSurveyDependent: false,
     })));
   }
@@ -733,7 +788,7 @@ export async function getCatalogItems(category: string, search?: string) {
 
   let bomQuery = supabase
     .from('bom_template_items' as any)
-    .select('id, sku_code, description, unit, default_rate, is_survey_dependent, category_id')
+    .select('id, sku_code, description, specification_details, notes, unit, default_rate, gst_pct, is_survey_dependent, category_id')
     .in('category_id', categoryIds);
 
   if (searchTerm) {
@@ -754,6 +809,8 @@ export async function getCatalogItems(category: string, search?: string) {
     unit: item.unit || 'units',
     defaultQty: 1,
     defaultRate: Number(item.default_rate || 0),
+    specificationDetails: item.specification_details || item.notes || '',
+    gstPct: normalizeGstRate(item.gst_pct, 0.18),
     isSurveyDependent: Boolean(item.is_survey_dependent ?? false),
   })));
 

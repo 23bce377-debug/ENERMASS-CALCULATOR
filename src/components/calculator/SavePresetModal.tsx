@@ -6,6 +6,12 @@ import { Save, X } from 'lucide-react';
 import { SystemORM, SystemItemORM } from '@/backend/orm/system';
 import { Select } from '@/components/ui/Select';
 
+function normalizeMarginPct(value: unknown, fallback = 0.2): number {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return fallback;
+  return num > 1 ? num / 100 : num;
+}
+
 export function SavePresetModal({ isOpen, onClose, statePayload }: { isOpen: boolean; onClose: () => void; statePayload: any }) {
   const [name, setName] = useState('');
   const [capacity, setCapacity] = useState('5');
@@ -26,7 +32,7 @@ export function SavePresetModal({ isOpen, onClose, statePayload }: { isOpen: boo
         name: overwriteMaster ? statePayload.dbSystems?.find((s: any) => s.id === statePayload.selectedSystemId)?.name || name : name,
         capacity_kw: overwriteMaster ? statePayload.dbSystems?.find((s: any) => s.id === statePayload.selectedSystemId)?.capacityKW || Number(capacity) : Number(capacity),
         category: type,
-        target_margin_pct: statePayload.targetMarginPct || 20,
+        target_margin_pct: normalizeMarginPct(statePayload.targetMarginPct),
         is_custom: !overwriteMaster, // true if creating a new custom system, false if overwriting master (but overwriting master doesn't change is_custom)
       };
 

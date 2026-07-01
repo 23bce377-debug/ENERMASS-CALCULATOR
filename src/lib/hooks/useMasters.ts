@@ -97,12 +97,12 @@ const activeFlagEntities = new Set([
 const overrideableEntities = new Set(['panels', 'inverters', 'batteries', 'structures', 'accessories']);
 
 const mutableColumnsByEntity: Record<string, string[]> = {
-  panels: ['brand', 'model', 'wattage_w', 'panel_type', 'gst_pct', 'description', 'buy_price', 'selling_price', 'is_active', 'is_custom'],
-  inverters: ['brand', 'model', 'capacity_kw', 'inverter_type', 'phases', 'gst_pct', 'description', 'buy_price', 'selling_price', 'is_active', 'is_custom'],
-  batteries: ['brand', 'model', 'capacity_kwh', 'voltage_v', 'chemistry', 'dod_pct', 'gst_pct', 'description', 'buy_price', 'selling_price', 'is_active', 'is_custom'],
-  structures: ['name', 'material', 'roof_mount_type', 'elevation_height_mm', 'raw_material_rate', 'fabrication_rate', 'galvanizing_rate', 'wastage_pct', 'fastener_weight_pct', 'base_weight_kg', 'selling_price', 'buy_price', 'per_watt_rate', 'gst_pct', 'description', 'is_active', 'is_custom'],
-  accessories: ['category_id', 'sku_code', 'description', 'unit', 'unit_rate_min', 'unit_rate_max', 'default_rate', 'qty_formula', 'is_survey_dependent', 'civil_required_only', 'notes', 'is_active', 'is_custom'],
-  pricing: ['category_id', 'sku_code', 'description', 'unit', 'unit_rate_min', 'unit_rate_max', 'default_rate', 'qty_formula', 'is_survey_dependent', 'civil_required_only', 'notes', 'is_active', 'is_custom'],
+  panels: ['brand', 'model', 'wattage_w', 'panel_type', 'gst_pct', 'description', 'specification_details', 'buy_price', 'selling_price', 'is_active', 'is_custom'],
+  inverters: ['brand', 'model', 'capacity_kw', 'inverter_type', 'phases', 'gst_pct', 'description', 'specification_details', 'buy_price', 'selling_price', 'is_active', 'is_custom'],
+  batteries: ['brand', 'model', 'capacity_kwh', 'voltage_v', 'chemistry', 'dod_pct', 'gst_pct', 'description', 'specification_details', 'buy_price', 'selling_price', 'is_active', 'is_custom'],
+  structures: ['name', 'material', 'roof_mount_type', 'elevation_height_mm', 'raw_material_rate', 'fabrication_rate', 'galvanizing_rate', 'wastage_pct', 'fastener_weight_pct', 'base_weight_kg', 'selling_price', 'buy_price', 'per_watt_rate', 'gst_pct', 'description', 'specification_details', 'is_active', 'is_custom'],
+  accessories: ['category_id', 'sku_code', 'description', 'specification_details', 'unit', 'unit_rate_min', 'unit_rate_max', 'default_rate', 'gst_pct', 'qty_formula', 'is_survey_dependent', 'civil_required_only', 'notes', 'is_active', 'is_custom'],
+  pricing: ['category_id', 'sku_code', 'description', 'specification_details', 'unit', 'unit_rate_min', 'unit_rate_max', 'default_rate', 'gst_pct', 'qty_formula', 'is_survey_dependent', 'civil_required_only', 'notes', 'is_active', 'is_custom'],
 };
 
 async function isReferenced(entity: string, id: string): Promise<boolean> {

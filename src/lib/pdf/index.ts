@@ -11,6 +11,13 @@ export async function generateQuotePdf(quoteId: string, orgId: string): Promise<
 
   // 1. Build the view model from database tables
   const viewModel = await buildQuoteViewModel(quoteId, orgId);
+  const logoPath = path.join(process.cwd(), 'public', 'enermass.svg');
+  try {
+    const logoSvg = await fs.readFile(logoPath);
+    (viewModel as any).company.logoDataUri = `data:image/svg+xml;base64,${logoSvg.toString('base64')}`;
+  } catch (err) {
+    console.warn(`[pdfEngine] Enermass logo not found at ${logoPath}; using text-only header.`, err);
+  }
 
   // 2. Read and compile the Handlebars template
   // We use path.join and process.cwd() to ensure the path resolves correctly in Vercel serverless functions

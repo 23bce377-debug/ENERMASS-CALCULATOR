@@ -88,6 +88,11 @@ describe('resolveEffectiveMargin — Priority Chain', () => {
     expect(result.marginPct).toBe(0);
     expect(result.source).toBe('org_override');
   });
+
+  it('normalizes legacy whole-number margin percentages', () => {
+    const result = resolveEffectiveMargin('industrial', 20, {}, {});
+    expect(result.marginPct).toBe(0.2);
+  });
 });
 
 describe('resolveWithPriorityChain', () => {

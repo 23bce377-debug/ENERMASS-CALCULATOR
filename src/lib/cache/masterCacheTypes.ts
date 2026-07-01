@@ -112,6 +112,7 @@ export interface CachedScheme {
   id: string;
   name: string;
   max_capacity_kw: number;
+  max_absolute_subsidy: number;
   applies_to: string;
 }
 

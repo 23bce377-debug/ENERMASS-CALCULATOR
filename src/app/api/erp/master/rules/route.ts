@@ -33,7 +33,7 @@ export const GET = withLicensedApiRoute(
     const { bomLimit } = parseResult.data;
     // Bump the version suffix whenever the payload shape changes so stale
     // cached preset/state payloads are not served.
-    const cacheKey = `erp:master:rules:global:v4:bomLimit_${bomLimit}`;
+    const cacheKey = `erp:master:rules:global:v5:bomLimit_${bomLimit}`;
 
     try {
       const data = await getOrSetCache(

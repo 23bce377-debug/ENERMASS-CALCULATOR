@@ -29,6 +29,7 @@ import { HistoryDrawer } from '@/components/master/HistoryDrawer';
 import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditModal';
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
+import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
 
 interface Battery {
   id: string;
@@ -41,6 +42,7 @@ interface Battery {
   rate: number;
   gst_pct: number;
   description: string | null;
+  specification_details: string | null;
   org_id: string | null;
 }
 
@@ -77,6 +79,7 @@ export default function BatteriesMasterPage() {
     rate: 90000,
     gst_pct: 0.12,
     description: '',
+    specification_details: '',
   });
 
   // Bulk Edit Schema
@@ -90,10 +93,7 @@ export default function BatteriesMasterPage() {
     ]},
     { name: 'dod_pct', label: 'Depth of Discharge (%)', type: 'number' },
     { name: 'rate', label: 'Selling Rate (₹)', type: 'number' },
-    { name: 'gst_pct', label: 'GST Percentage', type: 'select', options: [
-      { value: 0.12, label: '12%' },
-      { value: 0.18, label: '18%' }
-    ]},
+    { name: 'gst_pct', label: 'GST Percentage', type: 'number' },
   ];
 
   // ─── Filter & Search Logic ──────────────────────────────────────────────────
@@ -153,6 +153,7 @@ export default function BatteriesMasterPage() {
       rate: 90000,
       gst_pct: 0.12,
       description: '',
+      specification_details: '',
     });
     setEditorOpen(true);
   };
@@ -169,6 +170,7 @@ export default function BatteriesMasterPage() {
       rate: battery.rate,
       gst_pct: battery.gst_pct,
       description: battery.description || '',
+      specification_details: battery.specification_details || '',
     });
     setEditorOpen(true);
   };
@@ -209,7 +211,12 @@ export default function BatteriesMasterPage() {
 
   const handleBulkEditSave = async (updates: Record<string, any>) => {
     try {
-      await bulkUpdateMutation.mutateAsync({ ids: selectedIds, updates });
+      await bulkUpdateMutation.mutateAsync({
+        ids: selectedIds,
+        updates: updates.gst_pct !== undefined
+          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, 0.12) }
+          : updates,
+      });
       setSelectedIds([]);
       toast(`Bulk updated ${selectedIds.length} battery items`, 'success');
     } catch (err: any) {
@@ -228,8 +235,9 @@ export default function BatteriesMasterPage() {
       'Voltage (V)': b.voltage_v || '',
       'DoD Percentage': b.dod_pct,
       'Selling Rate (INR)': b.rate,
-      'GST Percentage': b.gst_pct,
+      'GST Percentage': gstRateToPercent(b.gst_pct, 0.12),
       Description: b.description || '',
+      'Specification Details': b.specification_details || '',
     }));
     exportToExcel(dataToExport, 'Batteries_Master', 'Batteries');
     toast('Master list exported to Excel', 'success');
@@ -250,8 +258,9 @@ export default function BatteriesMasterPage() {
         voltage_v: row['Voltage (V)'] || row.voltage_v ? parseInt(row['Voltage (V)'] || row.voltage_v, 10) : null,
         dod_pct: parseFloat(row['DoD Percentage'] || row.dod_pct || 0.8),
         rate: parseFloat(row['Selling Rate (INR)'] || row.rate || 0),
-        gst_pct: parseFloat(row['GST Percentage'] || row.gst_pct || 0.12),
+        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, 0.12),
         description: row.Description || row.description || '',
+        specification_details: row['Specification Details'] || row.specification_details || row.Specifications || row.specifications || row.Description || row.description || '',
       })).filter((r) => r.brand && r.model && !isNaN(r.capacity_kwh) && !isNaN(r.rate));
 
       if (parsedRows.length === 0) {
@@ -537,27 +546,25 @@ export default function BatteriesMasterPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Standard GST Slabs *</label>
-                  <Select
-                    value={String(draft.gst_pct)}
-                    onChange={(val) => setDraft({ ...draft, gst_pct: parseFloat(val) })}
-                    options={[
-                      { value: '0.12', label: '12% GST (Default Batteries)' },
-                      { value: '0.18', label: '18% GST (Alternative Slabs)' }
-                    ]}
-                    className="w-full"
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">GST Percentage *</label>
+                  <input
+                    type="number" required min={0} step={0.01}
+                    value={gstRateToPercent(draft.gst_pct, 0.12)}
+                    onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, 0.12) })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
+                    placeholder="18"
                   />
                 </div>
               </div>
               
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Remarks / Technical Specifications</label>
+                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Quote Specification Details</label>
                 <textarea
-                  value={draft.description}
-                  onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-                  rows={3}
+                  value={draft.specification_details}
+                  onChange={(e) => setDraft({ ...draft, specification_details: e.target.value })}
+                  rows={4}
                   className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none resize-none"
-                  placeholder="Cycle life specs, dimensions, weights, connection protocols..."
+                  placeholder="Cycle life, DoD details, BMS protections, communication protocol, warranty terms..."
                 />
               </div>
 

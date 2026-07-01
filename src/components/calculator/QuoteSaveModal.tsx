@@ -19,8 +19,17 @@ interface QuoteSaveModalProps {
   leadId?: string | null;
 }
 
+interface SalesExecutiveOption {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+}
+
 const STEPS = ['Project', 'Address', 'Site', 'Sales', 'Proposal Customization'];
 const DEFAULT_STATE = 'Gujarat';
+const MANUAL_SALES_EXECUTIVE_ID = '__manual__';
 
 // Last-resort, state-agnostic fallback used only when the database has no T&C
 // template (global or state-specific). The authoritative source is the
@@ -74,6 +83,18 @@ const DEFAULT_WHY_SOLAR = {
   ]
 };
 
+function formatRoleLabel(role: string) {
+  return role
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ') || 'Sales Executive';
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = [], leadId = null }: QuoteSaveModalProps) {
   const saveQuote = useCalculatorStore((s) => s.saveQuote);
   const loadQuote = useCalculatorStore((s) => s.loadQuote);
@@ -101,17 +122,12 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
       .map(st => ({ value: st, label: st })),
     [dbStateData]
   );
-  
+
   const [step, setStep] = useState(0);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [showConflict, setShowConflict] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  // Project select states
-  const [projects, setProjects] = useState<any[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [loadingProjects, setLoadingProjects] = useState(false);
 
   // Form states
   const [customer, setCustomer] = useState<CustomerInfo>({ name: '', phone: '', whatsapp: '', email: '', isGstRegistered: false });
@@ -130,8 +146,9 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
   const [ceoName, setCeoName] = useState('Mr. Manoj M S');
   const [ceoDesignation, setCeoDesignation] = useState('Chief Executive Officer');
   const [ceoSignatureUrl, setCeoSignatureUrl] = useState('');
-  const [salesExecRole, setSalesExecRole] = useState('Sales Manager');
-  const [salesExecPhone, setSalesExecPhone] = useState('7594933374');
+  const [salesExecRole, setSalesExecRole] = useState('Sales Executive');
+  const [salesExecPhone, setSalesExecPhone] = useState('');
+  const [salesExecEmail, setSalesExecEmail] = useState('');
   const [bankAccountHolder, setBankAccountHolder] = useState('Enermass Power Solutions Pvt. Ltd.');
   const [bankName, setBankName] = useState('bank of Baroda, Koratty');
   const [bankAccountNo, setBankAccountNo] = useState('85080200000055');
@@ -140,6 +157,8 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
   const [terms, setTerms] = useState<string[]>(DEFAULT_TERMS);
   const [whySolar, setWhySolar] = useState<any>(DEFAULT_WHY_SOLAR);
   const [pdfSubSection, setPdfSubSection] = useState<'ceo_sales' | 'company' | 'bank' | 'terms'>('ceo_sales');
+
+
 
   const syncQuoteState = useCallback((stateName: string, resetTerms = true) => {
     const nextState = stateName || DEFAULT_STATE;
@@ -160,6 +179,8 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
       reader.readAsDataURL(file);
     }
   };
+
+
 
   // Client-side mounting for portal
   const [mounted, setMounted] = useState(false);
@@ -224,66 +245,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
     };
   }, [isOpen, savedQuoteId]);
 
-  // Fetch projects when modal opens
-  useEffect(() => {
-    if (!isOpen) return;
-    
-    const fetchProjects = async () => {
-      setLoadingProjects(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) return;
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('org_id')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profile?.org_id) {
-          const { data: projs, error } = await supabase
-            .from('epc_projects')
-            .select(`
-              id,
-              project_number,
-              quote_id,
-              quotes (
-                customer_name,
-                customer_phone,
-                customer_whatsapp,
-                customer_email,
-                address_line1,
-                address_line2,
-                city,
-                state_name,
-                pincode,
-                meter_number,
-                sanctioned_load_kw,
-                monthly_bill_inr,
-                roof_type,
-                roof_area_sqft,
-                exec_name,
-                sale_type,
-                project_title,
-                notes
-              )
-            `)
-            .eq('org_id', profile.org_id)
-            .order('created_at', { ascending: false });
-
-          if (!error && projs) {
-            setProjects(projs);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load projects for dropdown:', err);
-      } finally {
-        setLoadingProjects(false);
-      }
-    };
-
-    fetchProjects();
-  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !leadId) return;
@@ -374,8 +336,9 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
         setCeoName(activeQuote.ceo_name || 'Mr. Manoj M S');
         setCeoDesignation(activeQuote.ceo_designation || 'Chief Executive Officer');
         setCeoSignatureUrl(activeQuote.ceo_signature_url || '');
-        setSalesExecRole(activeQuote.sales_exec_role || 'Sales Manager');
-        setSalesExecPhone(activeQuote.sales_exec_phone || '7594933374');
+        setSalesExecRole(activeQuote.sales_exec_role || 'Sales Executive');
+        setSalesExecPhone(activeQuote.sales_exec_phone || '');
+        setSalesExecEmail(activeQuote.sales_exec_email || '');
         setBankAccountHolder(activeQuote.bank_account_holder || 'Enermass Power Solutions Pvt. Ltd.');
         setBankName(activeQuote.bank_name || 'bank of Baroda, Koratty');
         setBankAccountNo(activeQuote.bank_account_no || '85080200000055');
@@ -396,8 +359,9 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
       setCeoName('Mr. Manoj M S');
       setCeoDesignation('Chief Executive Officer');
       setCeoSignatureUrl('');
-      setSalesExecRole('Sales Manager');
-      setSalesExecPhone('7594933374');
+      setSalesExecRole('Sales Executive');
+      setSalesExecPhone('');
+      setSalesExecEmail('');
       setBankAccountHolder('Enermass Power Solutions Pvt. Ltd.');
       setBankName('bank of Baroda, Koratty');
       setBankAccountNo('85080200000055');
@@ -423,7 +387,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
   if (!isOpen || !mounted) return null;
 
   const handleSave = async (forceOverwrite = false) => {
-    const validationError = validateQuoteBasics(customer, sales);
+    const validationError = validateQuoteBasics(customer, sales, false, salesExecPhone, salesExecEmail);
     if (validationError) {
       setFormError(validationError);
       return;
@@ -452,6 +416,8 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
         ceo_signature_url: ceoSignatureUrl,
         sales_exec_role: salesExecRole,
         sales_exec_phone: salesExecPhone,
+        sales_exec_email: salesExecEmail,
+        sales_exec_id: null,
         bank_account_holder: bankAccountHolder,
         bank_name: bankName,
         bank_account_no: bankAccountNo,
@@ -460,29 +426,6 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
         terms_json: terms,
         why_solar_json: whySolar,
       }, forceOverwrite);
-
-      // Link quote to project if selected
-      if (selectedProjectId) {
-        // Query the quote's DB UUID from the quotes table using its quote_number
-        const { data: qData, error: qErr } = await supabase
-          .from('quotes')
-          .select('id')
-          .eq('quote_number', quote.quoteId)
-          .single();
-        if (qErr) {
-          console.error('[QuoteSaveModal] Error retrieving quote UUID:', qErr);
-        } else if (qData?.id) {
-          const { error: projErr } = await supabase
-            .from('epc_projects')
-            .update({ quote_id: qData.id })
-            .eq('id', selectedProjectId);
-          if (projErr) {
-            console.error('[QuoteSaveModal] Error linking project to quote:', projErr);
-          } else {
-            console.log(`[QuoteSaveModal] Linked project ${selectedProjectId} to quote UUID ${qData.id}`);
-          }
-        }
-      }
 
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
       setSavedQuoteId(quote.quoteId);
@@ -505,7 +448,6 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
     setFormError(null);
     setShowConflict(false);
     setStep(0);
-    setSelectedProjectId(null); // Clear selected project
     onClose();
   };
 
@@ -595,116 +537,6 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
 
               {step === 0 && (
                 <div className="space-y-4 animate-fade-in">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-text-secondary">Link to Existing ERP Project</label>
-                    <Select
-                      value={selectedProjectId || ''}
-                      onChange={(val) => {
-                        const projId = val === '' ? null : val;
-                        setSelectedProjectId(projId);
-                        if (projId) {
-                          const proj = projects.find((p) => p.id === projId);
-                          if (proj) {
-                            if (proj.quotes) {
-                              const q = proj.quotes;
-                              setSales({
-                                projectTitle: q.project_title || proj.project_number || '',
-                                execName: q.exec_name || '',
-                                notes: q.notes || '',
-                                saleType: q.sale_type ? (q.sale_type.charAt(0).toUpperCase() + q.sale_type.slice(1)) as any : 'New',
-                              });
-                              setCustomer({
-                                name: q.customer_name || '',
-                                phone: q.customer_phone || '',
-                                whatsapp: q.customer_whatsapp || '',
-                                email: q.customer_email || '',
-                                isGstRegistered: q.customer_is_gst_registered || false,
-                              });
-                              const quoteState = q.state_name || storeSelectedState || DEFAULT_STATE;
-                              setAddress({
-                                line1: q.address_line1 || '',
-                                line2: q.address_line2 || '',
-                                city: q.city || '',
-                                state: quoteState,
-                                pin: q.pincode || '',
-                              });
-                              setStoreSelectedState(quoteState);
-                              setSite({
-                                meterNo: q.meter_number || '',
-                                sanctionedLoad: q.sanctioned_load_kw ? String(q.sanctioned_load_kw) : '',
-                                monthlyBill: q.monthly_bill_inr || 0,
-                                roofType: (q.roof_type || 'RCC') as any,
-                                roofArea: q.roof_area_sqft || 0,
-                              });
-                              setCompanyCin(q.company_cin || 'U74999KL2018PTC053947');
-                              setCompanyGstin(q.company_gstin || '32AAFCE1087R1ZA');
-                              setCompanyPan(q.company_pan || 'AAFCE1087R');
-                              setCompanyPhone(q.company_phone || '+91-81 380 27336');
-                              setCompanyEmail(q.company_email || 'info@enermass.in');
-                              setCompanyWebsite(q.company_website || 'www.enermass.in');
-                              setCompanyAddress(q.company_address || 'First Floor, AVM Complex, Chirangara Koratty Post, Thrissur, Kerala - 680 308');
-                              setCeoName(q.ceo_name || 'Mr. Manoj M S');
-                              setCeoDesignation(q.ceo_designation || 'Chief Executive Officer');
-                              setCeoSignatureUrl(q.ceo_signature_url || '');
-                              setSalesExecRole(q.sales_exec_role || 'Sales Manager');
-                              setSalesExecPhone(q.sales_exec_phone || '7594933374');
-                              setBankAccountHolder(q.bank_account_holder || 'Enermass Power Solutions Pvt. Ltd.');
-                              setBankName(q.bank_name || 'bank of Baroda, Koratty');
-                              setBankAccountNo(q.bank_account_no || '85080200000055');
-                              setBankIfsc(q.bank_ifsc || 'BARB0KORATT');
-                              setBankUpiId(q.bank_upi_id || 'enermass@barodampay');
-                              setTerms(q.terms_json && q.terms_json.length > 0 ? q.terms_json : resolveStateTerms(quoteState));
-                              setWhySolar(q.why_solar_json || DEFAULT_WHY_SOLAR);
-                            } else {
-                              // If project exists but no quote is linked yet
-                              setSales({
-                                projectTitle: proj.project_number || '',
-                                execName: '',
-                                notes: '',
-                                saleType: 'New',
-                              });
-                              setCustomer({ name: '', phone: '', whatsapp: '', email: '', isGstRegistered: false });
-                              setAddress({ line1: '', line2: '', city: '', state: storeSelectedState || DEFAULT_STATE, pin: '' });
-                              setSite({ meterNo: '', sanctionedLoad: '', monthlyBill: 0, roofType: 'RCC', roofArea: 0 });
-                              setCompanyCin('U74999KL2018PTC053947');
-                              setCompanyGstin('32AAFCE1087R1ZA');
-                              setCompanyPan('AAFCE1087R');
-                              setCompanyPhone('+91-81 380 27336');
-                              setCompanyEmail('info@enermass.in');
-                              setCompanyWebsite('www.enermass.in');
-                              setCompanyAddress('First Floor, AVM Complex, Chirangara Koratty Post, Thrissur, Kerala - 680 308');
-                              setCeoName('Mr. Manoj M S');
-                              setCeoDesignation('Chief Executive Officer');
-                              setCeoSignatureUrl('');
-                              setSalesExecRole('Sales Manager');
-                              setSalesExecPhone('7594933374');
-                              setBankAccountHolder('Enermass Power Solutions Pvt. Ltd.');
-                              setBankName('bank of Baroda, Koratty');
-                              setBankAccountNo('85080200000055');
-                              setBankIfsc('BARB0KORATT');
-                              setBankUpiId('enermass@barodampay');
-                              setTerms(resolveStateTerms(storeSelectedState || DEFAULT_STATE));
-                              setWhySolar(DEFAULT_WHY_SOLAR);
-                            }
-                          }
-                        } else {
-                          // Clear all inputs when choosing "None"
-                          setCustomer({ name: '', phone: '', whatsapp: '', email: '', isGstRegistered: false });
-                          setAddress({ line1: '', line2: '', city: '', state: storeSelectedState || DEFAULT_STATE, pin: '' });
-                          setSite({ meterNo: '', sanctionedLoad: '', monthlyBill: 0, roofType: 'RCC', roofArea: 0 });
-                          setSales({ projectTitle: '', execName: '', notes: '', saleType: 'New' });
-                        }
-                      }}
-                      options={[
-                        { value: '', label: 'None (Create New Project)' },
-                        ...projects.map((p) => ({
-                          value: p.id,
-                          label: `${p.project_number} — ${p.quotes?.customer_name || 'No Client'}`
-                        }))
-                      ]}
-                    />
-                  </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input label="Project Title" value={sales.projectTitle} onChange={(e) => setSales({...sales, projectTitle: e.target.value})} required />
                     <Input label="Customer Name" value={customer.name} onChange={(e) => setCustomer({...customer, name: e.target.value})} required />
@@ -783,7 +615,27 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
 
               {step === 3 && (
                 <div className="space-y-4 animate-fade-in">
-                  <Input label="Sales Executive" value={sales.execName} onChange={(e) => setSales({...sales, execName: e.target.value})} required />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="Sales Executive"
+                      value={sales.execName}
+                      onChange={(e) => setSales({ ...sales, execName: e.target.value })}
+                      required
+                    />
+                    <Input
+                      label="Sales Executive Phone"
+                      value={salesExecPhone}
+                      onChange={(e) => setSalesExecPhone(e.target.value)}
+                      required
+                    />
+                    <Input
+                      label="Sales Executive Email"
+                      value={salesExecEmail}
+                      onChange={(e) => setSalesExecEmail(e.target.value)}
+                      type="email"
+                      required
+                    />
+                  </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-text-secondary">Sale Type</label>
                     <div className="flex gap-2">
@@ -828,7 +680,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                             : 'border-transparent text-text-muted hover:text-text-primary'
                         }`}
                       >
-                        {tab === 'ceo_sales' ? 'CEO & Sales' : tab === 'company' ? 'Company Profile' : tab === 'bank' ? 'Bank Details' : 'Terms & Conditions'}
+                        {tab === 'ceo_sales' ? 'CEO Details' : tab === 'company' ? 'Company Profile' : tab === 'bank' ? 'Bank Details' : 'Terms & Conditions'}
                       </button>
                     ))}
                   </div>
@@ -863,10 +715,6 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                             <img src={ceoSignatureUrl} alt="CEO Signature Preview" className="max-h-12 object-contain" />
                           </div>
                         )}
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="Sales Manager Role Name" value={salesExecRole} onChange={(e) => setSalesExecRole(e.target.value)} />
-                        <Input label="Sales Manager Phone" value={salesExecPhone} onChange={(e) => setSalesExecPhone(e.target.value)} />
                       </div>
                     </div>
                   )}
@@ -1022,6 +870,14 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                     }
                     setFormError(null);
                   }
+                  if (step === 3) {
+                    const validationError = validateSalesExecutiveContact(sales, salesExecPhone, salesExecEmail);
+                    if (validationError) {
+                      setFormError(validationError);
+                      return;
+                    }
+                    setFormError(null);
+                  }
                   if (step === 4) {
                     handleSave();
                     return;
@@ -1043,13 +899,31 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
   );
 }
 
-function validateQuoteBasics(customer: CustomerInfo, sales: SalesInfo, skipSalesCheck = false): string | null {
+function validateQuoteBasics(
+  customer: CustomerInfo,
+  sales: SalesInfo,
+  skipSalesCheck = false,
+  salesExecPhone = '',
+  salesExecEmail = '',
+): string | null {
   if (!sales.projectTitle.trim()) return 'Project Title is required.';
   if (!customer.name.trim()) return 'Customer Name is required.';
   if (!customer.phone.trim()) return 'Phone Number is required.';
   const phoneDigits = customer.phone.replace(/\D/g, '');
   if (phoneDigits.length < 10) return 'Phone Number should be at least 10 digits.';
-  if (!skipSalesCheck && !sales.execName.trim()) return 'Sales Executive name is required.';
+  if (!skipSalesCheck) {
+    return validateSalesExecutiveContact(sales, salesExecPhone, salesExecEmail);
+  }
+  return null;
+}
+
+function validateSalesExecutiveContact(sales: SalesInfo, salesExecPhone: string, salesExecEmail: string): string | null {
+  if (!sales.execName.trim()) return 'Sales Executive name is required.';
+  if (!salesExecPhone.trim()) return 'Sales Executive phone is required.';
+  const phoneDigits = salesExecPhone.replace(/\D/g, '');
+  if (phoneDigits.length < 10) return 'Sales Executive phone should be at least 10 digits.';
+  if (!salesExecEmail.trim()) return 'Sales Executive email is required.';
+  if (!isValidEmail(salesExecEmail)) return 'Sales Executive email is invalid.';
   return null;
 }
 

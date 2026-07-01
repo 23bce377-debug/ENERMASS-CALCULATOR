@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export const GET = withLicensedApiRoute(
   async (_request, _context) => {
-    const cacheKey = `erp:master:structures:global`;
+    const cacheKey = `erp:master:structures:global:v2`;
 
     try {
       const data = await getOrSetCache(
@@ -46,21 +46,21 @@ export const GET = withLicensedApiRoute(
             safeQuery(
               supabase
                 .from('eq_mounting_structures')
-                .select('id, name, material, roof_mount_type, elevation_height_mm, raw_material_rate, fabrication_rate, galvanizing_rate, rate_per_kg, wastage_pct, fastener_weight_pct, base_weight_kg, selling_price, per_watt_rate, gst_pct, description, is_active')
+                .select('id, name, material, roof_mount_type, elevation_height_mm, raw_material_rate, fabrication_rate, galvanizing_rate, rate_per_kg, wastage_pct, fastener_weight_pct, base_weight_kg, selling_price, per_watt_rate, gst_pct, description, specification_details, is_active')
                 .eq('is_active', true)
             ),
             safeQuery(supabase.from('structure_weight_lookup').select('*')),
             safeQuery(
               supabase
                 .from('eq_structure_components')
-                .select('id, name, category, description, unit, selling_price, gst_pct, is_active')
+                .select('id, name, category, description, specification_details, unit, selling_price, gst_pct, is_active')
                 .eq('is_active', true)
             ),
             safeQuery(supabase.from('eq_structure_bom').select('*')),
             safeQuery(
               supabase
                 .from('eq_structure_addons')
-                .select('id, name, material, unit, rate_per_unit, gst_pct, is_active')
+                .select('id, name, material, unit, rate_per_unit, gst_pct, specification_details, is_active')
                 .eq('is_active', true)
             ),
             safeQuery(
@@ -77,7 +77,7 @@ export const GET = withLicensedApiRoute(
             safeQuery(
               supabase
                 .from('structure_component_master')
-                .select('id, name, type, weight_per_meter, material, selling_price, gst_pct, is_active')
+                .select('id, name, type, weight_per_meter, material, selling_price, gst_pct, specification_details, is_active')
                 .eq('is_active', true)
             ),
           ]);

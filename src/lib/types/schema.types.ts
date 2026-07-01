@@ -901,6 +901,7 @@ export type Database = {
           notes: string | null
           org_id: string | null
           qty_formula: string | null
+          specification_details: string | null
           sku_code: string
           unit: string
           unit_rate_max: number | null
@@ -916,6 +917,7 @@ export type Database = {
           notes?: string | null
           org_id?: string | null
           qty_formula?: string | null
+          specification_details?: string | null
           sku_code: string
           unit: string
           unit_rate_max?: number | null
@@ -931,6 +933,7 @@ export type Database = {
           notes?: string | null
           org_id?: string | null
           qty_formula?: string | null
+          specification_details?: string | null
           sku_code?: string
           unit?: string
           unit_rate_max?: number | null
@@ -1979,6 +1982,7 @@ export type Database = {
           selling_price: number
           sheet_name: string | null
           source_file: string | null
+          specification_details: string | null
           updated_at: string
           version: number
           voltage_v: number | null
@@ -2005,6 +2009,7 @@ export type Database = {
           selling_price: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
           voltage_v?: number | null
@@ -2031,6 +2036,7 @@ export type Database = {
           selling_price?: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
           voltage_v?: number | null
@@ -2169,6 +2175,7 @@ export type Database = {
           selling_price: number
           sheet_name: string | null
           source_file: string | null
+          specification_details: string | null
           updated_at: string
           version: number
         }
@@ -2190,6 +2197,7 @@ export type Database = {
           selling_price: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
         }
@@ -2211,6 +2219,7 @@ export type Database = {
           selling_price?: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
         }
@@ -2261,6 +2270,7 @@ export type Database = {
           selling_price: number
           sheet_name: string | null
           source_file: string | null
+          specification_details: string | null
           updated_at: string
           version: number
         }
@@ -2286,6 +2296,7 @@ export type Database = {
           selling_price: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
         }
@@ -2311,6 +2322,7 @@ export type Database = {
           selling_price?: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
         }
@@ -2358,6 +2370,7 @@ export type Database = {
           selling_price: number
           sheet_name: string | null
           source_file: string | null
+          specification_details: string | null
           updated_at: string
           version: number
         }
@@ -2380,6 +2393,7 @@ export type Database = {
           selling_price: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
         }
@@ -2402,6 +2416,7 @@ export type Database = {
           selling_price?: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
         }
@@ -2450,6 +2465,7 @@ export type Database = {
           selling_price: number
           sheet_name: string | null
           source_file: string | null
+          specification_details: string | null
           updated_at: string
           version: number
         }
@@ -2473,6 +2489,7 @@ export type Database = {
           selling_price: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
         }
@@ -2496,6 +2513,7 @@ export type Database = {
           selling_price?: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
         }
@@ -2551,6 +2569,7 @@ export type Database = {
           selling_price: number | null
           sheet_name: string | null
           source_file: string | null
+          specification_details: string | null
           updated_at: string
           version: number
           wastage_pct: number
@@ -2582,6 +2601,7 @@ export type Database = {
           selling_price?: number | null
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
           wastage_pct?: number
@@ -2613,6 +2633,7 @@ export type Database = {
           selling_price?: number | null
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
           wastage_pct?: number
@@ -2694,6 +2715,7 @@ export type Database = {
           selling_price: number
           sheet_name: string | null
           source_file: string | null
+          specification_details: string | null
           updated_at: string
           version: number
           wattage_w: number
@@ -2718,6 +2740,7 @@ export type Database = {
           selling_price?: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
           wattage_w: number
@@ -2742,6 +2765,7 @@ export type Database = {
           selling_price?: number
           sheet_name?: string | null
           source_file?: string | null
+          specification_details?: string | null
           updated_at?: string
           version?: number
           wattage_w?: number
@@ -5488,8 +5512,12 @@ export type Database = {
           quote_id: string
           rate_per_unit: number
           remarks: string | null
+          quoted_rate_date: string
           section: Database["public"]["Enums"]["bom_section"]
           sort_order: number
+          source_item_id: string | null
+          source_label: string | null
+          source_table: string | null
           unit: string
           updated_at: string
           version: number
@@ -5514,8 +5542,12 @@ export type Database = {
           quote_id: string
           rate_per_unit?: number
           remarks?: string | null
+          quoted_rate_date?: string
           section: Database["public"]["Enums"]["bom_section"]
           sort_order?: number
+          source_item_id?: string | null
+          source_label?: string | null
+          source_table?: string | null
           unit?: string
           updated_at?: string
           version?: number
@@ -5540,8 +5572,12 @@ export type Database = {
           quote_id?: string
           rate_per_unit?: number
           remarks?: string | null
+          quoted_rate_date?: string
           section?: Database["public"]["Enums"]["bom_section"]
           sort_order?: number
+          source_item_id?: string | null
+          source_label?: string | null
+          source_table?: string | null
           unit?: string
           updated_at?: string
           version?: number
@@ -5728,6 +5764,7 @@ export type Database = {
           lead_id: string | null
           lifetime_savings_inr: number | null
           logistics_cost_estimated: number | null
+          margin_mode: string
           margin_alert: boolean
           margin_alert_threshold: number
           meter_number: string | null
@@ -5771,6 +5808,7 @@ export type Database = {
           system_category: Database["public"]["Enums"]["system_category"] | null
           system_id: string | null
           system_name: string | null
+          target_margin_amount: number | null
           target_mrp_incl_gst: number | null
           target_mrp_per_watt: number | null
           total_incl_gst: number
@@ -5780,6 +5818,27 @@ export type Database = {
           validation_acknowledged: Json
           version: number
           version_reason: string | null
+          company_cin: string | null
+          company_gstin: string | null
+          company_pan: string | null
+          company_phone: string | null
+          company_email: string | null
+          company_website: string | null
+          company_address: string | null
+          ceo_name: string | null
+          ceo_designation: string | null
+          ceo_signature_url: string | null
+          sales_exec_role: string | null
+          sales_exec_phone: string | null
+          sales_exec_email: string | null
+          bank_account_holder: string | null
+          bank_name: string | null
+          bank_account_no: string | null
+          bank_ifsc: string | null
+          bank_upi_id: string | null
+          terms_json: Json | null
+          why_solar_json: Json | null
+          equipment_json: Json | null
         }
         Insert: {
           additional_costs_total?: number
@@ -5821,6 +5880,7 @@ export type Database = {
           lead_id?: string | null
           lifetime_savings_inr?: number | null
           logistics_cost_estimated?: number | null
+          margin_mode?: string
           margin_alert?: boolean
           margin_alert_threshold?: number
           meter_number?: string | null
@@ -5866,6 +5926,7 @@ export type Database = {
             | null
           system_id?: string | null
           system_name?: string | null
+          target_margin_amount?: number | null
           target_mrp_incl_gst?: number | null
           target_mrp_per_watt?: number | null
           total_incl_gst?: number
@@ -5875,6 +5936,27 @@ export type Database = {
           validation_acknowledged?: Json
           version?: number
           version_reason?: string | null
+          company_cin?: string | null
+          company_gstin?: string | null
+          company_pan?: string | null
+          company_phone?: string | null
+          company_email?: string | null
+          company_website?: string | null
+          company_address?: string | null
+          ceo_name?: string | null
+          ceo_designation?: string | null
+          ceo_signature_url?: string | null
+          sales_exec_role?: string | null
+          sales_exec_phone?: string | null
+          sales_exec_email?: string | null
+          bank_account_holder?: string | null
+          bank_name?: string | null
+          bank_account_no?: string | null
+          bank_ifsc?: string | null
+          bank_upi_id?: string | null
+          terms_json?: Json | null
+          why_solar_json?: Json | null
+          equipment_json?: Json | null
         }
         Update: {
           additional_costs_total?: number
@@ -5916,6 +5998,7 @@ export type Database = {
           lead_id?: string | null
           lifetime_savings_inr?: number | null
           logistics_cost_estimated?: number | null
+          margin_mode?: string
           margin_alert?: boolean
           margin_alert_threshold?: number
           meter_number?: string | null
@@ -5961,6 +6044,7 @@ export type Database = {
             | null
           system_id?: string | null
           system_name?: string | null
+          target_margin_amount?: number | null
           target_mrp_incl_gst?: number | null
           target_mrp_per_watt?: number | null
           total_incl_gst?: number
@@ -5970,6 +6054,27 @@ export type Database = {
           validation_acknowledged?: Json
           version?: number
           version_reason?: string | null
+          company_cin?: string | null
+          company_gstin?: string | null
+          company_pan?: string | null
+          company_phone?: string | null
+          company_email?: string | null
+          company_website?: string | null
+          company_address?: string | null
+          ceo_name?: string | null
+          ceo_designation?: string | null
+          ceo_signature_url?: string | null
+          sales_exec_role?: string | null
+          sales_exec_phone?: string | null
+          sales_exec_email?: string | null
+          bank_account_holder?: string | null
+          bank_name?: string | null
+          bank_account_no?: string | null
+          bank_ifsc?: string | null
+          bank_upi_id?: string | null
+          terms_json?: Json | null
+          why_solar_json?: Json | null
+          equipment_json?: Json | null
         }
         Relationships: [
           {
@@ -6555,6 +6660,7 @@ export type Database = {
           name: string
           org_id: string | null
           selling_price: number
+          specification_details: string | null
           type: string | null
           updated_at: string
           weight_per_meter: number | null
@@ -6569,6 +6675,7 @@ export type Database = {
           name: string
           org_id?: string | null
           selling_price?: number
+          specification_details?: string | null
           type?: string | null
           updated_at?: string
           weight_per_meter?: number | null
@@ -6583,6 +6690,7 @@ export type Database = {
           name?: string
           org_id?: string | null
           selling_price?: number
+          specification_details?: string | null
           type?: string | null
           updated_at?: string
           weight_per_meter?: number | null

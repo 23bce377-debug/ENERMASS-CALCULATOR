@@ -5,6 +5,38 @@ import { useCalculatorStore } from '../store/calculatorStore'
 import { SurveyORM } from '../../backend/orm/survey'
 import { reviseQuote } from '../quotes/reviseQuote'
 
+function toQuoteStatus(status: string | null | undefined): Quote['status'] {
+  switch (status) {
+    case 'sent':
+      return 'Sent'
+    case 'won':
+      return 'Won'
+    case 'lost':
+      return 'Lost'
+    case 'draft':
+    default:
+      return 'Draft'
+  }
+}
+
+function normalizeMarginPct(value: unknown): number {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return 0;
+  return num > 1 ? num / 100 : num;
+}
+
+function deriveTargetMarginPct(q: any): number {
+  const costBeforeGST = Number(q.cost_before_gst || 0);
+  const mrpExclGST = Number(q.mrp_excl_gst || 0);
+  const marginAmount = mrpExclGST - costBeforeGST;
+
+  if (costBeforeGST > 0 && Number.isFinite(marginAmount) && marginAmount >= 0) {
+    return marginAmount / costBeforeGST;
+  }
+
+  return normalizeMarginPct(q.effective_margin_pct);
+}
+
 // Map a DB quote row to the frontend Quote type
 function mapDbQuoteToQuote(q: any): Quote {
   const looksLikeId = (value: unknown) =>
@@ -20,12 +52,10 @@ function mapDbQuoteToQuote(q: any): Quote {
 
   const overrides: any = {}
   ;(q.quote_items || []).forEach((item: any) => {
-    if (item.is_qty_overridden || item.is_rate_overridden || item.is_gst_overridden) {
-      overrides[item.sort_order] = {
-        qty: item.is_qty_overridden ? Number(item.qty) : undefined,
-        ratePerUnit: item.is_rate_overridden ? Number(item.rate_per_unit) : undefined,
-        gstPct: item.is_gst_overridden ? Number(item.gst_pct) : undefined,
-      }
+    overrides[item.sort_order] = {
+      qty: Number(item.qty),
+      ratePerUnit: Number(item.rate_per_unit),
+      gstPct: Number(item.gst_pct),
     }
   })
 
@@ -50,6 +80,26 @@ function mapDbQuoteToQuote(q: any): Quote {
       lineSubTotal: Number(item.line_subtotal),
       isOverridden: item.is_qty_overridden || item.is_rate_overridden || !!item.is_gst_overridden,
       isDisabled: !item.is_included,
+      sourceTable: item.source_table || undefined,
+      sourceItemId: item.source_item_id || undefined,
+      sourceLabel: item.source_label || undefined,
+    })),
+    quotedLines: (q.quote_items || []).map((item: any) => ({
+      index: item.sort_order,
+      description: item.description,
+      remarks: item.remarks || '',
+      unit: item.unit || '',
+      effectiveQty: Number(item.qty),
+      effectiveRate: Number(item.rate_per_unit),
+      effectiveGstPct: Number(item.gst_pct),
+      lineTotal: Number(item.line_total),
+      lineGST: Number(item.line_gst),
+      lineSubTotal: Number(item.line_subtotal),
+      isOverridden: true,
+      isDisabled: !item.is_included,
+      sourceTable: item.source_table || undefined,
+      sourceItemId: item.source_item_id || undefined,
+      sourceLabel: item.source_label || undefined,
     })),
     costBeforeGST: Number(q.cost_before_gst),
     totalInputGST: Number(q.total_input_gst),
@@ -60,6 +110,9 @@ function mapDbQuoteToQuote(q: any): Quote {
     gstOutputRate: Number(q.gst_output_rate),
     mrpInclGST: Number(q.mrp_incl_gst),
     discountAmount: Number(q.discount_amount),
+    unroundedFinalCustomerPrice: Number(q.equipment_json?.unroundedFinalCustomerPrice ?? q.final_customer_price),
+    roundOffAdjustment: Number(q.equipment_json?.roundOffAdjustment ?? 0),
+    roundOffToThousand: Boolean(q.equipment_json?.roundOffToThousand),
     finalCustomerPrice: Number(q.final_customer_price),
     subsidyAmount: Number(q.subsidy_amount),
     beneficiaryContribution: Number(q.beneficiary_contribution),
@@ -114,6 +167,8 @@ function mapDbQuoteToQuote(q: any): Quote {
     panelBrandModel: q.panel_brand_model || undefined,
     selectedState: q.state_name || 'Gujarat',
     equipment,
+    marginMode: q.margin_mode || equipment?.marginMode || 'percent',
+    roundOffToThousand: Boolean(equipment?.roundOffToThousand),
     additionalCosts: (q.quote_additional_costs || []).map((c: any) => ({
       id: c.id,
       description: c.description,
@@ -123,15 +178,18 @@ function mapDbQuoteToQuote(q: any): Quote {
     discountVal: Number(q.discount_val),
     overrides,
     disabledItemIndices,
-    targetMarginPct: Number(q.effective_margin_pct),
+    targetMarginPct: deriveTargetMarginPct(q),
+    targetMarginAmount: q.target_margin_amount !== null && q.target_margin_amount !== undefined
+      ? Number(q.target_margin_amount)
+      : equipment?.targetMarginAmount,
     calculations,
-    status: (q.status === 'draft' ? 'Draft' : q.status === 'sent' ? 'Sent' : q.status === 'won' ? 'Won' : 'Lost') as any,
+    status: toQuoteStatus(q.status),
     statusHistory: q.quote_status_history?.length
       ? q.quote_status_history.map((h: any) => ({
-          status: (h.new_status === 'draft' ? 'Draft' : h.new_status === 'sent' ? 'Sent' : h.new_status === 'won' ? 'Won' : 'Lost') as any,
+          status: toQuoteStatus(h.new_status),
           changedAt: h.changed_at,
         })).sort((a: any, b: any) => new Date(a.changedAt).getTime() - new Date(b.changedAt).getTime())
-      : [{ status: (q.status === 'draft' ? 'Draft' : q.status === 'sent' ? 'Sent' : q.status === 'won' ? 'Won' : 'Lost') as any, changedAt: q.updated_at || q.created_at }],
+      : [{ status: toQuoteStatus(q.status), changedAt: q.updated_at || q.created_at }],
     createdAt: q.created_at,
     updatedAt: q.updated_at,
     version: q.version,
@@ -159,6 +217,8 @@ function mapDbQuoteToQuote(q: any): Quote {
     ceo_signature_url: q.ceo_signature_url || undefined,
     sales_exec_role: q.sales_exec_role || undefined,
     sales_exec_phone: q.sales_exec_phone || undefined,
+    sales_exec_email: q.sales_exec_email || undefined,
+    sales_exec_id: q.exec_id || undefined,
     bank_account_holder: q.bank_account_holder || undefined,
     bank_name: q.bank_name || undefined,
     bank_account_no: q.bank_account_no || undefined,
@@ -217,6 +277,7 @@ export function useDeleteQuoteMutation() {
         .from('quotes')
         .delete()
         .eq('quote_number', quoteId)
+        .eq('org_id', orgId)
       if (error) throw error
 
       // Delete JSON from Supabase Storage bucket
@@ -275,12 +336,21 @@ export function useUpdateQuoteStatusMutation() {
 
   return useMutation({
     mutationFn: async ({ quoteId, newStatus }: { quoteId: string; newStatus: Quote['status'] }) => {
-      const { data: existingQuote } = await supabase
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) throw new Error('Unauthorized')
+
+      const { ProfileORM } = await import('../../backend/orm/profile')
+      const profile = await ProfileORM.getById(session.user.id)
+      const orgId = profile.org_id
+
+      const { data: existingQuote, error: quoteFetchError } = await supabase
         .from('quotes')
         .select('id, version, status, org_id, survey_id, lead_id, final_customer_price')
         .eq('quote_number', quoteId)
+        .eq('org_id', orgId)
         .single()
-      
+
+      if (quoteFetchError) throw quoteFetchError
       if (!existingQuote) throw new Error('Quote not found')
       
       // ── Survey Gate: Draft → Sent requires completed/waived survey ──
@@ -326,51 +396,10 @@ export function useUpdateQuoteStatusMutation() {
           updated_at: new Date().toISOString()
         })
         .eq('id', existingQuote.id)
+        .eq('org_id', orgId)
         .eq('version', existingQuote.version)
       
       if (error) throw error
-
-      if (newStatus === 'Won') {
-        const total = existingQuote.final_customer_price || 0;
-        const milestones = [
-          {
-            quote_id: existingQuote.id,
-            milestone_name: 'Order Confirmation',
-            trigger_event: 'order_confirmed',
-            percent: 50,
-            amount: Math.round(total * 0.50)
-          },
-          {
-            quote_id: existingQuote.id,
-            milestone_name: 'Material Delivery to Site',
-            trigger_event: 'site_delivery',
-            percent: 30,
-            amount: Math.round(total * 0.30)
-          },
-          {
-            quote_id: existingQuote.id,
-            milestone_name: 'Installation Complete',
-            trigger_event: 'installation',
-            percent: 15,
-            amount: Math.round(total * 0.15)
-          },
-          {
-            quote_id: existingQuote.id,
-            milestone_name: 'DISCOM Commissioning',
-            trigger_event: 'commissioning',
-            percent: 5,
-            amount: Math.round(total * 0.05)
-          }
-        ];
-        
-        const { error: msError } = await supabase
-          .from('payment_schedules')
-          .insert(milestones);
-          
-        if (msError) {
-          console.error('Error generating payment schedules:', msError);
-        }
-      }
 
       // Write status history log
       const { error: historyErr } = await (supabase as any)
@@ -408,7 +437,6 @@ export function useUpdateQuoteStatusMutation() {
             status: newStatus,
             statusHistory: [...existingHistory, { status: newStatus, changedAt }],
             updatedAt: changedAt,
-            version: (q.version ?? 1) + 1,
           }
         })
         queryClient.setQueryData<Quote[]>(['quotes'], nextQuotes)
@@ -424,7 +452,6 @@ export function useUpdateQuoteStatusMutation() {
             ...q,
             status: newStatus,
             updatedAt: changedAt,
-            version: (q.version ?? 1) + 1,
           }
         })
       })

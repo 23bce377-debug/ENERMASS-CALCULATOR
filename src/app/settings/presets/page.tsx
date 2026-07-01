@@ -4,10 +4,80 @@ import { useEffect, useState } from 'react';
 import { PresetORM, type PresetRow } from '@/backend/orm/presets';
 import { PresetEditorDialog } from '@/components/presets/PresetEditorDialog';
 import { deleteSystemPreset } from '@/lib/actions/presets';
+import type { LineItem } from '@/lib/actions/presets';
 import {
   Settings2, Plus, Box, Zap, Search,
   ToggleLeft, ToggleRight, Edit3, Trash2, MapPin
 } from 'lucide-react';
+
+function categoryFromBomDescription(description: string) {
+  const value = description.toLowerCase();
+  if (value.includes('panel') || value.includes('module')) return 'panel';
+  if (value.includes('inverter') || value.includes('communication')) return 'inverter';
+  if (value.includes('battery')) return 'battery';
+  if (value.includes('structure') || value.includes('mount')) return 'structure';
+  if (value.includes('dcdb') || value.includes('dc protection') || value.includes('isolator') || value.includes('lightning') || value.includes('l/a')) return 'dc_protection';
+  if (value.includes('acdb') || value.includes('ac protection') || value.includes('meter box')) return 'ac_protection';
+  if (value.includes('cable') || value.includes('mc4') || value.includes('copper') || value.includes('wiring pipe')) return 'cable';
+  if (value.includes('earth') || value.includes('gi strip') || value.includes('chamber')) return 'earthing';
+  if (value.includes('civil') || value.includes('foundation') || value.includes('concrete')) return 'civil';
+  if (value.includes('logistic') || value.includes('transport') || value.includes('freight')) return 'logistics';
+  if (value.includes('accessor') || value.includes('meter') || value.includes('wifi') || value.includes('monitor')) return 'accessory';
+  return 'other';
+}
+
+function validSystemType(value: string | null | undefined) {
+  const normalized = String(value ?? '').replace(/-/g, '_');
+  return ['on_grid', '3_phase', 'hybrid', 'micro_inverter', 'commercial', 'upgrade'].includes(normalized)
+    ? normalized
+    : 'on_grid';
+}
+
+function legacyPresetToEditorData(preset: PresetRow) {
+  const state = preset.calculator_state ?? {};
+  const items = Array.isArray(state.items) ? state.items : [];
+
+  return {
+    id: preset.id,
+    name: preset.name,
+    system_type: validSystemType(state.systemType ?? state.category ?? preset.type),
+    capacity_kw: Number(preset.capacity_kw || state.capacityKW || 0),
+    state_id: preset.state_id ?? state.stateId ?? null,
+    lineItems: items.map((item: any, index: number): LineItem => ({
+      id: `${preset.id}_${index}`,
+      category: item.category ?? categoryFromBomDescription(item.description ?? ''),
+      catalogItemId: item.catalogItemId,
+      catalogType: item.catalogType ?? 'custom',
+      skuCode: item.skuCode ?? '',
+      description: item.description ?? 'Custom item',
+      brand: item.brand ?? '',
+      model: item.model ?? '',
+      unit: item.unit ?? 'Nos',
+      quantity: Number(item.qty ?? item.quantity ?? 0),
+      unitRate: Number(item.ratePerUnit ?? item.unitRate ?? 0),
+      gstPct: item.gstPct,
+      isIncluded: item.isIncluded ?? true,
+      isSurveyDependent: item.isSurveyDependent ?? false,
+      sortOrder: index,
+    })),
+  };
+}
+
+function editorLineItemToBomItem(item: LineItem) {
+  return {
+    description: item.description,
+    unit: item.unit || 'Nos',
+    qty: Number(item.quantity || 0),
+    ratePerUnit: Number(item.unitRate || 0),
+    gstPct: item.gstPct ?? 0.18,
+    category: item.category,
+    catalogItemId: item.catalogItemId,
+    catalogType: item.catalogType,
+    skuCode: item.skuCode,
+    brand: item.brand,
+    model: item.model,
+  };
+}
 
 export default function SystemPresetsPage() {
   const [presets, setPresets] = useState<PresetRow[]>([]);
@@ -17,6 +87,7 @@ export default function SystemPresetsPage() {
   
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerSystemId, setComposerSystemId] = useState<string | null>(null);
+  const legacyComposerPreset = presets.find((preset) => preset.id === composerSystemId && preset.source === 'custom_presets');
 
   const fetchPresets = async () => {
     try {
@@ -168,13 +239,11 @@ export default function SystemPresetsPage() {
                     <td className="px-5 py-4 text-right space-x-2">
                       <button
                         onClick={() => {
-                          if (preset.source === 'custom_presets') return;
                           setComposerSystemId(preset.id);
                           setComposerOpen(true);
                         }}
-                        disabled={preset.source === 'custom_presets'}
-                        className="p-1.5 text-text-muted hover:text-accent hover:bg-accent-dim rounded transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-text-muted"
-                        title={preset.source === 'custom_presets' ? 'Legacy calculator presets are read-only here' : 'Edit Preset'}
+                        className="p-1.5 text-text-muted hover:text-accent hover:bg-accent-dim rounded transition-colors"
+                        title="Edit Preset"
                       >
                         <Edit3 size={16} />
                       </button>
@@ -216,6 +285,22 @@ export default function SystemPresetsPage() {
             setComposerOpen(false);
             setComposerSystemId(null);
           }}
+          initialData={legacyComposerPreset ? legacyPresetToEditorData(legacyComposerPreset) : undefined}
+          onSaveLocal={legacyComposerPreset ? async (updates) => {
+            const nextItems = updates.lineItems
+              .filter((item) => item.isIncluded)
+              .map(editorLineItemToBomItem);
+            await PresetORM.update(legacyComposerPreset.id, {
+              name: updates.name,
+              capacity_kw: updates.capacityKw,
+              calculator_state: {
+                ...(legacyComposerPreset.calculator_state ?? {}),
+                systemType: updates.systemType,
+                stateId: updates.stateId ?? null,
+                items: nextItems,
+              },
+            });
+          } : undefined}
         />
       )}
     </div>

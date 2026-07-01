@@ -16,6 +16,11 @@ export interface ResolvedMargin {
   source: 'org_override' | 'state_override' | 'category_default' | 'system_default';
 }
 
+function normalizeMarginPct(value: number): number {
+  if (!Number.isFinite(value) || value < 0) return 0;
+  return value > 1 ? value / 100 : value;
+}
+
 /**
  * Resolve effective rate using strict priority chain:
  * 1. Row-level override
@@ -59,14 +64,14 @@ export function resolveEffectiveMargin(
   stateMarginOverrides?: Record<string, number>
 ): ResolvedMargin {
   if (orgCategoryMargins && orgCategoryMargins[category] !== undefined) {
-    return { marginPct: orgCategoryMargins[category], source: 'org_override' };
+    return { marginPct: normalizeMarginPct(orgCategoryMargins[category]), source: 'org_override' };
   }
 
   if (stateMarginOverrides && stateMarginOverrides[category] !== undefined) {
-    return { marginPct: stateMarginOverrides[category], source: 'state_override' };
+    return { marginPct: normalizeMarginPct(stateMarginOverrides[category]), source: 'state_override' };
   }
 
-  return { marginPct: defaultMarginPct, source: 'category_default' };
+  return { marginPct: normalizeMarginPct(defaultMarginPct), source: 'category_default' };
 }
 
 export function resolveWithPriorityChain<T>(

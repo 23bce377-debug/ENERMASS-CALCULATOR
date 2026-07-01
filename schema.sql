@@ -366,7 +366,7 @@ CREATE TABLE eq_mounting_structures (
   name                TEXT NOT NULL,
   material            structure_material NOT NULL DEFAULT 'gi_galvanized',
   roof_mount_type     roof_mount_type NOT NULL DEFAULT 'rcc_flat',
-  
+
   -- Elevation Height (0 for standard roof-mount, in mm)
   elevation_height_mm INTEGER NOT NULL DEFAULT 0,
 
@@ -374,7 +374,7 @@ CREATE TABLE eq_mounting_structures (
   raw_material_rate   NUMERIC(10,4) NOT NULL DEFAULT 0,
   fabrication_rate    NUMERIC(10,4) NOT NULL DEFAULT 0,
   galvanizing_rate    NUMERIC(10,4) NOT NULL DEFAULT 0,
-  
+
   -- Total Rate = Sum of components (Generated)
   rate_per_kg         NUMERIC(10,4) GENERATED ALWAYS AS (raw_material_rate + fabrication_rate + galvanizing_rate) STORED,
 
@@ -388,10 +388,10 @@ CREATE TABLE eq_mounting_structures (
   -- Optional flat rate override (ignored when NULL — weight-based used instead)
   selling_price       NUMERIC(12,2),
   buy_price           NUMERIC(12,2) NOT NULL DEFAULT 0.00,
-  
+
   -- Optional per-watt rate override (ignored when NULL)
   per_watt_rate       NUMERIC(12,2),
-  
+
   gst_pct             NUMERIC(6,5) NOT NULL DEFAULT 0.18000,
   description         TEXT,
   is_active           BOOLEAN NOT NULL DEFAULT TRUE,
@@ -413,18 +413,18 @@ CREATE TABLE eq_mounting_structures (
 CREATE TABLE structure_weight_lookup (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   structure_id        UUID NOT NULL REFERENCES eq_mounting_structures(id) ON DELETE CASCADE,
-  
+
   -- Capacity range this lookup applies to
   capacity_kw_min     NUMERIC(8,3) NOT NULL,
   capacity_kw_max     NUMERIC(8,3) NOT NULL,     -- Use 9999.999 for open-ended upper
-  
+
   panel_qty           INTEGER NOT NULL,
   weight_per_panel_kg NUMERIC(8,4) NOT NULL,     -- Variable weight component
   bracket_fixed_weight NUMERIC(10,3) NOT NULL DEFAULT 0, -- Fixed weight component for this bracket
-  
+
   -- total_weight_kg = (panel_qty * weight_per_panel) + bracket_fixed_weight
   total_weight_kg     NUMERIC(10,3) GENERATED ALWAYS AS ((panel_qty * weight_per_panel_kg) + bracket_fixed_weight) STORED,
-  
+
   notes               TEXT,
   CONSTRAINT ck_capacity_range CHECK (capacity_kw_max > capacity_kw_min),
   CONSTRAINT uq_structure_range UNIQUE (structure_id, capacity_kw_min, capacity_kw_max)
@@ -753,7 +753,7 @@ CREATE TABLE quotes (
   structure_type          TEXT DEFAULT 'rcc_roof_elevated',
   -- Site
   meter_number            TEXT,
-  sanctioned_load_kw      NUMERIC(8,3),           -- NUMERIC, not text (per requirement)  
+  sanctioned_load_kw      NUMERIC(8,3),           -- NUMERIC, not text (per requirement)
   monthly_bill_inr        NUMERIC(10,2),          -- NUMERIC, not text
   roof_type               TEXT,
   roof_area_sqft          NUMERIC(10,2),          -- NUMERIC, not text
@@ -771,7 +771,7 @@ CREATE TABLE quotes (
   system_category         system_category,
   system_capacity_kw      NUMERIC(10,2),
 
-  -- Equipment snapshots (brand + model text, not FK, to survive catalog deletions)       
+  -- Equipment snapshots (brand + model text, not FK, to survive catalog deletions)
   panel_brand_model       TEXT,                   -- e.g., 'Adani 620W Mono PERC'
   panel_qty               INTEGER,
   panel_rate_per_panel    NUMERIC(12,2),
@@ -799,13 +799,13 @@ CREATE TABLE quotes (
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   -- Centralized structure, meter and LA selections
-  structure_id            UUID REFERENCES eq_mounting_structures(id) ON DELETE SET NULL,  
+  structure_id            UUID REFERENCES eq_mounting_structures(id) ON DELETE SET NULL,
   structure_pricing_mode  TEXT DEFAULT 'weight',
   solar_meter_id          UUID REFERENCES eq_meters(id) ON DELETE SET NULL,
   solar_meter_qty         INTEGER DEFAULT 1,
   net_meter_id            UUID REFERENCES eq_meters(id) ON DELETE SET NULL,
   net_meter_qty           INTEGER DEFAULT 1,
-  la_id                   UUID REFERENCES eq_lightning_arresters(id) ON DELETE SET NULL,  
+  la_id                   UUID REFERENCES eq_lightning_arresters(id) ON DELETE SET NULL,
   la_qty                  INTEGER DEFAULT 1,
 
   -- Overrides for full editability
@@ -1246,8 +1246,8 @@ BEGIN
 
   -- 2. Apply Engineering Formula (Adding wastage and fastener weight)
   -- Weight = (lookup_weight + structure_base_weight) * (1 + wastage) * (1 + fasteners)
-  v_final_weight := (v_weight_row.total_weight_kg + v_structure.base_weight_kg) 
-                    * (1 + v_structure.wastage_pct) 
+  v_final_weight := (v_weight_row.total_weight_kg + v_structure.base_weight_kg)
+                    * (1 + v_structure.wastage_pct)
                     * (1 + v_structure.fastener_weight_pct);
 
   -- 3. Calculate Final Rate
@@ -1638,21 +1638,21 @@ INSERT INTO structure_template_items (template_id, item, qty, weight, vendor_id)
   -- 3KW GI Tata
   ('t1000000-0000-0000-0000-000000000001', 'Rafter 3x1.5 Rectangle Tube', 2.0, 12.0, 'a1000000-0000-0000-0000-000000000002'),
   ('t1000000-0000-0000-0000-000000000001', 'Purlin 1.5x1.5 Rectangle Tube', 2.5, 9.0, 'a1000000-0000-0000-0000-000000000002'),
-  
+
   -- 3KW GP Appolo
   ('t1000000-0000-0000-0000-000000000002', 'Rafter 3x1.5 Rectangle Tube', 2.0, 7.0, 'a1000000-0000-0000-0000-000000000001'),
   ('t1000000-0000-0000-0000-000000000002', 'Purlin 1.5x1.5 Rectangle Tube', 2.5, 5.0, 'a1000000-0000-0000-0000-000000000001'),
   -- 3KW GP Deemac
   ('t1000000-0000-0000-0000-000000000002', 'Rafter 3x1.5 Rectangle Tube', 2.0, 6.0, 'a1000000-0000-0000-0000-000000000003'),
   ('t1000000-0000-0000-0000-000000000002', 'Purlin 1.5x1.5 Rectangle Tube', 2.5, 4.0, 'a1000000-0000-0000-0000-000000000003'),
-  
+
   -- 4KW GI Appolo
   ('t1000000-0000-0000-0000-000000000003', 'Rafter 3x1.5 Rectangle Tube', 2.0, 23.0, 'a1000000-0000-0000-0000-000000000001'),
   ('t1000000-0000-0000-0000-000000000003', 'Purlin 1.5x1.5 Rectangle Tube', 3.0, 8.0, 'a1000000-0000-0000-0000-000000000001'),
   -- 4KW GI Tata
   ('t1000000-0000-0000-0000-000000000003', 'Rafter 3x1.5 Rectangle Tube', 2.0, 45.0, 'a1000000-0000-0000-0000-000000000002'),
   ('t1000000-0000-0000-0000-000000000003', 'Purlin 1.5x1.5 Rectangle Tube', 3.0, 76.0, 'a1000000-0000-0000-0000-000000000002'),
-  
+
   -- 4KW GP Appolo
   ('t1000000-0000-0000-0000-000000000004', 'Rafter 3x1.5 Rectangle Tube', 2.0, 78.0, 'a1000000-0000-0000-0000-000000000001'),
   ('t1000000-0000-0000-0000-000000000004', 'Purlin 1.5x1.5 Rectangle Tube', 3.0, 65.0, 'a1000000-0000-0000-0000-000000000001'),
@@ -1666,7 +1666,7 @@ INSERT INTO structure_template_items (template_id, item, qty, weight, vendor_id)
   -- 5KW GI Tata
   ('t1000000-0000-0000-0000-000000000005', 'Rafter 3x1.5 Rectangle Tube', 3.0, 20.0, 'a1000000-0000-0000-0000-000000000002'),
   ('t1000000-0000-0000-0000-000000000005', 'Purlin 1.5x1.5 Rectangle Tube', 4.0, 22.0, 'a1000000-0000-0000-0000-000000000002'),
-  
+
   -- 5KW GP Appolo
   ('t1000000-0000-0000-0000-000000000006', 'Rafter 3x1.5 Rectangle Tube', 3.0, 10.0, 'a1000000-0000-0000-0000-000000000001'),
   ('t1000000-0000-0000-0000-000000000006', 'Purlin 1.5x1.5 Rectangle Tube', 4.0, 34.0, 'a1000000-0000-0000-0000-000000000001'),
@@ -1687,7 +1687,7 @@ INSERT INTO structure_template_items (template_id, item, qty, weight, vendor_id)
   ('t1000000-0000-0000-0000-000000000001', 'Nano Grout', 1.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000001', 'Welding Rod', 40.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000001', 'Cutting Wheel', 4.0, NULL, NULL),
-  
+
   ('t1000000-0000-0000-0000-000000000002', 'MS Hole Plate 4x4', 5.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000002', 'Anchor Bolt 8mm', 8.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000002', 'PVC End Cap 3x1.5', 4.0, NULL, NULL),
@@ -1713,7 +1713,7 @@ INSERT INTO structure_template_items (template_id, item, qty, weight, vendor_id)
   ('t1000000-0000-0000-0000-000000000003', 'Nano Grout', 1.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000003', 'Welding Rod', 50.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000003', 'Cutting Wheel', 5.0, NULL, NULL),
-  
+
   ('t1000000-0000-0000-0000-000000000004', 'MS Hole Plate 4x4', 6.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000004', 'Anchor Bolt 8mm', 10.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000004', 'PVC End Cap 3x1.5', 4.0, NULL, NULL),
@@ -1739,7 +1739,7 @@ INSERT INTO structure_template_items (template_id, item, qty, weight, vendor_id)
   ('t1000000-0000-0000-0000-000000000005', 'Nano Grout', 1.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000005', 'Welding Rod', 60.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000005', 'Cutting Wheel', 6.0, NULL, NULL),
-  
+
   ('t1000000-0000-0000-0000-000000000006', 'MS Hole Plate 4x4', 7.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000006', 'Anchor Bolt 8mm', 12.0, NULL, NULL),
   ('t1000000-0000-0000-0000-000000000006', 'PVC End Cap 3x1.5', 6.0, NULL, NULL),
@@ -1856,7 +1856,7 @@ CREATE  VIEW v_subsidy_slabs AS
   ORDER BY cs.code, ss.slab_index;
 
 -- Migration/Upgrade statement for existing environments:
-ALTER TABLE quotes 
+ALTER TABLE quotes
   ADD COLUMN IF NOT EXISTS structure_id UUID REFERENCES eq_mounting_structures(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS structure_pricing_mode TEXT DEFAULT 'weight',
   ADD COLUMN IF NOT EXISTS solar_meter_id UUID REFERENCES eq_meters(id) ON DELETE SET NULL,
@@ -1926,33 +1926,8 @@ CREATE TABLE purchase_request_items (
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Trigger: Generate PR automatically when a project BOM is finalized (status 'won')
-CREATE OR REPLACE FUNCTION fn_generate_pr_on_bom_finalize()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.status = 'won' AND OLD.status != 'won' THEN
-    -- Create the Purchase Request
-    INSERT INTO purchase_requests (org_id, project_id, pr_number, status)
-    VALUES (NEW.org_id, NEW.id, 'PR-' || NEW.quote_number, 'draft');
-    
-    -- Clone items from Quote (BOM) into PR items
-    INSERT INTO purchase_request_items (pr_id, item_name, qty, estimated_rate)
-    SELECT 
-      (SELECT id FROM purchase_requests WHERE pr_number = 'PR-' || NEW.quote_number),
-      qi.description,
-      qi.qty,
-      qi.rate_per_unit
-    FROM quote_items qi
-    WHERE qi.quote_id = NEW.id AND qi.is_included = TRUE;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_generate_pr_on_quote_won
-  AFTER UPDATE OF status ON quotes
-  FOR EACH ROW
-  EXECUTE FUNCTION fn_generate_pr_on_bom_finalize();
+-- Quote status updates are intentionally status-only. Project/procurement
+-- records must be created explicitly by their own workflows.
 
 -- ============================================================
 -- PHASE 3: SUBCONTRACTORS & WORK ORDERS
@@ -2055,7 +2030,7 @@ BEGIN
     -- Calculate interval between visits
     v_visit_interval := '1 year'::INTERVAL / NEW.visits_per_year;
     v_scheduled_date := NEW.start_date;
-    
+
     FOR i IN 1..(NEW.visits_per_year * (EXTRACT(YEAR FROM NEW.end_date) - EXTRACT(YEAR FROM NEW.start_date) + 1)) LOOP
       v_scheduled_date := v_scheduled_date + v_visit_interval;
       IF v_scheduled_date <= NEW.end_date THEN
@@ -2104,7 +2079,7 @@ CREATE TRIGGER trg_audit_rate_master_changes
   EXECUTE FUNCTION fn_audit_rate_master_changes();
 
 -- Multi-currency support fields
-ALTER TABLE organisations 
+ALTER TABLE organisations
   ADD COLUMN IF NOT EXISTS currency_code TEXT DEFAULT 'INR',
   ADD COLUMN IF NOT EXISTS exchange_rate NUMERIC(10,4) DEFAULT 1.0000;
 
@@ -2208,7 +2183,7 @@ GROUP BY q.org_id, DATE_TRUNC('month', q.updated_at);
 -- ============================================================
 
 -- 1 & 2: Milestone payment aging and Retention Money
-ALTER TABLE subcontractor_payments 
+ALTER TABLE subcontractor_payments
   ADD COLUMN IF NOT EXISTS aging_days INTEGER DEFAULT 0,
   ADD COLUMN IF NOT EXISTS retention_amount NUMERIC(14,4) DEFAULT 0,
   ADD COLUMN IF NOT EXISTS retention_release_date DATE;
@@ -2232,7 +2207,7 @@ CREATE TRIGGER trg_log_quote_history
   EXECUTE FUNCTION fn_log_quote_history();
 
 -- 4: Commercial Client site grouping
-ALTER TABLE quotes 
+ALTER TABLE quotes
   ADD COLUMN IF NOT EXISTS parent_client_id UUID REFERENCES quotes(id) ON DELETE SET NULL;
 
 -- 5: DISCOM stages
@@ -2251,7 +2226,7 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
-ALTER TABLE quotes 
+ALTER TABLE quotes
   ADD COLUMN IF NOT EXISTS discom_stage discom_stage_enum DEFAULT 'not_started';
 
 DO $$ BEGIN
@@ -2294,7 +2269,7 @@ CREATE TRIGGER trg_check_curing
   FOR EACH ROW EXECUTE FUNCTION fn_check_civil_curing_time();
 
 -- 7: Vendor delivery lead times
-ALTER TABLE purchase_requests 
+ALTER TABLE purchase_requests
   ADD COLUMN IF NOT EXISTS lead_time_days INTEGER;
 
 -- 8: Change Order system
@@ -2307,4 +2282,4 @@ CREATE TABLE IF NOT EXISTS change_orders (
   status TEXT DEFAULT 'pending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+);

@@ -1,15 +1,24 @@
 import { sanitizeNumber } from './calculator';
 
 export type DiscountType = 'none' | 'flat' | 'percent';
+export type MarginMode = 'percent' | 'flat';
 
 export interface PricingMarginInput {
   baseCost: number;
+  marginMode?: MarginMode;
   targetMarginPct?: number;
+  targetMarginAmount?: number;
   targetMRPInclGST?: number;
   targetMRPPerWatt?: number;
   gstOutputRate: number;
   capacityWatts: number;
   defaultMarginPct: number;
+}
+
+function normalizeMarginPct(value: unknown, fallback = 0): number {
+  const num = sanitizeNumber(value, fallback);
+  if (!Number.isFinite(num) || num < 0) return fallback;
+  return num > 1 ? num / 100 : num;
 }
 
 /**
@@ -22,7 +31,8 @@ export function calculatePricingAndMargins(rawInput: PricingMarginInput) {
   const setPricingOptions = [
     rawInput.targetMRPInclGST !== undefined,
     rawInput.targetMRPPerWatt !== undefined,
-    rawInput.targetMarginPct !== undefined
+    rawInput.marginMode === 'flat' && rawInput.targetMarginAmount !== undefined,
+    rawInput.marginMode !== 'flat' && rawInput.targetMarginPct !== undefined
   ].filter(Boolean).length;
   
   if (setPricingOptions > 1) {
@@ -33,12 +43,26 @@ export function calculatePricingAndMargins(rawInput: PricingMarginInput) {
   }
 
   const baseCost = Math.max(0, sanitizeNumber(rawInput.baseCost, 0));
-  const targetMarginPct = rawInput.targetMarginPct !== undefined ? sanitizeNumber(rawInput.targetMarginPct, 0) : undefined;
+  const marginMode: MarginMode = rawInput.marginMode === 'flat' ? 'flat' : 'percent';
+  const targetMarginPct = rawInput.targetMarginPct !== undefined ? normalizeMarginPct(rawInput.targetMarginPct) : undefined;
+
+  // Guard targetMarginAmount to be non-negative
+  let targetMarginAmount = rawInput.targetMarginAmount !== undefined ? sanitizeNumber(rawInput.targetMarginAmount, 0) : undefined;
+  if (targetMarginAmount !== undefined && targetMarginAmount < 0) {
+    console.warn('Target margin amount is negative. Clamping to 0.');
+    targetMarginAmount = 0;
+  }
+
   const targetMRPInclGST = rawInput.targetMRPInclGST !== undefined ? sanitizeNumber(rawInput.targetMRPInclGST, 0) : undefined;
   const targetMRPPerWatt = rawInput.targetMRPPerWatt !== undefined ? sanitizeNumber(rawInput.targetMRPPerWatt, 0) : undefined;
   const gstOutputRate = Math.max(0, Math.min(2.0, sanitizeNumber(rawInput.gstOutputRate, 0)));
   const capacityWatts = Math.max(0, sanitizeNumber(rawInput.capacityWatts, 0));
-  const defaultMarginPct = sanitizeNumber(rawInput.defaultMarginPct, 0);
+  const defaultMarginPct = normalizeMarginPct(rawInput.defaultMarginPct);
+
+  // Guard: targetMRPPerWatt requires non-zero capacity
+  if (targetMRPPerWatt !== undefined && capacityWatts <= 0) {
+    throw new Error('Capacity must be greater than zero when targetMRPPerWatt is specified.');
+  }
 
   const baseCostPaise = Math.round(baseCost * 100);
   let mrpInclGSTPaise = 0;
@@ -56,13 +80,19 @@ export function calculatePricingAndMargins(rawInput: PricingMarginInput) {
     mrpExclGSTPaise = Math.round(mrpInclGSTPaise / (1 + gstOutputRate));
     marginAmountPaise = mrpExclGSTPaise - baseCostPaise;
     effectiveMarginPct = mrpExclGSTPaise > 0 ? marginAmountPaise / mrpExclGSTPaise : 0;
+  } else if (marginMode === 'flat') {
+    marginAmountPaise = Math.max(0, Math.round((targetMarginAmount ?? 0) * 100));
+    mrpExclGSTPaise = baseCostPaise + marginAmountPaise;
+    effectiveMarginPct = mrpExclGSTPaise > 0 ? marginAmountPaise / mrpExclGSTPaise : 0;
+    mrpInclGSTPaise = Math.round(mrpExclGSTPaise * (1 + gstOutputRate));
   } else {
-    effectiveMarginPct = targetMarginPct !== undefined
+    const markupPct = targetMarginPct !== undefined
       ? targetMarginPct
       : defaultMarginPct;
-    effectiveMarginPct = Math.max(Math.min(effectiveMarginPct, 0.99), 0); // Cap at 99%
-    mrpExclGSTPaise = Math.round(baseCostPaise / (1 - effectiveMarginPct));
-    marginAmountPaise = mrpExclGSTPaise - baseCostPaise;
+
+    effectiveMarginPct = Math.max(markupPct, 0);
+    marginAmountPaise = Math.round(baseCostPaise * effectiveMarginPct);
+    mrpExclGSTPaise = baseCostPaise + marginAmountPaise;
     mrpInclGSTPaise = Math.round(mrpExclGSTPaise * (1 + gstOutputRate));
   }
 
@@ -86,6 +116,12 @@ export function calculateDiscountAmount(rawInput: DiscountInput): number {
   
   let discountAmountPaise = 0;
   const mrpInclGSTPaise = Math.round(mrpInclGST * 100);
+
+  if (rawInput.discountType === 'flat' && val > mrpInclGST) {
+    console.warn(`Discount amount ₹${val} exceeds MRP ₹${mrpInclGST}`);
+  } else if (rawInput.discountType === 'percent' && val > 50) {
+    console.warn(`High discount rate specified: ${val}%`);
+  }
 
   switch (rawInput.discountType) {
     case 'flat':

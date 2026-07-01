@@ -33,6 +33,7 @@ import { useToast } from '@/components/ui/Toast';
 import { HistoryDrawer } from '@/components/master/HistoryDrawer';
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
+import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
 
 interface PricingRow {
   id: string;
@@ -43,6 +44,7 @@ interface PricingRow {
   bom_section?: string;
   bom_unit?: string;
   bom_default_rate?: number;
+  gst_pct?: number | null;
 }
 
 export default function PricingMasterPage() {
@@ -66,6 +68,7 @@ export default function PricingMasterPage() {
   const [draft, setDraft] = useState({
     bom_item_id: '',
     override_rate: 0,
+    gst_pct: 0.18,
     is_active: true,
   });
 
@@ -118,6 +121,7 @@ export default function PricingMasterPage() {
           bom_section: b.category_id || 'Accessories',
           bom_unit: b.unit || 'Nos',
           bom_default_rate: b.default_rate || 0,
+          gst_pct: b.gst_pct ?? 0.18,
           is_override: b.org_id !== null,
         } as any;
       });
@@ -150,6 +154,7 @@ export default function PricingMasterPage() {
           notes: targetItem.notes,
           unit: targetItem.unit,
           default_rate: payload.override_rate,
+          gst_pct: normalizeGstRate(payload.gst_pct ?? targetItem.gst_pct, 0.18),
           is_survey_dependent: targetItem.is_survey_dependent,
           civil_required_only: targetItem.civil_required_only,
         })
@@ -166,12 +171,13 @@ export default function PricingMasterPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, override_rate }: { id: string; override_rate: number }) => {
+    mutationFn: async ({ id, override_rate, gst_pct }: { id: string; override_rate: number; gst_pct?: number }) => {
       const { userId } = await getOrgContext();
       const { data, error } = await supabase
         .from('bom_template_items')
         .update({
           default_rate: override_rate,
+          ...(gst_pct !== undefined ? { gst_pct: normalizeGstRate(gst_pct, 0.18) } : {}),
         })
         .eq('id', id)
         .select()
@@ -262,6 +268,7 @@ export default function PricingMasterPage() {
               notes: targetItem.notes,
               unit: targetItem.unit,
               default_rate: newRate,
+              gst_pct: targetItem.gst_pct ?? 0.18,
               is_survey_dependent: targetItem.is_survey_dependent,
               civil_required_only: targetItem.civil_required_only,
             });
@@ -292,6 +299,7 @@ export default function PricingMasterPage() {
     setDraft({
       bom_item_id: bomItems?.[0]?.id || '',
       override_rate: 0,
+      gst_pct: normalizeGstRate((bomItems?.[0] as any)?.gst_pct, 0.18),
       is_active: true,
     });
     setEditorOpen(true);
@@ -302,6 +310,7 @@ export default function PricingMasterPage() {
     setDraft({
       bom_item_id: row.bom_item_id,
       override_rate: row.override_rate,
+      gst_pct: normalizeGstRate(row.gst_pct, 0.18),
       is_active: row.is_active,
     });
     setEditorOpen(true);
@@ -312,9 +321,9 @@ export default function PricingMasterPage() {
     try {
       if (editingItem) {
         if (!(editingItem as any).is_override) {
-          await createMutation.mutateAsync({ bom_item_id: editingItem.bom_item_id, override_rate: draft.override_rate });
+          await createMutation.mutateAsync({ bom_item_id: editingItem.bom_item_id, override_rate: draft.override_rate, gst_pct: draft.gst_pct });
         } else {
-          await updateMutation.mutateAsync({ id: editingItem.id, override_rate: draft.override_rate });
+          await updateMutation.mutateAsync({ id: editingItem.id, override_rate: draft.override_rate, gst_pct: draft.gst_pct });
         }
       } else {
         await createMutation.mutateAsync(draft);
@@ -349,6 +358,7 @@ export default function PricingMasterPage() {
       Unit: r.bom_unit,
       'Baseline Cost (INR)': r.bom_default_rate,
       'Selling Override Rate (INR)': r.override_rate,
+      'GST Percentage': gstRateToPercent(r.gst_pct, 0.18),
     }));
     exportToExcel(dataToExport, 'Pricing_Master_Overrides', 'Overrides');
     toast('Overrides exported successfully', 'success');
@@ -429,6 +439,7 @@ export default function PricingMasterPage() {
                 <th>Category Section</th>
                 <th>Baseline Standard Cost</th>
                 <th>Master Overridden Selling Price</th>
+                <th>GST Rate</th>
                 <th>Unit</th>
                 <th className="w-20 text-right">Actions</th>
               </tr>
@@ -454,6 +465,7 @@ export default function PricingMasterPage() {
                     <td className="capitalize text-xs text-text-secondary">{r.bom_section?.replace(/_/g, ' ')}</td>
                     <td className="font-mono text-text-secondary">{formatINR(r.bom_default_rate || 0)}</td>
                     <td className="font-mono font-bold text-accent text-sm">{formatINR(r.override_rate)}</td>
+                    <td className="font-mono text-text-secondary">{gstRateToPercent(r.gst_pct, 0.18).toFixed(2).replace(/\.00$/, '')}%</td>
                     <td>{r.bom_unit}</td>
                     <td className="text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -503,7 +515,14 @@ export default function PricingMasterPage() {
                 ) : (
                 <Select
                   value={draft.bom_item_id}
-                  onChange={(val) => setDraft({ ...draft, bom_item_id: val })}
+                  onChange={(val) => {
+                    const selectedBom = (bomItems || []).find((item: any) => item.id === val);
+                    setDraft({
+                      ...draft,
+                      bom_item_id: val,
+                      gst_pct: normalizeGstRate((selectedBom as any)?.gst_pct, draft.gst_pct),
+                    });
+                  }}
                   placeholder="Select a component..."
                   options={[
                     { value: '', label: 'Select a component...', disabled: true },
@@ -529,6 +548,17 @@ export default function PricingMasterPage() {
                     placeholder="Enter Custom Price Rate"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">GST Percentage *</label>
+                <input
+                  type="number" required min={0} step={0.01}
+                  value={gstRateToPercent(draft.gst_pct, 0.18)}
+                  onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, 0.18) })}
+                  className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm text-text-primary focus:border-accent/40 outline-none font-mono"
+                  placeholder="18"
+                />
               </div>
 
               <div className="flex items-center gap-3 mt-2">

@@ -10,6 +10,9 @@ export interface BomItem {
   gstPct?: number; // Kept for temporary backward compat
   hsn_sac_id?: string | null;
   unitWattage?: number;
+  sourceTable?: string;
+  sourceItemId?: string;
+  sourceLabel?: string;
 }
 
 export interface SolarSystem {

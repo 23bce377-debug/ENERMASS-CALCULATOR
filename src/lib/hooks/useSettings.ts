@@ -24,6 +24,12 @@ export interface CompanyInfo {
 import type { PanelBrand, InverterBrand, BatteryBrand, EquipmentRateOverrides } from '../data/masters';
 import type { SolarSystem } from '../data/bom';
 
+function normalizeMarginPct(value: unknown, fallback = 0.2): number {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return fallback;
+  return num > 1 ? num / 100 : num;
+}
+
 export interface CategoryMargins {
   'on-grid': number;
   '3-phase': number;
@@ -379,7 +385,7 @@ export function useSettings() {
           capacityKW: Number(row.capacity_kw),
           panelWattage: Number(row.panel_wattage),
           panelQty: Number(row.panel_qty),
-          targetMarginPct: Number(row.target_margin_pct),
+          targetMarginPct: normalizeMarginPct(row.target_margin_pct),
           items: row.items || [],
           defaultEquipment: row.default_equipment || undefined,
         }));

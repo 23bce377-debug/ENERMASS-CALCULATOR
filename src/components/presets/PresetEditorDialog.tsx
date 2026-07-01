@@ -10,12 +10,28 @@ import {
   type PresetStateOption,
 } from '@/lib/actions/presets';
 import { CatalogItemPicker } from './CatalogItemPicker';
+import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
 
 interface PresetEditorDialogProps {
   presetId: string;
   open: boolean;
   onClose: () => void;
   onSaved: (presetId: string, presetName: string) => void;
+  initialData?: {
+    id: string;
+    name: string;
+    system_type: string;
+    capacity_kw: number;
+    state_id?: string | null;
+    lineItems: LineItem[];
+  };
+  onSaveLocal?: (updates: {
+    name: string;
+    systemType: string;
+    capacityKw: number;
+    stateId?: string | null;
+    lineItems: LineItem[];
+  }) => void | Promise<void>;
 }
 
 const CATEGORY_ORDER = [
@@ -67,16 +83,18 @@ function newBlankItem(catalogItem: any, category: string, sortOrder: number): Li
     description: catalogItem.description,
     brand: catalogItem.brand ?? '',
     model: catalogItem.model ?? '',
+    specificationDetails: catalogItem.specificationDetails ?? '',
     unit: catalogItem.unit ?? 'Nos',
     quantity: catalogItem.defaultQty ?? 1,
     unitRate: catalogItem.defaultRate ?? 0,
+    gstPct: catalogItem.gstPct ?? catalogItem.gst_pct,
     isIncluded: true,
     isSurveyDependent: catalogItem.isSurveyDependent ?? false,
     sortOrder,
   };
 }
 
-export function PresetEditorDialog({ presetId, open, onClose, onSaved }: PresetEditorDialogProps) {
+export function PresetEditorDialog({ presetId, open, onClose, onSaved, initialData, onSaveLocal }: PresetEditorDialogProps) {
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [name, setName] = useState('');
   const [capacityKw, setCapacityKw] = useState('');
@@ -98,6 +116,15 @@ export function PresetEditorDialog({ presetId, open, onClose, onSaved }: PresetE
       console.error('Failed to load preset states:', err);
       setStates([]);
     });
+
+    if (initialData) {
+      setName(initialData.name ?? '');
+      setCapacityKw(initialData.capacity_kw ? String(Number(initialData.capacity_kw)) : '');
+      setSystemType(SYSTEM_TYPE_OPTIONS.some((option) => option.value === initialData.system_type) ? initialData.system_type : 'on_grid');
+      setStateId(initialData.state_id ?? '');
+      setLineItems(initialData.lineItems ?? []);
+      return;
+    }
 
     if (!presetId) {
       setName('');
@@ -123,7 +150,7 @@ export function PresetEditorDialog({ presetId, open, onClose, onSaved }: PresetE
         alert('Failed to load preset.');
       })
       .finally(() => setLoading(false));
-  }, [open, presetId]);
+  }, [open, presetId, initialData]);
 
   const grouped = useMemo(() => {
     const groups: Record<string, { label: string; items: LineItem[] }> = {};
@@ -165,12 +192,26 @@ export function PresetEditorDialog({ presetId, open, onClose, onSaved }: PresetE
 
     setSaving(true);
     try {
+      const normalizedLineItems = lineItems.map((item, index) => ({ ...item, sortOrder: index }));
+      if (onSaveLocal) {
+        await onSaveLocal({
+          name: name.trim(),
+          systemType,
+          capacityKw: parsedCapacity,
+          stateId: stateId || null,
+          lineItems: normalizedLineItems,
+        });
+        onSaved(presetId, name.trim());
+        onClose();
+        return;
+      }
+
       const savedId = await savePresetWithComponents(presetId, {
         name: name.trim(),
         systemType,
         capacityKw: parsedCapacity,
         stateId: stateId || null,
-        lineItems: lineItems.map((item, index) => ({ ...item, sortOrder: index })),
+        lineItems: normalizedLineItems,
       });
       onSaved(savedId, name.trim());
       onClose();
@@ -285,15 +326,26 @@ export function PresetEditorDialog({ presetId, open, onClose, onSaved }: PresetE
                     {items.map((item) => (
                       <div
                         key={item.id}
-                        className="grid gap-2 rounded-lg border border-border bg-background/60 p-3 md:grid-cols-[minmax(0,1fr)_90px_120px_95px_36px] md:items-center"
+                        className="grid gap-2 rounded-lg border border-border bg-background/60 p-3 md:grid-cols-[minmax(0,1fr)_90px_120px_90px_95px_36px] md:items-center"
                       >
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-text-primary">{item.description}</p>
+                          <p className="truncate text-sm font-medium text-text-primary">
+                            {(item.brand || item.model)
+                              ? [item.brand, item.model].filter(Boolean).join(' ')
+                              : item.description}
+                          </p>
                           {(item.brand || item.model) && (
                             <p className="truncate text-xs text-text-muted">
-                              {[item.brand, item.model].filter(Boolean).join(' ')}
+                              {item.description}
                             </p>
                           )}
+                          <textarea
+                            value={item.specificationDetails ?? ''}
+                            onChange={(event) => updateItem(item.id as string, 'specificationDetails', event.target.value)}
+                            rows={2}
+                            className="mt-2 w-full resize-none rounded-md border border-border bg-surface px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
+                            placeholder="Specification details for quote PDF"
+                          />
                         </div>
 
                         <input
@@ -311,6 +363,16 @@ export function PresetEditorDialog({ presetId, open, onClose, onSaved }: PresetE
                           onChange={(event) => updateItem(item.id as string, 'unitRate', Number(event.target.value) || 0)}
                           className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text-primary outline-none focus:border-accent"
                           placeholder="Rate"
+                        />
+
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={gstRateToPercent(item.gstPct, 0.18)}
+                          onChange={(event) => updateItem(item.id as string, 'gstPct', normalizeGstRate(event.target.value, 0.18))}
+                          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text-primary outline-none focus:border-accent"
+                          placeholder="GST %"
                         />
 
                         <div className="text-sm font-semibold text-text-secondary md:text-right">

@@ -21,6 +21,9 @@ export function SummaryCard() {
   const { settings } = useSettings();
 
   const setMarginOverride = useCalculatorStore((s) => s.setMarginOverride);
+  const marginMode = useCalculatorStore((s) => s.marginMode);
+  const targetMarginAmount = useCalculatorStore((s) => s.targetMarginAmount);
+  const setMarginAmountOverride = useCalculatorStore((s) => s.setMarginAmountOverride);
   const setGSTOnOutputOverride = useCalculatorStore((s) => s.setGSTOnOutputOverride);
   const setTargetMRP = useCalculatorStore((s) => s.setTargetMRP);
 
@@ -112,12 +115,20 @@ export function SummaryCard() {
 
         {/* Margin & MRP */}
         <div className="space-y-2">
-          <EditableRow 
-            label="Margin" 
-            value={calcResult.effectiveMarginPct * 100} 
-            suffix="%" 
-            onCommit={(v) => setMarginOverride(v / 100)} 
+          <EditableRow
+            label={marginMode === 'flat' ? 'Effective Margin' : 'Margin'}
+            value={calcResult.effectiveMarginPct * 100}
+            suffix="%"
+            onCommit={(v) => setMarginOverride(v / 100)}
           />
+          {marginMode === 'flat' && (
+            <EditableRow
+              label="Flat Margin"
+              value={targetMarginAmount ?? calcResult.marginAmount}
+              prefix="₹"
+              onCommit={(v) => setMarginAmountOverride(v)}
+            />
+          )}
           <Row label="MRP (excl. GST)" value={formatINR(calcResult.mrpExclGST)} />
           <div title="Composite rate applicable under GST Works Contract scheme. Subject to revision. Verify with CA before final invoicing.">
             <EditableRow 
@@ -162,6 +173,11 @@ export function SummaryCard() {
           <Row label="Discount" value={`-${formatINR(calcResult.discountAmount)}`} error={calcResult.discountAmount > 0} />
           <Row label="Additional Costs" value={`+${formatINR(calcResult.additionalCostTotal)}`} />
           <Row label="Final Price" value={formatINR(calcResult.finalCustomerPrice)} bold />
+          {calcResult.roundOffToThousand && calcResult.roundOffAdjustment !== 0 && (
+            <div className="text-[10px] text-text-muted text-right">
+              Rounded to nearest 1000; adjustment included in total panel price.
+            </div>
+          )}
         </div>
 
         <div className="border-t border-border/60" />

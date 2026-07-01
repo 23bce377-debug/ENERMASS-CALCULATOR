@@ -1,5 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/types/schema.types';
+import {
+  buildUpiPaymentPayload,
+  createUpiQrDataUri,
+  ENERMASS_PAYEE_NAME,
+  ENERMASS_UPI_ID,
+} from '@/lib/payments/upi';
 
 // Map database sections to human-readable labels for the BOM Table
 const SECTION_MAP: Record<string, string> = {
@@ -59,14 +65,16 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
   let stateDiscomName: string | null = null;
   let stateTermsTemplate: string[] | null = null;
   let globalTermsTemplate: string[] | null = null;
+  let stateRule: any = null;
   try {
     if (quote.state_name) {
       const { data: stateRow } = await supabase
         .from('state_rules')
-        .select('id, discom_name')
+        .select('id, discom_name, sun_hours_per_day, performance_ratio, grid_tariff_inr')
         .eq('state_name', quote.state_name)
         .maybeSingle();
       const sr = stateRow as any;
+      stateRule = sr ?? null;
       stateDiscomName = sr?.discom_name ?? null;
       if (sr?.id) {
         const { data: tpl } = await (supabase as any)
@@ -174,8 +182,8 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
   };
 
   const getSpec = (dbItem: any, defaultSpec: string) => {
-    if (dbItem && (dbItem.remarks || dbItem.specification)) {
-      return dbItem.remarks || dbItem.specification;
+    if (dbItem && (dbItem.remarks || dbItem.specification_details || dbItem.specification)) {
+      return dbItem.remarks || dbItem.specification_details || dbItem.specification;
     }
     return defaultSpec;
   };
@@ -220,22 +228,25 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
     : `Deye-5 — 5Kw`;
 
   const structureBrand = quote.structure_used || 'Module Mounting Structure (MMS) Make-Appolo GI';
+  const defaultPanelSpec = 'Tec-N-type TOPCON Bifacial Mono. Efficiency: ~21.5% -22.4%. Bifacil Gain~30% Low Degradation Y1~1%,After~0.4%. Product Warranty 10-12Y ,Performance Warranty 30Y';
+  const defaultInverterSpec = 'On-Grid (Grid-Tied) String Inverter Maximum Efficiency ≥ 97.5% Total Harmonic Distortion (THD) < 3% .Warranty Minimum 10 years';
+  const defaultStructureSpec = 'Module Mounting Structure (MMS) GI.';
 
   const equipmentSpecs = [
     {
       label: 'A. Solar PV Modules',
       name: panelBrand,
-      details: 'Tec-N-type TOPCON Bifacial Mono. Efficiency: ~21.5% -22.4%. Bifacil Gain~30% Low Degradation Y1~1%,After~0.4%. Product Warranty 10-12Y ,Performance Warranty 30Y'
+      details: getSpec(panelDb, defaultPanelSpec)
     },
     {
       label: 'B. Inverter',
       name: `On-Grid String Inverter | ${inverterBrand}`,
-      details: 'On-Grid (Grid-Tied) String Inverter Maximum Efficiency ≥ 97.5% Total Harmonic Distortion (THD) < 3% .Warranty Minimum 10 years'
+      details: getSpec(inverterDb, defaultInverterSpec)
     },
     {
       label: 'C. Module Mounting Structure (MMS)',
       name: structureBrand,
-      details: 'Module Mounting Structure (MMS) GI.'
+      details: getSpec(mmsDb, defaultStructureSpec)
     }
   ];
 
@@ -247,7 +258,7 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
         {
           lineNo: '01',
           description: 'Solar PV Module',
-          specification: getSpec(panelDb, 'Tec-N-type TOPCON Bifacial Mono. Efficiency: ~21.5% -22.4%. Bifacil Gain~30% Low Degradation Y1~1%,After~0.4%. Product Warranty 10-12Y ,Performance Warranty 30Y'),
+          specification: getSpec(panelDb, defaultPanelSpec),
           qty: getQty(panelDb, panelQty),
           unit: getUnit(panelDb, 'Nos')
         }
@@ -259,7 +270,7 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
         {
           lineNo: '02',
           description: 'On-Grid String Inverter',
-          specification: getSpec(inverterDb, 'On-Grid (Grid-Tied) String Inverter Maximum Efficiency ≥ 97.5% Total Harmonic Distortion (THD) < 3% .Warranty Minimum 10 years'),
+          specification: getSpec(inverterDb, defaultInverterSpec),
           qty: getQty(inverterDb, 1),
           unit: getUnit(inverterDb, 'Lot')
         }
@@ -271,7 +282,7 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
         {
           lineNo: '03',
           description: 'Module Mounting Structure (MMS) Make-Appolo GI',
-          specification: getSpec(mmsDb, 'Module Mounting Structure (MMS) GI.'),
+          specification: getSpec(mmsDb, defaultStructureSpec),
           qty: getQty(mmsDb, 1),
           unit: getUnit(mmsDb, 'Lot')
         }
@@ -401,13 +412,18 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
   ];
 
   // 6. Calculate Financial Savings over 25 Years
+  const stateSunHoursPerDay = Number(stateRule?.sun_hours_per_day || 0) || 5;
+  const statePerformanceRatio = Number(stateRule?.performance_ratio || 0) || 0.78;
+  const projectedDailyGeneration = capacityKW * stateSunHoursPerDay * statePerformanceRatio;
+  const projectedAnnualGeneration = projectedDailyGeneration * 365.2425;
+  const annualGen = Number(quote.annual_generation_kwh || 0) || projectedAnnualGeneration;
   const annualSavings = Number(quote.annual_savings_inr || 0);
   const twentyFiveYearSavings = annualSavings * 25 * 0.85;
   const netInvestment = Number(quote.beneficiary_contribution || 0);
 
   // Generate 10-Year Cash Flow Projection
   const cashFlow = [];
-  let gen = Number(quote.annual_generation_kwh || 0);
+  let gen = annualGen;
   let benefit = annualSavings;
   let cumulative = 0;
   
@@ -429,10 +445,38 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
   }
 
   // 7. Carbon offsets calculations
-  const annualGen = Number(quote.annual_generation_kwh || 0);
   const co2OffsetTons = (annualGen * 0.82) / 1000;
   const lifetimeCo2OffsetTons = co2OffsetTons * 25;
   const treesPlanted = Math.round(lifetimeCo2OffsetTons * 47.5);
+  const clampPct = (value: number) => Math.max(4, Math.min(100, Math.round(value)));
+  const sunlightPct = clampPct((stateSunHoursPerDay / 6) * 100);
+  const annualCarbonPct = clampPct((co2OffsetTons / Math.max(1, capacityKW * 1.7)) * 100);
+  const treeTileCount = Math.max(1, Math.min(12, Math.round(treesPlanted / 500)));
+  const solarTileCount = Math.max(1, Math.min(12, Math.round(capacityKW)));
+  const sunlightLabel =
+    stateSunHoursPerDay >= 5.7 ? 'Very high solar resource' :
+    stateSunHoursPerDay >= 5.1 ? 'High solar resource' :
+    stateSunHoursPerDay >= 4.6 ? 'Good solar resource' :
+    'Moderate solar resource';
+  const carbonImpact = {
+    stateName: quote.state_name || 'Selected state',
+    capacityKW,
+    sunHoursPerDay: stateSunHoursPerDay,
+    performanceRatioPct: Math.round(statePerformanceRatio * 100),
+    sunlightLabel,
+    sunlightPct,
+    sunlightStyle: `width:${sunlightPct}%`,
+    annualCarbonPct,
+    annualCarbonStyle: `width:${annualCarbonPct}%`,
+    dailyGenerationKWh: projectedDailyGeneration,
+    annualGenerationKWh: annualGen,
+    co2OffsetTons,
+    lifetimeCo2OffsetTons,
+    treesPlanted,
+    gridEmissionFactor: 0.82,
+    solarTiles: Array.from({ length: 12 }, (_, index) => ({ active: index < solarTileCount })),
+    treeTiles: Array.from({ length: 12 }, (_, index) => ({ active: index < treeTileCount })),
+  };
 
   const roiPercent = netInvestment <= 0 
     ? 0 
@@ -442,6 +486,21 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
   let calculatedPaybackYears = quote.payback_years ? Number(quote.payback_years) : 0;
   if (!calculatedPaybackYears && annualSavings > 0) {
     calculatedPaybackYears = netInvestment / annualSavings;
+  }
+
+  const quotedPaymentAmount = Number(quote.final_customer_price || quote.mrp_incl_gst || 0);
+  const upiPayment = buildUpiPaymentPayload({
+    amount: quotedPaymentAmount,
+    reference: quote.quote_number,
+    note: `Solar quote ${quote.quote_number}`,
+    payeeAddress: ENERMASS_UPI_ID,
+    payeeName: quote.bank_account_holder || ENERMASS_PAYEE_NAME,
+  });
+  let upiQrCode: string | null = null;
+  try {
+    upiQrCode = quotedPaymentAmount > 0 ? await createUpiQrDataUri(upiPayment) : null;
+  } catch (error) {
+    console.warn(`[buildViewModel] Failed to generate local UPI QR for ${quote.quote_number}.`, error);
   }
 
   // Final T&C fallback when neither the quote snapshot nor any DB template exists.
@@ -517,15 +576,16 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
     },
     salesContact: {
       name: quote.exec_name || 'Gigit Antony',
-      role: quote.sales_exec_role || 'Sales Manager',
-      phone: quote.sales_exec_phone || '7594933374'
+      role: quote.sales_exec_role || 'Sales Executive',
+      phone: quote.sales_exec_phone || '7594933374',
+      email: quote.sales_exec_email || 'info@enermass.in'
     },
     bank: {
-      accountHolder: quote.bank_account_holder || 'Enermass Power Solutions Pvt. Ltd.',
+      accountHolder: quote.bank_account_holder || ENERMASS_PAYEE_NAME,
       bankName: quote.bank_name || 'Bank of Baroda, Koratty',
       accountNo: quote.bank_account_no || '85080200000055',
       ifsc: quote.bank_ifsc || 'BARB0KORATT',
-      upiId: quote.bank_upi_id || 'enermass@barodampay'
+      upiId: ENERMASS_UPI_ID
     },
     paymentMilestones: {
       advance: netInvestment * 0.50,
@@ -543,6 +603,8 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
     co2OffsetTons,
     lifetimeCo2OffsetTons,
     treesPlanted,
-    upiQrCode: quote.bank_upi_id ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=${quote.bank_upi_id}&pn=${encodeURIComponent(quote.bank_account_holder || 'Enermass')}&am=${netInvestment * 0.5}&cu=INR`)}` : null
+    carbonImpact,
+    upiPayment,
+    upiQrCode
   };
 }

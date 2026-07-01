@@ -206,7 +206,7 @@ describe('SaaS seat service', () => {
           disableByOrgAndUser: vi.fn(),
         },
       })
-    ).resolves.toEqual({ activeSeats: 1, invitedSeats: 1, usedSeats: 2, seatLimit: 2, overLimitBy: 0 });
+    ).resolves.toEqual({ activeSeats: 1, invitedSeats: 1, usedSeats: 1, seatLimit: 2, overLimitBy: 0 });
   });
 
   it('blocks invite when seat limit is reached', async () => {

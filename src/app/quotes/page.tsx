@@ -10,9 +10,9 @@ import { SYSTEMS } from '@/lib/data/bom';
 import { useSettings } from '@/lib/hooks/useSettings';
 import type { Quote } from '@/lib/types/quote';
 import {
-  Search, Filter, FileText, Download, Trash2, Eye, X,
-  ChevronDown, ArrowUpDown, Printer, PenSquare, Copy,
-  Mail, MessageCircle, GitPullRequest, History, Paperclip, UploadCloud
+  Search, FileText, Download, Trash2, Eye, X,
+  ArrowUpDown, PenSquare, Copy, BarChart3,
+  Mail, MessageCircle, GitPullRequest, History, UploadCloud
 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/Confirm';
 import { Select } from '@/components/ui/Select';
@@ -23,23 +23,20 @@ import { QuoteVersionHistory } from '@/components/quotes/QuoteVersionHistory';
 import { QuoteReviseModal } from '@/components/quotes/QuoteReviseModal';
 import { StaleRateWarning } from '@/components/quotes/StaleRateWarning';
 import { ITCSummary } from '@/components/quotes/ITCSummary';
+import { RateVerdictReport } from '@/components/quotes/RateVerdictReport';
 
 // ─── Status Config ──────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<Quote['status'], string> = {
   Draft: 'bg-white/5 text-text-secondary border-white/10',
   Sent: 'bg-accent/10 text-accent border-accent/20',
-  Survey: 'bg-warning/12 text-warning border-warning/20',
-  Revised: 'bg-info/12 text-info border-info/20',
   Won: 'bg-success/12 text-success border-success/20',
   Lost: 'bg-error/12 text-error border-error/20',
 };
 
 const STATUS_CYCLE: Record<Quote['status'], Quote['status'][]> = {
-  Draft: ['Sent', 'Survey'],
-  Sent: ['Survey'],
-  Survey: ['Revised'],
-  Revised: ['Won', 'Lost'],
+  Draft: ['Sent'],
+  Sent: ['Won'],
   Won: ['Draft'],
   Lost: ['Draft'],
 };
@@ -71,12 +68,14 @@ function QuoteDetailModal({
   onClose,
   onEdit,
   onDuplicate,
+  onRateAnalysis,
 }: {
   quote: Quote;
   companyName: string;
   onClose: () => void;
   onEdit: (quoteId: string) => void;
   onDuplicate: (quoteId: string) => void;
+  onRateAnalysis: (quote: Quote) => void;
 }) {
   const { settings } = useSettings();
   const system = SYSTEMS.find((s) => s.id === quote.systemId) || settings.customSystems?.find((s) => s.id === quote.systemId);
@@ -180,6 +179,12 @@ function QuoteDetailModal({
               className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-text-primary text-sm font-medium hover:bg-surface-hover transition-colors"
             >
               <Copy size={16} /> Duplicate
+            </button>
+            <button
+              onClick={() => onRateAnalysis(quote)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-accent/30 text-accent text-sm font-medium hover:bg-accent/10 transition-colors"
+            >
+              <BarChart3 size={16} /> Rate Analysis
             </button>
             <button
               onClick={handleEmailShare}
@@ -408,6 +413,7 @@ export default function QuotesPage() {
   const [statusFilter, setStatusFilter] = useState<Quote['status'] | 'All'>('All');
   const [sortAsc, setSortAsc] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [rateAnalysisQuote, setRateAnalysisQuote] = useState<Quote | null>(null);
   const [generatingPdfQuoteId, setGeneratingPdfQuoteId] = useState<string | null>(null);
 
   const handleDownloadPdf = async (quoteId: string) => {
@@ -467,30 +473,6 @@ export default function QuotesPage() {
     if (!quote) return;
     const nextOptions = STATUS_CYCLE[quote.status];
     const next = nextOptions[0];
-
-    // UI-level Survey Gate validation
-    if (next === 'Revised') {
-      try {
-        const { data: quoteData } = await supabase.from('quotes').select('lead_id, org_id').eq('quote_number', quoteId).single();
-        if (quoteData?.lead_id) {
-          const { data: survey } = await supabase
-            .from('crm_site_surveys')
-            .select('id, status')
-            .eq('lead_id', quoteData.lead_id)
-            .in('status', ['completed', 'waived'])
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (!survey) {
-            setSurveyGate({ quoteId, leadId: quoteData.lead_id, orgId: quoteData.org_id || '' });
-            return;
-          }
-        }
-      } catch (err) {
-        console.error('Pre-flight survey check failed:', err);
-      }
-    }
 
     try {
       await updateStatusMutation.mutateAsync({ quoteId, newStatus: next });
@@ -679,6 +661,13 @@ export default function QuotesPage() {
                             <Copy size={15} />
                           </button>
                           <button
+                            onClick={() => setRateAnalysisQuote(quote)}
+                            title="Rate Analysis"
+                            className="p-1.5 rounded-md hover:bg-accent/10 text-text-muted hover:text-accent transition-colors"
+                          >
+                            <BarChart3 size={15} />
+                          </button>
+                          <button
                             onClick={() => handleDownloadPdf(quote.quoteId)}
                             disabled={generatingPdfQuoteId !== null}
                             title="Download Quote (PDF)"
@@ -722,8 +711,18 @@ export default function QuotesPage() {
             setSelectedQuote(null);
             cloneQuoteAsTemplate(quoteId);
           }}
+          onRateAnalysis={(quote) => setRateAnalysisQuote(quote)}
         />
       )}
+
+      {rateAnalysisQuote && (
+        <RateVerdictReport
+          quoteId={rateAnalysisQuote.quoteId}
+          quoteNumber={rateAnalysisQuote.quoteId}
+          onClose={() => setRateAnalysisQuote(null)}
+        />
+      )}
+
       {/* Survey Gate Modal */}
       {surveyGate && (
         <SurveyGateModal

@@ -22,7 +22,7 @@ function applyOrgVisibility(rows: any[], hidden: Set<string>) {
 export const GET = withLicensedApiRoute(
   async (_request, context) => {
     const orgId = context.session.orgId;
-    const cacheKey = `erp:master:equipment:${orgId}:v2`;
+    const cacheKey = `erp:master:equipment:${orgId}:v3`;
 
     try {
       const data = await getOrSetCache(
@@ -46,7 +46,7 @@ export const GET = withLicensedApiRoute(
                 supabase
                   .from('eq_panels')
                   .select(
-                    'id, org_id, source_global_id, brand, model, wattage_w, panel_type, selling_price, gst_pct, is_active, created_at'
+                    'id, org_id, source_global_id, brand, model, wattage_w, panel_type, selling_price, gst_pct, description, specification_details, is_active, created_at'
                   )
                   .eq('is_active', true)
                   .order('wattage_w', { ascending: true })
@@ -55,7 +55,7 @@ export const GET = withLicensedApiRoute(
                 supabase
                   .from('eq_inverters')
                   .select(
-                    'id, org_id, source_global_id, brand, model, capacity_kw, inverter_type, phases, selling_price, gst_pct, is_active, created_at'
+                    'id, org_id, source_global_id, brand, model, capacity_kw, inverter_type, phases, selling_price, gst_pct, description, specification_details, is_active, created_at'
                   )
                   .eq('is_active', true)
                   .order('capacity_kw', { ascending: true })
@@ -64,26 +64,26 @@ export const GET = withLicensedApiRoute(
                 supabase
                   .from('eq_batteries')
                   .select(
-                    'id, org_id, source_global_id, brand, model, capacity_kwh, chemistry, dod_pct, selling_price, gst_pct, is_active, created_at'
+                    'id, org_id, source_global_id, brand, model, capacity_kwh, chemistry, dod_pct, selling_price, gst_pct, description, specification_details, is_active, created_at'
                   )
                   .eq('is_active', true)
               ),
               safeQuery(
                 supabase
                   .from('eq_meters')
-                  .select('id, brand, model, phases, selling_price, gst_pct, is_active')
+                  .select('id, brand, model, phases, selling_price, gst_pct, description, specification_details, is_active')
                   .eq('is_active', true)
               ),
               safeQuery(
                 supabase
                   .from('eq_lightning_arresters')
-                  .select('id, brand, model, selling_price, gst_pct, is_active')
+                  .select('id, brand, model, selling_price, gst_pct, description, specification_details, is_active')
                   .eq('is_active', true)
               ),
               safeQuery(
                 supabase
                   .from('eq_communication_devices')
-                  .select('id, brand, model, selling_price, gst_pct, is_active')
+                  .select('id, brand, model, selling_price, gst_pct, description, specification_details, is_active')
                   .eq('is_active', true)
               ),
               safeQuery(

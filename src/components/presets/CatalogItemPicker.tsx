@@ -14,6 +14,7 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [customDescription, setCustomDescription] = useState('');
+  const [customSpecification, setCustomSpecification] = useState('');
   const [customUnit, setCustomUnit] = useState('Nos');
   const [customQty, setCustomQty] = useState('1');
   const [customRate, setCustomRate] = useState('');
@@ -34,6 +35,7 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
       type: 'custom',
       catalogType: 'custom',
       description,
+      specificationDetails: customSpecification.trim(),
       brand: '',
       model: '',
       unit: customUnit.trim() || 'Nos',
@@ -125,6 +127,13 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
             onChange={(event) => setCustomDescription(event.target.value)}
             placeholder={search.trim() || `${categoryLabel} item name`}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+          />
+          <textarea
+            value={customSpecification}
+            onChange={(event) => setCustomSpecification(event.target.value)}
+            rows={2}
+            placeholder="Specification details for quote PDF"
+            className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
           />
           <div className="grid grid-cols-[1fr_82px_96px] gap-2">
             <input

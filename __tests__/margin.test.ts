@@ -11,10 +11,10 @@ describe('margin engine', () => {
       defaultMarginPct: 0.15
     };
     const result = calculatePricingAndMargins(input);
-    expect(result.mrpExclGST).toBe(125000); // 100000 / (1 - 0.2)
-    expect(result.marginAmount).toBe(25000);
+    expect(result.mrpExclGST).toBe(120000); // 100000 + 20% markup
+    expect(result.marginAmount).toBe(20000);
     expect(result.effectiveMarginPct).toBe(0.20);
-    expect(result.mrpInclGST).toBe(140000); // 125000 * 1.12
+    expect(result.mrpInclGST).toBe(134400); // 120000 * 1.12
   });
 
   it('should correctly calculate flat discount', () => {

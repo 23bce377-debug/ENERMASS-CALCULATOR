@@ -20,6 +20,7 @@ import { HistoryDrawer } from '@/components/master/HistoryDrawer';
 import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditModal';
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
+import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
 import { z } from 'zod';
 
 interface Panel {
@@ -31,6 +32,7 @@ interface Panel {
   rate_per_watt: number;
   gst_pct: number;
   description: string | null;
+  specification_details: string | null;
   org_id: string | null;
 }
 
@@ -80,6 +82,7 @@ export default function PanelsMasterPage() {
     rate_per_watt: 22,
     gst_pct: 0.05,
     description: '',
+    specification_details: '',
   });
 
   // Bulk edit fields configuration
@@ -91,11 +94,7 @@ export default function PanelsMasterPage() {
       { value: 'HJT', label: 'HJT' }
     ]},
     { name: 'rate_per_watt', label: 'Selling Rate (₹/W)', type: 'number' },
-    { name: 'gst_pct', label: 'GST Percentage', type: 'select', options: [
-      { value: 0.05, label: '5%' },
-      { value: 0.12, label: '12%' },
-      { value: 0.18, label: '18%' }
-    ]},
+    { name: 'gst_pct', label: 'GST Percentage', type: 'number' },
   ];
 
   // ─── NEW INTERACTIVE CONTROLS ────────────────────────────────────────────────
@@ -221,6 +220,7 @@ export default function PanelsMasterPage() {
     rate_per_watt: '',
     gst_pct: '',
     description: '',
+    specification_details: '',
   });
 
   // 7. Duplicate SKU checking modal (Item 96)
@@ -249,6 +249,7 @@ export default function PanelsMasterPage() {
           if (lh.includes('rate') || lh.includes('price')) mapping.rate_per_watt = h;
           if (lh.includes('gst')) mapping.gst_pct = h;
           if (lh.includes('desc')) mapping.description = h;
+          if (lh.includes('spec') || lh.includes('warranty') || lh.includes('detail')) mapping.specification_details = h;
         });
         setImportMappings(mapping);
         setImportMappingOpen(true);
@@ -271,8 +272,9 @@ export default function PanelsMasterPage() {
         wattage_w: parseInt(row[importMappings.wattage_w]) || 550,
         panel_type: row[importMappings.panel_type] || 'Mono PERC',
         rate_per_watt: parseFloat(row[importMappings.rate_per_watt]) || 20,
-        gst_pct: parseFloat(row[importMappings.gst_pct]) || 0.05,
+        gst_pct: normalizeGstRate(row[importMappings.gst_pct], 0.05),
         description: row[importMappings.description] || '',
+        specification_details: row[importMappings.specification_details] || row[importMappings.description] || '',
       };
     });
 
@@ -366,7 +368,12 @@ export default function PanelsMasterPage() {
 
   const handleBulkEditSave = async (updates: Record<string, any>) => {
     try {
-      await bulkUpdateMutation.mutateAsync({ ids: selectedIds, updates });
+      await bulkUpdateMutation.mutateAsync({
+        ids: selectedIds,
+        updates: updates.gst_pct !== undefined
+          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, 0.05) }
+          : updates,
+      });
       setSelectedIds([]);
       toast(`Bulk updated ${selectedIds.length} rows successfully`, 'success');
     } catch (err: any) {
@@ -384,6 +391,7 @@ export default function PanelsMasterPage() {
       rate_per_watt: panel.rate_per_watt,
       gst_pct: panel.gst_pct,
       description: panel.description || 'Cloned specification',
+      specification_details: panel.specification_details || '',
     };
 
     try {
@@ -498,6 +506,7 @@ export default function PanelsMasterPage() {
       rate_per_watt: 22,
       gst_pct: 0.05,
       description: '',
+      specification_details: '',
     });
     setEditorOpen(true);
   };
@@ -512,6 +521,7 @@ export default function PanelsMasterPage() {
       rate_per_watt: panel.rate_per_watt,
       gst_pct: panel.gst_pct,
       description: panel.description || '',
+      specification_details: panel.specification_details || '',
     });
     setEditorOpen(true);
   };
@@ -539,8 +549,9 @@ export default function PanelsMasterPage() {
       'Wattage (W)': p.wattage_w,
       'Panel Type': p.panel_type,
       'Rate per Watt (INR)': p.rate_per_watt,
-      'GST Percentage': p.gst_pct,
+      'GST Percentage': gstRateToPercent(p.gst_pct, 0.05),
       Description: p.description || '',
+      'Specification Details': p.specification_details || '',
     }));
     exportToExcel(dataToExport, 'PV_Panels_Master', 'Panels');
     toast('Master list exported to Excel', 'success');
@@ -1106,28 +1117,25 @@ export default function PanelsMasterPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Standard GST Slabs *</label>
-                  <Select
-                    value={String(draft.gst_pct)}
-                    onChange={(val) => setDraft({ ...draft, gst_pct: parseFloat(val) })}
-                    options={[
-                      { value: '0.05', label: '5% GST' },
-                      { value: '0.12', label: '12% GST' },
-                      { value: '0.18', label: '18% GST' }
-                    ]}
-                    className="w-full"
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">GST Percentage *</label>
+                  <input
+                    type="number" required min={0} step={0.01}
+                    value={gstRateToPercent(draft.gst_pct, 0.05)}
+                    onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, 0.05) })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
+                    placeholder="12"
                   />
                 </div>
               </div>
               
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Product Remarks / Details</label>
+                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Quote Specification Details</label>
                 <textarea
-                  value={draft.description}
-                  onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-                  rows={3}
+                  value={draft.specification_details}
+                  onChange={(e) => setDraft({ ...draft, specification_details: e.target.value })}
+                  rows={4}
                   className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none resize-none"
-                  placeholder="Module features, certifications, weight details..."
+                  placeholder="Efficiency, bifacial gain, degradation, certifications, product warranty, performance warranty..."
                 />
               </div>
 

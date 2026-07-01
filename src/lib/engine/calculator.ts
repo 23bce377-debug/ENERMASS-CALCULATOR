@@ -12,7 +12,7 @@ import { STRUCTURE_CONFIGS, type StructureType } from '../structures/structureCo
 import { SEED_BOM_TEMPLATE_ITEMS, SEED_BOM_CATEGORIES } from '../../../db/seeds/bom_templates';
 import { type StateData } from '../data/masters';
 import { calculateEnergyProjections } from './energy';
-import { calculatePricingAndMargins, calculateDiscountAmount } from './margin';
+import { calculatePricingAndMargins, calculateDiscountAmount, type MarginMode } from './margin';
 import { calculateFinancialProjections } from './financials';
 import { calculatePMSuryaGharSubsidy, type SubsidyResult } from '../subsidy';
 
@@ -21,6 +21,8 @@ import { safeEvalFormula, FormulaParseError } from './formulaParser';
 import { generateElectricalBOM } from './bomElectrical';
 import { generateStructureBOM } from './bomStructure';
 import { generateCivilEarthingBOM } from './bomCivilEarthing';
+
+export type { MarginMode } from './margin';
 
 export const MAX_SAFE_NUMBER = 999999999999;
 export const MIN_SAFE_NUMBER = -999999999999;
@@ -72,7 +74,9 @@ export interface CalcInput {
   rpcSubsidyAmount?: number;
   state: string;
   projectType: ProjectType;
+  marginMode?: MarginMode;
   targetMarginPct?: number;
+  targetMarginAmount?: number;
   targetMRPInclGST?: number;
   targetMRPPerWatt?: number;
   gstOnOutput?: number;
@@ -83,6 +87,7 @@ export interface CalcInput {
   disabledItemIndices?: Record<number, boolean>;
   discountType?: DiscountType;
   discountVal?: number;
+  roundOffToThousand?: boolean;
   additionalCosts?: AdditionalCost[];
   customItems?: import('../data/bom').BomItem[];
   panelRateOverride?: number;
@@ -210,6 +215,7 @@ export interface CalcResult {
   capacityKW: number;
   // BOM breakdown
   lines: LineResult[];
+  quotedLines: LineResult[];
 
   // Cost aggregates
   costBeforeGST: number;
@@ -229,6 +235,9 @@ export interface CalcResult {
 
   // Discount
   discountAmount: number;
+  unroundedFinalCustomerPrice: number;
+  roundOffToThousand: boolean;
+  roundOffAdjustment: number;
   finalCustomerPrice: number;
 
   // Subsidy
@@ -251,6 +260,86 @@ export interface CalcResult {
   lifetimeSavingsINR: number;
   npv: number;
   irr: number;
+}
+
+export function roundToNearestThousand(value: number): number {
+  const safeValue = sanitizeNumber(value, 0);
+  const sign = safeValue < 0 ? -1 : 1;
+  const absValue = Math.abs(safeValue);
+  const lower = Math.floor(absValue / 1000) * 1000;
+  const remainder = absValue - lower;
+  const roundedAbs = remainder < 500 ? lower : lower + 1000;
+  return roundToINR(sign * roundedAbs);
+}
+
+function lineTotalPaise(line: LineResult): number {
+  return Math.round(sanitizeNumber(line.lineTotal, 0) * 100);
+}
+
+function withLineTotal(line: LineResult, lineTotalPaiseValue: number): LineResult {
+  const lineTotal = roundToINR(lineTotalPaiseValue / 100);
+  const qty = sanitizeNumber(line.effectiveQty, 0);
+  const effectiveRate = qty > 0 ? roundToINR(lineTotal / qty) : 0;
+  const lineGST = roundToINR(lineTotal * sanitizeNumber(line.effectiveGstPct, 0));
+
+  return {
+    ...line,
+    effectiveRate,
+    lineTotal,
+    lineGST,
+    lineSubTotal: roundToINR(lineTotal + lineGST),
+  };
+}
+
+export function buildQuotedLines(
+  lines: LineResult[],
+  targetMrpExclGST: number,
+  roundOffAdjustment = 0,
+): LineResult[] {
+  const included = lines.filter((line) => !line.isDisabled && lineTotalPaise(line) > 0);
+  const baseTotalPaise = included.reduce((sum, line) => sum + lineTotalPaise(line), 0);
+  const targetPaise = Math.max(0, Math.round(sanitizeNumber(targetMrpExclGST, 0) * 100));
+
+  if (included.length === 0 || baseTotalPaise <= 0) {
+    return lines.map((line) => withLineTotal(line, 0));
+  }
+
+  const largestLine = included.reduce((largest, line) =>
+    lineTotalPaise(line) > lineTotalPaise(largest) ? line : largest
+  );
+  const panelLine = included.find((line) => line.description.toUpperCase() === 'PANEL');
+  const residueTargetIndex = largestLine.index;
+  const roundOffTargetIndex = panelLine?.index ?? largestLine.index;
+
+  const allocatedByIndex = new Map<number, number>();
+  let allocatedPaise = 0;
+
+  for (const line of included) {
+    const allocated = Math.round((lineTotalPaise(line) * targetPaise) / baseTotalPaise);
+    allocatedByIndex.set(line.index, allocated);
+    allocatedPaise += allocated;
+  }
+
+  const residuePaise = targetPaise - allocatedPaise;
+  allocatedByIndex.set(
+    residueTargetIndex,
+    (allocatedByIndex.get(residueTargetIndex) ?? 0) + residuePaise,
+  );
+
+  const roundOffPaise = Math.round(sanitizeNumber(roundOffAdjustment, 0) * 100);
+  if (roundOffPaise !== 0) {
+    allocatedByIndex.set(
+      roundOffTargetIndex,
+      Math.max(0, (allocatedByIndex.get(roundOffTargetIndex) ?? 0) + roundOffPaise),
+    );
+  }
+
+  return lines.map((line) => {
+    if (line.isDisabled || !allocatedByIndex.has(line.index)) {
+      return withLineTotal(line, 0);
+    }
+    return withLineTotal(line, allocatedByIndex.get(line.index) ?? 0);
+  });
 }
 
 // Equipment descriptions that are resolved from the DB model selection,
@@ -366,6 +455,10 @@ export function getSubsidyAmount(
     return 0;
   }
 
+  if (inverterCapacityKW === undefined) {
+    console.warn('inverterCapacityKW is undefined. Defaulting eligible capacity to panelCapacityKW.');
+  }
+
   const eligibleCapacityKW = inverterCapacityKW !== undefined
     ? Math.min(panelCapacityKW, inverterCapacityKW)
     : panelCapacityKW;
@@ -411,13 +504,13 @@ export function getSubsidyAmount(
     }
   }
 
-  if (maxAbsoluteSubsidy !== undefined && maxAbsoluteSubsidy > 0) {
-    total = Math.min(total, maxAbsoluteSubsidy);
-  }
-
-  // FIX CALC-02: Add state-specific additional subsidy (e.g. Gujarat top-up)
+  // FIX CALC-02: Add state-specific additional subsidy (e.g. Gujarat top-up) before enforcing the cap
   if (additionalStateSubsidy !== undefined && additionalStateSubsidy > 0) {
     total += additionalStateSubsidy;
+  }
+
+  if (maxAbsoluteSubsidy !== undefined && maxAbsoluteSubsidy > 0) {
+    total = Math.min(total, maxAbsoluteSubsidy);
   }
 
   return total;
@@ -706,9 +799,9 @@ export function resolveStructureItems(
             capacityKW <= Number(l.capacity_kw_max)
           );
           if (!lookup) {
-            throw new Error(`No structure_weight_lookup for structure ${struct.id} at capacity ${capacityKW}kW`);
+            console.warn(`No structure_weight_lookup for structure ${struct.id} at capacity ${capacityKW}kW. Falling back to default weight.`);
           }
-          const lookupWeight = Number(lookup.total_weight_kg);
+          const lookupWeight = lookup ? Number(lookup.total_weight_kg) : (capacityKW * 20.0);
           const baseWeight = Number(struct.base_weight_kg ?? 0);
           const wastage = Number(struct.wastage_pct ?? 0.05);
           const fasteners = Number(struct.fastener_weight_pct ?? 0.02);
@@ -1451,7 +1544,9 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
 
   const marginResults = calculatePricingAndMargins({
     baseCost: baseCostForMargin,
+    marginMode: input.marginMode,
     targetMarginPct: input.targetMarginPct,
+    targetMarginAmount: input.targetMarginAmount,
     targetMRPInclGST: input.targetMRPInclGST,
     targetMRPPerWatt: input.targetMRPPerWatt,
     gstOutputRate,
@@ -1482,7 +1577,14 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
   ));
 
   // ── Step 12: Final customer price ──
-  const finalCustomerPrice = roundToINR(Math.max(0, mrpInclGST - discountAmount + additionalCostTotal));
+  const unroundedFinalCustomerPrice = roundToINR(Math.max(0, mrpInclGST - discountAmount + additionalCostTotal));
+  const roundOffToThousand = input.roundOffToThousand === true;
+  const roundedFinalCustomerPrice = roundOffToThousand
+    ? roundToNearestThousand(unroundedFinalCustomerPrice)
+    : unroundedFinalCustomerPrice;
+  const roundOffAdjustment = roundToINR(roundedFinalCustomerPrice - unroundedFinalCustomerPrice);
+  const finalCustomerPrice = roundToINR(roundedFinalCustomerPrice);
+  const quotedLines = buildQuotedLines(lines, mrpExclGST, roundOffAdjustment);
 
   // ── Step 13: Subsidy (state-driven) ──
   // The selected state is the single source of truth. `applySubsidy` (a simple
@@ -1615,6 +1717,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
   return {
     capacityKW,
     lines,
+    quotedLines,
     costBeforeGST,
     civilLogisticsCost,
     totalInputGST,
@@ -1630,6 +1733,9 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
     perKWinclGST,
 
     discountAmount,
+    unroundedFinalCustomerPrice,
+    roundOffToThousand,
+    roundOffAdjustment,
     finalCustomerPrice,
 
     subsidyResult,

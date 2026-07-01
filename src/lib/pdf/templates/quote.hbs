@@ -61,21 +61,26 @@
     margin: 14mm 14mm 12mm 14mm;
   }
 
-  /* Sections flow naturally and paginate via the print engine. Inner blocks
-     (tables rows, stat-cards, callouts) use break-inside:avoid so content is
-     never split awkwardly. Only the cover is pinned to a full dedicated page. */
+  /* Sections flow naturally and paginate via the print engine. Avoid making
+     every proposal section a full A4 block; that creates large blank gaps when
+     a section is shorter than a page. Only the cover is pinned to one page. */
   .page{
     width: 100%;
-    min-height: var(--quote-printable-height);
     padding: 0;
-    display: flex;
-    flex-direction: column;
     background: var(--white);
     position: relative;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+  .page + .page{
+    margin-top: var(--sp-6);
   }
   .page--cover{
+    display: flex;
+    flex-direction: column;
     min-height: var(--quote-printable-height);
     page-break-after: always;
+    margin-bottom: 0;
   }
 
   @media print{
@@ -131,6 +136,133 @@
   .callout--gray{ background:var(--gray-soft); }
   .callout__title{ font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-muted); margin-bottom:6px; }
 
+  .carbon-impact{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:var(--sp-5);
+    background:linear-gradient(180deg, #F7FBF8 0%, #FFFFFF 100%);
+    break-inside:avoid; page-break-inside:avoid;
+  }
+  .carbon-impact__top{
+    display:grid;
+    grid-template-columns:1.05fr .95fr;
+    gap:var(--sp-5);
+    align-items:stretch;
+  }
+  .carbon-scene{
+    border:1px solid #D6E7DD;
+    border-radius:8px;
+    background:var(--green-soft);
+    padding:var(--sp-4);
+    min-height:172px;
+    position:relative;
+    overflow:hidden;
+  }
+  .carbon-sun{
+    position:absolute;
+    right:18px;
+    top:16px;
+    width:44px;
+    height:44px;
+    border-radius:999px;
+    background:var(--gold);
+    box-shadow:0 0 0 10px rgba(194,132,42,.13), 0 0 0 22px rgba(194,132,42,.06);
+  }
+  .carbon-array{
+    position:absolute;
+    left:18px;
+    bottom:22px;
+    display:grid;
+    grid-template-columns:repeat(4,34px);
+    gap:5px;
+    transform:skewX(-8deg);
+  }
+  .carbon-panel{
+    width:34px;
+    height:22px;
+    border-radius:3px;
+    border:1px solid #B8C9D5;
+    background:#DDE5EB;
+  }
+  .carbon-panel.is-active{
+    background:linear-gradient(135deg, var(--navy-tint), var(--navy));
+    border-color:var(--navy);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+  }
+  .carbon-array-base{
+    position:absolute;
+    left:16px;
+    right:92px;
+    bottom:14px;
+    height:5px;
+    border-radius:999px;
+    background:#93A88C;
+  }
+  .carbon-scene__caption{
+    position:absolute;
+    left:18px;
+    top:16px;
+    max-width:210px;
+  }
+  .carbon-scene__value{ font-size:20px; font-weight:800; color:var(--green); line-height:1.1; }
+  .carbon-scene__label{ font-size:9px; color:var(--ink-muted); font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
+  .carbon-metrics{ display:grid; gap:var(--sp-3); }
+  .carbon-meter{
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:var(--sp-3);
+    background:var(--white);
+  }
+  .carbon-meter__row{ display:flex; justify-content:space-between; gap:var(--sp-3); align-items:baseline; }
+  .carbon-meter__label{ font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); }
+  .carbon-meter__value{ font-size:12px; font-weight:800; color:var(--navy); }
+  .carbon-track{
+    height:8px;
+    border-radius:999px;
+    background:#E8EEF2;
+    overflow:hidden;
+    margin-top:8px;
+  }
+  .carbon-fill{
+    height:100%;
+    border-radius:999px;
+    background:linear-gradient(90deg, var(--green), var(--teal));
+  }
+  .carbon-footprint-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:var(--sp-3);
+    margin-top:var(--sp-4);
+  }
+  .carbon-tile{
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:var(--sp-3);
+    background:var(--white);
+  }
+  .carbon-tile__value{ font-size:17px; font-weight:800; color:var(--green); }
+  .carbon-tile__label{ font-size:8.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin-top:2px; }
+  .carbon-icon-row{ display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; min-height:22px; }
+  .tree-mark{
+    width:18px;
+    height:18px;
+    display:inline-block;
+    border-radius:50% 50% 45% 45%;
+    background:#DCECE2;
+    position:relative;
+  }
+  .tree-mark::after{
+    content:"";
+    position:absolute;
+    left:8px;
+    bottom:-5px;
+    width:3px;
+    height:8px;
+    background:#B68A58;
+    border-radius:2px;
+  }
+  .tree-mark.is-active{ background:var(--green); }
+
   .meta-row{
     display:flex; justify-content:space-between; gap:var(--sp-3);
     padding: 7px 0; border-bottom:1px solid var(--line);
@@ -162,7 +294,11 @@
   .row--highlight td{ background:var(--green-soft); font-weight:700; }
   .num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
 
-  .section-head{ margin-bottom: var(--sp-5); }
+  .section-head{
+    margin-bottom: var(--sp-4);
+    break-after: avoid;
+    page-break-after: avoid;
+  }
   .section-head__top{ display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
   .section-num{
     display:inline-flex; align-items:center; justify-content:center;
@@ -181,7 +317,7 @@
      ========================================================= */
   .brand-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:var(--sp-5); }
   .brand-id{ display:flex; align-items:flex-start; gap:10px; }
-  .brand-logo{ width:50px; height:50px; flex:none; }
+  .brand-logo{ width:50px; height:50px; flex:none; object-fit:contain; display:block; }
   .brand-name{ font-size:14.5px; font-weight:800; color:var(--navy); line-height:1.2; }
   .brand-tagline{ font-size:7.6px; font-weight:700; letter-spacing:.09em; color:var(--ink-faint); margin-top:2px; }
   .brand-contact{ font-size:9.5px; color:var(--ink-muted); margin-top:5px; }
@@ -195,7 +331,7 @@
   .ref-badge__dates{ font-size:9px; color:var(--ink-muted); margin-top:5px; }
 
   .page-footer{
-    margin-top: var(--sp-6); padding-top: var(--sp-3);
+    margin-top: var(--sp-5); padding-top: var(--sp-3);
     border-top:1px solid var(--line);
     display:flex; justify-content:space-between; align-items:center;
     font-size:9px; color:var(--ink-faint);
@@ -309,27 +445,9 @@
 <section class="page page--cover">
   <div class="brand-header">
     <div class="brand-id">
-      <svg class="brand-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Enermass logo">
-        <g fill="#6DBF7C">
-          <path d="M44 12h12v23h-12z"/>
-          <path d="M28 12l10-10 23 23-10 10z"/>
-          <path d="M72 12l-10-10-23 23 10 10z"/>
-          <path d="M38 28h24v9H38z"/>
-          <path d="M44 65h12v23h-12z"/>
-          <path d="M28 88l10 10 23-23-10-10z"/>
-          <path d="M72 88l-10 10-23-23 10-10z"/>
-          <path d="M38 63h24v9H38z"/>
-          <path d="M12 44v12h23v-12z"/>
-          <path d="M12 28L2 38l23 23 10-10z"/>
-          <path d="M12 72L2 62l23-23 10 10z"/>
-          <path d="M28 38v24h9V38z"/>
-          <path d="M88 44v12H65v-12z"/>
-          <path d="M88 28l10 10-23 23-10-10z"/>
-          <path d="M88 72l10-10-23-23-10 10z"/>
-          <path d="M63 38v24h9V38z"/>
-        </g>
-        <circle cx="50" cy="50" r="14" fill="#E8893A"/>
-      </svg>
+      {{#if company.logoDataUri}}
+      <img class="brand-logo" src="{{company.logoDataUri}}" alt="Enermass logo" />
+      {{/if}}
       <div>
         <div class="brand-name">{{company.name}}</div>
         <div class="brand-tagline">INTEGRATED&nbsp; SOLAR&nbsp; AND&nbsp; POWER&nbsp; ENGINEERING&nbsp; SOLUTIONS</div>
@@ -460,6 +578,7 @@
         <div style="font-weight:800; font-size:12.5px;">{{salesContact.name}}</div>
         <div style="font-size:10.5px; color:var(--ink-muted);">{{salesContact.role}}</div>
         <div style="font-size:11px; font-weight:700; margin-top:3px;">{{salesContact.phone}}</div>
+        <div style="font-size:10.5px; font-weight:700; margin-top:2px;">{{salesContact.email}}</div>
       </div>
     </div>
   </div>
@@ -673,9 +792,63 @@
     </tbody>
   </table>
 
-  <div class="callout callout--green">
-    <div class="callout__title">Environmental Impact</div>
-    <div>Over 25 years, this solar system will offset approximately <strong>{{decimal lifetimeCo2OffsetTons 1}} Tons of CO₂ emissions</strong>, which is equivalent to planting approximately <strong>{{treesPlanted}} trees</strong>.</div>
+  <div class="carbon-impact">
+    <div class="callout__title">Carbon Footprint Reduction — Pictorial Impact</div>
+    <div class="carbon-impact__top">
+      <div class="carbon-scene">
+        <div class="carbon-sun"></div>
+        <div class="carbon-scene__caption">
+          <div class="carbon-scene__value">{{decimal carbonImpact.dailyGenerationKWh 1}} kWh/day</div>
+          <div class="carbon-scene__label">{{carbonImpact.capacityKW}} kWp in {{carbonImpact.stateName}}</div>
+        </div>
+        <div class="carbon-array">
+          {{#each carbonImpact.solarTiles}}
+            <span class="carbon-panel {{#if this.active}}is-active{{/if}}"></span>
+          {{/each}}
+        </div>
+        <div class="carbon-array-base"></div>
+      </div>
+
+      <div class="carbon-metrics">
+        <div class="carbon-meter">
+          <div class="carbon-meter__row">
+            <span class="carbon-meter__label">State sunlight input</span>
+            <span class="carbon-meter__value">{{decimal carbonImpact.sunHoursPerDay 1}} sun hrs/day</span>
+          </div>
+          <div class="carbon-track"><div class="carbon-fill" style="{{carbonImpact.sunlightStyle}}"></div></div>
+          <div style="font-size:9.5px; color:var(--ink-muted); margin-top:6px;">{{carbonImpact.sunlightLabel}} · Performance ratio {{carbonImpact.performanceRatioPct}}%</div>
+        </div>
+
+        <div class="carbon-meter">
+          <div class="carbon-meter__row">
+            <span class="carbon-meter__label">Annual CO₂ avoided</span>
+            <span class="carbon-meter__value">{{decimal carbonImpact.co2OffsetTons 1}} tons/year</span>
+          </div>
+          <div class="carbon-track"><div class="carbon-fill" style="{{carbonImpact.annualCarbonStyle}}"></div></div>
+          <div style="font-size:9.5px; color:var(--ink-muted); margin-top:6px;">Based on {{decimal carbonImpact.annualGenerationKWh 0}} kWh/year × {{decimal carbonImpact.gridEmissionFactor 2}} kg CO₂/kWh grid factor</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="carbon-footprint-row">
+      <div class="carbon-tile">
+        <div class="carbon-tile__value">{{decimal carbonImpact.annualGenerationKWh 0}} kWh</div>
+        <div class="carbon-tile__label">Clean energy per year</div>
+      </div>
+      <div class="carbon-tile">
+        <div class="carbon-tile__value">{{decimal carbonImpact.lifetimeCo2OffsetTons 1}} tons</div>
+        <div class="carbon-tile__label">25-year CO₂ offset</div>
+      </div>
+      <div class="carbon-tile">
+        <div class="carbon-tile__value">{{carbonImpact.treesPlanted}} trees</div>
+        <div class="carbon-tile__label">Equivalent plantation</div>
+        <div class="carbon-icon-row">
+          {{#each carbonImpact.treeTiles}}
+            <span class="tree-mark {{#if this.active}}is-active{{/if}}"></span>
+          {{/each}}
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="page-footer">
@@ -872,9 +1045,11 @@
       </div>
 
       {{#if upiQrCode}}
-      <div style="text-align: center; border: 1px solid var(--line); border-radius: 6px; padding: 10px;">
+      <div style="text-align: center; border: 1px solid var(--line); border-radius: 6px; padding: 10px; break-inside: avoid; page-break-inside: avoid;">
         <div style="font-size: 8.5px; font-weight: 700; color: var(--ink-muted); text-transform: uppercase; margin-bottom: 6px;">Scan to Pay via UPI</div>
         <img src="{{upiQrCode}}" style="width:100px; height:100px; object-fit:contain; display:inline-block;" alt="UPI QR" />
+        <div style="font-size: 12px; font-weight: 800; color: var(--navy); margin-top: 6px;">{{inr upiPayment.amount}}</div>
+        <div style="font-size: 8.5px; color: var(--ink-muted); margin-top: 2px;">{{bank.upiId}} · Ref {{proposal.reference}}</div>
       </div>
       {{/if}}
     </div>

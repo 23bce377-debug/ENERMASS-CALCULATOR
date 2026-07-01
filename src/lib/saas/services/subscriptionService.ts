@@ -36,8 +36,7 @@ function hasPaidPayment(subscription: OrgSubscription, payments: SubscriptionPay
   return payments.some(
     (payment) =>
       payment.subscription_id === subscription.id &&
-      payment.payment_status === 'paid' &&
-      (!payment.paid_at || new Date(payment.paid_at).getTime() <= now.getTime())
+      payment.payment_status === 'paid'
   );
 }
 
@@ -51,28 +50,24 @@ function isSubscriptionUsable(
     return false;
   }
 
-  // past_due: still allow access during the grace window
-  if (subscription.status === 'past_due') {
-    return isWithinGracePeriod(subscription.current_period_end, now, graceDays) ||
-      hasPaidPayment(subscription, payments, now);
-  }
+  const hasPaid = hasPaidPayment(subscription, payments, now);
+  if (hasPaid) return true;
+
+  const isCurrentPeriodActive = isAfterNow(subscription.current_period_end, now);
+  const isWithinPeriodGrace = isWithinGracePeriod(subscription.current_period_end, now, graceDays);
 
   if (subscription.status === 'active') {
-    return (
-      isAfterNow(subscription.current_period_end, now) ||
-      isWithinGracePeriod(subscription.current_period_end, now, graceDays) ||
-      hasPaidPayment(subscription, payments, now)
-    );
+    return isCurrentPeriodActive || isWithinPeriodGrace;
   }
 
   if (subscription.status === 'trialing') {
-    return (
-      Boolean(subscription.trial_ends_at || subscription.current_period_end) &&
-      isAfterNow(subscription.trial_ends_at, now) ||
-      isAfterNow(subscription.current_period_end, now) ||
-      isWithinGracePeriod(subscription.current_period_end, now, graceDays) ||
-      hasPaidPayment(subscription, payments, now)
-    );
+    const isTrialActive = isAfterNow(subscription.trial_ends_at, now);
+    const isWithinTrialGrace = isWithinGracePeriod(subscription.trial_ends_at, now, graceDays);
+    return isTrialActive || isCurrentPeriodActive || isWithinPeriodGrace || isWithinTrialGrace;
+  }
+
+  if (subscription.status === 'past_due') {
+    return isWithinPeriodGrace;
   }
 
   return false;

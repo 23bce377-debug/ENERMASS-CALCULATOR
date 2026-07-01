@@ -44,6 +44,7 @@ alter table public.eq_mounting_structures
   add column if not exists source_global_id uuid references public.eq_mounting_structures(id) on delete set null;
 
 alter table public.bom_template_items
+  add column if not exists org_id uuid references public.organisations(id) on delete cascade,
   add column if not exists source_global_id uuid references public.bom_template_items(id) on delete set null,
   add column if not exists is_active boolean not null default true,
   add column if not exists is_custom boolean not null default false,

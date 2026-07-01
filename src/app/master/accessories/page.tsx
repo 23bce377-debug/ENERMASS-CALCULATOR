@@ -29,6 +29,7 @@ import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditMod
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
 import { Select } from '@/components/ui/Select';
+import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
 
 interface BomItem {
   id: string;
@@ -36,9 +37,11 @@ interface BomItem {
   category_id: string;
   sku_code: string;
   description: string;
+  specification_details: string | null;
   notes: string | null;
   unit: string;
   default_rate: number;
+  gst_pct: number | null;
   civil_required_only: boolean;
   is_survey_dependent: boolean;
 }
@@ -70,9 +73,11 @@ export default function AccessoriesMasterPage() {
     category_id: 'electrical_protection' as any,
     sku_code: '',
     description: '',
+    specification_details: '',
     notes: '',
     unit: 'Nos',
     default_rate: 1500,
+    gst_pct: 0.18,
     is_survey_dependent: false,
     civil_required_only: false,
   });
@@ -92,6 +97,7 @@ export default function AccessoriesMasterPage() {
       { value: 'Lump', label: 'Lump Sum' }
     ]},
     { name: 'default_rate', label: 'Cost Rate (₹)', type: 'number' },
+    { name: 'gst_pct', label: 'GST Percentage', type: 'number' },
     { name: 'is_survey_dependent', label: 'Survey Dependent', type: 'select', options: [
       { value: 'true', label: 'Yes' },
       { value: 'false', label: 'No' }
@@ -138,9 +144,11 @@ export default function AccessoriesMasterPage() {
       category_id: sectionOptions.length > 0 ? sectionOptions[0].value : '' as any,
       sku_code: '',
       description: '',
+      specification_details: '',
       notes: '',
       unit: 'Nos',
       default_rate: 1500,
+      gst_pct: 0.18,
       is_survey_dependent: false,
       civil_required_only: false,
     });
@@ -153,9 +161,11 @@ export default function AccessoriesMasterPage() {
       category_id: item.category_id,
       sku_code: item.sku_code,
       description: item.description,
+      specification_details: item.specification_details || item.notes || '',
       notes: item.notes || '',
       unit: item.unit,
       default_rate: item.default_rate,
+      gst_pct: normalizeGstRate(item.gst_pct, 0.18),
       is_survey_dependent: item.is_survey_dependent,
       civil_required_only: item.civil_required_only,
     });
@@ -198,7 +208,12 @@ export default function AccessoriesMasterPage() {
 
   const handleBulkEditSave = async (updates: Record<string, any>) => {
     try {
-      await bulkUpdateMutation.mutateAsync({ ids: selectedIds, updates });
+      await bulkUpdateMutation.mutateAsync({
+        ids: selectedIds,
+        updates: updates.gst_pct !== undefined
+          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, 0.18) }
+          : updates,
+      });
       setSelectedIds([]);
       toast(`Bulk updated ${selectedIds.length} accessory items`, 'success');
     } catch (err: any) {
@@ -213,9 +228,11 @@ export default function AccessoriesMasterPage() {
       Category: i.category_id,
       'SKU Code': i.sku_code,
       Description: i.description,
+      'Specification Details': i.specification_details || i.notes || '',
       Notes: i.notes || '',
       Unit: i.unit,
       'Selling Rate (INR)': i.default_rate,
+      'GST Percentage': gstRateToPercent(i.gst_pct, 0.18),
     }));
     exportToExcel(dataToExport, 'Accessories_Master', 'Accessories');
     toast('Master list exported to Excel', 'success');
@@ -232,9 +249,11 @@ export default function AccessoriesMasterPage() {
         category_id: row.Category || row.category_id || row.Section || row.section || (categories?.[0]?.id ?? 'electrical_protection'),
         sku_code: row['SKU Code'] || row.sku_code || row['Sub Type'] || row.sub_type || 'ACCESSORY',
         description: row.Description || row.description,
+        specification_details: row['Specification Details'] || row.specification_details || row.Specifications || row.specifications || row.Notes || row.notes || row.Remarks || row.remarks || '',
         notes: row.Notes || row.notes || row.Remarks || row.remarks || '',
         unit: row.Unit || row.unit || 'Nos',
         default_rate: parseFloat(row['Selling Rate (INR)'] || row.default_rate || row.rate || 0),
+        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, 0.18),
         is_survey_dependent: false,
         civil_required_only: false,
       })).filter((r) => r.description && !isNaN(r.default_rate));
@@ -382,10 +401,10 @@ export default function AccessoriesMasterPage() {
                     </td>
                     <td className="font-mono text-xs">{item.sku_code}</td>
                     <td className="font-semibold text-text-primary">{item.description}</td>
-                    <td className="text-text-muted italic text-xs">{item.notes || '—'}</td>
+                    <td className="text-text-muted italic text-xs">{item.specification_details || item.notes || '—'}</td>
                     <td>{item.unit}</td>
                     <td className="font-mono font-semibold text-text-primary">{formatINR(item.default_rate)}</td>
-                    <td>-</td>
+                    <td>{gstRateToPercent(item.gst_pct, 0.18).toFixed(2).replace(/\.00$/, '')}%</td>
                     <td>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${item.org_id ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
                         {item.org_id ? 'Org' : 'Global'}
@@ -461,13 +480,13 @@ export default function AccessoriesMasterPage() {
                   />
                 </div>
                 <div className="space-y-1 col-span-2">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Technical Notes</label>
-                  <input
-                    type="text"
-                    value={draft.notes}
-                    onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none"
-                    placeholder="e.g. 10SWG copper wire, 1kg compound rod"
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Quote Specification Details</label>
+                  <textarea
+                    value={draft.specification_details}
+                    onChange={(e) => setDraft({ ...draft, specification_details: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none resize-none"
+                    placeholder="Certifications, IP rating, conductor size, insulation, standards, warranty..."
                   />
                 </div>
                 <div className="space-y-1">
@@ -492,6 +511,16 @@ export default function AccessoriesMasterPage() {
                     value={draft.default_rate}
                     onChange={(e) => setDraft({ ...draft, default_rate: parseFloat(e.target.value) })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">GST Percentage *</label>
+                  <input
+                    type="number" required min={0} step={0.01}
+                    value={gstRateToPercent(draft.gst_pct, 0.18)}
+                    onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, 0.18) })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
+                    placeholder="18"
                   />
                 </div>
                 <div className="space-y-1 col-span-2">

@@ -1,6 +1,27 @@
 import { supabase } from '@/lib/supabase/client';
-import { SurveyORM } from '@/backend/orm/survey';
 import { QuoteORM, QuoteItemORM, QuoteAdditionalCostORM, QuoteVariantORM } from '@/backend/orm/quote';
+
+function roundMoney(value: number) {
+  return Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
+}
+
+function normalizeMarginPct(value: unknown): number {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return 0;
+  return num > 1 ? num / 100 : num;
+}
+
+function deriveMarkupPctFromSavedQuote(quote: Record<string, any>): number {
+  const savedCost = Number(quote.cost_before_gst || 0);
+  const savedMrpExcl = Number(quote.mrp_excl_gst || 0);
+  const savedMargin = savedMrpExcl - savedCost;
+
+  if (savedCost > 0 && Number.isFinite(savedMargin) && savedMargin >= 0) {
+    return savedMargin / savedCost;
+  }
+
+  return normalizeMarginPct(quote.effective_margin_pct);
+}
 
 /**
  * Revise a quote, creating a new version with cloned items and auto-updated BOM
@@ -17,8 +38,17 @@ export async function reviseQuote(
     throw new Error(`Original quote ${originalQuoteId} not found`);
   }
 
-  // Generate new quote_number based on original (e.g. QT-20240101-ABCD-v2)
-  const currentVersion = originalQuote.version || 1;
+  // Generate the next version across the full quote family, not just the
+  // currently opened row. This keeps v2, v3, v4 stable even when revising v2.
+  const rootQuoteId = originalQuote.parent_quote_id || originalQuote.id;
+  const { data: siblingVersions } = await supabase
+    .from('quotes')
+    .select('version')
+    .or(`id.eq.${rootQuoteId},parent_quote_id.eq.${rootQuoteId}`);
+  const currentVersion = Math.max(
+    originalQuote.version || 1,
+    ...(siblingVersions || []).map((row: any) => Number(row.version || 1)),
+  );
   const nextVersion = currentVersion + 1;
   
   // Extract base quote number (remove existing -v suffix if any)
@@ -70,7 +100,7 @@ export async function reviseQuote(
       quote_number: newQuoteNumber,
       status: 'draft',
       version: nextVersion,
-      parent_quote_id: originalQuoteId,
+      parent_quote_id: rootQuoteId,
       version_reason: revisionReason,
       survey_id: surveyId || null,
       updated_at: new Date().toISOString(),
@@ -121,10 +151,15 @@ export async function reviseQuote(
       }
     }
     
-    // Re-calc totals for item
-    itemData.line_subtotal = itemData.qty * itemData.rate_per_unit;
-    itemData.line_gst = itemData.line_subtotal * itemData.gst_pct;
-    itemData.line_total = itemData.line_subtotal + itemData.line_gst;
+    // Keep quote_items field semantics aligned with the DB trigger:
+    // line_total = excl GST, line_gst = tax, line_subtotal = incl GST.
+    const isIncluded = itemData.is_included !== false;
+    const qty = Number(itemData.qty || 0);
+    const rate = Number(itemData.rate_per_unit || 0);
+    const gstPct = Number(itemData.gst_pct || 0);
+    itemData.line_total = isIncluded ? roundMoney(qty * rate) : 0;
+    itemData.line_gst = isIncluded ? roundMoney(itemData.line_total * gstPct) : 0;
+    itemData.line_subtotal = roundMoney(itemData.line_total + itemData.line_gst);
 
     return { ...itemData, quote_id: newQuote.id };
   });
@@ -156,23 +191,36 @@ export async function reviseQuote(
   }
 
   // Recalculate Quote Totals based on updated items
-  const newCostBeforeGst = newItems.reduce((sum: number, item: any) => sum + (item.is_included ? item.line_subtotal : 0), 0);
-  const newTotalInputGst = newItems.reduce((sum: number, item: any) => sum + (item.is_included ? item.line_gst : 0), 0);
-  const newTotalInclGst = newCostBeforeGst + newTotalInputGst;
+  const newCostBeforeGst = roundMoney(newItems.reduce((sum: number, item: any) => sum + (item.is_included !== false ? Number(item.line_total || 0) : 0), 0));
+  const newTotalInputGst = roundMoney(newItems.reduce((sum: number, item: any) => sum + (item.is_included !== false ? Number(item.line_gst || 0) : 0), 0));
+  const newTotalInclGst = roundMoney(newCostBeforeGst + newTotalInputGst);
   
-  const additionalTotal = newCosts.reduce((sum: number, cost: any) => sum + Number(cost.amount), 0);
-  const discountVal = quoteDataToCopy.discount_type === 'percentage' 
-    ? (newCostBeforeGst * (quoteDataToCopy.discount_val / 100))
-    : quoteDataToCopy.discount_val;
+  const additionalTotal = roundMoney(newCosts.reduce((sum: number, cost: any) => sum + Number(cost.amount || 0), 0));
+  const effectiveMarginPct = deriveMarkupPctFromSavedQuote(quoteDataToCopy);
+  const gstOutputRate = Math.max(0, Number(quoteDataToCopy.gst_output_rate || 0));
+  const marginMode = quoteDataToCopy.margin_mode === 'flat' ? 'flat' : 'percent';
+  const targetMarginAmount = Number(quoteDataToCopy.target_margin_amount || 0);
+  const marginAmount = marginMode === 'flat'
+    ? Math.max(0, targetMarginAmount)
+    : roundMoney(newCostBeforeGst * effectiveMarginPct);
+  const mrpExclGst = roundMoney(newCostBeforeGst + marginAmount);
+  const outputGstAmount = roundMoney(mrpExclGst * gstOutputRate);
+  const mrpInclGst = roundMoney(mrpExclGst + outputGstAmount);
 
-  const mrpExclGst = newCostBeforeGst / (1 - (quoteDataToCopy.effective_margin_pct || 0));
-  const marginAmount = mrpExclGst - newCostBeforeGst;
-  const outputGstAmount = mrpExclGst * quoteDataToCopy.gst_output_rate;
-  const mrpInclGst = mrpExclGst + outputGstAmount;
+  const discountType = quoteDataToCopy.discount_type || 'none';
+  const rawDiscountVal = Number(quoteDataToCopy.discount_val || 0);
+  const discountVal = roundMoney(
+    discountType === 'percent'
+      ? mrpInclGst * (Math.min(Math.max(rawDiscountVal, 0), 100) / 100)
+      : discountType === 'flat'
+        ? rawDiscountVal
+        : 0
+  );
 
-  const finalCustomerPrice = mrpInclGst + additionalTotal - discountVal;
-  const perKwInclGst = finalCustomerPrice / (quoteDataToCopy.system_capacity_kw || 1);
-  const perKwExclGst = (mrpExclGst + additionalTotal - discountVal) / (quoteDataToCopy.system_capacity_kw || 1);
+  const finalCustomerPrice = roundMoney(Math.max(0, mrpInclGst + additionalTotal - discountVal));
+  const systemCapacity = Number(quoteDataToCopy.system_capacity_kw || 1) || 1;
+  const perKwInclGst = roundMoney(finalCustomerPrice / systemCapacity);
+  const perKwExclGst = roundMoney((mrpExclGst + additionalTotal - discountVal) / systemCapacity);
 
   // Update new quote with recalculated totals
   await supabase.from('quotes').update({
@@ -186,7 +234,7 @@ export async function reviseQuote(
     final_customer_price: finalCustomerPrice,
     per_kw_incl_gst: perKwInclGst,
     per_kw_excl_gst: perKwExclGst,
-    beneficiary_contribution: Math.max(0, finalCustomerPrice - (quoteDataToCopy.subsidy_amount || 0)),
+    beneficiary_contribution: roundMoney(Math.max(0, finalCustomerPrice - (quoteDataToCopy.subsidy_amount || 0))),
   }).eq('id', newQuote.id);
 
   return newQuote.quote_number;

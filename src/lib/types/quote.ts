@@ -8,6 +8,7 @@
 import type {
   AdditionalCost,
   DiscountType,
+  MarginMode,
   RowOverride,
   CalcResult,
 } from '../engine/calculator';
@@ -50,7 +51,7 @@ export interface SalesInfo {
 }
 
 export interface QuoteStatusEntry {
-  status: 'Draft' | 'Sent' | 'Survey' | 'Revised' | 'Won' | 'Lost';
+  status: 'Draft' | 'Sent' | 'Won' | 'Lost';
   changedAt: string;
 }
 
@@ -99,6 +100,11 @@ export interface Quote {
     batteryBrandId?: string;
     batteryMix?: Array<{ batteryBrandId: string; qty: number }>;
     batteryRate?: number;
+    roundOffToThousand?: boolean;
+    unroundedFinalCustomerPrice?: number;
+    roundOffAdjustment?: number;
+    marginMode?: MarginMode;
+    targetMarginAmount?: number;
   };
 
   // Pricing adjustments
@@ -106,18 +112,21 @@ export interface Quote {
   discountType: DiscountType;
   discountVal: number;
   overrides: Record<number, RowOverride>;
+  marginMode?: MarginMode;
   targetMarginPct?: number;
+  targetMarginAmount?: number;
   customItems?: import('../data/bom').BomItem[];
   disabledItemIndices?: Record<number, boolean>;
   gstOnOutputOverride?: number | null;
   targetMRPInclGST?: number | null;
   targetMRPPerWatt?: number | null;
+  roundOffToThousand?: boolean;
 
   // Frozen calculation snapshot at quote creation
   calculations: CalcResult;
 
   // Lifecycle
-  status: 'Draft' | 'Sent' | 'Survey' | 'Revised' | 'Won' | 'Lost';
+  status: 'Draft' | 'Sent' | 'Won' | 'Lost';
   statusHistory?: QuoteStatusEntry[];
   createdAt: string;
   updatedAt: string;
@@ -137,6 +146,8 @@ export interface Quote {
   ceo_signature_url?: string;
   sales_exec_role?: string;
   sales_exec_phone?: string;
+  sales_exec_email?: string;
+  sales_exec_id?: string;
   bank_account_holder?: string;
   bank_name?: string;
   bank_account_no?: string;

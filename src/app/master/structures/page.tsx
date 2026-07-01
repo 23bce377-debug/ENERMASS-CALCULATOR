@@ -42,6 +42,7 @@ import { HistoryDrawer } from '@/components/master/HistoryDrawer';
 import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditModal';
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
+import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
 
 interface Structure {
   id: string;
@@ -60,6 +61,7 @@ interface Structure {
   per_watt_rate: number | null;
   gst_pct: number;
   description: string | null;
+  specification_details: string | null;
   org_id: string | null;
 }
 
@@ -220,6 +222,7 @@ export default function StructuresMasterPage() {
     per_watt_rate: null as number | null,
     gst_pct: 0.18,
     description: '',
+    specification_details: '',
   });
 
   // Bulk Edit Schema
@@ -234,10 +237,7 @@ export default function StructuresMasterPage() {
     { name: 'raw_material_rate', label: 'Raw Metal cost (₹/kg)', type: 'number' },
     { name: 'fabrication_rate', label: 'Fabrication Cost (₹/kg)', type: 'number' },
     { name: 'galvanizing_rate', label: 'Galvanizing Cost (₹/kg)', type: 'number' },
-    { name: 'gst_pct', label: 'GST Percentage', type: 'select', options: [
-      { value: 0.18, label: '18% Standard' },
-      { value: 0.12, label: '12% Special' }
-    ]},
+    { name: 'gst_pct', label: 'GST Percentage', type: 'number' },
   ];
 
   // ─── Filter & Search Logic ──────────────────────────────────────────────────
@@ -287,6 +287,7 @@ export default function StructuresMasterPage() {
       per_watt_rate: null,
       gst_pct: 0.18,
       description: '',
+      specification_details: '',
     });
     setEditorOpen(true);
   };
@@ -308,6 +309,7 @@ export default function StructuresMasterPage() {
       per_watt_rate: s.per_watt_rate,
       gst_pct: s.gst_pct,
       description: s.description || '',
+      specification_details: s.specification_details || '',
     });
     setEditorOpen(true);
   };
@@ -349,7 +351,12 @@ export default function StructuresMasterPage() {
 
   const handleBulkEditSave = async (updates: Record<string, any>) => {
     try {
-      await bulkUpdateMutation.mutateAsync({ ids: selectedIds, updates });
+      await bulkUpdateMutation.mutateAsync({
+        ids: selectedIds,
+        updates: updates.gst_pct !== undefined
+          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, 0.18) }
+          : updates,
+      });
       setSelectedIds([]);
       toast(`Bulk updated ${selectedIds.length} structure specifications`, 'success');
     } catch (err: any) {
@@ -443,8 +450,9 @@ export default function StructuresMasterPage() {
       'Base Weight (kg)': s.base_weight_kg,
       'Flat Rate (INR)': s.flat_rate || '',
       'Per Watt Rate (INR)': s.per_watt_rate || '',
-      'GST Percentage': s.gst_pct,
+      'GST Percentage': gstRateToPercent(s.gst_pct, 0.18),
       Description: s.description || '',
+      'Specification Details': s.specification_details || '',
     }));
     exportToExcel(dataToExport, 'Structures_Master', 'Structures');
     toast('Master list exported to Excel', 'success');
@@ -470,8 +478,9 @@ export default function StructuresMasterPage() {
         base_weight_kg: parseFloat(row['Base Weight (kg)'] || row.base_weight_kg || 0),
         flat_rate: row['Flat Rate (INR)'] || row.flat_rate ? parseFloat(row['Flat Rate (INR)'] || row.flat_rate) : null,
         per_watt_rate: row['Per Watt Rate (INR)'] || row.per_watt_rate ? parseFloat(row['Per Watt Rate (INR)'] || row.per_watt_rate) : null,
-        gst_pct: parseFloat(row['GST Percentage'] || row.gst_pct || 0.18),
+        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, 0.18),
         description: row.Description || row.description || '',
+        specification_details: row['Specification Details'] || row.specification_details || row.Specifications || row.specifications || row.Description || row.description || '',
       })).filter((r) => r.name && !isNaN(r.raw_material_rate));
 
       if (parsedRows.length === 0) {
@@ -822,16 +831,13 @@ export default function StructuresMasterPage() {
                                                   </td>
                                                   <td className="p-2 text-center text-text-muted text-[10px]">
                                                     {isEditing ? (
-                                                      <Select
-                                                        value={String(compGstDraft)}
-                                                        onChange={(val) => setCompGstDraft(parseFloat(val))}
-                                                        options={[
-                                                          { value: '0.05', label: '5%' },
-                                                          { value: '0.12', label: '12%' },
-                                                          { value: '0.18', label: '18%' }
-                                                        ]}
-                                                        size="sm"
-                                                        className="w-20 text-left bg-background rounded"
+                                                      <input
+                                                        type="number"
+                                                        min={0}
+                                                        step={0.01}
+                                                        value={gstRateToPercent(compGstDraft, 0.18)}
+                                                        onChange={(e) => setCompGstDraft(normalizeGstRate(e.target.value, 0.18))}
+                                                        className="w-20 px-1 py-0.5 border border-border bg-background text-xs font-mono text-right rounded outline-none focus:border-accent/40"
                                                       />
                                                     ) : (
                                                       <span>{(comp.gst_pct * 100).toFixed(0)}%</span>
@@ -861,7 +867,7 @@ export default function StructuresMasterPage() {
                                                         onClick={() => {
                                                           setEditingCompId(comp.id);
                                                           setCompPriceDraft(Number(comp.selling_price));
-                                                          setCompGstDraft(Number(comp.gst_pct));
+                                                          setCompGstDraft(normalizeGstRate(comp.gst_pct, 0.18));
                                                         }}
                                                         className="p-1 rounded bg-surface border border-border text-text-secondary hover:text-accent hover:border-accent/30 cursor-pointer"
                                                         title="Edit Rate"
@@ -1069,16 +1075,26 @@ export default function StructuresMasterPage() {
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
                   />
                 </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">GST Percentage *</label>
+                  <input
+                    type="number" required min={0} step={0.01}
+                    value={gstRateToPercent(draft.gst_pct, 0.18)}
+                    onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, 0.18) })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
+                    placeholder="18"
+                  />
+                </div>
               </div>
               
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Remarks / Technical Specifications</label>
+                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Quote Specification Details</label>
                 <textarea
-                  value={draft.description}
-                  onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-                  rows={2}
+                  value={draft.specification_details}
+                  onChange={(e) => setDraft({ ...draft, specification_details: e.target.value })}
+                  rows={4}
                   className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none resize-none"
-                  placeholder="Wind speed resistance rating, column thickness details..."
+                  placeholder="Material grade, coating/galvanizing, wind speed resistance, thickness, warranty..."
                 />
               </div>
 

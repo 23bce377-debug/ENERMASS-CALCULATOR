@@ -65,7 +65,7 @@ export async function getSeatUsage(orgId: string, deps: SeatServiceDeps = {}): P
   const subscription = await assertActiveSubscription(orgId, deps);
   const orgMemberRepository = deps.orgMemberRepository ?? new OrgMemberRepository();
   const counts = await orgMemberRepository.countBillableSeats(orgId);
-  const usedSeats = counts.active + counts.invited;
+  const usedSeats = counts.active;
 
   return {
     activeSeats: counts.active,
@@ -108,7 +108,7 @@ export async function assertSeatAvailableForActivation(orgId: string, deps: Seat
   // Get the subscription WITHOUT asserting it's active — we just need the seat_limit
   const subscription = await orgSubscriptionRepository.getActiveByOrgId(orgId);
   const counts = await orgMemberRepository.countBillableSeats(orgId);
-  const usedSeats = counts.active + counts.invited;
+  const usedSeats = counts.active;
 
   // No subscription at all → allow only 1 user (first user bootstrapping the org)
   if (!subscription) {

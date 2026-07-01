@@ -70,6 +70,57 @@ function StateSelector() {
 
 import { SystemPresetDropdown } from '@/components/calculator/SystemPresetDropdown';
 
+function RoundPricingToggle() {
+  const roundOffToThousand = useCalculatorStore((s) => s.roundOffToThousand);
+  const setRoundOffToThousand = useCalculatorStore((s) => s.setRoundOffToThousand);
+  const calcResult = useCalculatorStore((s) => s.calcResult);
+
+  return (
+    <div className="rounded-xl border border-border bg-surface p-3.5 hover:border-accent/35 transition-all duration-200">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent/25 bg-accent/10 text-accent">
+            <IndianRupee size={17} />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-text-primary">Round to 1000</div>
+            <div className="text-[10px] text-text-muted">Panel total absorbs adjustment</div>
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={roundOffToThousand}
+          aria-label="Round final pricing to nearest thousand"
+          onClick={() => setRoundOffToThousand(!roundOffToThousand)}
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+            roundOffToThousand ? 'bg-accent' : 'bg-border-light'
+          }`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow transition duration-200 ${
+              roundOffToThousand ? 'translate-x-5' : 'translate-x-0'
+            }`}
+          />
+        </button>
+      </div>
+      {calcResult && (
+        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3">
+          <div>
+            <div className="text-[9px] uppercase tracking-wider text-text-muted">Final Price</div>
+            <div className="font-mono text-xs font-bold text-text-primary">{formatINR(calcResult.finalCustomerPrice)}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[9px] uppercase tracking-wider text-text-muted">Adjustment</div>
+            <div className={`font-mono text-xs font-bold ${calcResult.roundOffAdjustment ? 'text-accent' : 'text-text-muted'}`}>
+              {calcResult.roundOffAdjustment ? formatINR(calcResult.roundOffAdjustment) : 'Off'}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ActionBar({ onSaveQuote, onCreateQuote, hasBlockingErrors }: { onSaveQuote: () => void; onCreateQuote: () => void; hasBlockingErrors?: boolean }) {
   const selectedSystemId = useCalculatorStore((s) => s.selectedSystemId);
@@ -129,7 +180,7 @@ function ActionBar({ onSaveQuote, onCreateQuote, hasBlockingErrors }: { onSaveQu
 
 // ─── Main Page ──────────────────────────────────────────────────────────────────
 
-import { Download, Share2, Save, ChevronDown, Search, MapPin, Settings, Trash2, Edit3, X, Loader2, AlertCircle } from 'lucide-react';
+import { Download, Share2, Save, ChevronDown, Search, MapPin, Settings, Trash2, Edit3, X, Loader2, AlertCircle, IndianRupee } from 'lucide-react';
 
 export default function CalculatorClient({
   initialEquipment,
@@ -148,8 +199,17 @@ export default function CalculatorClient({
   const [isSavePresetOpen, setIsSavePresetOpen] = useState(false);
   const [presetPayload, setPresetPayload] = useState<any>(null);
   const [pendingQuote, setPendingQuote] = useState<Quote | null>(null);
+  const [zeroMarginAckKey, setZeroMarginAckKey] = useState<string | null>(null);
   const { settings } = useSettings();
   const { toast } = useToast();
+  const calcResult = useCalculatorStore((s) => s.calcResult);
+  const marginMode = useCalculatorStore((s) => s.marginMode);
+  const targetMarginPct = useCalculatorStore((s) => s.targetMarginPct);
+  const targetMarginAmount = useCalculatorStore((s) => s.targetMarginAmount);
+  const discountType = useCalculatorStore((s) => s.discountType);
+  const discountVal = useCalculatorStore((s) => s.discountVal);
+  const additionalCosts = useCalculatorStore((s) => s.additionalCosts);
+  const roundOffToThousand = useCalculatorStore((s) => s.roundOffToThousand);
 
   const [initialDraftId, setInitialDraftId] = useState<string | null>(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
@@ -340,7 +400,32 @@ export default function CalculatorClient({
 
   // Removed client-side printing in favor of server-side PDF generation
 
+  const zeroMarginSignature = useMemo(() => {
+    if (!calcResult) return '';
+    return [
+      calcResult.costBeforeGST,
+      calcResult.marginAmount,
+      calcResult.mrpExclGST,
+      marginMode,
+      targetMarginPct ?? '',
+      targetMarginAmount ?? '',
+      discountType,
+      discountVal,
+      additionalCosts.reduce((sum, cost) => sum + Number(cost.amount || 0), 0),
+      roundOffToThousand ? 1 : 0,
+    ].join('|');
+  }, [calcResult, marginMode, targetMarginPct, targetMarginAmount, discountType, discountVal, additionalCosts, roundOffToThousand]);
+
   const handleOpenModal = (intent: 'print' | 'draft') => {
+    if (calcResult && calcResult.marginAmount <= 0 && zeroMarginAckKey !== zeroMarginSignature) {
+      const acknowledged = window.confirm(
+        'This quote has zero or negative margin. Click OK to acknowledge, then click Save Draft or Create Quote PDF again to continue.',
+      );
+      if (acknowledged) {
+        setZeroMarginAckKey(zeroMarginSignature);
+      }
+      return;
+    }
     setModalIntent(intent);
     setIsModalOpen(true);
   };
@@ -474,6 +559,8 @@ export default function CalculatorClient({
             <SystemPresetDropdown onSaveConfig={handleSaveModalOpen} />
             <div className="h-px bg-border/60" />
             <StateSelector />
+            <div className="h-px bg-border/60" />
+            <RoundPricingToggle />
             {((projectType as string) === 'commercial' || (projectType as string) === 'industrial') && (
               <>
                 <div className="h-px bg-border/60" />

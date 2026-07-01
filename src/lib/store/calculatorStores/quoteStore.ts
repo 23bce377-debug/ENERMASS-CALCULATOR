@@ -43,6 +43,8 @@ export const createQuoteSlice: StateCreator<
       ceo_signature_url?: string;
       sales_exec_role?: string;
       sales_exec_phone?: string;
+      sales_exec_email?: string;
+      sales_exec_id?: string | null;
       bank_account_holder?: string;
       bank_name?: string;
       bank_account_no?: string;
@@ -66,6 +68,16 @@ export const createQuoteSlice: StateCreator<
     const { ProfileORM } = await import('../../../backend/orm/profile');
     const profile = await ProfileORM.getById(session.user.id);
     const orgId = profile.org_id;
+    try {
+      const { error: snapshotError } = await (supabase as any).rpc('snapshot_catalog_rates', {
+        p_org_id: orgId,
+      });
+      if (snapshotError) {
+        console.warn('[quoteStore] Catalog rate snapshot skipped:', snapshotError.message || snapshotError);
+      }
+    } catch (err) {
+      console.warn('[quoteStore] Catalog rate snapshot unavailable:', err);
+    }
 
     // Resolve system metadata
     const system = getAllSystemsFromSettings(state.dbLoaded, state.dbSystems).find((s) => s.id === state.selectedSystemId);
@@ -195,6 +207,11 @@ export const createQuoteSlice: StateCreator<
         inverterMix: inverterMixEntries.length > 0 ? inverterMixEntries : undefined,
         batteryBrandId: batteryMixEntries.length === 1 ? batteryMixEntries[0].batteryBrandId : undefined,
         batteryMix: batteryMixEntries.length > 0 ? batteryMixEntries : undefined,
+        roundOffToThousand: state.roundOffToThousand,
+        unroundedFinalCustomerPrice: state.calcResult.unroundedFinalCustomerPrice,
+        roundOffAdjustment: state.calcResult.roundOffAdjustment,
+        marginMode: state.marginMode,
+        targetMarginAmount: state.targetMarginAmount ?? undefined,
       },
 
       additionalCosts: [...state.additionalCosts],
@@ -203,7 +220,10 @@ export const createQuoteSlice: StateCreator<
       overrides: { ...state.overrides },
       customItems: [...state.customItems],
       disabledItemIndices: { ...state.disabledItemIndices },
+      marginMode: state.marginMode,
       targetMarginPct: state.targetMarginPct ?? undefined,
+      targetMarginAmount: state.targetMarginAmount ?? undefined,
+      roundOffToThousand: state.roundOffToThousand,
 
       calculations: { ...state.calcResult },
 
@@ -223,6 +243,8 @@ export const createQuoteSlice: StateCreator<
       ceo_signature_url: info.ceo_signature_url,
       sales_exec_role: info.sales_exec_role,
       sales_exec_phone: info.sales_exec_phone,
+      sales_exec_email: info.sales_exec_email,
+      sales_exec_id: info.sales_exec_id || undefined,
       bank_account_holder: info.bank_account_holder,
       bank_name: info.bank_name,
       bank_account_no: info.bank_account_no,
@@ -260,6 +282,8 @@ export const createQuoteSlice: StateCreator<
       ceo_signature_url: quote.ceo_signature_url || null,
       sales_exec_role: quote.sales_exec_role || null,
       sales_exec_phone: quote.sales_exec_phone || null,
+      sales_exec_email: quote.sales_exec_email || null,
+      exec_id: quote.sales_exec_id || null,
       bank_account_holder: quote.bank_account_holder || null,
       bank_name: quote.bank_name || null,
       bank_account_no: quote.bank_account_no || null,
@@ -333,7 +357,17 @@ export const createQuoteSlice: StateCreator<
       gst_output_override: state.gstOnOutputOverride,
       target_mrp_incl_gst: state.targetMRPInclGST,
       target_mrp_per_watt: state.targetMRPPerWatt,
+      margin_mode: state.marginMode,
+      target_margin_amount: state.targetMarginAmount,
       validation_acknowledged: info.validationAcknowledged ?? [],
+    };
+    const stripMarginColumns = (row: any) => {
+      const { margin_mode, target_margin_amount, ...rest } = row;
+      return rest;
+    };
+    const isMarginSchemaCacheMiss = (error: any) => {
+      const message = error?.message || JSON.stringify(error);
+      return message.includes('margin_mode') || message.includes('target_margin_amount');
     };
 
     if (existingDbId) {
@@ -344,8 +378,20 @@ export const createQuoteSlice: StateCreator<
         .eq('id', existingDbId)
         .eq('version', versionToUse)
         .select();
-      if (updateError) throw new Error(updateError.message || JSON.stringify(updateError));
-      if (!updatedRows || updatedRows.length === 0) {
+      let finalUpdatedRows = updatedRows;
+      if (updateError && isMarginSchemaCacheMiss(updateError)) {
+        const { data: fallbackRows, error: fallbackError } = await supabase
+          .from('quotes')
+          .update(stripMarginColumns(dbQuoteData))
+          .eq('id', existingDbId)
+          .eq('version', versionToUse)
+          .select();
+        if (fallbackError) throw new Error(fallbackError.message || JSON.stringify(fallbackError));
+        finalUpdatedRows = fallbackRows;
+      } else if (updateError) {
+        throw new Error(updateError.message || JSON.stringify(updateError));
+      }
+      if (!finalUpdatedRows || finalUpdatedRows.length === 0) {
         throw new Error('CONCURRENCY_CONFLICT');
       }
     } else {
@@ -355,8 +401,18 @@ export const createQuoteSlice: StateCreator<
         .insert(dbQuoteData)
         .select('id')
         .single();
-      if (insertError) throw new Error(insertError.message || JSON.stringify(insertError));
-      existingDbId = newQuote.id;
+      if (insertError && isMarginSchemaCacheMiss(insertError)) {
+        const { data: fallbackQuote, error: fallbackInsertError } = await supabase
+          .from('quotes')
+          .insert(stripMarginColumns(dbQuoteData))
+          .select('id')
+          .single();
+        if (fallbackInsertError) throw new Error(fallbackInsertError.message || JSON.stringify(fallbackInsertError));
+        existingDbId = fallbackQuote.id;
+      } else {
+        if (insertError) throw new Error(insertError.message || JSON.stringify(insertError));
+        existingDbId = newQuote.id;
+      }
     }
 
     // Delete old items & costs
@@ -365,9 +421,14 @@ export const createQuoteSlice: StateCreator<
       supabase.from('quote_additional_costs').delete().eq('quote_id', existingDbId),
     ]);
 
-    // Insert new items
-    const dbItems = quote.calculations.lines.map((line: any) => ({
-      org_id: orgId,
+    // Insert customer-quoted items. Base/procurement rates are retained in original_* fields.
+    const baseLineByIndex = new Map((quote.calculations.lines ?? []).map((line: any) => [line.index, line]));
+    const lockedLines = quote.calculations.quotedLines?.length
+      ? quote.calculations.quotedLines
+      : quote.calculations.lines;
+    const dbItems = lockedLines.map((line: any) => {
+      const originalLine: any = baseLineByIndex.get(line.index) ?? line;
+      return {
       quote_id: existingDbId,
       sort_order: line.index,
       section: (
@@ -387,6 +448,9 @@ export const createQuoteSlice: StateCreator<
       qty: line.effectiveQty,
       rate_per_unit: line.effectiveRate,
       gst_pct: line.effectiveGstPct,
+      original_qty: originalLine.effectiveQty,
+      original_rate: originalLine.effectiveRate,
+      original_gst: originalLine.effectiveGstPct,
       is_qty_overridden: state.overrides[line.index]?.qty !== undefined,
       is_rate_overridden: state.overrides[line.index]?.ratePerUnit !== undefined,
       is_gst_overridden: state.overrides[line.index]?.gstPct !== undefined,
@@ -395,11 +459,45 @@ export const createQuoteSlice: StateCreator<
       line_total: line.lineTotal,
       line_gst: line.lineGST,
       line_subtotal: line.lineSubTotal,
-    }));
+      source_table: line.sourceTable || null,
+      source_item_id: line.sourceItemId || null,
+      source_label: line.sourceLabel || null,
+      quoted_rate_date: quote.date,
+    };
+    });
 
     if (dbItems.length > 0) {
       const { error: itemsError } = await supabase.from('quote_items').insert(dbItems);
-      if (itemsError) throw new Error(itemsError.message || JSON.stringify(itemsError));
+      if (itemsError) {
+        const message = itemsError.message || JSON.stringify(itemsError);
+        if (
+          message.includes('source_table') ||
+          message.includes('source_item_id') ||
+          message.includes('source_label') ||
+          message.includes('quoted_rate_date') ||
+          message.includes('original_qty') ||
+          message.includes('original_rate') ||
+          message.includes('original_gst')
+        ) {
+          const legacyItems = dbItems.map((item: any) => {
+            const {
+              source_table,
+              source_item_id,
+              source_label,
+              quoted_rate_date,
+              original_qty,
+              original_rate,
+              original_gst,
+              ...legacyItem
+            } = item;
+            return legacyItem;
+          });
+          const { error: legacyItemsError } = await supabase.from('quote_items').insert(legacyItems);
+          if (legacyItemsError) throw new Error(legacyItemsError.message || JSON.stringify(legacyItemsError));
+        } else {
+          throw new Error(message);
+        }
+      }
     }
 
     // Insert new costs
@@ -463,13 +561,23 @@ export const createQuoteSlice: StateCreator<
       (quote.equipment.batteryMix ?? (quote.equipment.batteryBrandId ? [{ batteryBrandId: quote.equipment.batteryBrandId, qty: 1 }] : []))
         .map((entry) => [entry.batteryBrandId, entry.qty]),
     );
+    const lockedLineOverrides = Object.fromEntries(
+      (quote.calculations?.lines ?? []).map((line: any) => [
+        line.index,
+        {
+          qty: Number(line.effectiveQty),
+          ratePerUnit: Number(line.effectiveRate),
+          gstPct: Number(line.effectiveGstPct),
+        },
+      ]),
+    );
 
     set({
       selectedSystemId: quote.systemId,
       selectedState: quote.selectedState,
       projectType: quote.projectType,
       targetMarginPct: quote.targetMarginPct ?? null,
-      overrides: { ...quote.overrides },
+      overrides: { ...lockedLineOverrides, ...quote.overrides },
       customItems: [...(quote.customItems ?? [])],
       disabledItemIndices: { ...(quote.disabledItemIndices ?? {}) },
       additionalCosts: [...quote.additionalCosts],
@@ -495,6 +603,9 @@ export const createQuoteSlice: StateCreator<
       gstOnOutputOverride: (quote as any).gstOnOutputOverride ?? null,
       targetMRPInclGST: (quote as any).targetMRPInclGST ?? null,
       targetMRPPerWatt: (quote as any).targetMRPPerWatt ?? null,
+      marginMode: (quote as any).marginMode ?? quote.equipment?.marginMode ?? 'percent',
+      targetMarginAmount: (quote as any).targetMarginAmount ?? quote.equipment?.targetMarginAmount ?? null,
+      roundOffToThousand: quote.roundOffToThousand ?? quote.equipment?.roundOffToThousand ?? false,
     });
     get().recalculate();
   },

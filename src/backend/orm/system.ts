@@ -9,6 +9,12 @@ export type SystemItemRow = Database['public']['Tables']['system_items']['Row'];
 export type SystemItemInsert = Database['public']['Tables']['system_items']['Insert'];
 export type SystemItemUpdate = Database['public']['Tables']['system_items']['Update'];
 
+function normalizeMarginPct(value: unknown, fallback = 0.2): number {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return fallback;
+  return num > 1 ? num / 100 : num;
+}
+
 export const SystemORM = {
   async getAll(orgId?: string) {
     const query = supabase.from('systems').select('*');
@@ -138,7 +144,7 @@ export const SystemItemORM = {
         name: metadata.name,
         capacity_kw: metadata.capacity_kw,
         category: (metadata.category || 'on_grid') as any,
-        target_margin_pct: metadata.target_margin_pct || 20,
+        target_margin_pct: normalizeMarginPct(metadata.target_margin_pct),
         updated_at: new Date().toISOString()
       }).eq('id', existingSystemId);
       if (sysErr) throw sysErr;
@@ -152,7 +158,7 @@ export const SystemItemORM = {
         name: metadata.name,
         capacity_kw: metadata.capacity_kw,
         category: (metadata.category || 'on_grid') as any,
-        target_margin_pct: metadata.target_margin_pct || 20,
+        target_margin_pct: normalizeMarginPct(metadata.target_margin_pct),
         is_active: true,
         is_custom: metadata.is_custom ?? true
       }).select().maybeSingle();

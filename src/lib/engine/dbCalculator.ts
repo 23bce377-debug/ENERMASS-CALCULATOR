@@ -16,6 +16,12 @@ function getUuid(namespace: string, key: string): string {
   ].join('-');
 }
 
+function normalizeMarginPct(value: unknown, fallback = 0.2): number {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return fallback;
+  return num > 1 ? num / 100 : num;
+}
+
 export interface EquipmentSelection {
   panelId?: string;
   inverterId?: string;
@@ -274,8 +280,8 @@ export async function calculateSystemFromDb(
   
   // Resolve Target Margin using precedence: Org Override (via resolveEffectiveMargin) -> Global Default
   const inputMargin = input.pricingContext?.targetMarginPct !== undefined
-    ? Number(input.pricingContext.targetMarginPct)
-    : Number(system.target_margin_pct);
+    ? normalizeMarginPct(input.pricingContext.targetMarginPct)
+    : normalizeMarginPct(system.target_margin_pct);
 
   const resolvedMargin = resolveEffectiveMargin(
     system.category,
@@ -284,11 +290,15 @@ export async function calculateSystemFromDb(
   );
   const targetMarginPct = resolvedMargin.marginPct;
 
-  const gstOnOutput = Number(stateRule.gst_on_output);
+  const gstOnOutput = projectType === 'commercial'
+    ? TAX_CONSTANTS.COMMERCIAL_GST_RATE
+    : Number(stateRule.gst_on_output);
 
   // Load schemes and slabs from cached masterData
   let slabs: any[] = [];
   let maxCapacity = undefined;
+  let maxAbsoluteSubsidy = undefined;
+  let additionalStateSubsidy = undefined;
   let schemeName = undefined;
 
   if (projectType === 'residential') {
@@ -297,9 +307,15 @@ export async function calculateSystemFromDb(
       schemeName = scheme.name;
 
       const override = masterData.schemeOverrides.find(o => o.scheme_id === scheme.id && o.state_id === stateRule.id);
-      maxCapacity = override && override.max_absolute_override !== null
+      maxCapacity = Number(scheme.max_capacity_kw);
+
+      maxAbsoluteSubsidy = override && override.max_absolute_override !== null
         ? Number(override.max_absolute_override)
-        : Number(scheme.max_capacity_kw);
+        : Number(scheme.max_absolute_subsidy);
+
+      additionalStateSubsidy = override
+        ? Number(override.additional_state_subsidy)
+        : 0;
 
       slabs = masterData.slabs
         .filter(s => s.scheme_id === scheme.id)
@@ -353,7 +369,7 @@ export async function calculateSystemFromDb(
     capacityKW: capacity,
     panelWattage: system.panel_wattage_w,
     panelQty: system.panel_qty,
-    targetMarginPct: Number(system.target_margin_pct),
+    targetMarginPct: normalizeMarginPct(system.target_margin_pct),
     items: systemItems
   };
 
@@ -390,6 +406,8 @@ export async function calculateSystemFromDb(
     stateData,
     slabs,
     maxSubsidyCapacityKW: maxCapacity,
+    maxAbsoluteSubsidy,
+    additionalStateSubsidy,
     
     selectedPanelId,
     panelMix,
@@ -573,8 +591,8 @@ export async function calculateSystemFromDb(
       discountAmount: calcResult.discountAmount
     },
     gst: {
-      gstOnOutput,
-      outputGstAmount: calcResult.mrpExclGST * gstOnOutput
+      gstOnOutput: calcResult.gstOutputRate,
+      outputGstAmount: Math.round((calcResult.mrpInclGST - calcResult.mrpExclGST) * 100) / 100
     },
     subsidy: {
       schemeName,

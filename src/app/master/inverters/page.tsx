@@ -29,6 +29,7 @@ import { HistoryDrawer } from '@/components/master/HistoryDrawer';
 import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditModal';
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
+import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
 
 interface Inverter {
   id: string;
@@ -40,6 +41,7 @@ interface Inverter {
   rate: number;
   gst_pct: number;
   description: string | null;
+  specification_details: string | null;
   org_id: string | null;
 }
 
@@ -75,6 +77,7 @@ export default function InvertersMasterPage() {
     rate: 35000,
     gst_pct: 0.12,
     description: '',
+    specification_details: '',
   });
 
   // Bulk Edit Schema
@@ -91,10 +94,7 @@ export default function InvertersMasterPage() {
       { value: 3, label: '3 Phase' }
     ]},
     { name: 'rate', label: 'Base Rate (₹)', type: 'number' },
-    { name: 'gst_pct', label: 'GST Percentage', type: 'select', options: [
-      { value: 0.12, label: '12%' },
-      { value: 0.18, label: '18%' }
-    ]},
+    { name: 'gst_pct', label: 'GST Percentage', type: 'number' },
   ];
 
   // ─── Filter & Search Logic ──────────────────────────────────────────────────
@@ -153,6 +153,7 @@ export default function InvertersMasterPage() {
       rate: 35000,
       gst_pct: 0.12,
       description: '',
+      specification_details: '',
     });
     setEditorOpen(true);
   };
@@ -168,6 +169,7 @@ export default function InvertersMasterPage() {
       rate: inverter.rate,
       gst_pct: inverter.gst_pct,
       description: inverter.description || '',
+      specification_details: inverter.specification_details || '',
     });
     setEditorOpen(true);
   };
@@ -208,7 +210,12 @@ export default function InvertersMasterPage() {
 
   const handleBulkEditSave = async (updates: Record<string, any>) => {
     try {
-      await bulkUpdateMutation.mutateAsync({ ids: selectedIds, updates });
+      await bulkUpdateMutation.mutateAsync({
+        ids: selectedIds,
+        updates: updates.gst_pct !== undefined
+          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, 0.12) }
+          : updates,
+      });
       setSelectedIds([]);
       toast(`Bulk updated ${selectedIds.length} rows successfully`, 'success');
     } catch (err: any) {
@@ -226,8 +233,9 @@ export default function InvertersMasterPage() {
       'Inverter Type': i.inverter_type,
       Phases: i.phases,
       'Selling Rate (INR)': i.rate,
-      'GST Percentage': i.gst_pct,
+      'GST Percentage': gstRateToPercent(i.gst_pct, 0.12),
       Description: i.description || '',
+      'Specification Details': i.specification_details || '',
     }));
     exportToExcel(dataToExport, 'Inverters_Master', 'Inverters');
     toast('Master list exported to Excel', 'success');
@@ -247,8 +255,9 @@ export default function InvertersMasterPage() {
         inverter_type: row['Inverter Type'] || row.inverter_type || 'on_grid',
         phases: parseInt(row.Phases || row.phases || 1, 10),
         rate: parseFloat(row['Selling Rate (INR)'] || row.rate || 0),
-        gst_pct: parseFloat(row['GST Percentage'] || row.gst_pct || 0.12),
+        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, 0.12),
         description: row.Description || row.description || '',
+        specification_details: row['Specification Details'] || row.specification_details || row.Specifications || row.specifications || row.Description || row.description || '',
       })).filter((r) => r.brand && r.model && !isNaN(r.capacity_kw) && !isNaN(r.rate));
 
       if (parsedRows.length === 0) {
@@ -525,27 +534,25 @@ export default function InvertersMasterPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Standard GST Slabs *</label>
-                  <Select
-                    value={String(draft.gst_pct)}
-                    onChange={(val) => setDraft({ ...draft, gst_pct: parseFloat(val) })}
-                    options={[
-                      { value: '0.12', label: '12% GST (Default Inverters)' },
-                      { value: '0.18', label: '18% GST (Alternative / Accessories)' }
-                    ]}
-                    className="w-full"
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">GST Percentage *</label>
+                  <input
+                    type="number" required min={0} step={0.01}
+                    value={gstRateToPercent(draft.gst_pct, 0.12)}
+                    onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, 0.12) })}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
+                    placeholder="18"
                   />
                 </div>
               </div>
               
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Remarks / Technical Specifications</label>
+                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Quote Specification Details</label>
                 <textarea
-                  value={draft.description}
-                  onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-                  rows={3}
+                  value={draft.specification_details}
+                  onChange={(e) => setDraft({ ...draft, specification_details: e.target.value })}
+                  rows={4}
                   className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none resize-none"
-                  placeholder="Warranty terms, maximum input voltage, MPPT channels..."
+                  placeholder="Efficiency, THD, MPPT channels, protection class, warranty terms..."
                 />
               </div>
 
