@@ -12,11 +12,29 @@ function normalizeMarginPct(value: unknown, fallback = 0.2): number {
   return num > 1 ? num / 100 : num;
 }
 
+function normalizeSystemCategory(value: unknown) {
+  const normalized = String(value ?? 'on-grid').replace(/_/g, '-').toLowerCase();
+  if (normalized === '3-phase') return '3_phase';
+  if (normalized === 'micro' || normalized === 'micro-inverter') return 'micro_inverter';
+  if (normalized === 'hybrid') return 'hybrid';
+  if (normalized === 'upgrade') return 'upgrade';
+  if (normalized === 'commercial') return 'commercial';
+  return 'on_grid';
+}
+
 export function SavePresetModal({ isOpen, onClose, statePayload }: { isOpen: boolean; onClose: () => void; statePayload: any }) {
   const [name, setName] = useState('');
   const [capacity, setCapacity] = useState('5');
-  const [type, setType] = useState<'residential' | 'commercial' | 'industrial'>('residential');
+  const [type, setType] = useState('on_grid');
+  const [stateId, setStateId] = useState('');
   const [loading, setLoading] = useState(false);
+  const stateOptions = Object.entries(statePayload?.dbStateData ?? {})
+    .map(([stateName, stateData]: [string, any]) => ({
+      value: stateData?.id ?? '',
+      label: stateName,
+    }))
+    .filter((option) => option.value)
+    .sort((a, b) => a.label.localeCompare(b.label));
   
   // Is this an existing DB Master System? (i.e. not starting with custom_)
   const isMasterPreset = statePayload?.selectedSystemId && !statePayload.selectedSystemId.startsWith('custom_') && !statePayload.selectedSystemId.startsWith('template_');
@@ -24,14 +42,17 @@ export function SavePresetModal({ isOpen, onClose, statePayload }: { isOpen: boo
 
   const handleSave = async () => {
     if (!name.trim() && !overwriteMaster) return alert('Please enter a preset name');
+    if (!stateId) return alert('Please select a state for this preset');
     setLoading(true);
     try {
       const lines = statePayload?.calcResult?.lines || [];
+      const existingSystem = statePayload.dbSystems?.find((s: any) => s.id === statePayload.selectedSystemId);
       
       const metadata = {
-        name: overwriteMaster ? statePayload.dbSystems?.find((s: any) => s.id === statePayload.selectedSystemId)?.name || name : name,
-        capacity_kw: overwriteMaster ? statePayload.dbSystems?.find((s: any) => s.id === statePayload.selectedSystemId)?.capacityKW || Number(capacity) : Number(capacity),
-        category: type,
+        name: overwriteMaster ? existingSystem?.name || name : name,
+        capacity_kw: overwriteMaster ? existingSystem?.capacityKW || Number(capacity) : Number(capacity),
+        category: normalizeSystemCategory(overwriteMaster ? existingSystem?.category : type),
+        state_id: stateId,
         target_margin_pct: normalizeMarginPct(statePayload.targetMarginPct),
         is_custom: !overwriteMaster, // true if creating a new custom system, false if overwriting master (but overwriting master doesn't change is_custom)
       };
@@ -61,6 +82,14 @@ export function SavePresetModal({ isOpen, onClose, statePayload }: { isOpen: boo
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      const existingSystem = statePayload?.dbSystems?.find((s: any) => s.id === statePayload.selectedSystemId);
+      setType(normalizeSystemCategory(existingSystem?.category));
+      setStateId(
+        existingSystem?.stateId
+        ?? statePayload?.dbStateData?.[statePayload?.selectedState]?.id
+        ?? stateOptions[0]?.value
+        ?? ''
+      );
     } else {
       document.body.style.overflow = '';
     }
@@ -113,16 +142,29 @@ export function SavePresetModal({ isOpen, onClose, statePayload }: { isOpen: boo
               <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Category</label>
               <Select 
                 value={type} 
-                onChange={val => setType(val as any)}
+                onChange={val => setType(val)}
                 disabled={overwriteMaster}
                 options={[
-                  { value: 'residential', label: 'Residential' },
+                  { value: 'on_grid', label: 'On-Grid' },
+                  { value: '3_phase', label: '3-Phase' },
+                  { value: 'micro_inverter', label: 'Micro-Inverter' },
+                  { value: 'hybrid', label: 'Hybrid' },
+                  { value: 'upgrade', label: 'Upgrade' },
                   { value: 'commercial', label: 'Commercial' },
-                  { value: 'industrial', label: 'Industrial' }
                 ]}
                 className="w-full"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Preset State</label>
+            <Select
+              value={stateId}
+              onChange={setStateId}
+              options={stateOptions}
+              className="w-full"
+            />
           </div>
           
           {isMasterPreset && (

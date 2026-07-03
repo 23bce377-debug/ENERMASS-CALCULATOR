@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, ChevronDown, Plus, Save, Edit3, Settings, Zap } from 'lucide-react';
+import { Search, ChevronDown, Plus, Save, Edit3, Zap, MapPin, Globe2 } from 'lucide-react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { SolarSystem } from '@/lib/data/bom';
 import { PresetComposerDrawer } from './PresetComposerDrawer';
@@ -21,6 +21,7 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [showAllStates, setShowAllStates] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerSystemId, setComposerSystemId] = useState<string | null>(null);
 
@@ -47,6 +48,7 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
   // mapping) or explicitly mapped to that state. This keeps the list relevant and
   // is fully data-driven — assigning a preset to states needs no code change.
   const isVisibleForState = (systemId: string) => {
+    if (showAllStates) return true;
     const states = dbSystemStateMap[systemId];
     if (!states || states.length === 0) return true; // global preset
     return !selectedState || states.includes(selectedState);
@@ -60,7 +62,7 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
       return true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [systems, filterType, searchQuery, selectedState, dbSystemStateMap]);
+  }, [systems, filterType, searchQuery, selectedState, dbSystemStateMap, showAllStates]);
 
   const recentSystems = useMemo(() => {
     return filteredSystems.slice(0, 5); // Recently used, scoped to the selected state
@@ -69,8 +71,11 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
   const categories = [
     { id: 'all', label: 'All' },
     { id: 'on-grid', label: 'On-Grid' },
-    { id: 'off-grid', label: 'Off-Grid' },
-    { id: 'hybrid', label: 'Hybrid' }
+    { id: '3-phase', label: '3-Phase' },
+    { id: 'micro-inverter', label: 'Micro' },
+    { id: 'hybrid', label: 'Hybrid' },
+    { id: 'commercial', label: 'Commercial' },
+    { id: 'upgrade', label: 'Upgrade' },
   ];
 
   const handleEditClick = (e: React.MouseEvent, id: string) => {
@@ -142,19 +147,40 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
             </div>
 
             {/* Quick Filters */}
-            <div className="px-3 py-2 border-b border-border flex items-center gap-2 overflow-x-auto no-scrollbar">
-              {categories.map((cat) => (
+            <div className="border-b border-border">
+              <div className="px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setFilterType(cat.id)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors
+                      ${filterType === cat.id
+                        ? 'bg-accent text-background'
+                        : 'bg-surface-hover text-text-muted hover:text-text-primary'}`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+              <div className="px-3 pb-3">
                 <button
-                  key={cat.id}
-                  onClick={() => setFilterType(cat.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors
-                    ${filterType === cat.id 
-                      ? 'bg-accent text-background' 
-                      : 'bg-surface-hover text-text-muted hover:text-text-primary'}`}
+                  type="button"
+                  onClick={() => setShowAllStates((value) => !value)}
+                  className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                    showAllStates
+                      ? 'border-accent/40 bg-accent/10 text-accent'
+                      : 'border-border bg-background text-text-secondary hover:border-border-light'
+                  }`}
                 >
-                  {cat.label}
+                  <span className="flex items-center gap-2">
+                    {showAllStates ? <Globe2 size={14} /> : <MapPin size={14} />}
+                    {showAllStates ? 'Showing presets from all states' : `Showing presets for ${selectedState || 'selected state'}`}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-wider">
+                    {showAllStates ? 'All states' : 'State-wise'}
+                  </span>
                 </button>
-              ))}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto min-h-0">
@@ -162,7 +188,7 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
               {filterType === 'all' && !searchQuery && recentSystems.length > 0 && (
                 <div className="py-2">
                   <div className="px-4 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider">
-                    Recently Used
+                    Recently Used {showAllStates ? '(All States)' : selectedState ? `(${selectedState})` : ''}
                   </div>
                   {recentSystems.map(sys => (
                     <div
@@ -172,7 +198,12 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
                       onClick={() => { selectSystem(sys.id); setIsOpen(false); }}
                       className="group w-full flex items-center justify-between px-4 py-2 hover:bg-surface-hover cursor-pointer"
                     >
-                      <span className="text-sm font-medium text-text-primary truncate">{sys.name}</span>
+                      <div className="flex min-w-0 flex-col">
+                        <span className="text-sm font-medium text-text-primary truncate">{sys.name}</span>
+                        <span className="text-[10px] text-text-muted uppercase">
+                          {sys.stateName || 'State not assigned'} · {sys.capacityKW} kW
+                        </span>
+                      </div>
                       <button 
                         onClick={(e) => handleEditClick(e, sys.id)}
                         className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-surface-active rounded-md transition-all"
@@ -188,7 +219,7 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
               {/* Grouped List */}
               <div className="py-2">
                 <div className="px-4 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider">
-                  All Presets
+                  {showAllStates ? 'All State Presets' : selectedState ? `${selectedState} Presets` : 'All Presets'}
                 </div>
                 {filteredSystems.length === 0 ? (
                   <div className="px-4 py-6 text-center text-sm text-text-muted">No presets found.</div>
@@ -205,7 +236,9 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
                         <span className={`text-sm truncate font-medium ${selectedSystemId === sys.id ? 'text-accent' : 'text-text-primary'}`}>
                           {sys.name}
                         </span>
-                        <span className="text-[10px] text-text-muted uppercase">{sys.category} · {sys.capacityKW} kW</span>
+                        <span className="text-[10px] text-text-muted uppercase">
+                          {sys.category} · {sys.capacityKW} kW · {sys.stateName || 'State not assigned'}
+                        </span>
                       </div>
                       <button 
                         onClick={(e) => handleEditClick(e, sys.id)}

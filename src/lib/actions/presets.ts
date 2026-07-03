@@ -120,6 +120,12 @@ function normalizeMarginPct(value: unknown, fallback = 0.2): number {
   return num > 1 ? num / 100 : num;
 }
 
+function normalizeSystemType(value: string | null | undefined) {
+  const normalized = String(value ?? 'on_grid').replace(/-/g, '_');
+  const valid = new Set(['on_grid', '3_phase', 'micro_inverter', 'hybrid', 'upgrade', 'commercial']);
+  return valid.has(normalized) ? normalized : 'on_grid';
+}
+
 function categoryFromCatalogName(name: string | null | undefined, fallback: string) {
   const normalizedName = normalizeCatalogName(name ?? '');
   const normalizedFallback = canonicalPresetCategory(fallback);
@@ -392,28 +398,89 @@ export async function savePresetWithComponents(
     orgId = profile?.org_id ?? null;
   }
 
-  const inverterIds = updates.lineItems
-    .filter((item) => item.category === 'inverter' && item.catalogItemId)
-    .map((item) => item.catalogItemId as string);
+  if (!user?.id) throw new Error('Unauthorized. Please sign in again before saving presets.');
+  if (!orgId) throw new Error('Organisation context not found. Please reload and try again.');
 
-  if (inverterIds.length > 0) {
-    const { data: selectedInverters, error: inverterError } = await supabase
-      .from('eq_inverters' as any)
-      .select('id, brand, model, is_active')
-      .in('id', inverterIds);
+  const systemType = normalizeSystemType(updates.systemType);
+  if (!updates.stateId) {
+    throw new Error('Please select a state before saving this preset.');
+  }
 
-    if (inverterError) throw new Error('Failed to validate preset inverters: ' + inverterError.message);
+  async function validateCatalogReferences(lineItems: LineItem[]) {
+    const checks = new Map<string, Map<string, string[]>>();
+    const addCheck = (table: string, id: string, description: string) => {
+      if (!checks.has(table)) checks.set(table, new Map());
+      const entries = checks.get(table)!;
+      entries.set(id, [...(entries.get(id) ?? []), description]);
+    };
 
-    const realActiveIds = new Set(
-      (selectedInverters || [])
-        .filter((item: any) => item.is_active !== false && !isPlaceholderEquipment(item))
-        .map((item: any) => item.id),
-    );
-    const invalidCount = inverterIds.filter((id) => !realActiveIds.has(id)).length;
-    if (invalidCount > 0) {
-      throw new Error('Preset contains an inactive or placeholder inverter. Please select a real inverter from masters.');
+    for (const item of lineItems) {
+      if (!item.catalogItemId || item.catalogType === 'custom') continue;
+      const itemCategory = canonicalPresetCategory(item.category);
+      const description = item.description || item.skuCode || item.catalogItemId;
+      const text = `${item.description ?? ''} ${item.brand ?? ''} ${item.model ?? ''}`.toLowerCase();
+
+      if (itemCategory === 'panel') addCheck('eq_panels', item.catalogItemId, description);
+      else if (itemCategory === 'inverter') addCheck('eq_inverters', item.catalogItemId, description);
+      else if (itemCategory === 'battery') addCheck('eq_batteries', item.catalogItemId, description);
+      else if (itemCategory === 'structure' && item.catalogType === 'eq_structure') addCheck('eq_mounting_structures', item.catalogItemId, description);
+      else if (itemCategory === 'structure' && item.catalogType === 'structure_component') addCheck('structure_component_master', item.catalogItemId, description);
+      else if (item.catalogType === 'bom_template') addCheck('bom_template_items', item.catalogItemId, description);
+      else if ((itemCategory === 'dc_protection' || itemCategory === 'ac_protection') && item.catalogType === 'equipment' && text.includes('lightning')) addCheck('eq_lightning_arresters', item.catalogItemId, description);
+      else if (itemCategory === 'accessory' && item.catalogType === 'equipment' && (text.includes('solar') || text.includes('net'))) addCheck('eq_meters', item.catalogItemId, description);
+      else if (itemCategory === 'accessory' && item.catalogType === 'equipment' && (text.includes('comm') || text.includes('dtu') || text.includes('dongle') || text.includes('logger'))) addCheck('eq_communication_devices', item.catalogItemId, description);
+    }
+
+    const selectByTable: Record<string, string> = {
+      eq_panels: 'id, brand, model, is_active',
+      eq_inverters: 'id, brand, model, is_active',
+      eq_batteries: 'id, brand, model, is_active',
+      eq_mounting_structures: 'id, name, is_active',
+      eq_lightning_arresters: 'id, brand, model, is_active',
+      eq_meters: 'id, brand, model, is_active',
+      eq_communication_devices: 'id, brand, model, is_active',
+      structure_component_master: 'id, name',
+      bom_template_items: 'id, sku_code, description, is_active',
+    };
+    const labelByTable: Record<string, string> = {
+      eq_panels: 'panel',
+      eq_inverters: 'inverter',
+      eq_batteries: 'battery',
+      eq_mounting_structures: 'mounting structure',
+      eq_lightning_arresters: 'lightning arrester',
+      eq_meters: 'meter',
+      eq_communication_devices: 'communication device',
+      structure_component_master: 'structure component',
+      bom_template_items: 'BOM item',
+    };
+
+    for (const [table, entries] of checks.entries()) {
+      const ids = Array.from(entries.keys());
+      if (ids.length === 0) continue;
+      const { data, error } = await supabase
+        .from(table as any)
+        .select(selectByTable[table] ?? 'id')
+        .in('id', ids);
+      if (error) throw new Error(`Failed to validate ${labelByTable[table] ?? table} references: ${error.message}`);
+
+      const rows = (data || []) as any[];
+      const foundIds = new Set(rows.map((row: any) => row.id));
+      const missing = ids.filter((id) => !foundIds.has(id));
+      if (missing.length > 0) {
+        const names = missing.flatMap((id) => entries.get(id) ?? []).slice(0, 3).join(', ');
+        throw new Error(`Preset contains missing ${labelByTable[table] ?? table} reference(s): ${names}. Please reselect from the catalog.`);
+      }
+
+      if (table === 'eq_inverters') {
+        const invalidInverters = rows.filter((row: any) => row.is_active === false || isPlaceholderEquipment(row));
+        if (invalidInverters.length > 0) {
+          throw new Error('Preset contains an inactive or placeholder inverter. Please select a real inverter from masters.');
+        }
+      }
     }
   }
+
+  await validateCatalogReferences(updates.lineItems);
 
   if (targetPresetId) {
     const { data: existingPreset, error: existingErr } = await supabase
@@ -433,9 +500,9 @@ export async function savePresetWithComponents(
         .insert({
           org_id: orgId,
           name: updates.name,
-          category: updates.systemType,
+          category: systemType,
           capacity_kw: Number(updates.capacityKw) || 0,
-          state_id: updates.stateId || null,
+          state_id: updates.stateId,
           target_margin_pct: normalizeMarginPct((existingPreset as any).target_margin_pct),
           is_active: true,
           is_custom: true,
@@ -450,9 +517,9 @@ export async function savePresetWithComponents(
         .from('systems' as any)
         .update({
           name: updates.name,
-          category: updates.systemType,
+          category: systemType,
           capacity_kw: Number(updates.capacityKw) || 0,
-          state_id: updates.stateId || null,
+          state_id: updates.stateId,
           updated_at: new Date().toISOString(),
         })
         .eq('id', targetPresetId);
@@ -472,9 +539,9 @@ export async function savePresetWithComponents(
       .insert({
         org_id: orgId,
         name: updates.name,
-        category: updates.systemType,
+        category: systemType,
         capacity_kw: Number(updates.capacityKw) || 0,
-        state_id: updates.stateId || null,
+        state_id: updates.stateId,
         target_margin_pct: 0.2,
         is_active: true,
         is_custom: true,
@@ -550,7 +617,7 @@ export async function savePresetWithComponents(
 
     const normalizedCategory = canonicalPresetCategory(item.category);
     const categoryId = await ensureBomCategoryId(normalizedCategory);
-    const skuCode = item.skuCode || `CUSTOM-${normalizedCategory.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}-${Date.now()}-${index + 1}`;
+    const skuCode = `CUSTOM-${normalizedCategory.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}-${Date.now()}-${index + 1}`;
     const unitRate = Number(item.unitRate || 0);
     const { data: customCatalogItem, error: customItemErr } = await supabase
       .from('bom_template_items' as any)
@@ -631,12 +698,10 @@ export async function savePresetWithComponents(
     .delete()
     .eq('system_id', targetPresetId);
 
-  if (updates.stateId) {
-    const { error: stateErr } = await supabase
-      .from('system_state_availability' as any)
-      .insert({ system_id: targetPresetId, state_id: updates.stateId });
-    if (stateErr) throw new Error('Failed to update preset state: ' + stateErr.message);
-  }
+  const { error: stateErr } = await supabase
+    .from('system_state_availability' as any)
+    .insert({ system_id: targetPresetId, state_id: updates.stateId });
+  if (stateErr) throw new Error('Failed to update preset state: ' + stateErr.message);
 
   revalidatePath('/');
   revalidatePath('/systems');
@@ -711,10 +776,38 @@ export async function deleteSystemPreset(presetId: string) {
   revalidatePath('/calculator');
 }
 
-export async function getCatalogItems(category: string, search?: string) {
+export async function getCatalogItems(category: string, search?: string): Promise<any[]> {
   const supabase = await createClient();
   const searchTerm = search?.trim();
   const normalizedCategory = canonicalPresetCategory(category);
+
+  if (normalizedCategory === 'all') {
+    const categories = [
+      'panel',
+      'inverter',
+      'battery',
+      'structure',
+      'dc_protection',
+      'ac_protection',
+      'cable',
+      'earthing',
+      'civil',
+      'logistics',
+      'accessory',
+      'miscellaneous',
+    ];
+    const groups: any[][] = await Promise.all(categories.map(async (itemCategory): Promise<any[]> => {
+      const items: any[] = await getCatalogItems(itemCategory, searchTerm);
+      return items.map((item: any) => ({ ...item, category: item.category ?? itemCategory }));
+    }));
+    const seen = new Set<string>();
+    return groups.flat().filter((item: any) => {
+      const key = `${item.catalogType ?? item.type}:${item.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
 
   // Panels, Inverters, Batteries are from their respective tables
   if (['panel', 'inverter', 'battery'].includes(normalizedCategory)) {

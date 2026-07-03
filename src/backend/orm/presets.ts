@@ -53,6 +53,19 @@ export const PresetORM: any = {
       .select('id, state_name, state_code')
       .eq('is_active', true);
     const stateById = new Map((stateRows || []).map((state: any) => [state.id, state]));
+    const stateByName = new Map((stateRows || []).map((state: any) => [String(state.state_name).toLowerCase(), state]));
+    const stateByCode = new Map((stateRows || []).map((state: any) => [String(state.state_code).toLowerCase(), state]));
+    const resolveState = (row: any) => {
+      if (row.state_id && stateById.has(row.state_id)) return stateById.get(row.state_id);
+      const config = row.config_json ?? row.calculator_state ?? {};
+      const byId = config.stateId ? stateById.get(config.stateId) : null;
+      if (byId) return byId;
+      const byName = config.selectedState ? stateByName.get(String(config.selectedState).toLowerCase()) : null;
+      if (byName) return byName;
+      const byState = config.state ? stateByName.get(String(config.state).toLowerCase()) : null;
+      if (byState) return byState;
+      return config.stateCode ? stateByCode.get(String(config.stateCode).toLowerCase()) : null;
+    };
     let hiddenSystemIds = new Set<string>();
     if (orgId) {
       const { data: hiddenRows } = await (supabase as any)
@@ -108,19 +121,24 @@ export const PresetORM: any = {
     const { data: presetData, error: presetError } = await presetQuery;
     if (!presetError && presetData) {
       presetData.forEach((row: any) => {
+        const state = resolveState(row);
+        const configJson = {
+          ...(row.config_json ?? {}),
+          ...(state ? { stateId: state.id, selectedState: state.state_name } : {}),
+        };
         results.push({
           id: row.id,
           name: row.name,
           capacity_kw: Number(row.capacity_kw),
-          type: row.config_json?.projectType || 'residential',
+          type: configJson.projectType || 'residential',
           status: 'published',
           author_id: row.user_id,
           is_org_template: false,
           source: 'custom_presets',
-          calculator_state: row.config_json,
-          state_id: row.config_json?.stateId ?? null,
-          state_name: row.config_json?.selectedState ?? null,
-          state_code: null,
+          calculator_state: configJson,
+          state_id: state?.id ?? row.state_id ?? null,
+          state_name: state?.state_name ?? null,
+          state_code: state?.state_code ?? null,
           created_at: row.created_at,
           updated_at: row.updated_at
         });
@@ -156,12 +174,18 @@ export const PresetORM: any = {
   },
 
   async getById(id: string) {
+    const { data: states } = await supabase
+      .from('state_rules')
+      .select('id, state_name, state_code')
+      .eq('is_active', true);
+    const stateById = new Map((states || []).map((state: any) => [state.id, state]));
+
     const { data, error } = await supabase
       .from('custom_presets')
       .select('*')
       .eq('id', id)
       .maybeSingle();
-    if (error) {
+    if (error || !data) {
       // Check systems table as fallback
       const { data: sysData, error: sysError } = await supabase
         .from('systems')
@@ -169,6 +193,8 @@ export const PresetORM: any = {
         .eq('id', id)
         .maybeSingle();
       if (sysError) throw sysError;
+      if (!sysData) return null;
+      const state = (sysData as any).state_id ? stateById.get((sysData as any).state_id) : null;
       return {
         id: sysData.id,
         name: sysData.name,
@@ -180,25 +206,30 @@ export const PresetORM: any = {
         source: 'systems',
         calculator_state: null,
         state_id: (sysData as any).state_id ?? null,
-        state_name: null,
-        state_code: null,
+        state_name: state?.state_name ?? null,
+        state_code: state?.state_code ?? null,
         created_at: sysData.created_at,
         updated_at: sysData.updated_at
       };
     }
+    const state = (data as any).state_id ? stateById.get((data as any).state_id) : null;
+    const configJson = {
+      ...(data.config_json ?? {}),
+      ...(state ? { stateId: state.id, selectedState: state.state_name } : {}),
+    };
     return {
       id: data.id,
       name: data.name,
       capacity_kw: data.capacity_kw,
-      type: data.config_json?.projectType || 'residential',
+      type: configJson.projectType || 'residential',
       status: 'published',
       author_id: data.user_id,
       is_org_template: false,
       source: 'custom_presets',
-      calculator_state: data.config_json,
-      state_id: data.config_json?.stateId ?? null,
-      state_name: data.config_json?.selectedState ?? null,
-      state_code: null,
+      calculator_state: configJson,
+      state_id: state?.id ?? (data as any).state_id ?? null,
+      state_name: state?.state_name ?? null,
+      state_code: state?.state_code ?? null,
       created_at: data.created_at,
       updated_at: data.updated_at
     };
@@ -216,6 +247,16 @@ export const PresetORM: any = {
       orgId = profile?.org_id;
     }
 
+    const stateId = preset.state_id ?? preset.calculator_state?.stateId ?? null;
+    const { data: selectedState } = stateId
+      ? await supabase.from('state_rules').select('id, state_name').eq('id', stateId).maybeSingle()
+      : { data: null };
+    const calculatorState = {
+      ...(preset.calculator_state ?? {}),
+      ...(stateId ? { stateId } : {}),
+      ...(selectedState?.state_name ? { selectedState: selectedState.state_name } : {}),
+    };
+
     const { data, error } = await supabase
       .from('custom_presets')
       .insert({
@@ -223,7 +264,8 @@ export const PresetORM: any = {
         user_id: session?.user?.id ?? null,
         name: preset.name,
         capacity_kw: Number(preset.capacity_kw) || 0,
-        config_json: preset.calculator_state,
+        config_json: calculatorState,
+        state_id: stateId,
         is_active: true
       })
       .select()
@@ -234,12 +276,23 @@ export const PresetORM: any = {
   },
 
   async update(id: string, updates: any) {
+    const stateId = updates.state_id ?? updates.calculator_state?.stateId ?? null;
+    const { data: selectedState } = stateId
+      ? await supabase.from('state_rules').select('id, state_name').eq('id', stateId).maybeSingle()
+      : { data: null };
+    const calculatorState = {
+      ...(updates.calculator_state ?? {}),
+      ...(stateId ? { stateId } : {}),
+      ...(selectedState?.state_name ? { selectedState: selectedState.state_name } : {}),
+    };
+
     const { data, error } = await supabase
       .from('custom_presets')
       .update({
         name: updates.name,
         capacity_kw: Number(updates.capacity_kw),
-        config_json: updates.calculator_state,
+        config_json: calculatorState,
+        state_id: stateId,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)

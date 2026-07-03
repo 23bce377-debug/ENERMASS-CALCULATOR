@@ -214,6 +214,7 @@ export default function CalculatorClient({
   const [initialDraftId, setInitialDraftId] = useState<string | null>(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [restoredDate, setRestoredDate] = useState<Date | null>(null);
+  const presetHandoffLoadedRef = useRef(false);
 
   // 1. Hydrate critical data on mount/initial load (immediate render capability)
   useEffect(() => {
@@ -329,6 +330,43 @@ export default function CalculatorClient({
   const clearBatteryMix = useCalculatorStore((s) => s.clearBatteryMix);
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
   const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
+
+  useEffect(() => {
+    if (!dbLoaded || presetHandoffLoadedRef.current || typeof window === 'undefined') return;
+    const raw = window.sessionStorage.getItem('enermass-preset-to-load');
+    if (!raw) return;
+
+    presetHandoffLoadedRef.current = true;
+    window.sessionStorage.removeItem('enermass-preset-to-load');
+
+    try {
+      const handoff = JSON.parse(raw);
+      const store = useCalculatorStore as any;
+
+      if (handoff?.source === 'custom_presets' && handoff.calculatorState) {
+        store.setState({
+          ...handoff.calculatorState,
+          selectedState: handoff.stateName || handoff.calculatorState.selectedState || handoff.calculatorState.state,
+        });
+        store.getState().recalculate();
+        toast('Preset loaded in calculator.', 'success');
+        return;
+      }
+
+      if (handoff?.id) {
+        selectSystem(handoff.id);
+        toast(
+          handoff.stateName
+            ? `Preset loaded. State set to ${handoff.stateName}.`
+            : 'Preset loaded in calculator.',
+          'success',
+        );
+      }
+    } catch (err) {
+      console.error('Failed to load preset handoff:', err);
+      toast('Could not load selected preset.', 'error');
+    }
+  }, [dbLoaded, selectSystem, toast]);
   
   const itcEligible = useCalculatorStore((s) => s.itcEligible);
   const setItcEligible = useCalculatorStore((s) => s.setItcEligible);

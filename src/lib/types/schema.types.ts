@@ -1541,6 +1541,7 @@ export type Database = {
           is_active: boolean
           name: string
           org_id: string | null
+          state_id: string | null
           updated_at: string
           user_id: string | null
         }
@@ -1552,6 +1553,7 @@ export type Database = {
           is_active?: boolean
           name: string
           org_id?: string | null
+          state_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -1563,6 +1565,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           org_id?: string | null
+          state_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -1572,6 +1575,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_presets_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "state_rules"
             referencedColumns: ["id"]
           },
           {
@@ -8305,6 +8315,7 @@ export type Database = {
           row_number: number | null
           sheet_name: string | null
           source_file: string | null
+          state_id: string | null
           target_margin_pct: number
           updated_at: string
           version: number
@@ -8326,6 +8337,7 @@ export type Database = {
           row_number?: number | null
           sheet_name?: string | null
           source_file?: string | null
+          state_id?: string | null
           target_margin_pct?: number
           updated_at?: string
           version?: number
@@ -8347,6 +8359,7 @@ export type Database = {
           row_number?: number | null
           sheet_name?: string | null
           source_file?: string | null
+          state_id?: string | null
           target_margin_pct?: number
           updated_at?: string
           version?: number
@@ -8371,6 +8384,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "systems_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "state_rules"
             referencedColumns: ["id"]
           },
         ]

@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { PresetORM, type PresetRow } from '@/backend/orm/presets';
 import { PresetEditorDialog } from '@/components/presets/PresetEditorDialog';
-import { deleteSystemPreset } from '@/lib/actions/presets';
+import { deleteSystemPreset, getPresetStates, type PresetStateOption } from '@/lib/actions/presets';
 import type { LineItem } from '@/lib/actions/presets';
 import {
   Settings2, Plus, Box, Zap, Search,
-  ToggleLeft, ToggleRight, Edit3, Trash2, MapPin
+  ToggleLeft, ToggleRight, Edit3, Trash2, MapPin, PlayCircle, Copy
 } from 'lucide-react';
 
 function categoryFromBomDescription(description: string) {
@@ -52,6 +52,7 @@ function legacyPresetToEditorData(preset: PresetRow) {
       description: item.description ?? 'Custom item',
       brand: item.brand ?? '',
       model: item.model ?? '',
+      specificationDetails: item.specificationDetails ?? item.specification_details ?? item.notes ?? '',
       unit: item.unit ?? 'Nos',
       quantity: Number(item.qty ?? item.quantity ?? 0),
       unitRate: Number(item.ratePerUnit ?? item.unitRate ?? 0),
@@ -76,6 +77,7 @@ function editorLineItemToBomItem(item: LineItem) {
     skuCode: item.skuCode,
     brand: item.brand,
     model: item.model,
+    specificationDetails: item.specificationDetails,
   };
 }
 
@@ -84,10 +86,31 @@ export default function SystemPresetsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [states, setStates] = useState<PresetStateOption[]>([]);
+  const [stateFilter, setStateFilter] = useState('all');
   
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerSystemId, setComposerSystemId] = useState<string | null>(null);
-  const legacyComposerPreset = presets.find((preset) => preset.id === composerSystemId && preset.source === 'custom_presets');
+  const [composerMode, setComposerMode] = useState<'create' | 'edit' | 'duplicate'>('create');
+  const activeComposerPreset = presets.find((preset) => preset.id === composerSystemId) ?? null;
+  const legacyComposerPreset = activeComposerPreset?.source === 'custom_presets' ? activeComposerPreset : null;
+  const selectedFilterState = states.find((state) => state.id === stateFilter) ?? null;
+  const createInitialData = !composerSystemId && selectedFilterState
+    ? {
+        id: '',
+        name: '',
+        system_type: 'on_grid',
+        capacity_kw: 0,
+        state_id: selectedFilterState.id,
+        lineItems: [],
+      }
+    : undefined;
+  const duplicateInitialData = composerMode === 'duplicate' && legacyComposerPreset
+    ? legacyPresetToEditorData(legacyComposerPreset)
+    : undefined;
+  const editInitialData = composerMode === 'edit' && legacyComposerPreset
+    ? legacyPresetToEditorData(legacyComposerPreset)
+    : undefined;
 
   const fetchPresets = async () => {
     try {
@@ -103,9 +126,15 @@ export default function SystemPresetsPage() {
 
   useEffect(() => {
     fetchPresets();
+    getPresetStates().then(setStates).catch((err) => {
+      console.error('Failed to load states:', err);
+      setStates([]);
+    });
   }, []);
 
   const filteredPresets = presets.filter((preset) => {
+    if (stateFilter === 'global' && preset.state_id) return false;
+    if (stateFilter !== 'all' && stateFilter !== 'global' && preset.state_id !== stateFilter) return false;
     const haystack = [
       preset.name,
       preset.capacity_kw,
@@ -114,6 +143,11 @@ export default function SystemPresetsPage() {
     ].join(' ').toLowerCase();
     return haystack.includes(searchQuery.toLowerCase());
   });
+  const stateFilteredCount = presets.filter((preset) => {
+    if (stateFilter === 'global') return !preset.state_id;
+    if (stateFilter === 'all') return true;
+    return preset.state_id === stateFilter;
+  }).length;
 
   const handleDelete = async (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
@@ -129,6 +163,17 @@ export default function SystemPresetsPage() {
         alert('Failed to delete: ' + err.message);
       }
     }
+  };
+
+  const handleUsePreset = (preset: PresetRow) => {
+    window.sessionStorage.setItem('enermass-preset-to-load', JSON.stringify({
+      id: preset.id,
+      source: preset.source,
+      stateId: preset.state_id ?? null,
+      stateName: preset.state_name ?? null,
+      calculatorState: preset.calculator_state ?? null,
+    }));
+    window.location.href = '/calculator';
   };
 
   if (loading && presets.length === 0) {
@@ -156,6 +201,7 @@ export default function SystemPresetsPage() {
         <button 
           onClick={() => {
             setComposerSystemId(null);
+            setComposerMode('create');
             setComposerOpen(true);
           }}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-background hover:bg-accent-hover transition-colors text-sm font-bold shadow-sm"
@@ -171,19 +217,41 @@ export default function SystemPresetsPage() {
       )}
 
       <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-border bg-background/60 flex flex-col md:flex-row justify-between gap-4 items-center">
-          <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-            <Box size={16} className="text-text-muted"/> Available Presets
-          </h2>
-          <div className="relative w-full md:w-auto">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input 
-              type="text" 
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search presets, state, size..." 
-              className="w-full md:min-w-[280px] pl-9 pr-3 py-2 bg-surface border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent"
-            />
+        <div className="p-4 border-b border-border bg-background/60 space-y-4">
+          <div className="flex flex-col md:flex-row justify-between gap-4 md:items-center">
+            <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+              <Box size={16} className="text-text-muted"/> Available Presets
+              <span className="rounded-full bg-surface-hover px-2 py-0.5 text-[11px] text-text-muted">
+                {filteredPresets.length} shown / {stateFilteredCount} in scope
+              </span>
+            </h2>
+            <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row">
+              <label className="relative w-full md:w-[240px]">
+                <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <select
+                  value={stateFilter}
+                  onChange={(event) => setStateFilter(event.target.value)}
+                  className="w-full appearance-none rounded-lg border border-border bg-surface py-2 pl-9 pr-8 text-sm text-text-primary outline-none focus:border-accent"
+                >
+                  <option value="all">All states</option>
+                  {states.map((state) => (
+                    <option key={state.id} value={state.id}>
+                      {state.state_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="relative w-full md:w-auto">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search presets, state, size..."
+                  className="w-full md:min-w-[280px] pl-9 pr-3 py-2 bg-surface border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -218,7 +286,7 @@ export default function SystemPresetsPage() {
                     <td className="px-5 py-4 text-center text-text-secondary">
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-hover px-2.5 py-1 text-xs font-semibold">
                         <MapPin size={12} />
-                        {preset.state_name || 'Global'}
+                        {preset.state_name || 'State not assigned'}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-center font-mono text-text-secondary">
@@ -238,8 +306,27 @@ export default function SystemPresetsPage() {
                     </td>
                     <td className="px-5 py-4 text-right space-x-2">
                       <button
+                        onClick={() => handleUsePreset(preset)}
+                        className="p-1.5 text-text-muted hover:text-accent hover:bg-accent-dim rounded transition-colors"
+                        title="Use Preset in Calculator"
+                      >
+                        <PlayCircle size={16} />
+                      </button>
+                      <button
                         onClick={() => {
                           setComposerSystemId(preset.id);
+                          setComposerMode('duplicate');
+                          setComposerOpen(true);
+                        }}
+                        className="p-1.5 text-text-muted hover:text-accent hover:bg-accent-dim rounded transition-colors"
+                        title="Create Duplicate"
+                      >
+                        <Copy size={16} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setComposerSystemId(preset.id);
+                          setComposerMode('edit');
                           setComposerOpen(true);
                         }}
                         className="p-1.5 text-text-muted hover:text-accent hover:bg-accent-dim rounded transition-colors"
@@ -277,20 +364,24 @@ export default function SystemPresetsPage() {
           onClose={() => {
             setComposerOpen(false);
             setComposerSystemId(null);
+            setComposerMode('create');
           }}
           onSaved={(id, name) => {
             fetchPresets();
             setComposerOpen(false);
             setComposerSystemId(null);
+            setComposerMode('create');
           }}
-          initialData={legacyComposerPreset ? legacyPresetToEditorData(legacyComposerPreset) : undefined}
-          onSaveLocal={legacyComposerPreset ? async (updates) => {
+          mode={composerMode}
+          initialData={duplicateInitialData ?? editInitialData ?? createInitialData}
+          onSaveLocal={composerMode === 'edit' && legacyComposerPreset ? async (updates) => {
             const nextItems = updates.lineItems
               .filter((item) => item.isIncluded)
               .map(editorLineItemToBomItem);
             await PresetORM.update(legacyComposerPreset.id, {
               name: updates.name,
               capacity_kw: updates.capacityKw,
+              state_id: updates.stateId ?? null,
               calculator_state: {
                 ...(legacyComposerPreset.calculator_state ?? {}),
                 systemType: updates.systemType,

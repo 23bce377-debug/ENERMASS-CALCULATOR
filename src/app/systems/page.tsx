@@ -1,21 +1,20 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { SYSTEMS, type SolarSystem } from '@/lib/data/bom';
-import { SystemORM } from '@/backend/orm/system';
 import { calculateSystem, formatINR } from '@/lib/engine/calculator';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import {
   Cpu, Zap, ArrowRight, GitCompare, X, Search,
   Plus, Upload, CheckCircle2, AlertCircle, Loader2,
-  Trash2, Edit3, Sun
+  Trash2, Edit3, Sun, MapPin
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { PresetEditorDialog } from '@/components/presets/PresetEditorDialog';
-import type { LineItem } from '@/lib/actions/presets';
+import { deleteSystemPreset, type LineItem } from '@/lib/actions/presets';
 
 // ─── Category Config ──────────────────────────────────────────────────────────
 
@@ -133,6 +132,7 @@ function localPresetToEditorData(system: SolarSystem) {
         description: item.description,
         brand,
         model,
+        specificationDetails: (item as any).specificationDetails ?? (item as any).specification_details ?? (item as any).notes ?? '',
         unit: item.unit ?? 'Nos',
         quantity: Number(item.qty || 0),
         unitRate: Number(item.ratePerUnit || 0),
@@ -158,6 +158,7 @@ function editorLineItemToBomItem(item: LineItem) {
     skuCode: item.skuCode,
     brand: item.brand,
     model: item.model,
+    specificationDetails: item.specificationDetails,
   };
 }
 
@@ -173,37 +174,6 @@ function CategoryBadge({ category }: { category: string }) {
   );
 }
 
-// ─── Inline Rename Input ──────────────────────────────────────────────────────
-
-function InlineRename({ value, onSave, onCancel }: {
-  value: string; onSave: (v: string) => void; onCancel: () => void
-}) {
-  const [v, setV] = useState(value);
-  const ref = useRef<HTMLInputElement>(null);
-
-  return (
-    <form
-      onSubmit={(e) => { e.preventDefault(); if (v.trim()) onSave(v.trim()); }}
-      className="flex items-center gap-1.5 flex-1 min-w-0"
-    >
-      <input
-        ref={ref}
-        autoFocus
-        value={v}
-        onChange={(e) => setV(e.target.value)}
-        className="flex-1 min-w-0 px-2 py-1 rounded bg-background border border-accent/50 text-sm font-semibold
-          text-text-primary outline-none focus:ring-1 focus:ring-accent/30"
-      />
-      <button type="submit" className="shrink-0 text-success hover:text-success/80 cursor-pointer">
-        <CheckCircle2 size={15} />
-      </button>
-      <button type="button" onClick={onCancel} className="shrink-0 text-text-muted hover:text-error cursor-pointer">
-        <X size={15} />
-      </button>
-    </form>
-  );
-}
-
 // ─── System Card ────────────────────────────────────────────────────────────────
 
 interface SystemCardProps {
@@ -211,13 +181,14 @@ interface SystemCardProps {
   selected: boolean;
   compareMode: boolean;
   isCustom: boolean;
+  stateLabel: string;
   onToggleCompare: () => void;
   onQuickCalc: () => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
-function SystemCard({ system, selected, compareMode, isCustom, onToggleCompare, onQuickCalc, onEdit, onDelete }: SystemCardProps) {
+function SystemCard({ system, selected, compareMode, isCustom, stateLabel, onToggleCompare, onQuickCalc, onEdit, onDelete }: SystemCardProps) {
   return (
     <div
       className={`group relative flex flex-col bg-surface rounded-xl border transition-all duration-300 overflow-hidden
@@ -252,6 +223,10 @@ function SystemCard({ system, selected, compareMode, isCustom, onToggleCompare, 
           <div className="flex-1 min-w-0 pr-8">
             <CategoryBadge category={system.category} />
             <h3 className="text-sm font-bold text-text-primary mt-2 truncate" title={system.name}>{system.name}</h3>
+            <p className="mt-1 flex items-center gap-1 truncate text-[11px] font-semibold text-text-muted" title={stateLabel}>
+              <MapPin size={11} />
+              {stateLabel}
+            </p>
           </div>
         </div>
 
@@ -418,23 +393,20 @@ export default function SystemsPage() {
   const selectSystem = useCalculatorStore((s) => s.selectSystem);
   const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
+  const dbStateData = useCalculatorStore((s) => s.dbStateData);
+  const dbSystemStateMap = useCalculatorStore((s) => s.dbSystemStateMap);
   const { settings, setSettings, commitToDb, isSyncing } = useSettings();
   const confirm = useConfirm();
   const { toast } = useToast();
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [stateFilter, setStateFilter] = useState<string>('all');
   const [compareMode, setCompareMode] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerSystemId, setComposerSystemId] = useState<string | null>(null);
   
-  // Custom Preset State
-  const [formOpen, setFormOpen] = useState(false);
-  const [customSystemError, setCustomSystemError] = useState<string | null>(null);
-  const [customSystemDraft, setCustomSystemDraft] = useState({
-    name: '', capacityKW: '', panelWattage: '', panelQty: '', targetMarginPct: '20',
-  });
   const [commitStatus, setCommitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [commitMsg, setCommitMsg] = useState('');
 
@@ -458,8 +430,46 @@ export default function SystemsPage() {
     return ['all', ...Array.from(cats)];
   }, [allSystems]);
 
+  const stateOptions = useMemo(() => {
+    return Object.values(dbStateData)
+      .map((state: any) => ({
+        id: String(state?.id ?? ''),
+        name: String(state?.name ?? ''),
+      }))
+      .filter((state) => state.id && state.name)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [dbStateData]);
+
+  const stateNameById = useMemo(() => {
+    return new Map(stateOptions.map((state) => [state.id, state.name]));
+  }, [stateOptions]);
+
+  const getSystemStateNames = (system: SolarSystem) => {
+    const mappedStates = dbSystemStateMap[system.id] ?? [];
+    if (mappedStates.length > 0) return mappedStates;
+    if (system.stateName) return [system.stateName];
+    if (system.stateId && stateNameById.has(system.stateId)) return [stateNameById.get(system.stateId) as string];
+    return [];
+  };
+
+  const getSystemStateLabel = (system: SolarSystem) => {
+    const states = getSystemStateNames(system);
+    if (states.length === 0) return 'State not assigned';
+    if (states.length === 1) return states[0];
+    return `${states[0]} +${states.length - 1}`;
+  };
+
   const filtered = useMemo(() => {
     let result = allSystems;
+    if (stateFilter === 'global') {
+      result = result.filter((system) => getSystemStateNames(system).length === 0);
+    } else if (stateFilter !== 'all') {
+      const selectedState = stateNameById.get(stateFilter);
+      result = result.filter((system) => {
+        const states = getSystemStateNames(system);
+        return states.length === 0 || (selectedState ? states.includes(selectedState) : false);
+      });
+    }
     if (categoryFilter !== 'all') {
       result = result.filter((s) => s.category === categoryFilter);
     }
@@ -467,11 +477,12 @@ export default function SystemsPage() {
       const q = search.toLowerCase();
       result = result.filter((s) =>
         s.name.toLowerCase().includes(q) ||
-        s.category.toLowerCase().includes(q)
+        s.category.toLowerCase().includes(q) ||
+        getSystemStateLabel(s).toLowerCase().includes(q)
       );
     }
     return result;
-  }, [allSystems, search, categoryFilter]);
+  }, [allSystems, search, categoryFilter, stateFilter, dbSystemStateMap, stateNameById]);
 
   const handleQuickCalc = (systemId: string) => {
     selectSystem(systemId);
@@ -486,54 +497,15 @@ export default function SystemsPage() {
     });
   };
 
-  // Preset Management Methods
-  const handleAddCustomSystem = () => {
-    const name = customSystemDraft.name.trim();
-    const capacityKW = parseFloat(customSystemDraft.capacityKW);
-    const panelQty = parseInt(customSystemDraft.panelQty, 10);
-    const panelWattage = parseInt(customSystemDraft.panelWattage, 10);
-    const targetMarginPct = parseFloat(customSystemDraft.targetMarginPct);
-    
-    const template = dbSystems[0] || SYSTEMS[0] || {
-      id: 'default_template', name: 'Default Template', category: 'on-grid',
-      capacityKW: 5, panelWattage: 550, panelQty: 10, targetMarginPct: 0.2,
-      items: [
-        { description: 'Panel', qty: 10, ratePerUnit: 0, gstPct: 0.12 as any },
-        { description: 'Inverter', qty: 1, ratePerUnit: 0, gstPct: 0.18 as any },
-        { description: 'Structure', qty: 1, ratePerUnit: 0, gstPct: 0.18 as any },
-        { description: 'BOS / Cable / ACDB / DCDB', qty: 1, ratePerUnit: 0, gstPct: 0.18 as any },
-      ]
-    };
-
-    if (!name) return setCustomSystemError('System name is required.');
-    if (!Number.isFinite(capacityKW) || capacityKW <= 0) return setCustomSystemError('Capacity must be > 0.');
-    if (!Number.isFinite(panelQty) || panelQty <= 0) return setCustomSystemError('Panel quantity must be > 0.');
-    if (!Number.isFinite(panelWattage) || panelWattage <= 0) return setCustomSystemError('Panel wattage must be > 0.');
-    if (!Number.isFinite(targetMarginPct) || targetMarginPct < 0) return setCustomSystemError('Target margin must be ≥ 0.');
-
-    const items = template.items.map((item) =>
-      item.description.toUpperCase() === 'PANEL' ? { ...item, qty: panelQty } : { ...item }
-    );
-
-    const customSystem: SolarSystem = {
-      id: `custom_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      name, category: 'custom', capacityKW, panelWattage, panelQty, targetMarginPct: targetMarginPct / 100, items,
-    };
-
-    setSettings({ customSystems: [...customSystems, customSystem] });
-    setCustomSystemError(null);
-    setCustomSystemDraft({ name: '', capacityKW: '', panelWattage: '', panelQty: '', targetMarginPct: '20' });
-    setFormOpen(false);
-    toast(`Preset "${name}" added locally. Press Commit to sync.`, 'success');
-  };
-
   const fetchMasterData = useCalculatorStore((s) => s.fetchMasterData);
 
   const removeCustomSystem = async (id: string) => {
     const isCustom = id.startsWith('custom_');
     const confirmed = await confirm({
       title: isCustom ? 'Delete Local Preset?' : 'Delete Master DB Preset?',
-      message: isCustom ? 'This removes it from local storage. Press Commit to sync deletion to DB.' : 'WARNING: This will permanently delete this master preset from the database for all users.',
+      message: isCustom
+        ? 'This removes it from local storage. Press Commit to sync deletion to DB.'
+        : 'This will hide built-in presets for your organisation, or deactivate/delete organisation presets safely.',
       confirmLabel: 'Delete', cancelLabel: 'Keep', type: 'danger',
     });
     if (!confirmed) return;
@@ -543,28 +515,13 @@ export default function SystemsPage() {
       toast('Preset deleted locally. Commit to sync.', 'success');
     } else {
       try {
-        await SystemORM.delete(id);
-        toast('Master preset deleted from database.', 'success');
-        fetchMasterData(); // Refresh store
+        await deleteSystemPreset(id);
+        toast('Preset removed from your available presets.', 'success');
+        await fetchMasterData();
       } catch (err) {
-        toast('Failed to delete master preset', 'error');
-        console.error(err);
-      }
-    }
-  };
-
-  const renamePreset = async (id: string, newName: string) => {
-    const isCustom = id.startsWith('custom_');
-    if (isCustom) {
-      setSettings({ customSystems: customSystems.map((s) => s.id === id ? { ...s, name: newName } : s) });
-    } else {
-      try {
-        await SystemORM.update(id, { name: newName });
-        toast('Master preset renamed in database.', 'success');
-        fetchMasterData(); // Refresh store
-      } catch (err) {
-        toast('Failed to rename master preset', 'error');
-        console.error(err);
+        const message = err instanceof Error ? err.message : 'Unknown preset delete error.';
+        toast(`Failed to remove preset: ${message}`, 'error');
+        console.error('[systems] failed to remove preset', { id, message, error: err });
       }
     }
   };
@@ -598,7 +555,10 @@ export default function SystemsPage() {
         
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setFormOpen(!formOpen)}
+            onClick={() => {
+              setComposerSystemId(null);
+              setComposerOpen(true);
+            }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-surface text-sm font-semibold text-text-secondary hover:text-text-primary hover:border-border-light transition-all cursor-pointer"
           >
             <Plus size={14} /> New Preset
@@ -632,64 +592,8 @@ export default function SystemsPage() {
         </div>
       )}
 
-      {/* New Preset Form */}
-      {formOpen && (
-        <div className="rounded-2xl border border-accent/30 bg-surface p-6 animate-fade-in shadow-lg">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
-              <Plus size={16} className="text-accent" />
-              Create Custom System Preset
-            </h2>
-            <button onClick={() => { setFormOpen(false); setCustomSystemError(null); }}
-              className="p-1.5 rounded bg-surface hover:bg-surface-hover text-text-muted hover:text-text-primary cursor-pointer transition-colors">
-              <X size={16} />
-            </button>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="col-span-2 space-y-1.5">
-              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Preset Name *</label>
-              <input type="text" value={customSystemDraft.name} onChange={(e) => setCustomSystemDraft({ ...customSystemDraft, name: e.target.value })}
-                className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50" placeholder="e.g. 7.5 KWp Rooftop" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Capacity (kW) *</label>
-              <input type="number" min={0} step={0.01} value={customSystemDraft.capacityKW} onChange={(e) => setCustomSystemDraft({ ...customSystemDraft, capacityKW: e.target.value })}
-                className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50 font-mono" placeholder="7.50" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Panel Wattage *</label>
-              <input type="number" min={0} step={1} value={customSystemDraft.panelWattage} onChange={(e) => setCustomSystemDraft({ ...customSystemDraft, panelWattage: e.target.value })}
-                className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50 font-mono" placeholder="620" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Panel Qty *</label>
-              <input type="number" min={1} step={1} value={customSystemDraft.panelQty} onChange={(e) => setCustomSystemDraft({ ...customSystemDraft, panelQty: e.target.value })}
-                className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50 font-mono" placeholder="12" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Target Margin %</label>
-              <input type="number" min={0} step={0.5} value={customSystemDraft.targetMarginPct} onChange={(e) => setCustomSystemDraft({ ...customSystemDraft, targetMarginPct: e.target.value })}
-                className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-sm outline-none focus:border-accent/50 font-mono" placeholder="20" />
-            </div>
-          </div>
-          {customSystemError && (
-            <p className="text-xs font-semibold text-error mt-4 flex items-center gap-1.5">
-              <AlertCircle size={14} /> {customSystemError}
-            </p>
-          )}
-          <div className="mt-5 flex items-center gap-3 pt-5 border-t border-border/40">
-            <button onClick={handleAddCustomSystem} className="px-5 py-2.5 rounded-xl bg-accent text-background text-sm font-bold hover:bg-accent-hover transition-colors cursor-pointer">
-              Save Custom Preset
-            </button>
-            <p className="text-xs text-text-muted">
-              Stays local until you press <strong className="text-accent">Commit to DB</strong>
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col gap-3">
         <div className="relative flex-1 max-w-md">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input
@@ -699,6 +603,30 @@ export default function SystemsPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-surface border border-border text-sm text-text-primary placeholder:text-text-muted focus:border-accent/50 focus:ring-1 focus:ring-accent/20 outline-none transition-all"
           />
+        </div>
+        <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-sm font-semibold text-text-secondary">
+            <MapPin size={16} className="text-accent" />
+            State-wise presets
+            <span className="rounded-full bg-background px-2 py-0.5 text-[11px] text-text-muted">
+              {filtered.length} shown
+            </span>
+          </div>
+          <label className="relative w-full sm:w-[280px]">
+            <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <select
+              value={stateFilter}
+              onChange={(event) => setStateFilter(event.target.value)}
+              className="w-full appearance-none rounded-lg border border-border bg-background py-2.5 pl-9 pr-8 text-sm font-semibold text-text-primary outline-none transition-all focus:border-accent/50 focus:ring-1 focus:ring-accent/20"
+            >
+              <option value="all">All states</option>
+              {stateOptions.map((state) => (
+                <option key={state.id} value={state.id}>
+                  {state.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
@@ -734,6 +662,7 @@ export default function SystemsPage() {
             selected={compareIds.includes(system.id)}
             compareMode={compareMode}
             isCustom={system.category === 'custom'}
+            stateLabel={getSystemStateLabel(system)}
             onToggleCompare={() => handleToggleCompare(system.id)}
             onQuickCalc={() => handleQuickCalc(system.id)}
             onEdit={(id) => {

@@ -115,6 +115,7 @@ export const SystemItemORM = {
       name: string;
       capacity_kw: number;
       category?: string;
+      state_id?: string | null;
       target_margin_pct?: number;
       is_custom?: boolean;
     },
@@ -128,6 +129,10 @@ export const SystemItemORM = {
     }>,
     existingSystemId?: string
   ) {
+    if (!metadata.state_id) {
+      throw new Error('Please select a state before saving a system preset.');
+    }
+
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     let orgId = null;
@@ -144,6 +149,7 @@ export const SystemItemORM = {
         name: metadata.name,
         capacity_kw: metadata.capacity_kw,
         category: (metadata.category || 'on_grid') as any,
+        state_id: metadata.state_id,
         target_margin_pct: normalizeMarginPct(metadata.target_margin_pct),
         updated_at: new Date().toISOString()
       }).eq('id', existingSystemId);
@@ -158,6 +164,7 @@ export const SystemItemORM = {
         name: metadata.name,
         capacity_kw: metadata.capacity_kw,
         category: (metadata.category || 'on_grid') as any,
+        state_id: metadata.state_id,
         target_margin_pct: normalizeMarginPct(metadata.target_margin_pct),
         is_active: true,
         is_custom: metadata.is_custom ?? true
@@ -167,6 +174,16 @@ export const SystemItemORM = {
     }
 
     if (!systemId) throw new Error('Failed to determine system ID');
+
+    await (supabase as any)
+      .from('system_state_availability')
+      .delete()
+      .eq('system_id', systemId);
+
+    const { error: stateErr } = await (supabase as any)
+      .from('system_state_availability')
+      .insert({ system_id: systemId, state_id: metadata.state_id });
+    if (stateErr) throw stateErr;
 
     // Insert new items
     if (lines && lines.length > 0) {

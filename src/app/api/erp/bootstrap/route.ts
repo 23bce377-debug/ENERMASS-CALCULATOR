@@ -29,7 +29,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
 
   try {
     // Include limits in the cache key to prevent collision/poisoning (P0-7)
-    const cacheKey = `erp:bootstrap:${orgId}:v5:bomLimit_${bomLimit}:invLimit_${invLimit}`;
+      const cacheKey = `erp:bootstrap:${orgId}:v6:bomLimit_${bomLimit}:invLimit_${invLimit}`;
     const data = await getOrSetCache(cacheKey, async () => {
       const { createClient } = await import('@/lib/supabase/server');
       const supabase = await createClient();

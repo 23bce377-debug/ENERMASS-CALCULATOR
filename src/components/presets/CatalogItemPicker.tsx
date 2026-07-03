@@ -51,10 +51,10 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
     setLoading(true);
     setError(null);
     getCatalogItems(category, search)
-      .then(data => {
+      .then((data: any[]) => {
         if (mounted) setItems(data);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (!mounted) return;
         setItems([]);
         setError(err instanceof Error ? err.message : 'Could not load catalog items.');

@@ -336,11 +336,12 @@ export const createCalculationSlice: StateCreator<
 
     const systems = get().dbLoaded ? get().dbSystems : [...SYSTEMS, ...customSystems];
     const system = systems.find((s: SolarSystem) => s.id === id);
+    const selectedSystemState = system?.stateName || state.dbSystemStateMap[id]?.[0] || state.selectedState;
 
     if (system && system.defaultEquipment) {
       set({
         selectedSystemId: id,
-        selectedState: system.stateName || state.selectedState,
+        selectedState: selectedSystemState,
         selectedPanelId: null,
         selectedGoalWattage: system.capacityKW * 1000,
         panelMix: system.defaultEquipment.panelMix ?? {},
@@ -411,7 +412,7 @@ export const createCalculationSlice: StateCreator<
     const isCommercial = system?.category === 'commercial';
     set({
       selectedSystemId: id,
-      selectedState: system?.stateName || state.selectedState,
+      selectedState: selectedSystemState,
       selectedGoalWattage: system ? system.capacityKW * 1000 : null,
       projectType: isCommercial ? 'commercial' : 'residential',
       overrides: {},
