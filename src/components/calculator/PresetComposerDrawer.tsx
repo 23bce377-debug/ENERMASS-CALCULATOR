@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { BomItem } from '@/lib/data/bom';
 import { Select } from '@/components/ui/Select';
 import { normalizeGstRate } from '@/lib/utils/gst';
+import { TAX_CONSTANTS } from '@/lib/tax-constants';
 
 interface PresetComposerDrawerProps {
   isOpen: boolean;
@@ -241,7 +242,7 @@ export function PresetComposerDrawer({ isOpen, onClose, presetId }: PresetCompos
                         qty: 1,
                         unit: 'Nos',
                         ratePerUnit: panel.ratePerWatt * panel.wattage,
-                        gstPct: normalizeGstRate(panel.gst_pct ?? panel.gstPct, 0.12)
+                        gstPct: normalizeGstRate(panel.gst_pct ?? panel.gstPct, TAX_CONSTANTS.PANEL_GST_RATE)
                       }]);
                     }
                   }}
@@ -296,7 +297,7 @@ export function PresetComposerDrawer({ isOpen, onClose, presetId }: PresetCompos
                         qty: 1,
                         unit: 'Nos',
                         ratePerUnit: inv.rate,
-                        gstPct: normalizeGstRate(inv.gst_pct ?? inv.gstPct, 0.12)
+                        gstPct: normalizeGstRate(inv.gst_pct ?? inv.gstPct, TAX_CONSTANTS.INVERTER_GST_RATE)
                       }]);
                     }
                   }}

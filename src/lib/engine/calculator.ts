@@ -7,7 +7,7 @@
 
 import { SYSTEMS, type SolarSystem, type BomItem } from '../data/bom';
 import { STATE_DATA } from '@/lib/data/masters';
-import { TAX_CONSTANTS } from '@/lib/tax-constants';
+import { getBatteryGstRate, TAX_CONSTANTS } from '@/lib/tax-constants';
 import { STRUCTURE_CONFIGS, type StructureType } from '../structures/structureConfig';
 import { SEED_BOM_TEMPLATE_ITEMS, SEED_BOM_CATEGORIES } from '../../../db/seeds/bom_templates';
 import { type StateData } from '../data/masters';
@@ -174,6 +174,7 @@ export interface CalcInput {
   selectedPanelId?: string | null;
   maxSubsidyCapacityKW?: number;
   maxAbsoluteSubsidy?: number;
+  subsidySchemeName?: string;
   // FIX CALC-02: Additional state subsidy from state_scheme_overrides
   additionalStateSubsidy?: number;
   /**
@@ -186,6 +187,62 @@ export interface CalcInput {
   /** @deprecated Retained for backward compatibility; superseded by applySubsidy + state. */
   selectedScheme?: 'none' | 'pm_suryaghar' | 'state';
   dbLoaded?: boolean;
+}
+
+export function resolveStructureMaterialRate(input: Pick<CalcInput,
+  'structureMaterialType' |
+  'structureVendorId' |
+  'dbStructureMaterialRates' |
+  'dbStructureVendors'
+>): {
+  vendorId: string | null;
+  vendorName: string | null;
+  ratePerKg: number;
+  rateRow: any | null;
+} {
+  const materialType = input.structureMaterialType;
+  if (!materialType) {
+    return { vendorId: null, vendorName: null, ratePerKg: 0, rateRow: null };
+  }
+
+  const vendors = input.dbStructureVendors ?? [];
+  const matchingRates = (input.dbStructureMaterialRates ?? [])
+    .filter((rate: any) => rate.material_type === materialType);
+
+  if (matchingRates.length === 0) {
+    return { vendorId: null, vendorName: null, ratePerKg: 0, rateRow: null };
+  }
+
+  const preferredRate = input.structureVendorId
+    ? matchingRates.find((rate: any) => rate.vendor_id === input.structureVendorId)
+    : null;
+
+  const appoloRate = matchingRates.find((rate: any) => {
+    const vendor = vendors.find((v: any) => v.id === rate.vendor_id);
+    const name = String(vendor?.name ?? '').toLowerCase();
+    return name.includes('appolo') || name.includes('apollo');
+  });
+
+  const rateRow = preferredRate ?? appoloRate ?? matchingRates[0];
+  const vendor = vendors.find((v: any) => v.id === rateRow.vendor_id);
+
+  return {
+    vendorId: rateRow.vendor_id ?? null,
+    vendorName: vendor?.name ?? null,
+    ratePerKg: Number(rateRow.rate_per_kg ?? 0),
+    rateRow,
+  };
+}
+
+export function filterStructureTemplateItemsForRate(
+  items: any[],
+  templateId: string,
+  vendorId?: string | null
+): any[] {
+  return items.filter((item: any) =>
+    item.template_id === templateId &&
+    (item.vendor_id === null || item.vendor_id === undefined || item.vendor_id === vendorId)
+  );
 }
 
 export interface LineResult {
@@ -540,19 +597,10 @@ export function resolveStructureItems(
   let removeGenericStructure = false;
 
   // 1. Check if new ERP Structure model is selected
-  if (input.structureVendorId && input.structureMaterialType) {
+  if (input.structureMaterialType) {
     removeGenericStructure = true;
-    
-    // Find vendor name
-    const vendor = (input.dbStructureVendors ?? []).find(v => v.id === input.structureVendorId);
-    const vendorName = vendor ? vendor.name : 'Unknown';
-    
-    // Find material rate per kg
-    const rateRow = (input.dbStructureMaterialRates ?? []).find(r => 
-      r.vendor_id === input.structureVendorId && 
-      r.material_type === input.structureMaterialType
-    );
-    const ratePerKg = rateRow ? Number(rateRow.rate_per_kg) : 0;
+    const materialRate = resolveStructureMaterialRate(input);
+    const ratePerKg = materialRate.ratePerKg;
     
     // Find closest template
     const templates = (input.dbStructureTemplates ?? []).filter(t => 
@@ -565,10 +613,12 @@ export function resolveStructureItems(
         Math.abs(Number(curr.capacity_kw) - capacityKW) < Math.abs(Number(prev.capacity_kw) - capacityKW) ? curr : prev
       );
       
-      // Get all template items for this template and selected vendor
-      const templateItems = (input.dbStructureTemplateItems ?? []).filter(item => 
-        item.template_id === template.id &&
-        (item.vendor_id === null || item.vendor_id === input.structureVendorId)
+      // Get all template items for this template. Vendor-specific rows are
+      // resolved internally so the calculator user only chooses GI/GP.
+      const templateItems = filterStructureTemplateItemsForRate(
+        input.dbStructureTemplateItems ?? [],
+        template.id,
+        materialRate.vendorId
       );
       
       templateItems.forEach(item => {
@@ -584,7 +634,7 @@ export function resolveStructureItems(
           const itemWeight = Number(item.weight || 0);
           ratePerUnit = itemWeight * ratePerKg;
           unit = 'Nos';
-          remarks = `${vendorName} ${template.structure_type} member (${itemWeight} kg)`;
+          remarks = `${template.structure_type} member (${itemWeight} kg)`;
         } else {
           // FIX CALC-01: Look up accessory rate from DB, not hardcoded map.
           // input.dbStructureAccessoryRates is loaded by dbCalculator.ts from
@@ -713,22 +763,14 @@ export function resolveStructureItems(
       
       const ratePerKg = rawRate + fabRate + galvRate;
       const totalWeight = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
-      const weightMultiplier = lookupWeight > 0 ? totalWeight / lookupWeight : 1;
 
-      const structureParts = (input.dbStructureParts ?? []).filter((p: any) => 
-        p.section === 'mounting_structure' && p.is_active
-      );
-      
-      structureParts.forEach((part: any) => {
-        const qtyMultiplier = Number(part.weight_multiplier ?? 1);
-        items.push({
-          description: part.description,
-          qty: qtyMultiplier * weightMultiplier,
-          ratePerUnit: Number(part.rate ?? 0),
-          unit: part.unit ?? 'Nos',
-          remarks: part.remarks ?? '',
-          gstPct: Number(part.gst_pct ?? TAX_CONSTANTS.BOS_GST_RATE) as any,
-        });
+      items.push({
+        description: 'STRUCTURE',
+        qty: totalWeight,
+        ratePerUnit: ratePerKg,
+        unit: 'kg',
+        remarks: `Custom structure: ${totalWeight.toFixed(1)}kg @ ₹${ratePerKg.toFixed(2)}/kg`,
+        gstPct: TAX_CONSTANTS.BOS_GST_RATE as any,
       });
     } else if (mode === 'per_watt') {
       items.push({
@@ -1024,9 +1066,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
               description: `BATTERY ${bat.brand} ${bat.model}`,
               qty: qty,
               ratePerUnit: bat.rate,
-              // FIX CALC-08: Battery GST is 12% by default (not 18%).
-              // Use the value from DB. Default 0.12 if DB column is NULL/zero.
-              gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : TAX_CONSTANTS.BATTERY_GST_RATE) as any,
+              gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : getBatteryGstRate(bat)) as any,
               unit: 'Nos',
               remarks: item.remarks ?? '',
             });
@@ -1044,7 +1084,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
       }
     }
     else if (descUpper === 'STRUCTURE') {
-      const isStructureSelected = (input.structureVendorId && input.structureMaterialType) || !!input.structureId;
+      const isStructureSelected = !!input.structureMaterialType || !!input.structureId;
       const qty = (input.dbLoaded && !isStructureSelected) ? 0 : item.qty;
       resolvedItems.push({
         ...item,
@@ -1142,7 +1182,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
             description: `BATTERY ${bat.brand} ${bat.model}`,
             qty: qty,
             ratePerUnit: bat.rate,
-            gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : TAX_CONSTANTS.BATTERY_GST_RATE) as any,
+            gstPct: (Number(bat.gst_pct) > 0 ? Number(bat.gst_pct) : getBatteryGstRate(bat)) as any,
             unit: 'Nos',
             remarks: '',
           });
@@ -1616,11 +1656,11 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
       subsidyResult = {
         amount: amt,
         breakdown: amt > 0
-          ? `${input.state} subsidy — ₹${amt.toLocaleString('en-IN')} for ${panelCapKW.toFixed(2)} kW system (server-computed)`
+          ? `${input.subsidySchemeName ?? input.state + ' subsidy'} — ₹${amt.toLocaleString('en-IN')} for ${panelCapKW.toFixed(2)} kW system`
           : `${input.state} — No subsidy applicable for this configuration`,
         isEligible: amt > 0,
         schemeNote: amt > 0
-          ? `Auto-applied from ${input.state} · PM Surya Ghar + state policy · DISCOM approval required`
+          ? `${input.subsidySchemeName ?? input.state + ' policy'} · DISCOM approval required`
           : '',
       };
     } else {
@@ -1642,7 +1682,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
           ? `${input.state} subsidy — ₹${computedSubsidy.toLocaleString('en-IN')} for ${panelCapKW.toFixed(2)} kW`
           : `${input.state} — No subsidy applicable for this configuration`,
         isEligible: computedSubsidy > 0,
-        schemeNote: computedSubsidy > 0 ? `Auto-applied from ${input.state} state policy` : '',
+        schemeNote: computedSubsidy > 0 ? `${input.subsidySchemeName ?? input.state + ' state policy'} · DISCOM approval required` : '',
       };
     }
   }

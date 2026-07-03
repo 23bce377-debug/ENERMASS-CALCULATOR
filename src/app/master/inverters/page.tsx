@@ -30,6 +30,7 @@ import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditMod
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
 import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
+import { TAX_CONSTANTS } from '@/lib/tax-constants';
 
 interface Inverter {
   id: string;
@@ -75,7 +76,7 @@ export default function InvertersMasterPage() {
     inverter_type: 'on_grid',
     phases: 1,
     rate: 35000,
-    gst_pct: 0.12,
+    gst_pct: Number(TAX_CONSTANTS.INVERTER_GST_RATE),
     description: '',
     specification_details: '',
   });
@@ -151,7 +152,7 @@ export default function InvertersMasterPage() {
       inverter_type: 'on_grid',
       phases: 1,
       rate: 35000,
-      gst_pct: 0.12,
+      gst_pct: Number(TAX_CONSTANTS.INVERTER_GST_RATE),
       description: '',
       specification_details: '',
     });
@@ -213,7 +214,7 @@ export default function InvertersMasterPage() {
       await bulkUpdateMutation.mutateAsync({
         ids: selectedIds,
         updates: updates.gst_pct !== undefined
-          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, 0.12) }
+          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE) }
           : updates,
       });
       setSelectedIds([]);
@@ -233,7 +234,7 @@ export default function InvertersMasterPage() {
       'Inverter Type': i.inverter_type,
       Phases: i.phases,
       'Selling Rate (INR)': i.rate,
-      'GST Percentage': gstRateToPercent(i.gst_pct, 0.12),
+      'GST Percentage': gstRateToPercent(i.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE),
       Description: i.description || '',
       'Specification Details': i.specification_details || '',
     }));
@@ -255,7 +256,7 @@ export default function InvertersMasterPage() {
         inverter_type: row['Inverter Type'] || row.inverter_type || 'on_grid',
         phases: parseInt(row.Phases || row.phases || 1, 10),
         rate: parseFloat(row['Selling Rate (INR)'] || row.rate || 0),
-        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, 0.12),
+        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE),
         description: row.Description || row.description || '',
         specification_details: row['Specification Details'] || row.specification_details || row.Specifications || row.specifications || row.Description || row.description || '',
       })).filter((r) => r.brand && r.model && !isNaN(r.capacity_kw) && !isNaN(r.rate));
@@ -537,8 +538,8 @@ export default function InvertersMasterPage() {
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">GST Percentage *</label>
                   <input
                     type="number" required min={0} step={0.01}
-                    value={gstRateToPercent(draft.gst_pct, 0.12)}
-                    onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, 0.12) })}
+                    value={gstRateToPercent(draft.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE)}
+                    onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, TAX_CONSTANTS.INVERTER_GST_RATE) })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
                     placeholder="18"
                   />

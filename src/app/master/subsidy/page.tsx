@@ -24,6 +24,7 @@ import { useToast } from '@/components/ui/Toast';
 import { HistoryDrawer } from '@/components/master/HistoryDrawer';
 import { formatINR } from '@/lib/engine/calculator';
 import { safeEvalFormula } from '@/lib/engine/formulaParser';
+import { supabase } from '@/lib/supabase/client';
 
 interface SchemeSlab {
   id?: string;
@@ -34,6 +35,18 @@ interface SchemeSlab {
   is_fixed_amount: boolean;
   fixed_amount: number | null;
   formula?: string | null;
+}
+
+interface StateRule {
+  id: string;
+  state_name: string;
+  state_code: string;
+}
+
+interface StateOverrideDraft {
+  state_id: string;
+  max_absolute_override: number | null;
+  additional_state_subsidy: number;
 }
 
 const validateFormula = (formula: string): { isValid: boolean; error?: string } => {
@@ -66,10 +79,27 @@ interface Scheme {
   max_absolute_subsidy: number;
   is_active: boolean;
   scheme_slabs: SchemeSlab[];
+  state_scheme_overrides?: Array<StateOverrideDraft & {
+    id?: string;
+    state_rules?: StateRule | null;
+  }>;
 }
 
 export default function SubsidyMasterPage() {
   const { data: schemes, isLoading } = useSubsidySchemesQuery();
+  const { data: states = [] } = useQuery({
+    queryKey: ['masters', 'state_rules'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('state_rules')
+        .select('id, state_name, state_code')
+        .eq('is_active', true)
+        .order('state_name', { ascending: true });
+      if (error) throw error;
+      return (data || []) as StateRule[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
   const updateMutation = useUpdateSubsidyMutation();
   const createMutation = useCreateSubsidyMutation();
 
@@ -92,6 +122,7 @@ export default function SubsidyMasterPage() {
 
   // Slabs editor state
   const [slabs, setSlabs] = useState<SchemeSlab[]>([]);
+  const [stateOverrides, setStateOverrides] = useState<StateOverrideDraft[]>([]);
 
   const selectedScheme = schemes?.find((s: any) => s.id === selectedSchemeId) as Scheme | undefined;
 
@@ -115,6 +146,11 @@ export default function SubsidyMasterPage() {
       }))
       .sort((a, b) => a.slab_index - b.slab_index);
     setSlabs(sortedSlabs);
+    setStateOverrides((scheme.state_scheme_overrides || []).map((override) => ({
+      state_id: override.state_id,
+      max_absolute_override: override.max_absolute_override ?? null,
+      additional_state_subsidy: Number(override.additional_state_subsidy || 0),
+    })));
     setEditorOpen(true);
   };
 
@@ -129,6 +165,7 @@ export default function SubsidyMasterPage() {
       max_absolute_subsidy: 78000,
     });
     setSlabs([]);
+    setStateOverrides([]);
     setEditorOpen(true);
   };
 
@@ -166,6 +203,26 @@ export default function SubsidyMasterPage() {
     );
   };
 
+  const availableStates = states.filter((state) => !stateOverrides.some((override) => override.state_id === state.id));
+
+  const handleAddStateOverride = () => {
+    const nextState = availableStates[0];
+    if (!nextState) {
+      toast('All active states are already assigned to this scheme.', 'error');
+      return;
+    }
+    setStateOverrides([
+      ...stateOverrides,
+      { state_id: nextState.id, max_absolute_override: null, additional_state_subsidy: 0 },
+    ]);
+  };
+
+  const handleStateOverrideChange = (idx: number, field: keyof StateOverrideDraft, value: any) => {
+    setStateOverrides(stateOverrides.map((override, index) => (
+      index === idx ? { ...override, [field]: value } : override
+    )));
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -184,11 +241,13 @@ export default function SubsidyMasterPage() {
           schemeId: selectedSchemeId,
           updates: schemeDraft,
           slabs,
+          stateOverrides,
         });
       } else {
         await createMutation.mutateAsync({
           updates: schemeDraft,
           slabs,
+          stateOverrides,
         });
       }
       setEditorOpen(false);
@@ -244,6 +303,20 @@ export default function SubsidyMasterPage() {
                   }`}>{scheme.applies_to}</span>
                 </div>
                 <p className="text-xs text-text-muted mt-2">{scheme.description || 'No description provided.'}</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {scheme.state_scheme_overrides && scheme.state_scheme_overrides.length > 0 ? (
+                    scheme.state_scheme_overrides.map((override) => (
+                      <span key={override.state_id} className="rounded-md border border-accent/25 bg-accent/10 px-2 py-1 text-[10px] font-semibold text-accent">
+                        {override.state_rules?.state_name || 'State scheme'}
+                        {Number(override.additional_state_subsidy || 0) > 0 ? ` + ${formatINR(override.additional_state_subsidy)}` : ''}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="rounded-md border border-border bg-background px-2 py-1 text-[10px] font-semibold text-text-secondary">
+                      Central / all states
+                    </span>
+                  )}
+                </div>
                 
                 {/* Slabs summary list */}
                 <div className="mt-4 pt-3 border-t border-border space-y-2">
@@ -366,6 +439,86 @@ export default function SubsidyMasterPage() {
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none resize-none"
                   />
                 </div>
+              </div>
+
+              {/* State Availability */}
+              <div className="space-y-3 border-b border-border pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-text-secondary uppercase tracking-wider">State Availability</span>
+                    <p className="mt-1 text-[10px] text-text-muted">
+                      Leave empty for a central scheme. Add states for state-specific schemes or top-ups.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddStateOverride}
+                    className="px-3 py-1 rounded bg-surface border border-border text-[10px] font-bold text-text-secondary hover:border-accent/40 hover:text-accent transition-colors"
+                  >
+                    + Add State
+                  </button>
+                </div>
+
+                {stateOverrides.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border bg-background/60 px-3 py-3 text-xs text-text-muted">
+                    Central / global scheme. It will be available for every selected state.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {stateOverrides.map((override, index) => (
+                      <div key={override.state_id || `state-${index}`} className="grid gap-2 rounded-lg border border-border bg-background p-3 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_32px] md:items-end">
+                        <label className="space-y-1">
+                          <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">State</span>
+                          <select
+                            value={override.state_id}
+                            onChange={(event) => handleStateOverrideChange(index, 'state_id', event.target.value)}
+                            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text-primary outline-none focus:border-accent/40"
+                          >
+                            {states
+                              .filter((state) => state.id === override.state_id || !stateOverrides.some((item, itemIndex) => itemIndex !== index && item.state_id === state.id))
+                              .map((state) => (
+                                <option key={state.id} value={state.id}>
+                                  {state.state_name} ({state.state_code})
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                        <label className="space-y-1">
+                          <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">State Top-up</span>
+                          <input
+                            type="number"
+                            min={0}
+                            step={100}
+                            value={override.additional_state_subsidy}
+                            onChange={(event) => handleStateOverrideChange(index, 'additional_state_subsidy', parseFloat(event.target.value) || 0)}
+                            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text-primary outline-none focus:border-accent/40 font-mono"
+                            placeholder="0"
+                          />
+                        </label>
+                        <label className="space-y-1">
+                          <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">State Cap</span>
+                          <input
+                            type="number"
+                            min={0}
+                            step={100}
+                            value={override.max_absolute_override ?? ''}
+                            onChange={(event) => handleStateOverrideChange(index, 'max_absolute_override', event.target.value ? parseFloat(event.target.value) : null)}
+                            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text-primary outline-none focus:border-accent/40 font-mono"
+                            placeholder="Use scheme cap"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setStateOverrides(stateOverrides.filter((_, itemIndex) => itemIndex !== index))}
+                          className="h-8 rounded-md border border-border text-text-muted hover:border-error/30 hover:bg-error/10 hover:text-error"
+                          aria-label="Remove state assignment"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Slabs Grid */}

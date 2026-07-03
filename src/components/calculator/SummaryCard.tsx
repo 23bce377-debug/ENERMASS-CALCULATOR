@@ -5,6 +5,7 @@ import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { SYSTEMS } from '@/lib/data/bom';
 import { formatINR } from '@/lib/engine/calculator';
 import { useSettings } from '@/lib/hooks/useSettings';
+import { getEligibleSubsidySchemes } from '@/lib/store/calculatorTypes';
 
 export function SummaryCard() {
   const calcResult = useCalculatorStore((s) => s.calcResult);
@@ -17,6 +18,11 @@ export function SummaryCard() {
   const applySubsidy = useCalculatorStore((s) => s.applySubsidy);
   const setApplySubsidy = useCalculatorStore((s) => s.setApplySubsidy);
   const selectedState = useCalculatorStore((s) => s.selectedState);
+  const selectedSubsidySchemeId = useCalculatorStore((s) => s.selectedSubsidySchemeId);
+  const setSelectedSubsidySchemeId = useCalculatorStore((s) => s.setSelectedSubsidySchemeId);
+  const dbSchemes = useCalculatorStore((s) => s.dbSchemes);
+  const dbSchemeOverrides = useCalculatorStore((s) => s.dbSchemeOverrides);
+  const dbStateData = useCalculatorStore((s) => s.dbStateData);
 
   const { settings } = useSettings();
 
@@ -77,8 +83,16 @@ export function SummaryCard() {
   // resolved server-side. The toggle below only enables/disables application.
   const isCommercial = projectType === 'commercial';
   const subsidyApplied = applySubsidy && (calcResult.subsidyAmount ?? 0) > 0;
+  const eligibleSubsidySchemes = getEligibleSubsidySchemes({
+    dbSchemes,
+    dbSchemeOverrides,
+    dbStateData,
+    selectedState,
+    projectType,
+  } as any);
+  const selectedSubsidyScheme = eligibleSubsidySchemes.find((scheme: any) => scheme.id === selectedSubsidySchemeId) ?? eligibleSubsidySchemes[0];
   const subsidyLabel = subsidyApplied
-    ? `${selectedState} Subsidy`
+    ? selectedSubsidyScheme?.name || `${selectedState} Subsidy`
     : (isCommercial ? 'No Subsidy (Commercial)' : 'No Subsidy');
 
   return (
@@ -212,6 +226,26 @@ export function SummaryCard() {
             </div>
             {applySubsidy && !isCommercial && (
               <>
+                <label className="mt-2 block">
+                  <span className="mb-1 block text-[10px] text-text-muted leading-tight">
+                    Subsidy scheme
+                  </span>
+                  <select
+                    value={selectedSubsidyScheme?.id ?? ''}
+                    onChange={(event) => setSelectedSubsidySchemeId(event.target.value || null)}
+                    className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
+                  >
+                    {eligibleSubsidySchemes.length === 0 ? (
+                      <option value="">No scheme for {selectedState || 'selected state'}</option>
+                    ) : (
+                      eligibleSubsidySchemes.map((scheme: any) => (
+                        <option key={scheme.id} value={scheme.id}>
+                          {scheme.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
                 <div title={calcResult.subsidyResult?.breakdown} className="mt-2">
                   <Row label={subsidyLabel} value={`-${formatINR(calcResult.subsidyAmount)}`} success={calcResult.subsidyAmount > 0} />
                 </div>

@@ -674,7 +674,21 @@ export function useSubsidySchemesQuery() {
         .order('created_at', { ascending: false }) as any);
 
       if (error) throw error;
-      return (data as any) || [];
+
+      const schemeIds = ((data as any) || []).map((scheme: any) => scheme.id);
+      if (schemeIds.length === 0) return [];
+
+      const { data: overrides, error: overridesError } = await (supabase
+        .from('state_scheme_overrides' as any)
+        .select('*, state_rules(id, state_name, state_code)')
+        .in('scheme_id', schemeIds)
+        .eq('is_active', true) as any);
+      if (overridesError) throw overridesError;
+
+      return ((data as any) || []).map((scheme: any) => ({
+        ...scheme,
+        state_scheme_overrides: (overrides || []).filter((override: any) => override.scheme_id === scheme.id),
+      }));
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache validity
   });
@@ -684,7 +698,7 @@ export function useUpdateSubsidyMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ schemeId, updates, slabs }: { schemeId: string; updates: any; slabs: any[] }) => {
+    mutationFn: async ({ schemeId, updates, slabs, stateOverrides }: { schemeId: string; updates: any; slabs: any[]; stateOverrides?: any[] }) => {
       const { orgId, userId } = await getOrgContext();
 
       // 1. Fetch current scheme for audit
@@ -704,11 +718,9 @@ export function useUpdateSubsidyMutation() {
 
       if (schemeErr) throw schemeErr;
 
-      // 3. Upsert scheme slabs
+      // 3. Replace scheme slabs
+      await supabase.from('scheme_slabs').delete().eq('scheme_id', schemeId);
       if (slabs && slabs.length > 0) {
-        // Delete all old slabs first to refresh indexes properly
-        await supabase.from('scheme_slabs').delete().eq('scheme_id', schemeId);
-        
         const slabsToInsert = slabs.map((s, idx) => ({
           scheme_id: schemeId,
           slab_index: idx + 1,
@@ -722,6 +734,21 @@ export function useUpdateSubsidyMutation() {
 
         const { error: slabsErr } = await supabase.from('scheme_slabs').insert(slabsToInsert);
         if (slabsErr) throw slabsErr;
+      }
+
+      await supabase.from('state_scheme_overrides' as any).delete().eq('scheme_id', schemeId);
+      if (stateOverrides && stateOverrides.length > 0) {
+        const overridesToInsert = stateOverrides.map((override) => ({
+          scheme_id: schemeId,
+          state_id: override.state_id,
+          max_absolute_override: override.max_absolute_override === '' || override.max_absolute_override == null
+            ? null
+            : Number(override.max_absolute_override),
+          additional_state_subsidy: Number(override.additional_state_subsidy || 0),
+          is_active: true,
+        }));
+        const { error: overridesErr } = await supabase.from('state_scheme_overrides' as any).insert(overridesToInsert);
+        if (overridesErr) throw overridesErr;
       }
 
       // 4. Log Audit Trail
@@ -751,6 +778,7 @@ export function useUpdateSubsidyMutation() {
         console.error('Failed to revalidate master cache:', err);
       }
       queryClient.invalidateQueries({ queryKey: ['masters', 'subsidy'] });
+      queryClient.invalidateQueries({ queryKey: ['masters', 'state_rules'] });
     }
   });
 }
@@ -759,7 +787,7 @@ export function useCreateSubsidyMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ updates, slabs }: { updates: any; slabs: any[] }) => {
+    mutationFn: async ({ updates, slabs, stateOverrides }: { updates: any; slabs: any[]; stateOverrides?: any[] }) => {
       const { orgId, userId } = await getOrgContext();
 
       // 1. Insert scheme
@@ -791,6 +819,20 @@ export function useCreateSubsidyMutation() {
         if (slabsErr) throw slabsErr;
       }
 
+      if (stateOverrides && stateOverrides.length > 0) {
+        const overridesToInsert = stateOverrides.map((override) => ({
+          scheme_id: schemeId,
+          state_id: override.state_id,
+          max_absolute_override: override.max_absolute_override === '' || override.max_absolute_override == null
+            ? null
+            : Number(override.max_absolute_override),
+          additional_state_subsidy: Number(override.additional_state_subsidy || 0),
+          is_active: true,
+        }));
+        const { error: overridesErr } = await supabase.from('state_scheme_overrides' as any).insert(overridesToInsert);
+        if (overridesErr) throw overridesErr;
+      }
+
       // 3. Log Audit Trail
       const { data: afterScheme } = await (supabase
         .from('calculation_schemes')
@@ -818,6 +860,7 @@ export function useCreateSubsidyMutation() {
         console.error('Failed to revalidate master cache:', err);
       }
       queryClient.invalidateQueries({ queryKey: ['masters', 'subsidy'] });
+      queryClient.invalidateQueries({ queryKey: ['masters', 'state_rules'] });
     }
   });
 }

@@ -46,7 +46,7 @@ const CATEGORY_ORDER = [
   'civil',
   'logistics',
   'accessory',
-  'other',
+  'miscellaneous',
 ];
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -61,8 +61,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   civil: 'Civil Works',
   logistics: 'Logistics',
   accessory: 'Accessories',
-  other: 'Other',
+  miscellaneous: 'Miscellaneous',
 };
+
+function normalizeCategory(category: string) {
+  return category === 'other' ? 'miscellaneous' : category;
+}
 
 const SYSTEM_TYPE_OPTIONS = [
   { value: 'on_grid', label: 'On-Grid' },
@@ -155,7 +159,7 @@ export function PresetEditorDialog({ presetId, open, onClose, onSaved, initialDa
   const grouped = useMemo(() => {
     const groups: Record<string, { label: string; items: LineItem[] }> = {};
     for (const category of CATEGORY_ORDER) {
-      const items = lineItems.filter((item) => item.category === category && item.isIncluded);
+      const items = lineItems.filter((item) => normalizeCategory(item.category) === category && item.isIncluded);
       if (items.length > 0) groups[category] = { label: CATEGORY_LABELS[category], items };
     }
     return groups;
@@ -175,7 +179,7 @@ export function PresetEditorDialog({ presetId, open, onClose, onSaved, initialDa
   }
 
   function addItemFromCatalog(catalogItem: any, category: string) {
-    setLineItems((prev) => [...prev, newBlankItem(catalogItem, category, prev.length)]);
+    setLineItems((prev) => [...prev, newBlankItem(catalogItem, normalizeCategory(category), prev.length)]);
     setAddPickerOpen(false);
   }
 
@@ -396,7 +400,7 @@ export function PresetEditorDialog({ presetId, open, onClose, onSaved, initialDa
               <section className="rounded-lg border border-dashed border-border bg-background/50 p-4">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-muted">Add Component</p>
                 <div className="relative flex flex-wrap gap-2">
-                  {CATEGORY_ORDER.filter((category) => category !== 'other').map((category) => (
+                  {CATEGORY_ORDER.map((category) => (
                     <button
                       type="button"
                       key={category}

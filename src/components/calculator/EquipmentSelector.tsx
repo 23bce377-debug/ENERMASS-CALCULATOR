@@ -8,7 +8,8 @@ import { Select } from '@/components/ui/Select';
 import type { PanelBrand, InverterBrand, BatteryBrand } from '@/lib/data/masters';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
-import { TAX_CONSTANTS } from '@/lib/tax-constants';
+import { getBatteryGstRate, TAX_CONSTANTS } from '@/lib/tax-constants';
+import { filterStructureTemplateItemsForRate, resolveStructureMaterialRate } from '@/lib/engine/calculator';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -450,7 +451,7 @@ export function EquipmentSelector({
                     `Voltage: ${battery.voltage}V`,
                     `Quantity: ${qty} Nos`
                   ]}
-                  gstPct={battery.gst_pct || TAX_CONSTANTS.INVERTER_GST_RATE}
+                  gstPct={battery.gst_pct || getBatteryGstRate(battery)}
                   sellingPrice={battery.rate}
                   itemDescForInventory={`${battery.brand} ${battery.model} ${battery.capacity}Ah Battery`}
                 />
@@ -2377,16 +2378,23 @@ function StructureConfigTable() {
   const [materialFilter, setMaterialFilter] = useState<'all' | 'GI' | 'GP'>('all');
 
   const [activeTab, setActiveTab] = useState<'erp' | 'legacy'>(
-    (structureMaterialType && structureVendorId) ? 'erp' : 'legacy'
+    structureMaterialType ? 'erp' : 'legacy'
   );
 
   const switchToErp = () => {
     setActiveTab('erp');
     setStructureSelection(null);
-    if (!structureMaterialType || !structureVendorId) {
-      const defaultVendor = dbStructureVendors.find((v: any) => v.name === 'Appolo');
-      setStructureTypeAndVendor('GI', defaultVendor?.id || dbStructureVendors[0]?.id || null);
+    if (!structureMaterialType) {
+      setStructureTypeAndVendor('GI', null);
     }
+  };
+
+  const switchToCustomDefinition = () => {
+    setActiveTab('legacy');
+    setStructureTypeAndVendor(null, null);
+    setWalkwayLength(0);
+    setLadderLength(0);
+    setStructureSelection('custom', 'weight');
   };
 
   const switchToLegacy = () => {
@@ -2563,25 +2571,8 @@ function StructureConfigTable() {
     : (selectedStructure ? getStructureRatesAndCost(selectedStructure, structurePricingMode).cost : 0);
 
   // ERP specific hooks and filters
-  const vendorsForMaterial = useMemo(() => {
-    if (!structureMaterialType) return [];
-    const vendorIds = dbStructureMaterialRates
-      .filter((r: any) => r.material_type === structureMaterialType)
-      .map((r: any) => r.vendor_id);
-    return dbStructureVendors.filter((v: any) => vendorIds.includes(v.id));
-  }, [dbStructureVendors, dbStructureMaterialRates, structureMaterialType]);
-
   const handleMaterialTypeChange = (mat: 'GI' | 'GP') => {
-    const vendorIds = dbStructureMaterialRates
-      .filter((r: any) => r.material_type === mat)
-      .map((r: any) => r.vendor_id);
-    const validVendors = dbStructureVendors.filter((v: any) => vendorIds.includes(v.id));
-    
-    let nextVendorId = structureVendorId;
-    if (!structureVendorId || !vendorIds.includes(structureVendorId)) {
-      nextVendorId = validVendors[0]?.id || null;
-    }
-    setStructureTypeAndVendor(mat, nextVendorId);
+    setStructureTypeAndVendor(mat, null);
   };
 
   const matchedTemplate = useMemo(() => {
@@ -2594,23 +2585,28 @@ function StructureConfigTable() {
   }, [dbStructureTemplates, structureMaterialType, capacityKW]);
 
   const matchedTemplateItems = useMemo(() => {
-    if (!matchedTemplate || !structureVendorId) return [];
-    return dbStructureTemplateItems.filter((item: any) => 
-      item.template_id === matchedTemplate.id &&
-      (item.vendor_id === null || item.vendor_id === structureVendorId)
+    if (!matchedTemplate) return [];
+    const materialRate = resolveStructureMaterialRate({
+      structureMaterialType: structureMaterialType ?? undefined,
+      structureVendorId: structureVendorId ?? undefined,
+      dbStructureMaterialRates,
+      dbStructureVendors,
+    });
+    return filterStructureTemplateItemsForRate(
+      dbStructureTemplateItems,
+      matchedTemplate.id,
+      materialRate.vendorId
     );
-  }, [dbStructureTemplateItems, matchedTemplate, structureVendorId]);
-
-  const resolvedVendor = useMemo(() => {
-    return dbStructureVendors.find((v: any) => v.id === structureVendorId);
-  }, [dbStructureVendors, structureVendorId]);
+  }, [dbStructureTemplateItems, matchedTemplate, structureMaterialType, structureVendorId, dbStructureMaterialRates, dbStructureVendors]);
 
   const rateRow = useMemo(() => {
-    if (!structureVendorId || !structureMaterialType) return null;
-    return dbStructureMaterialRates.find((r: any) => 
-      r.vendor_id === structureVendorId && r.material_type === structureMaterialType
-    );
-  }, [dbStructureMaterialRates, structureVendorId, structureMaterialType]);
+    return resolveStructureMaterialRate({
+      structureMaterialType: structureMaterialType ?? undefined,
+      structureVendorId: structureVendorId ?? undefined,
+      dbStructureMaterialRates,
+      dbStructureVendors,
+    }).rateRow;
+  }, [dbStructureMaterialRates, dbStructureVendors, structureVendorId, structureMaterialType]);
 
   const currentRatePerKg = rateRow ? Number(rateRow.rate_per_kg) : 0;
 
@@ -2627,7 +2623,7 @@ function StructureConfigTable() {
   }, [dbLadderTemplates, structureMaterialType]);
 
   const erpCalculationDetails = useMemo(() => {
-    if (!structureMaterialType || !structureVendorId || !matchedTemplate) return null;
+    if (!structureMaterialType || !matchedTemplate) return null;
     
     let rafterWeight = 0;
     let purlinWeight = 0;
@@ -2692,11 +2688,11 @@ function StructureConfigTable() {
       ladderCost,
       grandTotal
     };
-  }, [structureMaterialType, structureVendorId, matchedTemplate, matchedTemplateItems, currentRatePerKg, walkwayLengthM, walkwayTemplate, ladderLengthM, ladderTemplate]);
+  }, [structureMaterialType, matchedTemplate, matchedTemplateItems, currentRatePerKg, walkwayLengthM, walkwayTemplate, ladderLengthM, ladderTemplate]);
 
   return (
     <div className="space-y-6 p-1 text-xs">
-      {/* Tab Selector for ERP vs Legacy */}
+      {/* Tab Selector for template vs manual structure definition */}
       <div className="flex rounded-lg border border-border bg-background p-1 mb-4">
         <button
           onClick={switchToErp}
@@ -2706,7 +2702,7 @@ function StructureConfigTable() {
               : 'text-text-secondary hover:text-text-primary'
           }`}
         >
-          ERP Structure Model (Recommended)
+          Template Structure
         </button>
         <button
           onClick={switchToLegacy}
@@ -2716,17 +2712,17 @@ function StructureConfigTable() {
               : 'text-text-secondary hover:text-text-primary'
           }`}
         >
-          Legacy Flat/Weight Models
+          Custom / Advanced
         </button>
       </div>
 
       {activeTab === 'erp' ? (
         <div className="space-y-6">
-          {/* ERP Form: Material type & Vendor selector */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-xl border border-border bg-surface-hover/30 p-4">
+          {/* ERP Form: material and simple add-on lengths */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 rounded-xl border border-border bg-surface-hover/30 p-4">
             <div className="space-y-2">
               <label className="block text-[10px] uppercase font-bold text-text-secondary tracking-wider">
-                Structure Type (Material)
+                Structure Material
               </label>
               <div className="flex rounded-md border border-border bg-background p-1 w-fit">
                 {(['GI', 'GP'] as const).map((mat) => (
@@ -2747,22 +2743,16 @@ function StructureConfigTable() {
 
             <div className="space-y-2">
               <label className="block text-[10px] uppercase font-bold text-text-secondary tracking-wider">
-                Vendor
+                Definition
               </label>
-              <Select
-                value={structureVendorId || ''}
-                onChange={(val) => setStructureTypeAndVendor(structureMaterialType, val || null)}
-                placeholder="Select Vendor"
-                options={[
-                  { value: '', label: 'Select Vendor' },
-                  ...vendorsForMaterial.map((v: any) => ({
-                    value: v.id,
-                    label: v.name,
-                  })),
-                ]}
-                size="sm"
-                className="w-full"
-              />
+              <button
+                type="button"
+                onClick={switchToCustomDefinition}
+                className="inline-flex h-[34px] items-center gap-2 rounded-md border border-border bg-background px-3 text-xs font-semibold text-text-primary transition-colors hover:border-accent hover:text-accent"
+              >
+                <Edit3 size={13} />
+                Define Custom Structure
+              </button>
             </div>
 
             <div className="space-y-2">
@@ -2781,7 +2771,7 @@ function StructureConfigTable() {
                 />
                 {walkwayTemplate && (
                   <span className="text-[10px] text-text-muted whitespace-nowrap">
-                    ({walkwayTemplate.template}: ₹{Number(walkwayTemplate.cost_per_meter).toFixed(2)}/m)
+                    ₹{Number(walkwayTemplate.cost_per_meter).toFixed(2)}/m
                   </span>
                 )}
               </div>
@@ -2803,7 +2793,7 @@ function StructureConfigTable() {
                 />
                 {ladderTemplate && (
                   <span className="text-[10px] text-text-muted whitespace-nowrap">
-                    ({ladderTemplate.template}: ₹{Number(ladderTemplate.cost_per_meter).toFixed(2)}/m)
+                    ₹{Number(ladderTemplate.cost_per_meter).toFixed(2)}/m
                   </span>
                 )}
               </div>
@@ -2823,8 +2813,8 @@ function StructureConfigTable() {
                     <span className="text-xs font-semibold text-text-primary">{structureMaterialType}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block">Vendor</span>
-                    <span className="text-xs font-semibold text-text-primary">{resolvedVendor?.name || 'Unknown'}</span>
+                    <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block">Material Rate</span>
+                    <span className="text-xs font-semibold text-text-primary font-mono">₹{currentRatePerKg.toFixed(2)}/kg</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block">Rafter Weight</span>
@@ -3378,25 +3368,6 @@ function StructureConfigTable() {
         structureId={selectedStructureId} 
         capacityKW={capacityKW}
       />
-
-      {selectedStructureId === 'custom' && (
-        <div className="mt-6 border-t border-border pt-4">
-          <EquipmentDetailCard
-            title="Custom Structure"
-            brand="Custom"
-            model="GI/GP Custom Build"
-            category="Mounting Gear"
-            specs={[
-              `Pricing Mode: ${structurePricingMode}`,
-              `Total Calculated Weight: ${finalWeight.toFixed(1)} kg`,
-              `Custom Rate per kg: ₹${ratePerKg.toFixed(2)}/kg`
-            ]}
-            gstPct={TAX_CONSTANTS.COMMERCIAL_GST_RATE}
-            sellingPrice={totalCost}
-            itemDescForInventory="Custom Structure"
-          />
-        </div>
-      )}
       </>)}
     </div>
   );

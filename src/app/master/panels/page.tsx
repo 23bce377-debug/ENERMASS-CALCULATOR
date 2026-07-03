@@ -21,6 +21,7 @@ import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditMod
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
 import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
+import { TAX_CONSTANTS } from '@/lib/tax-constants';
 import { z } from 'zod';
 
 interface Panel {
@@ -80,7 +81,7 @@ export default function PanelsMasterPage() {
     wattage_w: 550,
     panel_type: 'Mono PERC',
     rate_per_watt: 22,
-    gst_pct: 0.05,
+    gst_pct: Number(TAX_CONSTANTS.PANEL_GST_RATE),
     description: '',
     specification_details: '',
   });
@@ -272,7 +273,7 @@ export default function PanelsMasterPage() {
         wattage_w: parseInt(row[importMappings.wattage_w]) || 550,
         panel_type: row[importMappings.panel_type] || 'Mono PERC',
         rate_per_watt: parseFloat(row[importMappings.rate_per_watt]) || 20,
-        gst_pct: normalizeGstRate(row[importMappings.gst_pct], 0.05),
+        gst_pct: normalizeGstRate(row[importMappings.gst_pct], TAX_CONSTANTS.PANEL_GST_RATE),
         description: row[importMappings.description] || '',
         specification_details: row[importMappings.specification_details] || row[importMappings.description] || '',
       };
@@ -371,7 +372,7 @@ export default function PanelsMasterPage() {
       await bulkUpdateMutation.mutateAsync({
         ids: selectedIds,
         updates: updates.gst_pct !== undefined
-          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, 0.05) }
+          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE) }
           : updates,
       });
       setSelectedIds([]);
@@ -504,7 +505,7 @@ export default function PanelsMasterPage() {
       wattage_w: 550,
       panel_type: 'Mono PERC',
       rate_per_watt: 22,
-      gst_pct: 0.05,
+      gst_pct: Number(TAX_CONSTANTS.PANEL_GST_RATE),
       description: '',
       specification_details: '',
     });
@@ -549,7 +550,7 @@ export default function PanelsMasterPage() {
       'Wattage (W)': p.wattage_w,
       'Panel Type': p.panel_type,
       'Rate per Watt (INR)': p.rate_per_watt,
-      'GST Percentage': gstRateToPercent(p.gst_pct, 0.05),
+      'GST Percentage': gstRateToPercent(p.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE),
       Description: p.description || '',
       'Specification Details': p.specification_details || '',
     }));
@@ -1120,8 +1121,8 @@ export default function PanelsMasterPage() {
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">GST Percentage *</label>
                   <input
                     type="number" required min={0} step={0.01}
-                    value={gstRateToPercent(draft.gst_pct, 0.05)}
-                    onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, 0.05) })}
+                    value={gstRateToPercent(draft.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE)}
+                    onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, TAX_CONSTANTS.PANEL_GST_RATE) })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
                     placeholder="12"
                   />

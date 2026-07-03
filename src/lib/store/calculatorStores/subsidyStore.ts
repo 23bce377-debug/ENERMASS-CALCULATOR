@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand';
 import {
   CalculatorState,
+  getEligibleSubsidySchemes,
   runCalculation
 } from '../calculatorTypes';
 
@@ -8,7 +9,7 @@ export const createSubsidySlice: StateCreator<
   CalculatorState,
   [],
   [],
-  Pick<CalculatorState, 'applySubsidy' | 'rpcSubsidyAmount' | 'fetchRpcSubsidy' | 'setApplySubsidy' | 'setSelectedScheme'>
+  Pick<CalculatorState, 'applySubsidy' | 'rpcSubsidyAmount' | 'fetchRpcSubsidy' | 'setApplySubsidy' | 'setSelectedScheme' | 'setSelectedSubsidySchemeId'>
 > = (set, get) => ({
   applySubsidy: true,
   rpcSubsidyAmount: null,
@@ -21,6 +22,18 @@ export const createSubsidySlice: StateCreator<
 
   setSelectedScheme: (val) => {
     set({ selectedScheme: val });
+    const { result, error } = runCalculation(get());
+    set({ calcResult: result, calcError: error });
+  },
+
+  setSelectedSubsidySchemeId: (id) => {
+    const eligibleSchemes = getEligibleSubsidySchemes(get());
+    const scheme = eligibleSchemes.find((item: any) => item.id === id) ?? eligibleSchemes[0] ?? null;
+    set({
+      selectedSubsidySchemeId: scheme?.id ?? null,
+      dbActiveScheme: scheme ?? null,
+      rpcSubsidyAmount: null,
+    });
     const { result, error } = runCalculation(get());
     set({ calcResult: result, calcError: error });
   },
@@ -42,69 +55,17 @@ export const createSubsidySlice: StateCreator<
       return;
     }
 
-    const stateInfo = state.dbStateData[state.selectedState];
-    const stateCode = stateInfo?.stateCode || null;
-
-    // Calculate eligible capacity
-    const systems = state.dbSystems;
-    const system = (state.selectedSystemId
-      ? systems.find(s => s.id === state.selectedSystemId)
-      : systems[0]) ?? systems[0];
-    let panelCapacityKW = system?.capacityKW ?? 0;
-    
-    // Calculate custom panel capacity if panelMix is used
-    const panelMixEntries = Object.entries(state.panelMix).filter(([, qty]) => qty > 0);
-    if (panelMixEntries.length > 0) {
-      panelCapacityKW = 0;
-      for (const [panelId, qty] of panelMixEntries) {
-        const p = state.dbPanels.find(x => x.id === panelId);
-        if (p) {
-          panelCapacityKW += (p.wattage * qty) / 1000;
-        }
-      }
-    } else if (state.selectedPanelId) {
-      const p = state.dbPanels.find(x => x.id === state.selectedPanelId);
-      const qty = system?.panelQty ?? 0;
-      if (p) {
-        panelCapacityKW = (p.wattage * qty) / 1000;
-      }
+    const eligibleSchemes = getEligibleSubsidySchemes(get());
+    if (!eligibleSchemes.some((scheme: any) => scheme.id === get().selectedSubsidySchemeId)) {
+      const nextScheme = eligibleSchemes[0] ?? null;
+      set({ selectedSubsidySchemeId: nextScheme?.id ?? null, dbActiveScheme: nextScheme ?? null });
     }
 
-    let inverterCapacityKW = panelCapacityKW;
-    const inverterMixEntries = Object.entries(state.selectedInverterMix).filter(([, q]) => q > 0);
-    if (inverterMixEntries.length > 0) {
-      inverterCapacityKW = 0;
-      for (const [invId, qty] of inverterMixEntries) {
-        const inv = state.dbInverters.find(x => x.id === invId);
-        if (inv) inverterCapacityKW += inv.capacityKW * qty;
-      }
-    }
-    
-    const eligibleCapacityKW = Math.min(panelCapacityKW, inverterCapacityKW);
-
-    try {
-      const { supabase } = await import('../../supabase/client');
-      // State-driven: the RPC auto-resolves the applicable scheme from the project
-      // type and folds in any per-state top-up. No scheme code is passed.
-      const { data, error } = await (supabase.rpc as any)('calculate_state_subsidy', {
-        p_state_code: stateCode,
-        p_capacity_kw: eligibleCapacityKW,
-        p_project_type: state.projectType,
-      });
-      if (error) throw error;
-
-      set({ rpcSubsidyAmount: Number(data ?? 0) });
-
-      // Trigger recalculate so it uses the new subsidy
-      const { result, error: calcErr } = runCalculation(get());
-      set({ calcResult: result, calcError: calcErr });
-    } catch (err) {
-      console.error('Failed to fetch state subsidy RPC:', err);
-      // Clear the server value so the engine falls back to its local slab
-      // computation rather than using a stale amount from a previous state.
-      set({ rpcSubsidyAmount: null });
-      const { result, error: calcErr } = runCalculation(get());
-      set({ calcResult: result, calcError: calcErr });
-    }
+    // Use local DB-backed slab calculation so the amount follows the exact
+    // scheme selected in the UI. The legacy RPC auto-selects one scheme by
+    // project type and cannot represent user-selected state schemes.
+    set({ rpcSubsidyAmount: null });
+    const { result, error: calcErr } = runCalculation(get());
+    set({ calcResult: result, calcError: calcErr });
   },
 });

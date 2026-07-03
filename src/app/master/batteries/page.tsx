@@ -30,6 +30,7 @@ import { BulkEditModal, type FieldSchema } from '@/components/master/BulkEditMod
 import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
 import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
+import { getBatteryGstRate, TAX_CONSTANTS } from '@/lib/tax-constants';
 
 interface Battery {
   id: string;
@@ -77,7 +78,7 @@ export default function BatteriesMasterPage() {
     chemistry: 'LFP',
     dod_pct: 0.8,
     rate: 90000,
-    gst_pct: 0.12,
+    gst_pct: Number(TAX_CONSTANTS.BATTERY_GST_RATE),
     description: '',
     specification_details: '',
   });
@@ -151,7 +152,7 @@ export default function BatteriesMasterPage() {
       chemistry: 'LFP',
       dod_pct: 0.8,
       rate: 90000,
-      gst_pct: 0.12,
+      gst_pct: Number(TAX_CONSTANTS.BATTERY_GST_RATE),
       description: '',
       specification_details: '',
     });
@@ -214,7 +215,7 @@ export default function BatteriesMasterPage() {
       await bulkUpdateMutation.mutateAsync({
         ids: selectedIds,
         updates: updates.gst_pct !== undefined
-          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, 0.12) }
+          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, TAX_CONSTANTS.BATTERY_GST_RATE) }
           : updates,
       });
       setSelectedIds([]);
@@ -235,7 +236,7 @@ export default function BatteriesMasterPage() {
       'Voltage (V)': b.voltage_v || '',
       'DoD Percentage': b.dod_pct,
       'Selling Rate (INR)': b.rate,
-      'GST Percentage': gstRateToPercent(b.gst_pct, 0.12),
+      'GST Percentage': gstRateToPercent(b.gst_pct, getBatteryGstRate(b)),
       Description: b.description || '',
       'Specification Details': b.specification_details || '',
     }));
@@ -258,7 +259,7 @@ export default function BatteriesMasterPage() {
         voltage_v: row['Voltage (V)'] || row.voltage_v ? parseInt(row['Voltage (V)'] || row.voltage_v, 10) : null,
         dod_pct: parseFloat(row['DoD Percentage'] || row.dod_pct || 0.8),
         rate: parseFloat(row['Selling Rate (INR)'] || row.rate || 0),
-        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, 0.12),
+        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, getBatteryGstRate(row)),
         description: row.Description || row.description || '',
         specification_details: row['Specification Details'] || row.specification_details || row.Specifications || row.specifications || row.Description || row.description || '',
       })).filter((r) => r.brand && r.model && !isNaN(r.capacity_kwh) && !isNaN(r.rate));
@@ -507,7 +508,14 @@ export default function BatteriesMasterPage() {
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Battery Chemistry *</label>
                   <Select
                     value={draft.chemistry}
-                    onChange={(val) => setDraft({ ...draft, chemistry: val as any })}
+                    onChange={(val) => {
+                      const chemistry = val as Battery['chemistry'];
+                      setDraft({
+                        ...draft,
+                        chemistry,
+                        gst_pct: getBatteryGstRate({ ...draft, chemistry }),
+                      });
+                    }}
                     options={[
                       { value: 'LFP', label: 'LFP (Lithium Iron Phosphate)' },
                       { value: 'Li-Ion', label: 'Li-Ion (Lithium Ion)' },
@@ -549,8 +557,8 @@ export default function BatteriesMasterPage() {
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">GST Percentage *</label>
                   <input
                     type="number" required min={0} step={0.01}
-                    value={gstRateToPercent(draft.gst_pct, 0.12)}
-                    onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, 0.12) })}
+                    value={gstRateToPercent(draft.gst_pct, getBatteryGstRate(draft))}
+                    onChange={(e) => setDraft({ ...draft, gst_pct: normalizeGstRate(e.target.value, getBatteryGstRate(draft)) })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
                     placeholder="18"
                   />

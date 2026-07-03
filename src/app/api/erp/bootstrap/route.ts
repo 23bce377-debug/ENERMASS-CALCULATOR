@@ -29,7 +29,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
 
   try {
     // Include limits in the cache key to prevent collision/poisoning (P0-7)
-    const cacheKey = `erp:bootstrap:${orgId}:v3:bomLimit_${bomLimit}:invLimit_${invLimit}`;
+    const cacheKey = `erp:bootstrap:${orgId}:v4:bomLimit_${bomLimit}:invLimit_${invLimit}`;
     const data = await getOrSetCache(cacheKey, async () => {
       const { createClient } = await import('@/lib/supabase/server');
       const supabase = await createClient();
@@ -64,10 +64,11 @@ export const GET = withLicensedApiRoute(async (request, context) => {
       ]);
 
       // Chunk 3: Rules, Schemes, Vendors, Systems, and GST Master
-      const [stateRulesRes, slabsRes, schemesRes, inventoryRes, vendorsRes, systemsRes, taxHsnRes, taxGstRatesRes, systemStateAvailRes, stateTermsRes, hiddenItemsRes] = await Promise.all([
+      const [stateRulesRes, slabsRes, schemesRes, schemeOverridesRes, inventoryRes, vendorsRes, systemsRes, taxHsnRes, taxGstRatesRes, systemStateAvailRes, stateTermsRes, hiddenItemsRes] = await Promise.all([
         safeQuery(supabase.from('state_rules').select('*').eq('is_active', true)),
         safeQuery(supabase.from('scheme_slabs').select('*')),
         safeQuery(supabase.from('calculation_schemes').select('*').eq('is_active', true)),
+        safeQuery((supabase as any).from('state_scheme_overrides').select('*').eq('is_active', true)),
         safeQuery(supabase.from('inventory_summary').select('*').eq('org_id', orgId).limit(invLimit)),
         safeQuery(supabase.from('vendors').select('*').eq('org_id', orgId).order('name', { ascending: true })),
         safeQuery(supabase.from('systems').select('*, system_items(*)').eq('is_active', true).order('capacity_kw', { ascending: true })),
@@ -127,6 +128,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
         stateRules: stateRulesRes.data || [],
         slabs: slabsRes.data || [],
         schemes: schemesRes.data || [],
+        schemeOverrides: (schemeOverridesRes as any)?.data || [],
         inventorySummary: inventoryRes.data || [],
         vendors: vendorsRes.data || [],
         structureComponents: structureComponentsRes.data || [],

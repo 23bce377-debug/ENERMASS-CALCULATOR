@@ -1,6 +1,12 @@
 import { Client } from 'pg';
 import * as crypto from 'crypto';
-import { calculateSystem, type CalcInput, type CalcResult } from './calculator';
+import {
+  calculateSystem,
+  filterStructureTemplateItemsForRate,
+  resolveStructureMaterialRate,
+  type CalcInput,
+  type CalcResult,
+} from './calculator';
 import { TAX_CONSTANTS } from '@/lib/tax-constants';
 import { getCachedMasterData } from '@/lib/cache/masterCache';
 import { resolveEffectiveRate, resolveEffectiveMargin } from './overrideResolver';
@@ -34,6 +40,15 @@ export interface EquipmentSelection {
   structureMaterialType?: string;
   walkwayLengthM?: number;
   ladderLengthM?: number;
+  structurePricingMode?: 'weight' | 'per_watt' | 'flat';
+  structureBaseWeightOverride?: number;
+  structureWeightLookupKg?: number;
+  structureRateOverride?: number;
+  structureWastageOverride?: number;
+  structureFastenerOverride?: number;
+  structureCustomRawRate?: number;
+  structureCustomFabricationRate?: number;
+  structureCustomGalvanizingRate?: number;
 }
 
 export interface PricingContext {
@@ -202,7 +217,9 @@ export async function calculateSystemFromDb(
     brand: bat.brand,
     model: bat.model,
     rate: Number(bat.rate),
-    gst_pct: Number(bat.gst_pct)
+    gst_pct: Number(bat.gst_pct),
+    chemistry: (bat as any).chemistry,
+    description: (bat as any).description
   }));
 
   const dbMeters = masterData.meters.map(m => ({
@@ -415,7 +432,6 @@ export async function calculateSystemFromDb(
     selectedBatteryMix,
     
     structureId: selectedStructureId,
-    structurePricingMode: input.pricingContext?.priceType === 'premium' ? 'flat' : undefined,
     
     solarMeterId: finalSolarMeterId,
     solarMeterQty: 1,
@@ -439,6 +455,15 @@ export async function calculateSystemFromDb(
     structureMaterialType: sel.structureMaterialType,
     walkwayLengthM: sel.walkwayLengthM,
     ladderLengthM: sel.ladderLengthM,
+    structurePricingMode: sel.structurePricingMode ?? (input.pricingContext?.priceType === 'premium' ? 'flat' : undefined),
+    structureBaseWeightOverride: sel.structureBaseWeightOverride,
+    structureWeightLookupKg: sel.structureWeightLookupKg,
+    structureRateOverride: sel.structureRateOverride,
+    structureWastageOverride: sel.structureWastageOverride,
+    structureFastenerOverride: sel.structureFastenerOverride,
+    structureCustomRawRate: sel.structureCustomRawRate,
+    structureCustomFabricationRate: sel.structureCustomFabricationRate,
+    structureCustomGalvanizingRate: sel.structureCustomGalvanizingRate,
 
     dbStructureVendors: masterData.structureVendors,
     dbStructureAccessoryRates: masterData.structureAccessoryRates,
@@ -491,11 +516,14 @@ export async function calculateSystemFromDb(
 
   // Re-generate structure requirements object
   let structureRequirements = undefined;
-  if (sel.structureVendorId && sel.structureMaterialType) {
-    const vendor = masterData.structureVendors.find(v => v.id === sel.structureVendorId);
-    const vendorName = vendor ? vendor.name : 'Unknown';
-    const rateRow = masterData.structureMaterialRates.find(r => r.vendor_id === sel.structureVendorId && r.material_type === sel.structureMaterialType);
-    const ratePerKg = rateRow ? Number(rateRow.rate_per_kg) : 0;
+  if (sel.structureMaterialType) {
+    const materialRate = resolveStructureMaterialRate({
+      structureVendorId: sel.structureVendorId,
+      structureMaterialType: sel.structureMaterialType,
+      dbStructureMaterialRates: masterData.structureMaterialRates,
+      dbStructureVendors: masterData.structureVendors,
+    });
+    const ratePerKg = materialRate.ratePerKg;
     
     // Find closest template
     const templates = masterData.structureTemplates.filter(t => t.structure_type === sel.structureMaterialType);
@@ -509,9 +537,10 @@ export async function calculateSystemFromDb(
       );
       templateName = `${template.capacity_kw}kW ${template.structure_type}`;
       
-      const templateItems = masterData.structureTemplateItems.filter(item => 
-        item.template_id === template.id &&
-        (item.vendor_id === null || item.vendor_id === sel.structureVendorId)
+      const templateItems = filterStructureTemplateItemsForRate(
+        masterData.structureTemplateItems,
+        template.id,
+        materialRate.vendorId
       );
       templateItems.forEach(item => {
         const itemLower = item.item.toLowerCase().trim();
@@ -528,7 +557,7 @@ export async function calculateSystemFromDb(
     }
 
     structureRequirements = {
-      structureName: `${vendorName} ${templateName}`,
+      structureName: `${sel.structureMaterialType} ${templateName}`,
       material: sel.structureMaterialType,
       roofMountType: 'Ground/Roof',
       baseWeightKg: 0,
@@ -539,6 +568,27 @@ export async function calculateSystemFromDb(
       purlinWeightKg: purlinWeight,
       ratePerKg: ratePerKg,
       pricingMode: 'erp'
+    };
+  } else if (selectedStructureId === 'custom') {
+    const lookupWeight = Number(sel.structureWeightLookupKg ?? 0);
+    const baseWeight = Number(sel.structureBaseWeightOverride ?? 0);
+    const wastage = Number(sel.structureWastageOverride ?? 0.05);
+    const fasteners = Number(sel.structureFastenerOverride ?? 0.02);
+    const ratePerKg = Number(sel.structureCustomRawRate ?? 0)
+      + Number(sel.structureCustomFabricationRate ?? 0)
+      + Number(sel.structureCustomGalvanizingRate ?? 0);
+
+    structureRequirements = {
+      structureName: 'Custom Structure',
+      material: sel.structureMaterialType ?? 'Custom',
+      roofMountType: 'Custom',
+      baseWeightKg: baseWeight,
+      wastagePct: wastage,
+      fastenerWeightPct: fasteners,
+      lookupWeightKg: lookupWeight,
+      totalWeightKg: (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners),
+      ratePerKg,
+      pricingMode: sel.structurePricingMode ?? 'weight'
     };
   } else if (selectedStructureId) {
     const struct = dbStructures.find(s => s.id === selectedStructureId);

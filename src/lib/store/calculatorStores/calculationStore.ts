@@ -2,13 +2,14 @@ import { StateCreator } from 'zustand';
 import {
   CalculatorState,
   getEquipmentCatalogsFromSettings,
+  getEligibleSubsidySchemes,
   runCalculation,
   randomId,
   INITIAL_STATE
 } from '../calculatorTypes';
 import { SYSTEMS, type SolarSystem, type BomItem } from '../../data/bom';
 import { type ProjectType, type RowOverride, type DiscountType, type MarginMode } from '../../engine/calculator';
-import { TAX_CONSTANTS } from '@/lib/tax-constants';
+import { getBatteryGstRate, TAX_CONSTANTS } from '@/lib/tax-constants';
 import { normalizeGstRate } from '@/lib/utils/gst';
 
 /** Key used in dbStateTerms for the global default T&C template (state_id IS NULL). */
@@ -141,7 +142,7 @@ function buildGeneratedSystems(
           qty: 1,
           unit: 'Nos',
           ratePerUnit: battery.rate,
-          gstPct: normalizeGstRate(battery.gst_pct, 0.12),
+          gstPct: normalizeGstRate(battery.gst_pct, getBatteryGstRate(battery as any)),
         }] : []),
       ],
     };
@@ -194,6 +195,8 @@ export const createCalculationSlice: StateCreator<
     | 'dbPanels'
     | 'dbInverters'
     | 'dbBatteries'
+    | 'dbSchemes'
+    | 'dbSchemeOverrides'
     | 'dbSlabs'
     | 'dbStructures'
     | 'dbWeightLookups'
@@ -213,6 +216,7 @@ export const createCalculationSlice: StateCreator<
     | 'dbTaxHsnCodes'
     | 'dbTaxGstRates'
     | 'selectedScheme'
+    | 'selectedSubsidySchemeId'
     | 'inventorySummary'
     | 'dbOrientationMultipliers'
     | 'dbLoaded'
@@ -254,6 +258,7 @@ export const createCalculationSlice: StateCreator<
   itcEligible: false,
   applySubsidy: true,
   selectedScheme: 'pm_suryaghar',
+  selectedSubsidySchemeId: null,
   rpcSubsidyAmount: undefined,
   dbActiveScheme: null,
   marginMode: 'percent',
@@ -284,6 +289,8 @@ export const createCalculationSlice: StateCreator<
   dbPanels: [],
   dbInverters: [],
   dbBatteries: [],
+  dbSchemes: [],
+  dbSchemeOverrides: [],
   dbSlabs: [],
   dbStructures: [],
   dbStructureVendors: [],
@@ -341,7 +348,12 @@ export const createCalculationSlice: StateCreator<
         selectedBatteryMix: system.defaultEquipment.batteryMix ?? {},
         overrides: {},
       });
-      get().recalculate();
+      const eligibleSchemes = getEligibleSubsidySchemes(get());
+      if (!eligibleSchemes.some((scheme: any) => scheme.id === get().selectedSubsidySchemeId)) {
+        const nextScheme = eligibleSchemes[0] ?? null;
+        set({ selectedSubsidySchemeId: nextScheme?.id ?? null, dbActiveScheme: nextScheme ?? null, rpcSubsidyAmount: null });
+      }
+      get().fetchRpcSubsidy();
       return;
     }
 
@@ -410,11 +422,23 @@ export const createCalculationSlice: StateCreator<
       selectedBatteryMix: newBatteryMix,
       activeVariantId: null,
     });
+    const eligibleSchemes = getEligibleSubsidySchemes(get());
+    if (!eligibleSchemes.some((scheme: any) => scheme.id === get().selectedSubsidySchemeId)) {
+      const nextScheme = eligibleSchemes[0] ?? null;
+      set({ selectedSubsidySchemeId: nextScheme?.id ?? null, dbActiveScheme: nextScheme ?? null, rpcSubsidyAmount: null });
+    }
     get().fetchRpcSubsidy();
   },
 
   setState: (state: string) => {
     set({ selectedState: state });
+    const eligibleSchemes = getEligibleSubsidySchemes(get());
+    if (!eligibleSchemes.some((scheme: any) => scheme.id === get().selectedSubsidySchemeId)) {
+      const nextScheme = eligibleSchemes[0] ?? null;
+      set({ selectedSubsidySchemeId: nextScheme?.id ?? null, dbActiveScheme: nextScheme ?? null, rpcSubsidyAmount: null });
+    } else {
+      set({ rpcSubsidyAmount: null });
+    }
     get().fetchRpcSubsidy();
   },
 
@@ -425,6 +449,13 @@ export const createCalculationSlice: StateCreator<
 
   setProjectType: (type: ProjectType) => {
     set({ projectType: type });
+    const eligibleSchemes = getEligibleSubsidySchemes(get());
+    if (!eligibleSchemes.some((scheme: any) => scheme.id === get().selectedSubsidySchemeId)) {
+      const nextScheme = eligibleSchemes[0] ?? null;
+      set({ selectedSubsidySchemeId: nextScheme?.id ?? null, dbActiveScheme: nextScheme ?? null, rpcSubsidyAmount: null });
+    } else {
+      set({ rpcSubsidyAmount: null });
+    }
     get().fetchRpcSubsidy();
   },
 
@@ -690,7 +721,7 @@ export const createCalculationSlice: StateCreator<
           chemistry: b.chemistry,
           dodPct: Number(b.dod_pct),
           rate: Number(b.selling_price),
-          gst_pct: normalizeGstRate(b.gst_pct, 0.12),
+          gst_pct: normalizeGstRate(b.gst_pct, getBatteryGstRate(b)),
           description: b.description ?? '',
           specification_details: b.specification_details ?? '',
         };
@@ -768,6 +799,7 @@ export const createCalculationSlice: StateCreator<
       const mappedStateData: Record<string, any> = {};
       for (const rule of bootstrap.stateRules) {
         mappedStateData[rule.state_name] = {
+          id: rule.id,
           name: rule.state_name,
           stateCode: rule.state_code,
           sunHoursPerDay: Number(rule.sun_hours_per_day),
@@ -795,16 +827,21 @@ export const createCalculationSlice: StateCreator<
         Flat: 0.90 * factor
       };
 
-      const activeScheme = bootstrap.schemes?.find((s: any) => s.code === 'PM_SURYA_GHAR_2024' && s.is_active);
-      const schemeSlabs = activeScheme 
-        ? bootstrap.slabs.filter((s: any) => s.scheme_id === activeScheme.id)
-        : [];
-      const sortedSlabs = [...schemeSlabs].sort((a, b) => a.slab_index - b.slab_index).map(s => ({
+      const activeSchemes = (bootstrap.schemes || []).filter((s: any) => s.is_active !== false);
+      const activeScheme = activeSchemes.find((s: any) => s.code === 'PM_SURYA_GHAR_2024') ?? activeSchemes[0];
+      const sortedSlabs = [...(bootstrap.slabs || [])].sort((a, b) => {
+        const schemeSort = String(a.scheme_id ?? '').localeCompare(String(b.scheme_id ?? ''));
+        return schemeSort || Number(a.slab_index ?? 0) - Number(b.slab_index ?? 0);
+      }).map(s => ({
+        id: s.id,
+        scheme_id: s.scheme_id,
+        slab_index: Number(s.slab_index ?? 0),
         start_kw: Number(s.start_kw),
         end_kw: s.end_kw !== null ? Number(s.end_kw) : null,
         rate_per_kw: Number(s.rate_per_kw),
         is_fixed_amount: Boolean(s.is_fixed_amount),
         fixed_amount: s.fixed_amount !== null ? Number(s.fixed_amount) : null,
+        formula: s.formula ?? null,
       }));
 
       const loadedSystems: SolarSystem[] = (bootstrap.systems || []).map((sys: any) => {
@@ -834,7 +871,7 @@ export const createCalculationSlice: StateCreator<
           } else if (item.battery_id) {
             const battery = mappedBatteries.find((b: any) => b.id === item.battery_id);
             rate = battery ? Number(battery.rate) : 0;
-            gstPct = battery ? normalizeGstRate(battery.gst_pct, 0.12) : 0.12;
+            gstPct = battery ? normalizeGstRate(battery.gst_pct, getBatteryGstRate(battery)) : TAX_CONSTANTS.BATTERY_GST_RATE;
             sourceTable = 'eq_batteries';
             sourceItemId = item.battery_id;
             sourceLabel = battery ? `${battery.brand} ${battery.model}` : item.description;
@@ -938,6 +975,8 @@ export const createCalculationSlice: StateCreator<
         dbPanels: mappedPanels,
         dbInverters: mappedInverters,
         dbBatteries: mappedBatteries,
+        dbSchemes: activeSchemes,
+        dbSchemeOverrides: bootstrap.schemeOverrides || [],
         dbSlabs: sortedSlabs,
         dbActiveScheme: activeScheme || null,
         dbStructures: mappedStructures,
@@ -960,6 +999,16 @@ export const createCalculationSlice: StateCreator<
         dbStructureComponentMasters: mappedStructureComponentMasters,
         dbLoaded: true
       });
+
+      const eligibleSchemes = getEligibleSubsidySchemes(get());
+      if (!eligibleSchemes.some((scheme: any) => scheme.id === get().selectedSubsidySchemeId)) {
+        const nextScheme = eligibleSchemes[0] ?? null;
+        set({
+          selectedSubsidySchemeId: nextScheme?.id ?? null,
+          dbActiveScheme: nextScheme ?? null,
+          rpcSubsidyAmount: null,
+        });
+      }
 
       const currentSystemId = get().selectedSystemId;
       const systemExists = mappedSystems.some(s => s.id === currentSystemId);
@@ -1022,7 +1071,7 @@ export const createCalculationSlice: StateCreator<
           chemistry: b.chemistry,
           dodPct: Number(b.dod_pct),
           rate: Number(b.selling_price),
-          gst_pct: normalizeGstRate(b.gst_pct, 0.12),
+          gst_pct: normalizeGstRate(b.gst_pct, getBatteryGstRate(b)),
           description: b.description ?? '',
           specification_details: b.specification_details ?? '',
         }));
@@ -1055,6 +1104,7 @@ export const createCalculationSlice: StateCreator<
         const mappedStateData: Record<string, any> = {};
         for (const rule of bootstrap.stateRules) {
           mappedStateData[rule.state_name] = {
+            id: rule.id,
             name: rule.state_name,
             stateCode: rule.state_code,
             sunHoursPerDay: Number(rule.sun_hours_per_day),
@@ -1082,16 +1132,25 @@ export const createCalculationSlice: StateCreator<
       }
 
       if (bootstrap.schemes) {
-        const activeScheme = bootstrap.schemes.find((s: any) => s.code === 'PM_SURYA_GHAR_2024' && s.is_active);
+        const activeSchemes = bootstrap.schemes.filter((s: any) => s.is_active !== false);
+        const activeScheme = activeSchemes.find((s: any) => s.code === 'PM_SURYA_GHAR_2024') ?? activeSchemes[0];
+        stateUpdate.dbSchemes = activeSchemes;
+        stateUpdate.dbSchemeOverrides = bootstrap.schemeOverrides || [];
         stateUpdate.dbActiveScheme = activeScheme || null;
-        if (activeScheme && bootstrap.slabs) {
-          const schemeSlabs = bootstrap.slabs.filter((s: any) => s.scheme_id === activeScheme.id);
-          stateUpdate.dbSlabs = [...schemeSlabs].sort((a, b) => a.slab_index - b.slab_index).map(s => ({
+        if (bootstrap.slabs) {
+          stateUpdate.dbSlabs = [...bootstrap.slabs].sort((a, b) => {
+            const schemeSort = String(a.scheme_id ?? '').localeCompare(String(b.scheme_id ?? ''));
+            return schemeSort || Number(a.slab_index ?? 0) - Number(b.slab_index ?? 0);
+          }).map(s => ({
+            id: s.id,
+            scheme_id: s.scheme_id,
+            slab_index: Number(s.slab_index ?? 0),
             start_kw: Number(s.start_kw),
             end_kw: s.end_kw !== null ? Number(s.end_kw) : null,
             rate_per_kw: Number(s.rate_per_kw),
             is_fixed_amount: Boolean(s.is_fixed_amount),
             fixed_amount: s.fixed_amount !== null ? Number(s.fixed_amount) : null,
+            formula: s.formula ?? null,
           }));
         }
       }
@@ -1205,7 +1264,7 @@ export const createCalculationSlice: StateCreator<
             } else if (item.battery_id) {
               const battery = batteries.find((b: any) => b.id === item.battery_id);
               rate = battery ? Number(battery.rate) : 0;
-              gstPct = battery ? normalizeGstRate(battery.gst_pct, 0.12) : 0.12;
+              gstPct = battery ? normalizeGstRate(battery.gst_pct, getBatteryGstRate(battery)) : TAX_CONSTANTS.BATTERY_GST_RATE;
               sourceTable = 'eq_batteries';
               sourceItemId = item.battery_id;
               sourceLabel = battery ? `${battery.brand} ${battery.model}` : item.description;
@@ -1308,6 +1367,14 @@ export const createCalculationSlice: StateCreator<
       }
 
       set(stateUpdate);
+
+      if (stateUpdate.dbSchemes || stateUpdate.dbSchemeOverrides || stateUpdate.dbStateData) {
+        const eligibleSchemes = getEligibleSubsidySchemes(get());
+        if (!eligibleSchemes.some((scheme: any) => scheme.id === get().selectedSubsidySchemeId)) {
+          const nextScheme = eligibleSchemes[0] ?? null;
+          set({ selectedSubsidySchemeId: nextScheme?.id ?? null, dbActiveScheme: nextScheme ?? null, rpcSubsidyAmount: null });
+        }
+      }
 
       // Select system or recalculate if systems or equipment fields changed
       if (stateUpdate.dbSystems && stateUpdate.dbSystems.length > 0) {

@@ -194,6 +194,8 @@ export interface DbCacheSliceState {
   dbPanels: any[];
   dbInverters: any[];
   dbBatteries: any[];
+  dbSchemes: any[];
+  dbSchemeOverrides: any[];
   dbSlabs: any[];
   dbStructures: any[];
   dbStructureVendors: any[];
@@ -225,9 +227,11 @@ export interface SubsidySliceState {
   applySubsidy: boolean;
   rpcSubsidyAmount: number | null;
   selectedScheme: 'none' | 'pm_suryaghar' | 'state';
+  selectedSubsidySchemeId: string | null;
   dbActiveScheme: any | null;
   setApplySubsidy: (val: boolean) => void;
   setSelectedScheme: (val: 'none' | 'pm_suryaghar' | 'state') => void;
+  setSelectedSubsidySchemeId: (id: string | null) => void;
   fetchRpcSubsidy: () => Promise<void>;
 }
 
@@ -379,6 +383,8 @@ export const INITIAL_STATE = {
   dbPanels: [] as any[],
   dbInverters: [] as any[],
   dbBatteries: [] as any[],
+  dbSchemes: [] as any[],
+  dbSchemeOverrides: [] as any[],
   dbSlabs: [] as any[],
   dbStructures: [] as any[],
   dbStructureVendors: [] as any[],
@@ -403,6 +409,7 @@ export const INITIAL_STATE = {
   rpcSubsidyAmount: null as number | null,
   applySubsidy: true,
   selectedScheme: 'pm_suryaghar',
+  selectedSubsidySchemeId: null as string | null,
   dbActiveScheme: null as any | null,
 };
 
@@ -499,11 +506,69 @@ export function aggregateSelectionMix<T extends { id: string; rate: number }>(
   };
 }
 
+function selectedStateId(state: Pick<CalculatorState, 'dbStateData' | 'selectedState'>) {
+  return Object.values(state.dbStateData).find((entry: any) => entry?.name === state.selectedState)?.id ?? null;
+}
+
+function isCentralSubsidyScheme(scheme: any) {
+  const text = `${scheme?.code ?? ''} ${scheme?.name ?? ''}`.toLowerCase();
+  return text.includes('pm_surya') || text.includes('pm surya') || text.includes('mnre') || text.includes('central');
+}
+
+export function getEligibleSubsidySchemes(state: Pick<CalculatorState,
+  'dbSchemes' | 'dbSchemeOverrides' | 'dbStateData' | 'selectedState' | 'projectType'
+>) {
+  const stateId = selectedStateId(state as CalculatorState);
+  const activeOverrides = (state.dbSchemeOverrides ?? []).filter((override: any) => override?.is_active !== false);
+
+  return (state.dbSchemes ?? [])
+    .filter((scheme: any) => scheme?.is_active !== false && scheme?.applies_to === state.projectType)
+    .filter((scheme: any) => {
+      if (isCentralSubsidyScheme(scheme)) return true;
+      const schemeOverrides = activeOverrides.filter((override: any) => override.scheme_id === scheme.id);
+      if (schemeOverrides.length === 0) return true;
+      return stateId ? schemeOverrides.some((override: any) => override.state_id === stateId) : false;
+    });
+}
+
+export function resolveSelectedSubsidyScheme(state: CalculatorState) {
+  if (!state.applySubsidy || state.projectType === 'commercial') {
+    return { scheme: null as any, slabs: [] as any[], override: null as any };
+  }
+
+  const eligibleSchemes = getEligibleSubsidySchemes(state);
+  const scheme = eligibleSchemes.find((item: any) => item.id === state.selectedSubsidySchemeId)
+    ?? eligibleSchemes[0]
+    ?? null;
+  if (!scheme) return { scheme: null as any, slabs: [] as any[], override: null as any };
+
+  const stateId = selectedStateId(state);
+  const override = stateId
+    ? (state.dbSchemeOverrides ?? []).find((item: any) =>
+        item.scheme_id === scheme.id && item.state_id === stateId && item.is_active !== false
+      ) ?? null
+    : null;
+  const slabs = (state.dbSlabs ?? [])
+    .filter((item: any) => item.scheme_id === scheme.id)
+    .sort((a: any, b: any) => Number(a.slab_index ?? 0) - Number(b.slab_index ?? 0))
+    .map((item: any) => ({
+      ...item,
+      start_kw: Number(item.start_kw),
+      end_kw: item.end_kw !== null && item.end_kw !== undefined ? Number(item.end_kw) : null,
+      rate_per_kw: Number(item.rate_per_kw),
+      is_fixed_amount: Boolean(item.is_fixed_amount),
+      fixed_amount: item.fixed_amount !== null && item.fixed_amount !== undefined ? Number(item.fixed_amount) : null,
+    }));
+
+  return { scheme, slabs, override };
+}
+
 export function runCalculation(state: CalculatorState): {
   result: CalcResult | null;
   error: string | null;
 } {
   try {
+    const resolvedSubsidy = resolveSelectedSubsidyScheme(state);
     const { panels: allPanels, inverters: allInverters, batteries: allBatteries } = getEquipmentCatalogsFromSettings(
       state.dbLoaded,
       state.dbPanels,
@@ -678,7 +743,7 @@ const result = calculateSystem({
       inverterCapacityKW,
       panelDegradationRate,
       stateData: state.dbLoaded ? state.dbStateData : undefined,
-      slabs: state.dbLoaded ? state.dbSlabs : undefined,
+      slabs: state.dbLoaded ? resolvedSubsidy.slabs : undefined,
       structureId: state.selectedStructureId ?? undefined,
       structurePricingMode: state.structurePricingMode,
       structureRateOverride: state.structureRateOverride ?? undefined,
@@ -718,8 +783,12 @@ const result = calculateSystem({
       targetMRPInclGST: state.targetMRPInclGST ?? undefined,
       targetMRPPerWatt: state.targetMRPPerWatt ?? undefined,
       rpcSubsidyAmount: state.rpcSubsidyAmount ?? undefined,
-      maxSubsidyCapacityKW: state.dbActiveScheme?.max_capacity_kw ? Number(state.dbActiveScheme.max_capacity_kw) : undefined,
-      maxAbsoluteSubsidy: state.dbActiveScheme?.max_absolute_subsidy ? Number(state.dbActiveScheme.max_absolute_subsidy) : undefined,
+      maxSubsidyCapacityKW: resolvedSubsidy.scheme?.max_capacity_kw ? Number(resolvedSubsidy.scheme.max_capacity_kw) : undefined,
+      maxAbsoluteSubsidy: resolvedSubsidy.override?.max_absolute_override != null
+        ? Number(resolvedSubsidy.override.max_absolute_override)
+        : (resolvedSubsidy.scheme?.max_absolute_subsidy ? Number(resolvedSubsidy.scheme.max_absolute_subsidy) : undefined),
+      additionalStateSubsidy: resolvedSubsidy.override?.additional_state_subsidy ? Number(resolvedSubsidy.override.additional_state_subsidy) : undefined,
+      subsidySchemeName: resolvedSubsidy.scheme?.name,
       // State-driven subsidy: applySubsidy is the source of truth (auto-applied from
       // the selected state). selectedScheme is retained for backward compatibility.
       applySubsidy: state.applySubsidy,

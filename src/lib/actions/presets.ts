@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { normalizeGstRate } from '@/lib/utils/gst';
+import { getBatteryGstRate, TAX_CONSTANTS } from '@/lib/tax-constants';
 
 export interface LineItem {
   id?: string;
@@ -52,11 +53,65 @@ const CATALOG_CATEGORY_ALIASES: Record<string, string[]> = {
   civil: ['Civil Works', 'Civil', 'Services'],
   logistics: ['Logistics', 'Logistics & Handling', 'Handling', 'Services'],
   accessory: ['Accessories', 'Accessory', 'Monitoring & Safety', 'Wiring'],
-  other: ['Other'],
+  miscellaneous: ['Miscellaneous', 'Miscellenous', 'Misc', 'Other'],
 };
 
 function normalizeCatalogName(value: string) {
   return value.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function canonicalPresetCategory(category: string | null | undefined) {
+  const normalized = normalizeCatalogName(category ?? '');
+  if (!normalized || normalized === 'other' || normalized === 'misc') return 'miscellaneous';
+  return category as string;
+}
+
+function inferCatalogCategoryFromText(...parts: Array<string | null | undefined>) {
+  const value = normalizeCatalogName(parts.filter(Boolean).join(' '));
+
+  if (/\b(panel|module|pv module)\b/.test(value)) return 'panel';
+  if (/\b(inverter|mppt)\b/.test(value)) return 'inverter';
+  if (/\b(battery|bms|lfp|lithium)\b/.test(value)) return 'battery';
+  if (/\b(structure|mounting|rail|clamp|walkway|ladder)\b/.test(value)) return 'structure';
+  if (/\b(dcdb|dc protection|dc side|dc spd|dc mcb|dc isolator|combiner|string box|mc4|la|l a|lightning arrester|lightning protection)\b/.test(value)) return 'dc_protection';
+  if (/\b(acdb|ac protection|ac side|ac spd|ac mcb|ac isolator|meter box)\b/.test(value)) return 'ac_protection';
+  if (/\b(cable|cabling|wire|wiring|conduit|tray)\b/.test(value)) return 'cable';
+  if (/\b(earthing|earth|electrode|rod|strip|chemical earth)\b/.test(value)) return 'earthing';
+  if (/\b(civil|cement|sand|aggregate|brick|anchor|rmc|concrete)\b/.test(value)) return 'civil';
+  if (/\b(logistic|transport|handling|packing|loading|unloading)\b/.test(value)) return 'logistics';
+  if (/\b(accessory|meter|communication|monitoring|dtu|dongle|logger)\b/.test(value)) return 'accessory';
+
+  return 'miscellaneous';
+}
+
+function categoryNameMatches(category: string, name: string | null | undefined) {
+  const aliases = CATALOG_CATEGORY_ALIASES[category] ?? [];
+  const normalizedName = normalizeCatalogName(name ?? '');
+  return aliases.map(normalizeCatalogName).includes(normalizedName);
+}
+
+function hasKnownCategoryName(name: string | null | undefined) {
+  const normalizedName = normalizeCatalogName(name ?? '');
+  return Object.entries(CATALOG_CATEGORY_ALIASES)
+    .filter(([category]) => category !== 'miscellaneous')
+    .some(([, aliases]) => aliases.map(normalizeCatalogName).includes(normalizedName));
+}
+
+function categoryFromBomItem(item: {
+  sku_code?: string | null;
+  description?: string | null;
+  notes?: string | null;
+  specification_details?: string | null;
+  bom_categories?: { name?: string | null } | null;
+}, fallback: string) {
+  const inferred = inferCatalogCategoryFromText(
+    item.sku_code,
+    item.description,
+    item.notes,
+    item.specification_details,
+  );
+  if (inferred !== 'miscellaneous') return inferred;
+  return categoryFromCatalogName(item.bom_categories?.name, fallback);
 }
 
 function normalizeMarginPct(value: unknown, fallback = 0.2): number {
@@ -67,9 +122,10 @@ function normalizeMarginPct(value: unknown, fallback = 0.2): number {
 
 function categoryFromCatalogName(name: string | null | undefined, fallback: string) {
   const normalizedName = normalizeCatalogName(name ?? '');
-  const fallbackAliases = CATALOG_CATEGORY_ALIASES[fallback] ?? [];
+  const normalizedFallback = canonicalPresetCategory(fallback);
+  const fallbackAliases = CATALOG_CATEGORY_ALIASES[normalizedFallback] ?? [];
   if (fallbackAliases.map(normalizeCatalogName).includes(normalizedName)) {
-    return fallback;
+    return normalizedFallback;
   }
 
   for (const [category, aliases] of Object.entries(CATALOG_CATEGORY_ALIASES)) {
@@ -77,7 +133,7 @@ function categoryFromCatalogName(name: string | null | undefined, fallback: stri
       return category;
     }
   }
-  return fallback;
+  return normalizedFallback;
 }
 
 export async function getPresetStates(): Promise<PresetStateOption[]> {
@@ -155,14 +211,14 @@ export async function getPresetWithComponents(presetId: string) {
 
   // Helper function to resolve rate and category details
   const mappedItems = (lineItemsData || []).map((item: any) => {
-    let category = 'other';
+    let category = 'miscellaneous';
     let catalogItemId: string | null = null;
     let catalogType = 'custom';
     let unitRate = 0;
     let brand = '';
     let model = '';
     let sourceSpecification = '';
-    let gstPct = 0.18;
+    let gstPct: number = TAX_CONSTANTS.BOS_GST_RATE;
 
     // Map based on section
     if (item.section === 'solar_panels') category = 'panel';
@@ -184,7 +240,7 @@ export async function getPresetWithComponents(presetId: string) {
         model = p.model || '';
         unitRate = Number(p.selling_price || 0);
         sourceSpecification = p.specification_details || p.description || '';
-        gstPct = normalizeGstRate(p.gst_pct, 0.18);
+        gstPct = normalizeGstRate(p.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE);
       }
     } else if (item.inverter_id) {
       category = 'inverter';
@@ -197,7 +253,7 @@ export async function getPresetWithComponents(presetId: string) {
         model = inv.model || '';
         unitRate = Number(inv.selling_price || 0);
         sourceSpecification = inv.specification_details || inv.description || '';
-        gstPct = normalizeGstRate(inv.gst_pct, 0.18);
+        gstPct = normalizeGstRate(inv.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE);
       }
     } else if (item.battery_id) {
       category = 'battery';
@@ -209,7 +265,7 @@ export async function getPresetWithComponents(presetId: string) {
         model = bat.model || '';
         unitRate = Number(bat.selling_price || 0);
         sourceSpecification = bat.specification_details || bat.description || '';
-        gstPct = normalizeGstRate(bat.gst_pct, 0.18);
+        gstPct = normalizeGstRate(bat.gst_pct, getBatteryGstRate(bat));
       }
     } else if (item.structure_id) {
       category = 'structure';
@@ -253,7 +309,7 @@ export async function getPresetWithComponents(presetId: string) {
       const bom = bomItems.find((x: any) => x.id === item.bom_item_id);
       if (bom) {
         unitRate = Number(bom.default_rate || 0);
-        category = categoryFromCatalogName((bom as any).bom_categories?.name, category);
+        category = categoryFromBomItem(bom, category);
         sourceSpecification = bom.specification_details || bom.notes || '';
         gstPct = normalizeGstRate(bom.gst_pct, 0.18);
       }
@@ -446,12 +502,15 @@ export async function savePresetWithComponents(
       case 'civil':
       case 'logistics': return 'services';
       case 'accessory': return 'wiring';
+      case 'miscellaneous':
+      case 'other': return 'services';
       default: return 'services';
     }
   }
 
   async function ensureBomCategoryId(category: string) {
-    const aliases = CATALOG_CATEGORY_ALIASES[category] ?? [category];
+    const normalizedCategory = canonicalPresetCategory(category);
+    const aliases = CATALOG_CATEGORY_ALIASES[normalizedCategory] ?? [normalizedCategory];
     const aliasSet = new Set(aliases.map(normalizeCatalogName));
 
     const { data: categories, error: categoryLoadErr } = await supabase
@@ -464,14 +523,14 @@ export async function savePresetWithComponents(
     const existing = ((categories || []) as any[]).find((item: any) => aliasSet.has(normalizeCatalogName(item.name || '')));
     if (existing?.id) return existing.id as string;
 
-    const displayOrder = Object.keys(CATALOG_CATEGORY_ALIASES).indexOf(category) + 1 || 99;
+    const displayOrder = Object.keys(CATALOG_CATEGORY_ALIASES).indexOf(normalizedCategory) + 1 || 99;
     const { data: newCategory, error: categoryCreateErr } = await supabase
       .from('bom_categories' as any)
       .insert({
         org_id: orgId,
-        name: aliases[0] ?? category,
+        name: aliases[0] ?? normalizedCategory,
         display_order: displayOrder,
-        is_optional: ['civil', 'logistics', 'accessory', 'other'].includes(category),
+        is_optional: ['civil', 'logistics', 'accessory', 'miscellaneous'].includes(normalizedCategory),
       })
       .select('id')
       .maybeSingle();
@@ -489,8 +548,9 @@ export async function savePresetWithComponents(
       continue;
     }
 
-    const categoryId = await ensureBomCategoryId(item.category);
-    const skuCode = item.skuCode || `CUSTOM-${item.category.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}-${Date.now()}-${index + 1}`;
+    const normalizedCategory = canonicalPresetCategory(item.category);
+    const categoryId = await ensureBomCategoryId(normalizedCategory);
+    const skuCode = item.skuCode || `CUSTOM-${normalizedCategory.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}-${Date.now()}-${index + 1}`;
     const unitRate = Number(item.unitRate || 0);
     const { data: customCatalogItem, error: customItemErr } = await supabase
       .from('bom_template_items' as any)
@@ -507,7 +567,7 @@ export async function savePresetWithComponents(
         notes: item.specificationDetails || null,
         specification_details: item.specificationDetails || null,
         is_survey_dependent: item.isSurveyDependent,
-        civil_required_only: item.category === 'civil',
+        civil_required_only: normalizedCategory === 'civil',
       })
       .select('id')
       .maybeSingle();
@@ -518,6 +578,7 @@ export async function savePresetWithComponents(
 
     preparedLineItems.push({
       ...item,
+      category: normalizedCategory,
       catalogItemId,
       catalogType: 'bom_template',
       skuCode,
@@ -526,14 +587,15 @@ export async function savePresetWithComponents(
 
   // 3. Insert new system items
   const itemsToInsert = preparedLineItems.map((item, idx) => {
-    const isSolarMeter = item.category === 'accessory' && item.description.toLowerCase().includes('solar');
-    const isNetMeter = item.category === 'accessory' && item.description.toLowerCase().includes('net');
-    const isCommDevice = item.category === 'accessory' && item.description.toLowerCase().includes('comm');
-    const isLA = (item.category === 'dc_protection' || item.category === 'ac_protection') && item.description.toLowerCase().includes('lightning');
+    const itemCategory = canonicalPresetCategory(item.category);
+    const isSolarMeter = itemCategory === 'accessory' && item.description.toLowerCase().includes('solar');
+    const isNetMeter = itemCategory === 'accessory' && item.description.toLowerCase().includes('net');
+    const isCommDevice = itemCategory === 'accessory' && item.description.toLowerCase().includes('comm');
+    const isLA = (itemCategory === 'dc_protection' || itemCategory === 'ac_protection') && item.description.toLowerCase().includes('lightning');
 
     return {
       system_id: targetPresetId,
-      section: mapCategoryToSection(item.category),
+      section: mapCategoryToSection(itemCategory),
       description: item.description,
       unit: item.unit || 'Nos',
       default_qty: item.quantity,
@@ -543,16 +605,16 @@ export async function savePresetWithComponents(
       remarks: item.specificationDetails || null,
 
       // Foreign keys mapping
-      panel_id: item.category === 'panel' ? item.catalogItemId : null,
-      inverter_id: item.category === 'inverter' ? item.catalogItemId : null,
-      battery_id: item.category === 'battery' ? item.catalogItemId : null,
-      structure_id: item.category === 'structure' && item.catalogType === 'eq_structure' ? item.catalogItemId : null,
+      panel_id: itemCategory === 'panel' ? item.catalogItemId : null,
+      inverter_id: itemCategory === 'inverter' ? item.catalogItemId : null,
+      battery_id: itemCategory === 'battery' ? item.catalogItemId : null,
+      structure_id: itemCategory === 'structure' && item.catalogType === 'eq_structure' ? item.catalogItemId : null,
       solar_meter_id: isSolarMeter && item.catalogType === 'equipment' ? item.catalogItemId : null,
       net_meter_id: isNetMeter && item.catalogType === 'equipment' ? item.catalogItemId : null,
       la_id: isLA && item.catalogType === 'equipment' ? item.catalogItemId : null,
       bom_item_id: item.catalogType === 'bom_template' ? item.catalogItemId : null,
       comm_device_id: isCommDevice && item.catalogType === 'equipment' ? item.catalogItemId : null,
-      structure_component_id: item.category === 'structure' && item.catalogType === 'structure_component' ? item.catalogItemId : null,
+      structure_component_id: itemCategory === 'structure' && item.catalogType === 'structure_component' ? item.catalogItemId : null,
     };
   });
 
@@ -634,11 +696,12 @@ export async function deleteSystemPreset(presetId: string) {
 export async function getCatalogItems(category: string, search?: string) {
   const supabase = await createClient();
   const searchTerm = search?.trim();
+  const normalizedCategory = canonicalPresetCategory(category);
 
   // Panels, Inverters, Batteries are from their respective tables
-  if (['panel', 'inverter', 'battery'].includes(category)) {
-    let tableName = `eq_${category}s`;
-    if (category === 'battery') tableName = 'eq_batteries';
+  if (['panel', 'inverter', 'battery'].includes(normalizedCategory)) {
+    let tableName = `eq_${normalizedCategory}s`;
+    if (normalizedCategory === 'battery') tableName = 'eq_batteries';
     
     let query = supabase.from(tableName as any).select('*').eq('is_active', true);
     if (searchTerm) {
@@ -647,7 +710,7 @@ export async function getCatalogItems(category: string, search?: string) {
     const { data } = await query.limit(50);
     return (data || []).filter((item: any) => !isPlaceholderEquipment(item)).map((item: any) => ({
       id: item.id,
-      type: category,
+      type: normalizedCategory,
       description: [item.brand, item.model].filter(Boolean).join(' ') || item.name || 'Unnamed item',
       brand: item.brand,
       model: item.model,
@@ -655,14 +718,21 @@ export async function getCatalogItems(category: string, search?: string) {
       defaultQty: 1,
       defaultRate: Number(item.selling_price || 0),
       specificationDetails: item.specification_details || item.description || '',
-      gstPct: Number(item.gst_pct ?? 0.18),
+      gstPct: normalizeGstRate(
+        item.gst_pct,
+        normalizedCategory === 'panel'
+          ? TAX_CONSTANTS.PANEL_GST_RATE
+          : normalizedCategory === 'inverter'
+            ? TAX_CONSTANTS.INVERTER_GST_RATE
+            : getBatteryGstRate(item)
+      ),
       isSurveyDependent: false,
     }));
   }
 
   const catalogItems: any[] = [];
 
-  if (category === 'structure') {
+  if (normalizedCategory === 'structure') {
     let structureQuery = supabase
       .from('eq_mounting_structures' as any)
       .select('id, name, description, specification_details, material, roof_mount_type, selling_price, gst_pct, is_active')
@@ -691,7 +761,7 @@ export async function getCatalogItems(category: string, search?: string) {
     })));
   }
 
-  if (category === 'dc_protection' || category === 'ac_protection' || category === 'earthing') {
+  if (normalizedCategory === 'dc_protection' || normalizedCategory === 'ac_protection' || normalizedCategory === 'earthing') {
     let laQuery = supabase
       .from('eq_lightning_arresters' as any)
       .select('id, brand, model, description, specification_details, selling_price, gst_pct, is_active')
@@ -720,7 +790,7 @@ export async function getCatalogItems(category: string, search?: string) {
     })));
   }
 
-  if (category === 'accessory') {
+  if (normalizedCategory === 'accessory') {
     let meterQuery = supabase
       .from('eq_meters' as any)
       .select('id, brand, model, description, specification_details, selling_price, gst_pct, is_active')
@@ -769,9 +839,6 @@ export async function getCatalogItems(category: string, search?: string) {
     })));
   }
 
-  const aliases = CATALOG_CATEGORY_ALIASES[category] ?? [];
-  if (aliases.length === 0) return catalogItems;
-
   const { data: categories, error: categoryError } = await supabase
     .from('bom_categories' as any)
     .select('id, name')
@@ -779,26 +846,36 @@ export async function getCatalogItems(category: string, search?: string) {
 
   if (categoryError) throw new Error('Failed to fetch BOM categories: ' + categoryError.message);
 
-  const aliasSet = new Set(aliases.map(normalizeCatalogName));
-  const categoryIds = (categories || [])
-    .filter((item: any) => aliasSet.has(normalizeCatalogName(item.name || '')))
-    .map((item: any) => item.id);
-
-  if (categoryIds.length === 0) return catalogItems;
-
   let bomQuery = supabase
     .from('bom_template_items' as any)
-    .select('id, sku_code, description, specification_details, notes, unit, default_rate, gst_pct, is_survey_dependent, category_id')
-    .in('category_id', categoryIds);
+    .select('id, sku_code, description, specification_details, notes, unit, default_rate, gst_pct, is_survey_dependent, category_id, bom_categories(name)');
 
-  if (searchTerm) {
-    bomQuery = bomQuery.ilike('description', `%${searchTerm}%`);
-  }
-
-  const { data: bomItems, error: bomError } = await bomQuery.limit(50);
+  const { data: bomItems, error: bomError } = await bomQuery.limit(500);
   if (bomError) throw new Error('Failed to fetch BOM catalog items: ' + bomError.message);
 
-  catalogItems.push(...(bomItems || []).map((item: any) => ({
+  const categoryById = new Map(((categories || []) as any[]).map((item: any) => [item.id, item.name]));
+  const searchText = normalizeCatalogName(searchTerm || '');
+
+  const matchingBomItems = (bomItems || []).filter((item: any) => {
+    const categoryName = item.bom_categories?.name ?? categoryById.get(item.category_id);
+    const inferred = inferCatalogCategoryFromText(item.sku_code, item.description, item.notes, item.specification_details);
+    const matchesSearch = !searchText || normalizeCatalogName([
+      item.sku_code,
+      item.description,
+      item.notes,
+      item.specification_details,
+      categoryName,
+    ].filter(Boolean).join(' ')).includes(searchText);
+
+    if (!matchesSearch) return false;
+    if (normalizedCategory === 'miscellaneous') {
+      return categoryNameMatches('miscellaneous', categoryName) || (inferred === 'miscellaneous' && !hasKnownCategoryName(categoryName));
+    }
+    if (inferred !== 'miscellaneous') return inferred === normalizedCategory;
+    return categoryNameMatches(normalizedCategory, categoryName);
+  });
+
+  catalogItems.push(...matchingBomItems.map((item: any) => ({
     id: item.id,
     type: 'bom_template',
     catalogType: 'bom_template',
