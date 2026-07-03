@@ -97,6 +97,21 @@ export default function BatteriesMasterPage() {
     { name: 'gst_pct', label: 'GST Percentage', type: 'number' },
   ];
 
+  const normalizeBatteryChemistry = (value: unknown): Battery['chemistry'] => {
+    const normalized = String(value || '').trim().toLowerCase().replace(/[\s_-]+/g, '');
+    if (['liion', 'lithiumion', 'lithium'].includes(normalized)) return 'Li-Ion';
+    if (['leadacid', 'agm', 'lead'].includes(normalized)) return 'Lead-Acid';
+    if (['nmc', 'ternarylithium'].includes(normalized)) return 'NMC';
+    return 'LFP';
+  };
+
+  const normalizeDodPct = (value: unknown) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return 0.8;
+    const fraction = parsed > 1 ? parsed / 100 : parsed;
+    return Math.min(1, Math.max(0, fraction));
+  };
+
   // ─── Filter & Search Logic ──────────────────────────────────────────────────
   
   const uniqueBrands = useMemo(() => {
@@ -180,10 +195,10 @@ export default function BatteriesMasterPage() {
     e.preventDefault();
     try {
       if (editingItem) {
-        await updateMutation.mutateAsync({ id: editingItem.id, updates: draft });
+        await updateMutation.mutateAsync({ id: editingItem.id, updates: { ...draft, dod_pct: normalizeDodPct(draft.dod_pct) } });
         toast('Battery storage spec updated ✓', 'success');
       } else {
-        await createMutation.mutateAsync(draft);
+        await createMutation.mutateAsync({ ...draft, dod_pct: normalizeDodPct(draft.dod_pct) });
         toast('New battery specifications added ✓', 'success');
       }
       setEditorOpen(false);
@@ -215,8 +230,14 @@ export default function BatteriesMasterPage() {
       await bulkUpdateMutation.mutateAsync({
         ids: selectedIds,
         updates: updates.gst_pct !== undefined
-          ? { ...updates, gst_pct: normalizeGstRate(updates.gst_pct, TAX_CONSTANTS.BATTERY_GST_RATE) }
-          : updates,
+          ? {
+              ...updates,
+              gst_pct: normalizeGstRate(updates.gst_pct, TAX_CONSTANTS.BATTERY_GST_RATE),
+              ...(updates.dod_pct !== undefined ? { dod_pct: normalizeDodPct(updates.dod_pct) } : {}),
+            }
+          : updates.dod_pct !== undefined
+            ? { ...updates, dod_pct: normalizeDodPct(updates.dod_pct) }
+            : updates,
       });
       setSelectedIds([]);
       toast(`Bulk updated ${selectedIds.length} battery items`, 'success');
@@ -234,7 +255,7 @@ export default function BatteriesMasterPage() {
       'Capacity (kWh)': b.capacity_kwh,
       Chemistry: b.chemistry,
       'Voltage (V)': b.voltage_v || '',
-      'DoD Percentage': b.dod_pct,
+      'DoD Percentage': Math.round(Number(b.dod_pct || 0) * 100),
       'Selling Rate (INR)': b.rate,
       'GST Percentage': gstRateToPercent(b.gst_pct, getBatteryGstRate(b)),
       Description: b.description || '',
@@ -255,9 +276,9 @@ export default function BatteriesMasterPage() {
         brand: row.Brand || row.brand,
         model: row.Model || row.model,
         capacity_kwh: parseFloat(row['Capacity (kWh)'] || row.capacity_kwh || row.capacity),
-        chemistry: row.Chemistry || row.chemistry || 'LFP',
+        chemistry: normalizeBatteryChemistry(row.Chemistry || row.chemistry),
         voltage_v: row['Voltage (V)'] || row.voltage_v ? parseInt(row['Voltage (V)'] || row.voltage_v, 10) : null,
-        dod_pct: parseFloat(row['DoD Percentage'] || row.dod_pct || 0.8),
+        dod_pct: normalizeDodPct(row['DoD Percentage'] || row.dod_pct || 80),
         rate: parseFloat(row['Selling Rate (INR)'] || row.rate || 0),
         gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, getBatteryGstRate(row)),
         description: row.Description || row.description || '',
@@ -538,9 +559,9 @@ export default function BatteriesMasterPage() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Depth of Discharge (DoD %) *</label>
                   <input
-                    type="number" required min={0.1} max={1} step={0.01}
-                    value={draft.dod_pct}
-                    onChange={(e) => setDraft({ ...draft, dod_pct: parseFloat(e.target.value) })}
+                    type="number" required min={0} max={100} step={1}
+                    value={Math.round(Number(draft.dod_pct || 0) * 100)}
+                    onChange={(e) => setDraft({ ...draft, dod_pct: normalizeDodPct(e.target.value) })}
                     className="w-full px-3 py-2 rounded-lg bg-background border border-border text-xs text-text-primary focus:border-accent/40 outline-none font-mono"
                   />
                 </div>

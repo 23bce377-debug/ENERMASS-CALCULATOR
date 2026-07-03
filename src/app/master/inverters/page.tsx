@@ -82,7 +82,7 @@ export default function InvertersMasterPage() {
   });
 
   // Bulk Edit Schema
-  const bulkEditFields: FieldSchema[] = [
+const bulkEditFields: FieldSchema[] = [
     { name: 'brand', label: 'Inverter Brand', type: 'text' },
     { name: 'inverter_type', label: 'Inverter Type', type: 'select', options: [
       { value: 'on_grid', label: 'On-Grid' },
@@ -97,6 +97,19 @@ export default function InvertersMasterPage() {
     { name: 'rate', label: 'Base Rate (₹)', type: 'number' },
     { name: 'gst_pct', label: 'GST Percentage', type: 'number' },
   ];
+
+  const normalizeInverterType = (value: unknown): Inverter['inverter_type'] => {
+    const normalized = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+    if (['hybrid'].includes(normalized)) return 'hybrid';
+    if (['micro', 'micro_inverter', 'microinverter'].includes(normalized)) return 'micro';
+    if (['3_phase', 'three_phase', '3ph', '3_ph'].includes(normalized)) return '3_phase';
+    return 'on_grid';
+  };
+
+  const normalizePhases = (value: unknown) => {
+    const parsed = parseInt(String(value || '').replace(/\D/g, ''), 10);
+    return parsed === 3 ? 3 : 1;
+  };
 
   // ─── Filter & Search Logic ──────────────────────────────────────────────────
   
@@ -253,8 +266,8 @@ export default function InvertersMasterPage() {
         brand: row.Brand || row.brand,
         model: row.Model || row.model,
         capacity_kw: parseFloat(row['Capacity (kW)'] || row.capacity_kw || row.capacity),
-        inverter_type: row['Inverter Type'] || row.inverter_type || 'on_grid',
-        phases: parseInt(row.Phases || row.phases || 1, 10),
+        inverter_type: normalizeInverterType(row['Inverter Type'] || row.inverter_type),
+        phases: normalizePhases(row.Phases || row.phases),
         rate: parseFloat(row['Selling Rate (INR)'] || row.rate || 0),
         gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE),
         description: row.Description || row.description || '',

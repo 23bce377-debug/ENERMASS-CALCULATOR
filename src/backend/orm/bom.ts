@@ -3,7 +3,8 @@
  *
  * Design principles:
  * - All queries filter by org_id (null = global/shared row visible to all orgs).
- * - bulkInsert() uses upsert with onConflict: 'sku_code' to be idempotent.
+ * - upsert() is scoped by org_id + sku_code; global sku_code is not unique
+ *   because orgs can create/override their own accessories.
  * - qty_formula is validated before write using the formula parser.
  * - append-safe: no DELETE on template items that are referenced by active systems
  *   (enforced at DB via FK; this ORM raises a typed error).
@@ -158,13 +159,36 @@ export const BomTemplateItemORM = {
 
   /**
    * Upsert a single template item. Validates qty_formula before write.
-   * Conflicts on sku_code within the same org_id.
+   * Conflicts on sku_code within the same org_id/global scope.
    */
   async upsert(item: BomTemplateItemInsert): Promise<BomTemplateItemRow> {
     validateQtyFormula(item.qty_formula);
+
+    const orgId = item.org_id ?? null;
+    let lookup = supabase
+      .from('bom_template_items')
+      .select('*')
+      .eq('sku_code', item.sku_code);
+
+    lookup = orgId ? lookup.eq('org_id', orgId) : lookup.is('org_id', null);
+
+    const { data: existing, error: lookupError } = await lookup.maybeSingle();
+    if (lookupError) throw lookupError;
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from('bom_template_items')
+        .update(item)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }
+
     const { data, error } = await supabase
       .from('bom_template_items')
-      .upsert(item, { onConflict: 'sku_code' })
+      .insert(item)
       .select()
       .single();
     if (error) throw error;

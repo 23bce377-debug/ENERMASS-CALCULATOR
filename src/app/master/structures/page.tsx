@@ -240,6 +240,26 @@ export default function StructuresMasterPage() {
     { name: 'gst_pct', label: 'GST Percentage', type: 'number' },
   ];
 
+  const normalizeStructureMaterial = (value: unknown): Structure['material'] => {
+    const normalized = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+    if (['hot_dip_galvanized', 'hot_dip_gi', 'hdg'].includes(normalized)) return 'hot_dip_galvanized';
+    if (['aluminum', 'aluminium'].includes(normalized)) return 'aluminum';
+    if (['stainless_steel', 'ss'].includes(normalized)) return 'stainless_steel';
+    if (['custom'].includes(normalized)) return 'custom';
+    return 'gi_galvanized';
+  };
+
+  const normalizeRoofMountType = (value: unknown): Structure['roof_mount_type'] => {
+    const normalized = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+    if (['rcc_sloped', 'sloped_rcc', 'rcc_slope'].includes(normalized)) return 'rcc_sloped';
+    if (['tin_shed', 'tinshed'].includes(normalized)) return 'tin_shed';
+    if (['metal_sheet', 'sheet_metal'].includes(normalized)) return 'metal_sheet';
+    if (['ground_mount', 'ground'].includes(normalized)) return 'ground_mount';
+    if (['elevated'].includes(normalized)) return 'elevated';
+    if (['custom'].includes(normalized)) return 'custom';
+    return 'rcc_flat';
+  };
+
   // ─── Filter & Search Logic ──────────────────────────────────────────────────
   
   const filteredStructures = useMemo(() => {
@@ -467,8 +487,8 @@ export default function StructuresMasterPage() {
       
       const parsedRows = rawData.map((row: any) => ({
         name: row.Name || row.name,
-        material: row.Material || row.material || 'gi_galvanized',
-        roof_mount_type: row['Roof Mount Type'] || row.roof_mount_type || 'rcc_flat',
+        material: normalizeStructureMaterial(row.Material || row.material),
+        roof_mount_type: normalizeRoofMountType(row['Roof Mount Type'] || row.roof_mount_type),
         elevation_height_mm: parseInt(row['Elevation (mm)'] || row.elevation_height_mm || 0, 10),
         raw_material_rate: parseFloat(row['Raw Rate (INR/kg)'] || row.raw_material_rate || 0),
         fabrication_rate: parseFloat(row['Fab Rate (INR/kg)'] || row.fabrication_rate || 0),
