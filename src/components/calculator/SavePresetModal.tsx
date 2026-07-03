@@ -71,7 +71,7 @@ export function SavePresetModal({ isOpen, onClose, statePayload }: { isOpen: boo
       onClose();
     } catch (err) {
       console.error(err);
-      alert('Failed to save preset');
+      alert(err instanceof Error ? err.message : 'Failed to save preset');
     }
     setLoading(false);
   };

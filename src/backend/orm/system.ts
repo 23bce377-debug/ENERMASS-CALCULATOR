@@ -15,6 +15,22 @@ function normalizeMarginPct(value: unknown, fallback = 0.2): number {
   return num > 1 ? num / 100 : num;
 }
 
+function mapDatabaseError(error: any, fallbackMessage: string): Error {
+  if (!error) return new Error(fallbackMessage);
+  const msg = (error.message || '').toLowerCase();
+  const code = error.code || '';
+  if (msg.includes('row-level security') || msg.includes('violates row-level security policy') || code === '42501') {
+    if (msg.includes('system_state_availability')) {
+      return new Error('You do not have permission to assign this preset to the selected state. Please contact your administrator.');
+    }
+    if (msg.includes('systems') || msg.includes('system_items')) {
+      return new Error('You do not have permission to modify system presets. Please contact your administrator.');
+    }
+    return new Error('Access Denied: You do not have the required permissions to perform this action.');
+  }
+  return new Error(`${fallbackMessage}: ${error.message}`);
+}
+
 export const SystemORM = {
   async getAll(orgId?: string) {
     const query = supabase.from('systems').select('*');
@@ -153,7 +169,7 @@ export const SystemItemORM = {
         target_margin_pct: normalizeMarginPct(metadata.target_margin_pct),
         updated_at: new Date().toISOString()
       }).eq('id', existingSystemId);
-      if (sysErr) throw sysErr;
+      if (sysErr) throw mapDatabaseError(sysErr, 'Failed to update system metadata');
       
       // Delete old items
       await supabase.from('system_items').delete().eq('system_id', existingSystemId);
@@ -169,7 +185,7 @@ export const SystemItemORM = {
         is_active: true,
         is_custom: metadata.is_custom ?? true
       }).select().maybeSingle();
-      if (sysErr) throw sysErr;
+      if (sysErr) throw mapDatabaseError(sysErr, 'Failed to create system preset');
       systemId = newSys.id;
     }
 
@@ -183,7 +199,7 @@ export const SystemItemORM = {
     const { error: stateErr } = await (supabase as any)
       .from('system_state_availability')
       .insert({ system_id: systemId, state_id: metadata.state_id });
-    if (stateErr) throw stateErr;
+    if (stateErr) throw mapDatabaseError(stateErr, 'Failed to update preset state');
 
     // Insert new items
     if (lines && lines.length > 0) {
@@ -202,7 +218,7 @@ export const SystemItemORM = {
       const { error: itemsErr } = await supabase.from('system_items').insert(itemsToInsert);
       if (itemsErr) {
         console.error('Error inserting items:', itemsErr);
-        throw itemsErr;
+        throw mapDatabaseError(itemsErr, 'Failed to insert new system items');
       }
     }
 

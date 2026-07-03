@@ -374,6 +374,22 @@ export async function getPresetWithComponents(presetId: string) {
   };
 }
 
+function mapDatabaseError(error: any, fallbackMessage: string): Error {
+  if (!error) return new Error(fallbackMessage);
+  const msg = (error.message || '').toLowerCase();
+  const code = error.code || '';
+  if (msg.includes('row-level security') || msg.includes('violates row-level security policy') || code === '42501') {
+    if (msg.includes('system_state_availability')) {
+      return new Error('You do not have permission to assign this preset to the selected state. Please contact your administrator.');
+    }
+    if (msg.includes('systems') || msg.includes('system_items')) {
+      return new Error('You do not have permission to modify system presets. Please contact your administrator.');
+    }
+    return new Error('Access Denied: You do not have the required permissions to perform this action.');
+  }
+  return new Error(`${fallbackMessage}: ${error.message}`);
+}
+
 export async function savePresetWithComponents(
   presetId: string,
   updates: {
@@ -461,7 +477,7 @@ export async function savePresetWithComponents(
         .from(table as any)
         .select(selectByTable[table] ?? 'id')
         .in('id', ids);
-      if (error) throw new Error(`Failed to validate ${labelByTable[table] ?? table} references: ${error.message}`);
+      if (error) throw mapDatabaseError(error, `Failed to validate ${labelByTable[table] ?? table} references`);
 
       const rows = (data || []) as any[];
       const foundIds = new Set(rows.map((row: any) => row.id));
@@ -489,7 +505,7 @@ export async function savePresetWithComponents(
       .eq('id', targetPresetId)
       .maybeSingle();
 
-    if (existingErr) throw new Error('Failed to check existing preset: ' + existingErr.message);
+    if (existingErr) throw mapDatabaseError(existingErr, 'Failed to check existing preset');
     if (!existingPreset) throw new Error('Preset not found in system presets.');
 
     const shouldForkGlobalPreset = (existingPreset as any).org_id === null && orgId !== null;
@@ -510,7 +526,7 @@ export async function savePresetWithComponents(
         .select('id')
         .maybeSingle();
 
-      if (presetErr) throw new Error('Failed to create organisation preset: ' + presetErr.message);
+      if (presetErr) throw mapDatabaseError(presetErr, 'Failed to create organisation preset');
       targetPresetId = (newPreset as any)?.id;
     } else {
       const { error: presetErr } = await supabase
@@ -524,14 +540,14 @@ export async function savePresetWithComponents(
         })
         .eq('id', targetPresetId);
 
-      if (presetErr) throw new Error('Failed to update system metadata: ' + presetErr.message);
+      if (presetErr) throw mapDatabaseError(presetErr, 'Failed to update system metadata');
 
       const { error: delErr } = await supabase
         .from('system_items' as any)
         .delete()
         .eq('system_id', targetPresetId);
 
-      if (delErr) throw new Error('Failed to delete old system items: ' + delErr.message);
+      if (delErr) throw mapDatabaseError(delErr, 'Failed to delete old system items');
     }
   } else {
     const { data: newPreset, error: presetErr } = await supabase
@@ -549,7 +565,7 @@ export async function savePresetWithComponents(
       .select('id')
       .maybeSingle();
 
-    if (presetErr) throw new Error('Failed to create system preset: ' + presetErr.message);
+    if (presetErr) throw mapDatabaseError(presetErr, 'Failed to create system preset');
     targetPresetId = (newPreset as any)?.id;
   }
 
@@ -585,7 +601,7 @@ export async function savePresetWithComponents(
       .select('id, name, display_order')
       .order('display_order', { ascending: true });
 
-    if (categoryLoadErr) throw new Error('Failed to load BOM categories: ' + categoryLoadErr.message);
+    if (categoryLoadErr) throw mapDatabaseError(categoryLoadErr, 'Failed to load BOM categories');
 
     const existing = ((categories || []) as any[]).find((item: any) => aliasSet.has(normalizeCatalogName(item.name || '')));
     if (existing?.id) return existing.id as string;
@@ -602,7 +618,7 @@ export async function savePresetWithComponents(
       .select('id')
       .maybeSingle();
 
-    if (categoryCreateErr) throw new Error('Failed to create BOM category: ' + categoryCreateErr.message);
+    if (categoryCreateErr) throw mapDatabaseError(categoryCreateErr, 'Failed to create BOM category');
     const id = (newCategory as any)?.id;
     if (!id) throw new Error('Failed to create BOM category.');
     return id as string;
@@ -639,7 +655,7 @@ export async function savePresetWithComponents(
       .select('id')
       .maybeSingle();
 
-    if (customItemErr) throw new Error('Failed to create custom catalog item: ' + customItemErr.message);
+    if (customItemErr) throw mapDatabaseError(customItemErr, 'Failed to create custom catalog item');
     const catalogItemId = (customCatalogItem as any)?.id;
     if (!catalogItemId) throw new Error('Failed to create custom catalog item.');
 
@@ -690,7 +706,7 @@ export async function savePresetWithComponents(
       .from('system_items' as any)
       .insert(itemsToInsert);
 
-    if (insErr) throw new Error('Failed to insert new system items: ' + insErr.message);
+    if (insErr) throw mapDatabaseError(insErr, 'Failed to insert new system items');
   }
 
   await supabase
@@ -701,7 +717,7 @@ export async function savePresetWithComponents(
   const { error: stateErr } = await supabase
     .from('system_state_availability' as any)
     .insert({ system_id: targetPresetId, state_id: updates.stateId });
-  if (stateErr) throw new Error('Failed to update preset state: ' + stateErr.message);
+  if (stateErr) throw mapDatabaseError(stateErr, 'Failed to update preset state');
 
   revalidatePath('/');
   revalidatePath('/systems');
@@ -727,7 +743,7 @@ export async function deleteSystemPreset(presetId: string) {
     .select('id, org_id')
     .eq('id', presetId)
     .maybeSingle();
-  if (presetError) throw new Error('Failed to load preset: ' + presetError.message);
+  if (presetError) throw mapDatabaseError(presetError, 'Failed to load preset');
   if (!preset) throw new Error('Preset not found.');
   if ((preset as any).org_id === null) {
     const { error } = await (supabase as any)
@@ -738,7 +754,7 @@ export async function deleteSystemPreset(presetId: string) {
         hidden_by: user.id,
         created_at: new Date().toISOString(),
       }, { onConflict: 'org_id,system_id' });
-    if (error) throw new Error('Failed to hide built-in preset: ' + error.message);
+    if (error) throw mapDatabaseError(error, 'Failed to hide built-in preset');
 
     revalidatePath('/settings/presets');
     revalidatePath('/systems');
@@ -754,21 +770,21 @@ export async function deleteSystemPreset(presetId: string) {
     .from('quotes' as any)
     .select('id', { count: 'exact', head: true })
     .eq('system_id', presetId) as any);
-  if (refError) throw new Error('Failed to check preset usage: ' + refError.message);
+  if (refError) throw mapDatabaseError(refError, 'Failed to check preset usage');
 
   if ((count ?? 0) > 0) {
     const { error } = await supabase
       .from('systems' as any)
       .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq('id', presetId);
-    if (error) throw new Error('Failed to deactivate preset: ' + error.message);
+    if (error) throw mapDatabaseError(error, 'Failed to deactivate preset');
   } else {
     const { error } = await supabase
       .from('systems' as any)
       .delete()
       .eq('id', presetId)
       .eq('org_id', orgId);
-    if (error) throw new Error('Failed to delete preset: ' + error.message);
+    if (error) throw mapDatabaseError(error, 'Failed to delete preset');
   }
 
   revalidatePath('/settings/presets');
