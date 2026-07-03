@@ -172,7 +172,7 @@ export function CalculatorPrintView() {
                     <td style={{ textAlign: 'right' }}>{formatINR(netCost)}</td>
                   </tr>
                   <tr>
-                    <td>GST @18% (Payable)</td>
+                    <td>GST @{(calc.gstOutputRate * 100).toFixed(1)}% (Payable)</td>
                     <td style={{ textAlign: 'right' }}>+{formatINR(gstAmount)}</td>
                   </tr>
                   <tr>

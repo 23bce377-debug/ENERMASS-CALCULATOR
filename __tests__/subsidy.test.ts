@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { calculatePMSuryaGharSubsidy } from '../src/lib/subsidy';
 import { getSubsidyAmount, roundToINR } from '../src/lib/engine/calculator';
-import { TAX_CONSTANTS } from '../src/lib/tax-constants';
+import { calculateProjectGstBreakdown, TAX_CONSTANTS } from '../src/lib/tax-constants';
 import { calculateFinancialProjections } from '../src/lib/engine/financials';
 
 describe('PM Surya Ghar Subsidy Calculation', () => {
@@ -49,8 +49,16 @@ describe('PM Surya Ghar Subsidy Calculation', () => {
 });
 
 describe('Verification Test Cases', () => {
-  it('Composite GST Rate is 18%', () => {
-    expect(TAX_CONSTANTS.COMPOSITE_GST_RATE).toBeCloseTo(0.18, 4);
+  it('Composite project GST is 70% at 5% and 30% at 18%', () => {
+    expect(TAX_CONSTANTS.COMPOSITE_GST_RATE).toBeCloseTo(0.089, 4);
+    expect(TAX_CONSTANTS.PROJECT_COMPOSITE_GST_RATE).toBeCloseTo(0.089, 4);
+
+    const breakdown = calculateProjectGstBreakdown(100000);
+    expect(breakdown.materialTaxable).toBe(70000);
+    expect(breakdown.serviceTaxable).toBe(30000);
+    expect(breakdown.materialGst).toBe(3500);
+    expect(breakdown.serviceGst).toBe(5400);
+    expect(breakdown.totalGst).toBe(8900);
   });
 
   it('Subsidy 3kW boundary', () => {

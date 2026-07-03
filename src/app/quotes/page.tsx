@@ -287,6 +287,7 @@ function QuoteDetailModal({
             </div>
             <ITCSummary 
               systemCostExclGst={calc.costBeforeGST} 
+              gstRate={calc.gstOutputRate}
               isCommercial={quote.category === 'commercial' || quote.category.includes('commercial')} 
               isGstRegistered={!!quote.customer.isGstRegistered} 
             />

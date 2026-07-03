@@ -15,18 +15,20 @@ vi.mock('../src/lib/engine/calculator', () => ({
     totalInputGST: 180,
     totalIncGST: 1180,
     mrpExclGST: 1200,
-    mrpInclGST: 1416,
+    mrpInclGST: 1306.8,
+    gstOutputRate: 0.089,
     discountAmount: 0,
     subsidyAmount: 0,
     effectiveMarginPct: 0.2,
     marginAmount: 240,
-    finalCustomerPrice: 1416,
-    beneficiaryContribution: 1416,
+    finalCustomerPrice: 1306.8,
+    beneficiaryContribution: 1306.8,
     dailyGenerationKWh: 10,
     annualGenerationKWh: 3650,
     annualSavingsINR: 29200,
     paybackYears: 4.8
   }),
+  resolveStandardGstRate: (description: string) => description.toUpperCase().includes('INVERTER') ? 0.05 : 0.18,
   roundTo5: (n: number) => n,
   roundToINR: (n: number) => n
 }));
@@ -47,7 +49,7 @@ describe('calculateSystemFromDb (Blocker 3 & 4)', () => {
         return { rows: [{ id: 'sys-123', name: 'Test System', capacity_kw: 3, target_margin_pct: 0.2 }] };
       }
       if (sql.includes('FROM state_rules')) {
-        return { rows: [{ id: 'state-123', state_name: 'Gujarat', state_code: 'GJ', sun_hours_per_day: 5.5, performance_ratio: 0.78, labour_multiplier: 1.0, gst_on_output: 0.138, grid_tariff_inr: 8.0 }] };
+        return { rows: [{ id: 'state-123', state_name: 'Gujarat', state_code: 'GJ', sun_hours_per_day: 5.5, performance_ratio: 0.78, labour_multiplier: 1.0, gst_on_output: 0.089, grid_tariff_inr: 8.0 }] };
       }
       if (sql.includes('FROM system_items')) {
         return { rows: [

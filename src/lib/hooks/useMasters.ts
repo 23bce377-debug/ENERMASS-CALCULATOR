@@ -947,3 +947,58 @@ export function useCreateSubsidyMutation() {
     }
   });
 }
+
+export function useDeleteSubsidyMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (schemeId: string) => {
+      const { orgId, userId } = await getOrgContext();
+
+      const { data: beforeScheme, error: beforeError } = await (supabase
+        .from('calculation_schemes')
+        .select('*, scheme_slabs(*)')
+        .eq('id', schemeId)
+        .maybeSingle() as any);
+
+      if (beforeError) throw beforeError;
+      if (!beforeScheme) throw new Error('Subsidy scheme not found');
+
+      const { data: scheme, error: schemeErr } = await (supabase
+        .from('calculation_schemes')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('id', schemeId)
+        .select()
+        .maybeSingle() as any);
+
+      if (schemeErr) throw schemeErr;
+
+      await (supabase as any)
+        .from('state_scheme_overrides')
+        .update({ is_active: false })
+        .eq('scheme_id', schemeId);
+
+      await logAudit(orgId, userId, 'masters', 'calculation_schemes', schemeId, 'delete', beforeScheme, scheme);
+
+      await supabase.from('master_data_changes_log').insert({
+        entity_type: 'calculation_schemes',
+        entity_id: schemeId,
+        change_type: 'deactivated',
+        old_values: beforeScheme,
+        new_values: scheme,
+      });
+
+      return scheme;
+    },
+    onSuccess: async () => {
+      try {
+        const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
+        await revalidateMasterCache();
+      } catch (err) {
+        console.error('Failed to revalidate master cache:', err);
+      }
+      queryClient.invalidateQueries({ queryKey: ['masters', 'subsidy'] });
+      queryClient.invalidateQueries({ queryKey: ['masters', 'state_rules'] });
+    }
+  });
+}

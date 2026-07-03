@@ -7,7 +7,7 @@
 
 import { SYSTEMS, type SolarSystem, type BomItem } from '../data/bom';
 import { STATE_DATA } from '@/lib/data/masters';
-import { getBatteryGstRate, TAX_CONSTANTS } from '@/lib/tax-constants';
+import { getBatteryGstRate, getComponentGstRate, getProjectCompositeGstRate, TAX_CONSTANTS } from '@/lib/tax-constants';
 import { STRUCTURE_CONFIGS, type StructureType } from '../structures/structureConfig';
 import { SEED_BOM_TEMPLATE_ITEMS, SEED_BOM_CATEGORIES } from '../../../db/seeds/bom_templates';
 import { type StateData } from '../data/masters';
@@ -47,6 +47,18 @@ export function roundTo5(num: number | null | undefined): number {
 export function roundToINR(num: number | null | undefined): number {
   const val = sanitizeNumber(num);
   return Math.round(val * 1e2) / 1e2;
+}
+
+function inferGstComponentKind(description: unknown): 'panel' | 'inverter' | 'battery' | 'other' {
+  const text = String(description ?? '').toUpperCase();
+  if (/\b(PANEL|PV\s*MODULE|SOLAR\s*MODULE|MODULE)\b/.test(text)) return 'panel';
+  if (/\b(INVERTER|MICRO\s*INVERTER|STATIC\s*CONVERTER)\b/.test(text)) return 'inverter';
+  if (/\b(BATTERY|LITHIUM|LFP|LIFEPO4)\b/.test(text)) return 'battery';
+  return 'other';
+}
+
+export function resolveStandardGstRate(description: unknown): number {
+  return getComponentGstRate(inferGstComponentKind(description));
 }
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -990,7 +1002,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
                 description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
                 qty: qty,
                 ratePerUnit: p.ratePerWatt * p.wattage,
-                gstPct: p.gst_pct ?? TAX_CONSTANTS.RESIDENTIAL_GST_RATE,
+                gstPct: p.gst_pct ?? TAX_CONSTANTS.PANEL_GST_RATE,
                 unit: 'Nos',
                 remarks: item.remarks ?? '',
                 unitWattage: p.wattage,
@@ -1005,7 +1017,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
               description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
               qty: qty,
               ratePerUnit: p.ratePerWatt * p.wattage,
-              gstPct: p.gst_pct ?? TAX_CONSTANTS.RESIDENTIAL_GST_RATE,
+              gstPct: p.gst_pct ?? TAX_CONSTANTS.PANEL_GST_RATE,
               unit: 'Nos',
               remarks: item.remarks ?? '',
               unitWattage: p.wattage,
@@ -1112,7 +1124,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
               description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
               qty: qty,
               ratePerUnit: p.ratePerWatt * p.wattage,
-              gstPct: p.gst_pct ?? TAX_CONSTANTS.RESIDENTIAL_GST_RATE,
+              gstPct: p.gst_pct ?? TAX_CONSTANTS.PANEL_GST_RATE,
               unit: 'Nos',
               remarks: '',
               unitWattage: p.wattage,
@@ -1127,7 +1139,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
             description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
             qty: qty,
             ratePerUnit: p.ratePerWatt * p.wattage,
-            gstPct: p.gst_pct ?? TAX_CONSTANTS.RESIDENTIAL_GST_RATE,
+            gstPct: p.gst_pct ?? TAX_CONSTANTS.PANEL_GST_RATE,
             unit: 'Nos',
             remarks: '',
             unitWattage: p.wattage,
@@ -1139,7 +1151,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
         description: 'PANEL',
         qty: input.panelQtyOverride !== undefined ? input.panelQtyOverride : 0,
         ratePerUnit: input.panelRateOverride !== undefined ? input.panelRateOverride : 0,
-        gstPct: TAX_CONSTANTS.RESIDENTIAL_GST_RATE,
+        gstPct: TAX_CONSTANTS.PANEL_GST_RATE,
         unit: 'Nos',
         remarks: 'None (Unselected)',
       });
@@ -1242,7 +1254,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
         qty: itemData.qty ?? 0,
         ratePerUnit: itemData.ratePerUnit ?? 0,
         gstPct: (itemData.gstPct ?? (
-          description.toUpperCase().startsWith('PANEL') ? TAX_CONSTANTS.RESIDENTIAL_GST_RATE :
+          description.toUpperCase().startsWith('PANEL') ? TAX_CONSTANTS.PANEL_GST_RATE :
           description.toUpperCase().startsWith('INVERTER') ? TAX_CONSTANTS.INVERTER_GST_RATE :
           description.toUpperCase().startsWith('BATTERY') ? TAX_CONSTANTS.BATTERY_GST_RATE :
           TAX_CONSTANTS.BOS_GST_RATE
@@ -1429,7 +1441,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
       unit: 'Lot', 
       qty: systemKw, 
       ratePerUnit: 3000, 
-      gstPct: (input.projectType === 'residential' ? TAX_CONSTANTS.RESIDENTIAL_COMPOSITE_GST_RATE : TAX_CONSTANTS.INSTALLATION_SERVICE_GST) as any 
+      gstPct: TAX_CONSTANTS.BOS_GST_RATE as any 
     }
   ];
 
@@ -1482,9 +1494,10 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
       equipmentOverrides,
     ));
 
+    const standardGstRate = resolveStandardGstRate(item.description);
     const effectiveGstPct = roundTo5(normalizeGstRate(
-      rowOverride?.gstPct !== undefined ? rowOverride.gstPct : item.gstPct,
-      TAX_CONSTANTS.BOS_GST_RATE,
+      rowOverride?.gstPct !== undefined ? rowOverride.gstPct : (item.gstPct ?? standardGstRate),
+      standardGstRate,
     ));
 
     const lineTotalPaise = isDisabled ? 0 : Math.round(effectiveQty * effectiveRate * 100);
@@ -1545,29 +1558,16 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
   const totalIncGST = roundToINR(costBeforeGST + totalInputGST);
 
   // ── Step 7: Resolve output GST ──
-  // FIX CALC-03: Validate GST override against legal Indian GST slabs.
-  // Valid slabs: 0%, 5%, 12%, 18%, 28% (plus composite 13.8% for solar output)
-  const VALID_OUTPUT_GST_SLABS = new Set([
-    0, 
-    TAX_CONSTANTS.RESIDENTIAL_GST_RATE, 
-    TAX_CONSTANTS.INVERTER_GST_RATE, 
-    TAX_CONSTANTS.COMPOSITE_GST_RATE, 
-    TAX_CONSTANTS.RESIDENTIAL_COMPOSITE_GST_RATE, 
-    TAX_CONSTANTS.BOS_GST_RATE, 
-    0.28
-  ]);
+  // DB state rules and explicit user overrides are intentionally allowed so
+  // future GST changes can be managed from masters without changing formulas.
   const rawGstOverride = input.gstOnOutputOverride;
   const resolvedGstOverride = (() => {
     if (rawGstOverride === undefined || input.allowGstOverride !== true) return undefined;
-    // Validate: must match a known slab within floating-point tolerance
     const normalizedOverride = normalizeGstRate(rawGstOverride, rawGstOverride);
-    const isValid = [...VALID_OUTPUT_GST_SLABS].some(
-      slab => Math.abs(slab - normalizedOverride) < 0.0001
-    );
-    if (!isValid) {
+    if (!Number.isFinite(normalizedOverride) || normalizedOverride < 0 || normalizedOverride > 1) {
       throw new Error(
         `Invalid GST output override: ${(normalizedOverride * 100).toFixed(3)}%. ` +
-        `Must be one of: ${[...VALID_OUTPUT_GST_SLABS].map(s => (s * 100).toFixed(1) + '%').join(', ')}`
+        'GST must be between 0% and 100%.'
       );
     }
     return normalizedOverride;
@@ -1576,10 +1576,8 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
   const gstOutputRate = roundTo5(normalizeGstRate(
     resolvedGstOverride !== undefined
       ? resolvedGstOverride
-      : (input.gstOnOutput !== undefined 
-          ? input.gstOnOutput 
-          : (input.projectType === 'commercial' ? TAX_CONSTANTS.COMMERCIAL_GST_RATE : TAX_CONSTANTS.RESIDENTIAL_COMPOSITE_GST_RATE)),
-    input.projectType === 'commercial' ? TAX_CONSTANTS.COMMERCIAL_GST_RATE : TAX_CONSTANTS.RESIDENTIAL_COMPOSITE_GST_RATE,
+      : (input.gstOnOutput !== undefined ? input.gstOnOutput : getProjectCompositeGstRate()),
+    getProjectCompositeGstRate(),
   ));
 
   // ── Step 8 & 6: Resolve MRP & Margin ──

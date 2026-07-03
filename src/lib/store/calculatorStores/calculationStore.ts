@@ -126,7 +126,7 @@ function buildGeneratedSystems(
           qty: panelQty,
           unit: 'Nos',
           ratePerUnit: panel.ratePerWatt * panel.wattage,
-          gstPct: normalizeGstRate(panel.gst_pct, TAX_CONSTANTS.RESIDENTIAL_GST_RATE),
+          gstPct: normalizeGstRate(panel.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE),
         },
         {
           description: 'INVERTER',
@@ -134,7 +134,7 @@ function buildGeneratedSystems(
           qty: 1,
           unit: 'Nos',
           ratePerUnit: inverter.rate,
-          gstPct: normalizeGstRate(inverter.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gstPct: normalizeGstRate(inverter.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE),
         },
         ...(battery ? [{
           description: 'BATTERY',
@@ -692,7 +692,7 @@ export const createCalculationSlice: StateCreator<
           wattage: Number(p.wattage_w),
           type: p.panel_type,
           ratePerWatt: Number(p.wattage_w) > 0 ? Number(p.selling_price) / Number(p.wattage_w) : 0,
-          gst_pct: normalizeGstRate(p.gst_pct, TAX_CONSTANTS.RESIDENTIAL_GST_RATE),
+          gst_pct: normalizeGstRate(p.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE),
           description: p.description ?? '',
           specification_details: p.specification_details ?? '',
         };
@@ -707,7 +707,7 @@ export const createCalculationSlice: StateCreator<
           type: i.inverter_type === 'on_grid' ? 'on-grid' : (i.inverter_type === 'micro' ? 'micro' : 'hybrid'),
           phases: Number(i.phases),
           rate: Number(i.selling_price),
-          gst_pct: normalizeGstRate(i.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(i.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE),
           description: i.description ?? '',
           specification_details: i.specification_details ?? '',
         };
@@ -740,7 +740,7 @@ export const createCalculationSlice: StateCreator<
           base_weight_kg: Number(st.base_weight_kg),
           flat_rate: st.selling_price != null ? Number(st.selling_price) : (st.flat_rate != null ? Number(st.flat_rate) : null),
           per_watt_rate: st.per_watt_rate != null ? Number(st.per_watt_rate) : null,
-          gst_pct: normalizeGstRate(st.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(st.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           description: st.description ?? '',
           specification_details: st.specification_details ?? '',
         };
@@ -751,7 +751,7 @@ export const createCalculationSlice: StateCreator<
           ...m,
           phases: Number(m.phases),
           rate: Number(m.selling_price),
-          gst_pct: normalizeGstRate(m.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(m.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           description: m.description ?? '',
           specification_details: m.specification_details ?? '',
         };
@@ -761,7 +761,7 @@ export const createCalculationSlice: StateCreator<
         return {
           ...l,
           rate: Number(l.selling_price),
-          gst_pct: normalizeGstRate(l.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(l.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           description: l.description ?? '',
           specification_details: l.specification_details ?? '',
         };
@@ -771,7 +771,7 @@ export const createCalculationSlice: StateCreator<
         return {
           ...b,
           rate: Number(b.default_rate ?? b.selling_price ?? 0),
-          gst_pct: normalizeGstRate(b.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(b.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           notes: b.notes ?? '',
           specification_details: b.specification_details ?? '',
         };
@@ -781,7 +781,7 @@ export const createCalculationSlice: StateCreator<
         return {
           ...c,
           rate: Number(c.selling_price),
-          gst_pct: normalizeGstRate(c.gst_pct, 0.12),
+          gst_pct: normalizeGstRate(c.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           description: c.description ?? '',
           specification_details: c.specification_details ?? '',
         };
@@ -792,7 +792,7 @@ export const createCalculationSlice: StateCreator<
           id: scm.id,
           name: scm.name,
           rate: Number(scm.selling_price),
-          gst_pct: normalizeGstRate(scm.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(scm.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           specification_details: scm.specification_details ?? '',
         };
       });
@@ -806,7 +806,7 @@ export const createCalculationSlice: StateCreator<
           sunHoursPerDay: Number(rule.sun_hours_per_day),
           performanceRatio: Number(rule.performance_ratio),
           labourMultiplier: Number(rule.labour_multiplier),
-          gstOnOutput: Number(rule.gst_on_output),
+          gstOnOutput: normalizeGstRate(rule.gst_on_output, TAX_CONSTANTS.PROJECT_COMPOSITE_GST_RATE),
           gridTariffInr: Number(rule.grid_tariff_inr),
           subsidyRules: [],
         };
@@ -848,7 +848,7 @@ export const createCalculationSlice: StateCreator<
       const loadedSystems: SolarSystem[] = (bootstrap.systems || []).map((sys: any) => {
         const items = (sys.system_items || []).map((item: any) => {
           let rate = 0;
-          let gstPct: any = TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+          let gstPct: any = TAX_CONSTANTS.BOS_GST_RATE;
           let sourceTable: string | undefined;
           let sourceItemId: string | undefined;
           let sourceLabel: string | undefined;
@@ -856,7 +856,7 @@ export const createCalculationSlice: StateCreator<
           if (item.panel_id) {
             const panel = mappedPanels.find((p: any) => p.id === item.panel_id);
             rate = panel ? Number(panel.ratePerWatt) * Number(panel.wattage) : 0;
-            gstPct = panel ? normalizeGstRate(panel.gst_pct, TAX_CONSTANTS.RESIDENTIAL_GST_RATE) : TAX_CONSTANTS.RESIDENTIAL_GST_RATE;
+            gstPct = panel ? normalizeGstRate(panel.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE) : TAX_CONSTANTS.PANEL_GST_RATE;
             sourceTable = 'eq_panels';
             sourceItemId = item.panel_id;
             sourceLabel = panel ? `${panel.brand} ${panel.model} (${panel.wattage}W)` : item.description;
@@ -864,7 +864,7 @@ export const createCalculationSlice: StateCreator<
           } else if (item.inverter_id) {
             const inverter = mappedInverters.find((i: any) => i.id === item.inverter_id);
             rate = inverter ? Number(inverter.rate) : 0;
-            gstPct = inverter ? normalizeGstRate(inverter.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            gstPct = inverter ? normalizeGstRate(inverter.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE) : TAX_CONSTANTS.INVERTER_GST_RATE;
             sourceTable = 'eq_inverters';
             sourceItemId = item.inverter_id;
             sourceLabel = inverter ? `${inverter.brand} ${inverter.model}` : item.description;
@@ -880,7 +880,7 @@ export const createCalculationSlice: StateCreator<
           } else if (item.solar_meter_id) {
             const meter = mappedMeters.find((m: any) => m.id === item.solar_meter_id);
             rate = meter ? Number(meter.rate) : 0;
-            gstPct = meter ? normalizeGstRate(meter.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            gstPct = meter ? normalizeGstRate(meter.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
             sourceTable = 'eq_meters';
             sourceItemId = item.solar_meter_id;
             sourceLabel = meter ? `${meter.brand ?? ''} ${meter.model ?? ''}`.trim() : item.description;
@@ -888,7 +888,7 @@ export const createCalculationSlice: StateCreator<
           } else if (item.net_meter_id) {
             const meter = mappedMeters.find((m: any) => m.id === item.net_meter_id);
             rate = meter ? Number(meter.rate) : 0;
-            gstPct = meter ? normalizeGstRate(meter.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            gstPct = meter ? normalizeGstRate(meter.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
             sourceTable = 'eq_meters';
             sourceItemId = item.net_meter_id;
             sourceLabel = meter ? `${meter.brand ?? ''} ${meter.model ?? ''}`.trim() : item.description;
@@ -896,7 +896,7 @@ export const createCalculationSlice: StateCreator<
           } else if (item.la_id) {
             const la = mappedLAs.find((l: any) => l.id === item.la_id);
             rate = la ? Number(la.rate) : 0;
-            gstPct = la ? normalizeGstRate(la.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            gstPct = la ? normalizeGstRate(la.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
             sourceTable = 'eq_lightning_arresters';
             sourceItemId = item.la_id;
             sourceLabel = la ? `${la.brand ?? ''} ${la.model ?? ''}`.trim() : item.description;
@@ -904,7 +904,7 @@ export const createCalculationSlice: StateCreator<
           } else if (item.structure_id) {
             const structure = mappedStructures.find((s: any) => s.id === item.structure_id);
             rate = structure ? Number(structure.flat_rate ?? 0) : 0;
-            gstPct = structure ? normalizeGstRate(structure.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            gstPct = structure ? normalizeGstRate(structure.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
             sourceTable = 'eq_mounting_structures';
             sourceItemId = item.structure_id;
             sourceLabel = structure ? structure.name : item.description;
@@ -912,7 +912,7 @@ export const createCalculationSlice: StateCreator<
           } else if (item.bom_item_id) {
             const bom = mappedBomItems.find((b: any) => b.id === item.bom_item_id);
             rate = bom ? Number(bom.rate) : 0;
-            gstPct = bom ? normalizeGstRate(bom.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            gstPct = bom ? normalizeGstRate(bom.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
             sourceTable = 'bom_template_items';
             sourceItemId = item.bom_item_id;
             sourceLabel = bom ? bom.description : item.description;
@@ -920,7 +920,7 @@ export const createCalculationSlice: StateCreator<
           } else if (item.comm_device_id) {
             const comm = mappedCommDevices.find((c: any) => c.id === item.comm_device_id);
             rate = comm ? Number(comm.rate) : 0;
-            gstPct = comm ? normalizeGstRate(comm.gst_pct, 0.12) : 0.12;
+            gstPct = comm ? normalizeGstRate(comm.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
             sourceTable = 'eq_communication_devices';
             sourceItemId = item.comm_device_id;
             sourceLabel = comm ? `${comm.brand ?? ''} ${comm.model ?? ''}`.trim() : item.description;
@@ -928,7 +928,7 @@ export const createCalculationSlice: StateCreator<
           } else if (item.structure_component_id) {
             const comp = mappedStructureComponentMasters.find((c: any) => c.id === item.structure_component_id);
             rate = comp ? Number(comp.rate) : 0;
-            gstPct = comp ? normalizeGstRate(comp.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            gstPct = comp ? normalizeGstRate(comp.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
             sourceTable = 'structure_component_master';
             sourceItemId = item.structure_component_id;
             sourceLabel = comp ? comp.name : item.description;
@@ -1042,7 +1042,7 @@ export const createCalculationSlice: StateCreator<
           wattage: Number(p.wattage_w),
           type: p.panel_type,
           ratePerWatt: Number(p.wattage_w) > 0 ? Number(p.selling_price) / Number(p.wattage_w) : 0,
-          gst_pct: normalizeGstRate(p.gst_pct, TAX_CONSTANTS.RESIDENTIAL_GST_RATE),
+          gst_pct: normalizeGstRate(p.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE),
           description: p.description ?? '',
           specification_details: p.specification_details ?? '',
         }));
@@ -1057,7 +1057,7 @@ export const createCalculationSlice: StateCreator<
           type: i.inverter_type === 'on_grid' ? 'on-grid' : (i.inverter_type === 'micro' ? 'micro' : 'hybrid'),
           phases: Number(i.phases),
           rate: Number(i.selling_price),
-          gst_pct: normalizeGstRate(i.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(i.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE),
           description: i.description ?? '',
           specification_details: i.specification_details ?? '',
         }));
@@ -1083,7 +1083,7 @@ export const createCalculationSlice: StateCreator<
           ...m,
           phases: Number(m.phases),
           rate: Number(m.selling_price),
-          gst_pct: normalizeGstRate(m.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(m.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           description: m.description ?? '',
           specification_details: m.specification_details ?? '',
         }));
@@ -1093,7 +1093,7 @@ export const createCalculationSlice: StateCreator<
         stateUpdate.dbLAs = bootstrap.lightningArresters.map((l: any) => ({
           ...l,
           rate: Number(l.selling_price),
-          gst_pct: normalizeGstRate(l.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(l.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           description: l.description ?? '',
           specification_details: l.specification_details ?? '',
         }));
@@ -1111,7 +1111,7 @@ export const createCalculationSlice: StateCreator<
             sunHoursPerDay: Number(rule.sun_hours_per_day),
             performanceRatio: Number(rule.performance_ratio),
             labourMultiplier: Number(rule.labour_multiplier),
-            gstOnOutput: Number(rule.gst_on_output),
+            gstOnOutput: normalizeGstRate(rule.gst_on_output, TAX_CONSTANTS.PROJECT_COMPOSITE_GST_RATE),
             gridTariffInr: Number(rule.grid_tariff_inr),
             subsidyRules: [],
           };
@@ -1160,7 +1160,7 @@ export const createCalculationSlice: StateCreator<
         stateUpdate.dbStructureParts = bootstrap.bomItems.map((b: any) => ({
           ...b,
           rate: Number(b.default_rate ?? b.selling_price ?? 0),
-          gst_pct: normalizeGstRate(b.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(b.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           notes: b.notes ?? '',
           specification_details: b.specification_details ?? '',
         }));
@@ -1178,7 +1178,7 @@ export const createCalculationSlice: StateCreator<
           base_weight_kg: Number(st.base_weight_kg),
           flat_rate: st.selling_price != null ? Number(st.selling_price) : (st.flat_rate != null ? Number(st.flat_rate) : null),
           per_watt_rate: st.per_watt_rate != null ? Number(st.per_watt_rate) : null,
-          gst_pct: normalizeGstRate(st.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(st.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           description: st.description ?? '',
           specification_details: st.specification_details ?? '',
         }));
@@ -1189,7 +1189,7 @@ export const createCalculationSlice: StateCreator<
           id: scm.id,
           name: scm.name,
           rate: Number(scm.selling_price),
-          gst_pct: normalizeGstRate(scm.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE),
+          gst_pct: normalizeGstRate(scm.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           specification_details: scm.specification_details ?? '',
         }));
       }
@@ -1228,7 +1228,7 @@ export const createCalculationSlice: StateCreator<
         const commDevices = (bootstrap.commDevices || []).map((c: any) => ({
           id: c.id,
           rate: Number(c.selling_price),
-          gst_pct: normalizeGstRate(c.gst_pct, 0.12),
+          gst_pct: normalizeGstRate(c.gst_pct, TAX_CONSTANTS.BOS_GST_RATE),
           brand: c.brand,
           model: c.model,
           description: c.description ?? '',
@@ -1241,7 +1241,7 @@ export const createCalculationSlice: StateCreator<
         const loadedSystems: SolarSystem[] = bootstrap.systems.map((sys: any) => {
           const items = (sys.system_items || []).map((item: any) => {
             let rate = 0;
-            let gstPct: any = TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+            let gstPct: any = TAX_CONSTANTS.BOS_GST_RATE;
             let sourceTable: string | undefined;
             let sourceItemId: string | undefined;
             let sourceLabel: string | undefined;
@@ -1249,7 +1249,7 @@ export const createCalculationSlice: StateCreator<
             if (item.panel_id) {
               const panel = panels.find((p: any) => p.id === item.panel_id);
               rate = panel ? Number(panel.ratePerWatt) * Number(panel.wattage) : 0;
-              gstPct = panel ? normalizeGstRate(panel.gst_pct, TAX_CONSTANTS.RESIDENTIAL_GST_RATE) : TAX_CONSTANTS.RESIDENTIAL_GST_RATE;
+              gstPct = panel ? normalizeGstRate(panel.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE) : TAX_CONSTANTS.PANEL_GST_RATE;
               sourceTable = 'eq_panels';
               sourceItemId = item.panel_id;
               sourceLabel = panel ? `${panel.brand} ${panel.model} (${panel.wattage}W)` : item.description;
@@ -1257,7 +1257,7 @@ export const createCalculationSlice: StateCreator<
             } else if (item.inverter_id) {
               const inverter = inverters.find((i: any) => i.id === item.inverter_id);
               rate = inverter ? Number(inverter.rate) : 0;
-              gstPct = inverter ? normalizeGstRate(inverter.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+              gstPct = inverter ? normalizeGstRate(inverter.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE) : TAX_CONSTANTS.INVERTER_GST_RATE;
               sourceTable = 'eq_inverters';
               sourceItemId = item.inverter_id;
               sourceLabel = inverter ? `${inverter.brand} ${inverter.model}` : item.description;
@@ -1273,7 +1273,7 @@ export const createCalculationSlice: StateCreator<
             } else if (item.solar_meter_id) {
               const meter = meters.find((m: any) => m.id === item.solar_meter_id);
               rate = meter ? Number(meter.rate) : 0;
-              gstPct = meter ? normalizeGstRate(meter.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+              gstPct = meter ? normalizeGstRate(meter.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
               sourceTable = 'eq_meters';
               sourceItemId = item.solar_meter_id;
               sourceLabel = meter ? `${meter.brand ?? ''} ${meter.model ?? ''}`.trim() : item.description;
@@ -1281,7 +1281,7 @@ export const createCalculationSlice: StateCreator<
             } else if (item.net_meter_id) {
               const meter = meters.find((m: any) => m.id === item.net_meter_id);
               rate = meter ? Number(meter.rate) : 0;
-              gstPct = meter ? normalizeGstRate(meter.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+              gstPct = meter ? normalizeGstRate(meter.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
               sourceTable = 'eq_meters';
               sourceItemId = item.net_meter_id;
               sourceLabel = meter ? `${meter.brand ?? ''} ${meter.model ?? ''}`.trim() : item.description;
@@ -1289,7 +1289,7 @@ export const createCalculationSlice: StateCreator<
             } else if (item.la_id) {
               const la = LAs.find((l: any) => l.id === item.la_id);
               rate = la ? Number(la.rate) : 0;
-              gstPct = la ? normalizeGstRate(la.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+              gstPct = la ? normalizeGstRate(la.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
               sourceTable = 'eq_lightning_arresters';
               sourceItemId = item.la_id;
               sourceLabel = la ? `${la.brand ?? ''} ${la.model ?? ''}`.trim() : item.description;
@@ -1297,7 +1297,7 @@ export const createCalculationSlice: StateCreator<
             } else if (item.structure_id) {
               const structure = structures.find((s: any) => s.id === item.structure_id);
               rate = structure ? Number(structure.flat_rate ?? 0) : 0;
-              gstPct = structure ? normalizeGstRate(structure.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+              gstPct = structure ? normalizeGstRate(structure.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
               sourceTable = 'eq_mounting_structures';
               sourceItemId = item.structure_id;
               sourceLabel = structure ? structure.name : item.description;
@@ -1305,7 +1305,7 @@ export const createCalculationSlice: StateCreator<
             } else if (item.bom_item_id) {
               const bom = bomItems.find((b: any) => b.id === item.bom_item_id);
               rate = bom ? Number(bom.rate) : 0;
-              gstPct = bom ? normalizeGstRate(bom.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+              gstPct = bom ? normalizeGstRate(bom.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
               sourceTable = 'bom_template_items';
               sourceItemId = item.bom_item_id;
               sourceLabel = bom ? bom.description : item.description;
@@ -1313,7 +1313,7 @@ export const createCalculationSlice: StateCreator<
             } else if (item.comm_device_id) {
               const comm = commDevices.find((c: any) => c.id === item.comm_device_id);
               rate = comm ? Number(comm.rate) : 0;
-              gstPct = comm ? normalizeGstRate(comm.gst_pct, 0.12) : 0.12;
+              gstPct = comm ? normalizeGstRate(comm.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
               sourceTable = 'eq_communication_devices';
               sourceItemId = item.comm_device_id;
               sourceLabel = comm ? `${comm.brand ?? ''} ${comm.model ?? ''}`.trim() : item.description;
@@ -1321,7 +1321,7 @@ export const createCalculationSlice: StateCreator<
             } else if (item.structure_component_id) {
               const comp = structureComponentMasters.find((c: any) => c.id === item.structure_component_id);
               rate = comp ? Number(comp.rate) : 0;
-              gstPct = comp ? normalizeGstRate(comp.gst_pct, TAX_CONSTANTS.COMMERCIAL_GST_RATE) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+              gstPct = comp ? normalizeGstRate(comp.gst_pct, TAX_CONSTANTS.BOS_GST_RATE) : TAX_CONSTANTS.BOS_GST_RATE;
               sourceTable = 'structure_component_master';
               sourceItemId = item.structure_component_id;
               sourceLabel = comp ? comp.name : item.description;

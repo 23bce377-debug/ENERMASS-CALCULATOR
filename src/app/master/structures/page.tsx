@@ -186,6 +186,9 @@ export default function StructuresMasterPage() {
   const [editingCompId, setEditingCompId] = useState<string | null>(null);
   const [compPriceDraft, setCompPriceDraft] = useState<number>(0);
   const [compGstDraft, setCompGstDraft] = useState<number>(0.18);
+  const [editingAddonId, setEditingAddonId] = useState<string | null>(null);
+  const [addonRateDraft, setAddonRateDraft] = useState<number>(0);
+  const [addonGstDraft, setAddonGstDraft] = useState<number>(0.18);
 
   // Mutation to update structure components
   const updateCompMutation = useMutation({
@@ -223,6 +226,24 @@ export default function StructuresMasterPage() {
     gst_pct: 0.18,
     description: '',
     specification_details: '',
+  });
+
+  const updateAddonMutation = useMutation({
+    mutationFn: async ({ id, rate_per_unit, gst_pct }: { id: string; rate_per_unit: number; gst_pct: number }) => {
+      const { error } = await (supabase as any)
+        .from('eq_structure_addons')
+        .update({ rate_per_unit, gst_pct, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['structure-addons'] });
+      setEditingAddonId(null);
+      toast('Structure add-on updated ✓', 'success');
+    },
+    onError: (err: any) => {
+      toast(err.message || 'Failed to update add-on', 'error');
+    }
   });
 
   // Bulk Edit Schema
@@ -936,19 +957,84 @@ export default function StructuresMasterPage() {
                 <th className="p-2.5 text-right">Rate / Unit</th>
                 <th className="p-2.5 text-center">GST</th>
                 <th className="p-2.5 text-left">Notes</th>
+                <th className="p-2.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {structureAddons.map((addon) => (
-                <tr key={addon.id} className="border-b border-border/40 hover:bg-surface-hover/20 transition-colors">
-                  <td className="p-2.5 font-semibold text-text-primary">{addon.name}</td>
-                  <td className="p-2.5 text-text-muted">{addon.material}</td>
-                  <td className="p-2.5 text-center text-text-muted">{addon.unit}</td>
-                  <td className="p-2.5 text-right font-mono font-bold text-accent">₹{addon.rate_per_unit.toFixed(2)}</td>
-                  <td className="p-2.5 text-center text-text-muted">{(addon.gst_pct * 100).toFixed(0)}%</td>
-                  <td className="p-2.5 text-text-muted text-[10px] max-w-xs truncate" title={addon.notes ?? ''}>{addon.notes ?? '—'}</td>
-                </tr>
-              ))}
+              {structureAddons.map((addon) => {
+                const isEditing = editingAddonId === addon.id;
+                return (
+                  <tr key={addon.id} className="border-b border-border/40 hover:bg-surface-hover/20 transition-colors">
+                    <td className="p-2.5 font-semibold text-text-primary">{addon.name}</td>
+                    <td className="p-2.5 text-text-muted">{addon.material}</td>
+                    <td className="p-2.5 text-center text-text-muted">{addon.unit}</td>
+                    <td className="p-2.5 text-right">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={addonRateDraft}
+                          onChange={(e) => setAddonRateDraft(parseFloat(e.target.value) || 0)}
+                          className="w-24 px-2 py-1 border border-border bg-background text-xs font-mono text-right rounded outline-none focus:border-accent/40"
+                        />
+                      ) : (
+                        <span className="font-mono font-bold text-accent">₹{addon.rate_per_unit.toFixed(2)}</span>
+                      )}
+                    </td>
+                    <td className="p-2.5 text-center text-text-muted">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={gstRateToPercent(addonGstDraft, 0.18)}
+                          onChange={(e) => setAddonGstDraft(normalizeGstRate(e.target.value, 0.18))}
+                          className="w-20 px-2 py-1 border border-border bg-background text-xs font-mono text-right rounded outline-none focus:border-accent/40"
+                        />
+                      ) : (
+                        `${(addon.gst_pct * 100).toFixed(0)}%`
+                      )}
+                    </td>
+                    <td className="p-2.5 text-text-muted text-[10px] max-w-xs truncate" title={addon.notes ?? ''}>{addon.notes ?? '—'}</td>
+                    <td className="p-2.5 text-right">
+                      {isEditing ? (
+                        <div className="flex justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => updateAddonMutation.mutate({ id: addon.id, rate_per_unit: addonRateDraft, gst_pct: addonGstDraft })}
+                            className="p-1 rounded hover:bg-emerald-500/10 border border-border hover:border-emerald-500/30 text-emerald-400 cursor-pointer"
+                            title="Save add-on rate and GST"
+                          >
+                            <Check size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingAddonId(null)}
+                            className="p-1 rounded hover:bg-error/10 border border-border hover:border-error/30 text-error cursor-pointer"
+                            title="Cancel"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingAddonId(addon.id);
+                            setAddonRateDraft(Number(addon.rate_per_unit));
+                            setAddonGstDraft(normalizeGstRate(addon.gst_pct, 0.18));
+                          }}
+                          className="p-1 rounded bg-surface border border-border text-text-secondary hover:text-accent hover:border-accent/30 cursor-pointer"
+                          title="Edit add-on rate and GST"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

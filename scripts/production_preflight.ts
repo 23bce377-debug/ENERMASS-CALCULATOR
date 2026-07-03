@@ -383,6 +383,32 @@ async function checkRateQuality(): Promise<void> {
   }
 }
 
+async function checkGstPolicy(): Promise<void> {
+  section('8. GST Rate Policy');
+
+  const checks = [
+    { label: 'Panel GST 5%', table: 'eq_panels', column: 'gst_pct', expected: 0.05 },
+    { label: 'Inverter GST 5%', table: 'eq_inverters', column: 'gst_pct', expected: 0.05 },
+    { label: 'Battery GST 18%', table: 'eq_batteries', column: 'gst_pct', expected: 0.18 },
+    { label: 'Project output GST 8.9%', table: 'state_rules', column: 'gst_on_output', expected: 0.089 },
+  ];
+
+  for (const check of checks) {
+    const { data, error } = await supabase
+      .from(check.table as any)
+      .select(`id, ${check.column}`)
+      .neq(check.column, check.expected);
+
+    if (error) {
+      fail(check.label, error.message);
+    } else if ((data?.length ?? 0) > 0) {
+      fail(check.label, `${data!.length} row(s) do not match ${check.expected}`);
+    } else {
+      pass(check.label, `all rows match ${check.expected}`);
+    }
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
@@ -398,6 +424,7 @@ async function main(): Promise<void> {
   await checkStructureEngine();
   await checkNoLegacyColumns();
   await checkRateQuality();
+  await checkGstPolicy();
 
   console.log('\n' + '═'.repeat(60));
   if (totalFails === 0) {

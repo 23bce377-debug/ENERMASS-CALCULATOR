@@ -1,21 +1,24 @@
 export const TAX_CONSTANTS = {
   COMPOSITE_GST_MATERIAL_RATIO: 0.70,
   COMPOSITE_GST_SERVICE_RATIO: 0.30,
-  // Standard works contract rate post-Oct 2021
-  COMPOSITE_GST_RATE: 0.18,
+  COMPOSITE_GST_MATERIAL_RATE: 0.05,
+  COMPOSITE_GST_SERVICE_RATE: 0.18,
+  // Solar project works contract: 70% goods at 5% + 30% services at 18%.
+  PROJECT_COMPOSITE_GST_RATE: 0.089,
+  COMPOSITE_GST_RATE: 0.089,
   COMMERCIAL_GST_RATE: 0.18,          // 18% — standard taxable goods / commercial ITC-eligible output
-  SOLAR_DEVICE_GST_RATE: 0.12,        // 12% — renewable energy devices and parts under Ch. 84/85/94
-  PANEL_GST_RATE: 0.12,               // 12% — solar panels / PV modules
-  RESIDENTIAL_GST_RATE: 0.12,         // Back-compat alias for solar panel goods GST
+  SOLAR_DEVICE_GST_RATE: 0.05,        // 5% — solar panels / inverters used in solar projects
+  PANEL_GST_RATE: 0.05,               // 5% — solar panels / PV modules
+  RESIDENTIAL_GST_RATE: 0.05,         // Back-compat alias for solar panel goods GST
   INSTALLATION_SERVICE_GST: 0.18,     // 18% — installation service component
   ITC_ELIGIBLE_RATE: 0.18,            // 18% for commercial customers (claimable)
-  INVERTER_GST_RATE: 0.18,            // 18% — inverters / static converters under HSN 8504
+  INVERTER_GST_RATE: 0.05,            // 5% — solar inverters
   LITHIUM_BATTERY_GST_RATE: 0.18,     // 18% — lithium-ion batteries under HSN 8507 60 00
-  NON_LITHIUM_BATTERY_GST_RATE: 0.28, // 28% — other electric accumulators under HSN 8507
-  BATTERY_GST_RATE: 0.18,             // Default for new solar storage batteries (usually lithium/LFP)
-  RESIDENTIAL_COMPOSITE_GST_RATE: 0.138, // 13.8% composite works contract GST
+  NON_LITHIUM_BATTERY_GST_RATE: 0.18, // 18% — battery fallback across chemistries
+  BATTERY_GST_RATE: 0.18,             // 18% — solar storage batteries
+  RESIDENTIAL_COMPOSITE_GST_RATE: 0.089, // 8.9% composite project GST
   BOS_GST_RATE: 0.18,                 // 18% for Balance of System (accessories, structure)
-  EFFECTIVE_DATE: "2021-10-01",
+  EFFECTIVE_DATE: "2026-07-03",
   LAST_VERIFIED: "2026-07-03",
 } as const;
 
@@ -40,7 +43,42 @@ export function isLithiumBattery(item: BatteryLike): boolean {
 }
 
 export function getBatteryGstRate(item?: BatteryLike): number {
-  return isLithiumBattery(item)
-    ? TAX_CONSTANTS.LITHIUM_BATTERY_GST_RATE
-    : TAX_CONSTANTS.NON_LITHIUM_BATTERY_GST_RATE;
+  return TAX_CONSTANTS.BATTERY_GST_RATE;
+}
+
+export type GstComponentKind = 'panel' | 'inverter' | 'battery' | 'other';
+
+export function getComponentGstRate(kind: GstComponentKind): number {
+  switch (kind) {
+    case 'panel':
+      return TAX_CONSTANTS.PANEL_GST_RATE;
+    case 'inverter':
+      return TAX_CONSTANTS.INVERTER_GST_RATE;
+    case 'battery':
+      return TAX_CONSTANTS.BATTERY_GST_RATE;
+    case 'other':
+    default:
+      return TAX_CONSTANTS.BOS_GST_RATE;
+  }
+}
+
+export function getProjectCompositeGstRate(): number {
+  return TAX_CONSTANTS.PROJECT_COMPOSITE_GST_RATE;
+}
+
+export function calculateProjectGstBreakdown(exclusiveAmount: number) {
+  const basePaise = Math.max(0, Math.round(Number(exclusiveAmount || 0) * 100));
+  const materialTaxablePaise = Math.round(basePaise * TAX_CONSTANTS.COMPOSITE_GST_MATERIAL_RATIO);
+  const serviceTaxablePaise = basePaise - materialTaxablePaise;
+  const materialGstPaise = Math.round(materialTaxablePaise * TAX_CONSTANTS.COMPOSITE_GST_MATERIAL_RATE);
+  const serviceGstPaise = Math.round(serviceTaxablePaise * TAX_CONSTANTS.COMPOSITE_GST_SERVICE_RATE);
+
+  return {
+    materialTaxable: materialTaxablePaise / 100,
+    serviceTaxable: serviceTaxablePaise / 100,
+    materialGst: materialGstPaise / 100,
+    serviceGst: serviceGstPaise / 100,
+    totalGst: (materialGstPaise + serviceGstPaise) / 100,
+    effectiveRate: TAX_CONSTANTS.PROJECT_COMPOSITE_GST_RATE,
+  };
 }

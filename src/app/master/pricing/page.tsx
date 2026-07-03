@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select } from '@/components/ui/Select';
 import { supabase } from '@/lib/supabase/client';
 import {
-  getOrgContext
+  getOrgContext,
+  useMasterUpdateMutation
 } from '@/lib/hooks/useMasters';
 import {
   Plus,
@@ -45,6 +46,10 @@ interface PricingRow {
   gst_pct?: number | null;
 }
 
+interface BomMasterUpdate {
+  gst_pct?: number;
+}
+
 function normalizeItemName(value: any) {
   return String(value || '').trim().toLowerCase();
 }
@@ -69,6 +74,7 @@ export default function PricingMasterPage() {
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const { toast } = useToast();
+  const updateBomGstMutation = useMasterUpdateMutation<BomMasterUpdate>('accessories');
 
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -316,14 +322,19 @@ export default function PricingMasterPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const gst_pct = normalizeGstRate(draft.gst_pct, 0.18);
+      if (draft.bom_item_id) {
+        await updateBomGstMutation.mutateAsync({ id: draft.bom_item_id, updates: { gst_pct } });
+      }
+
       if (editingItem) {
         if (!(editingItem as any).is_override) {
-          await createMutation.mutateAsync({ bom_item_id: editingItem.bom_item_id, override_rate: draft.override_rate, gst_pct: draft.gst_pct });
+          await createMutation.mutateAsync({ bom_item_id: editingItem.bom_item_id, override_rate: draft.override_rate, gst_pct });
         } else {
-          await updateMutation.mutateAsync({ id: editingItem.id, override_rate: draft.override_rate, gst_pct: draft.gst_pct, is_active: draft.is_active });
+          await updateMutation.mutateAsync({ id: editingItem.id, override_rate: draft.override_rate, gst_pct, is_active: draft.is_active });
         }
       } else {
-        await createMutation.mutateAsync(draft);
+        await createMutation.mutateAsync({ ...draft, gst_pct });
       }
     } catch (err: any) {
       toast(err.message || 'Operation failed', 'error');
@@ -393,6 +404,7 @@ export default function PricingMasterPage() {
       if (!confirmed) return;
 
       for (const row of parsedRows) {
+        await updateBomGstMutation.mutateAsync({ id: row.bom_item_id, updates: { gst_pct: row.gst_pct } });
         await createMutation.mutateAsync(row);
       }
       toast(`Successfully imported ${parsedRows.length} pricing overrides`, 'success');

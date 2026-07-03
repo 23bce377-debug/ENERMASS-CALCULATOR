@@ -2,6 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { CACHE_TAG, orgCacheKey, invalidateMasterCache } from '@/lib/cache/masterCache';
+import { invalidateServerCalculatorCache } from '@/lib/cache/server-cache';
 import { invalidateCacheKeys } from '@/lib/cache/redisCache';
 import { requireLicensedPage } from '@/lib/auth/requireLicensedPage';
 
@@ -34,6 +35,7 @@ export async function revalidateMasterCache(
 
   // FIX SC-08: Invalidate ONLY this org's scoped cache keys
   if (targetOrgId) {
+    invalidateServerCalculatorCache(targetOrgId);
     await invalidateCacheKeys(
       orgCacheKey(targetOrgId, 'panels'),
       orgCacheKey(targetOrgId, 'inverters'),
@@ -41,6 +43,7 @@ export async function revalidateMasterCache(
       `rate_master:org:${targetOrgId}`,
       `erp:bootstrap:${targetOrgId}`,
       `erp:master:equipment:${targetOrgId}:v2`,
+      `erp:master:equipment:${targetOrgId}:v3`,
       'erp:master:structures:global',
       `category_margins:org:${targetOrgId}`
     );
@@ -49,6 +52,7 @@ export async function revalidateMasterCache(
 
   // Only invalidate global keys when explicitly requested (super-admin action)
   if (canInvalidateGlobal) {
+    invalidateServerCalculatorCache(null);
     await invalidateCacheKeys(
       'eq:global:panels:active',
       'eq:global:inverters:active',

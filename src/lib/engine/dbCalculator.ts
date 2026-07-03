@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import {
   calculateSystem,
   filterStructureTemplateItemsForRate,
+  resolveStandardGstRate,
   resolveStructureMaterialRate,
   type CalcInput,
   type CalcResult,
@@ -10,6 +11,7 @@ import {
 import { TAX_CONSTANTS } from '@/lib/tax-constants';
 import { getCachedMasterData } from '@/lib/cache/masterCache';
 import { resolveEffectiveRate, resolveEffectiveMargin } from './overrideResolver';
+import { normalizeGstRate } from '@/lib/utils/gst';
 
 function getUuid(namespace: string, key: string): string {
   const hash = crypto.createHash('sha1').update(`${namespace}:${key}`).digest('hex');
@@ -307,9 +309,10 @@ export async function calculateSystemFromDb(
   );
   const targetMarginPct = resolvedMargin.marginPct;
 
-  const gstOnOutput = projectType === 'commercial'
-    ? TAX_CONSTANTS.COMMERCIAL_GST_RATE
-    : Number(stateRule.gst_on_output);
+  const gstOnOutput = normalizeGstRate(
+    stateRule.gst_on_output,
+    TAX_CONSTANTS.PROJECT_COMPOSITE_GST_RATE
+  );
 
   // Load schemes and slabs from cached masterData
   let slabs: any[] = [];
@@ -343,7 +346,7 @@ export async function calculateSystemFromDb(
   // Construct generic system items for matching and fallback
   const systemItems = itemsRes.rows.map(item => {
     let rate = 0;
-    let gstPct: any = TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+    let gstPct: any = TAX_CONSTANTS.BOS_GST_RATE;
     
     if (item.bom_item_id) {
       const bom = masterData.bomTemplateItems.find(x => x.id === item.bom_item_id);
@@ -357,16 +360,16 @@ export async function calculateSystemFromDb(
           stateRateOverrides
         );
         rate = resolved.rate;
-        gstPct = 0.18; // default GST for template items
+        gstPct = normalizeGstRate(bom.gst_pct, resolveStandardGstRate(item.description));
       }
     } else if (item.comm_device_id) {
       const comm = dbCommDevices.find(c => c.id === item.comm_device_id);
       rate = comm ? Number(comm.selling_price) : 0;
-      gstPct = comm ? Number(comm.gst_pct) : 0.12;
+      gstPct = comm ? Number(comm.gst_pct) : TAX_CONSTANTS.BOS_GST_RATE;
     } else if (item.structure_component_id) {
       const scm = dbStructureComponentMasters.find(s => s.id === item.structure_component_id);
       rate = scm ? Number(scm.selling_price) : 0;
-      gstPct = scm ? Number(scm.gst_pct) : TAX_CONSTANTS.COMMERCIAL_GST_RATE;
+      gstPct = scm ? Number(scm.gst_pct) : TAX_CONSTANTS.BOS_GST_RATE;
     }
     
     return {
@@ -396,7 +399,7 @@ export async function calculateSystemFromDb(
       sunHoursPerDay: Number(stateRule.sun_hours_per_day),
       performanceRatio: Number(stateRule.performance_ratio),
       labourMultiplier: Number(stateRule.labour_multiplier),
-      gstOnOutput: Number(stateRule.gst_on_output),
+      gstOnOutput,
       gridTariffInr: Number(stateRule.grid_tariff_inr),
       subsidyRules: []
     }

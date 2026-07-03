@@ -377,11 +377,10 @@ CREATE TRIGGER trg_audit_quote_item_inclusion
   FOR EACH ROW EXECUTE FUNCTION fn_audit_quote_item_inclusion();
 
 -- ──────────────────────────────────────────────────────────────
--- FIX MD-07: Correct state GST values (Kerala/TN/MH = 13.8%)
+-- FIX MD-07: Correct state GST values (project composite = 8.9%)
 -- ──────────────────────────────────────────────────────────────
 UPDATE state_rules
-SET    gst_on_output = 0.13800
-WHERE  state_code IN ('MH', 'TN', 'KL')
-  AND  gst_on_output != 0.13800;
+SET    gst_on_output = 0.08900
+WHERE  gst_on_output != 0.08900;
 
 COMMIT;

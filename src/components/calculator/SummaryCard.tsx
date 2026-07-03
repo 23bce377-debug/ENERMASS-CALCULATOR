@@ -145,14 +145,12 @@ export function SummaryCard() {
           )}
           <Row label="MRP (excl. GST)" value={formatINR(calcResult.mrpExclGST)} />
           <div title="Composite rate applicable under GST Works Contract scheme. Subject to revision. Verify with CA before final invoicing.">
-            <EditableRow 
-              label={projectType === 'commercial' 
-                ? `GST @ ${(calcResult.gstOutputRate * 100).toFixed(1)}% (Commercial — ITC Eligible)` 
-                : `GST @ ${(calcResult.gstOutputRate * 100).toFixed(1)}% (Composite Rate)`} 
-              value={calcResult.gstOutputRate * 100} 
-              suffix="%" 
-              muted 
-              onCommit={(v) => setGSTOnOutputOverride(v / 100)} 
+            <EditableRow
+              label={`GST @ ${(calcResult.gstOutputRate * 100).toFixed(1)}% (70% @5% + 30% @18%)`}
+              value={calcResult.gstOutputRate * 100}
+              suffix="%"
+              muted
+              onCommit={(v) => setGSTOnOutputOverride(v / 100)}
             />
           </div>
           
@@ -283,7 +281,7 @@ export function SummaryCard() {
               <div className="p-4 rounded-xl border border-success/30 bg-success/5 space-y-2">
                 <h4 className="text-xs font-bold text-success uppercase tracking-widest mb-3">Commercial ITC Benefit Analysis</h4>
                 <Row label="System Cost (excl. GST)" value={formatINR(netCost)} />
-                <Row label="GST @18% (Payable)" value={`+${formatINR(gstAmount)}`} />
+                <Row label={`GST @${(calcResult.gstOutputRate * 100).toFixed(1)}% (Payable)`} value={`+${formatINR(gstAmount)}`} />
                 <Row label="Total Invoice" value={formatINR(calcResult.finalCustomerPrice)} bold />
                 <div className="border-t border-success/20 my-2" />
                 <Row label="ITC Claimable (GSTR-2B)" value={`-${formatINR(gstAmount)}`} error />

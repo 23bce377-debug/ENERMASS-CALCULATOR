@@ -1281,9 +1281,7 @@ export function BOMTable() {
           <FooterRow label="Margin Amount" value={formatINR(calcResult.marginAmount)} accent />
           <div title="Composite rate applicable under GST Works Contract scheme. Subject to revision. Verify with CA before final invoicing.">
             <FooterRow
-              label={projectType === 'commercial' 
-                ? `GST @ ${(calcResult.gstOutputRate * 100).toFixed(1)}% (Commercial — ITC Eligible)` 
-                : `GST @ ${(calcResult.gstOutputRate * 100).toFixed(1)}% (Composite Rate)`}
+              label={`GST @ ${(calcResult.gstOutputRate * 100).toFixed(1)}% (70% @5% + 30% @18%)`}
               value={formatINR(calcResult.mrpInclGST - calcResult.mrpExclGST)}
               muted
             />

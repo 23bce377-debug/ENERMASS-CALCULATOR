@@ -780,6 +780,7 @@ const result = calculateSystem({
       dbStructureAddons: state.dbStructureAddons,
       dbOrientationMultipliers: state.dbOrientationMultipliers,
       gstOnOutputOverride: state.gstOnOutputOverride ?? undefined,
+      allowGstOverride: state.gstOnOutputOverride !== null && state.gstOnOutputOverride !== undefined,
       targetMRPInclGST: state.targetMRPInclGST ?? undefined,
       targetMRPPerWatt: state.targetMRPPerWatt ?? undefined,
       rpcSubsidyAmount: state.rpcSubsidyAmount ?? undefined,

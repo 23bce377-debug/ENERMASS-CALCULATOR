@@ -1,5 +1,55 @@
-import { unstable_cache } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
+
+type LocalCacheEntry<T> = {
+  expiresAt: number;
+  value?: T;
+  promise?: Promise<T>;
+};
+
+const localCache = new Map<string, LocalCacheEntry<unknown>>();
+
+async function getLocalCached<T>(
+  key: string,
+  ttlSeconds: number,
+  loader: () => Promise<T>
+): Promise<T> {
+  const now = Date.now();
+  const existing = localCache.get(key) as LocalCacheEntry<T> | undefined;
+
+  if (existing && existing.expiresAt > now) {
+    if (existing.value !== undefined) return existing.value;
+    if (existing.promise) return existing.promise;
+  }
+
+  const promise = loader()
+    .then((value) => {
+      localCache.set(key, {
+        expiresAt: Date.now() + ttlSeconds * 1000,
+        value,
+      });
+      return value;
+    })
+    .catch((error) => {
+      localCache.delete(key);
+      throw error;
+    });
+
+  localCache.set(key, {
+    expiresAt: now + ttlSeconds * 1000,
+    promise,
+  });
+
+  return promise;
+}
+
+export function invalidateServerCalculatorCache(orgId?: string | null) {
+  const target = orgId ?? null;
+  for (const key of Array.from(localCache.keys())) {
+    if (target === null || key.includes(`:${target}:`) || key.endsWith(':global')) {
+      localCache.delete(key);
+    }
+  }
+}
 
 function applyHiddenSystems(rows: any[], hiddenRows: any[]) {
   const hiddenIds = new Set((hiddenRows || []).map((row: any) => row.system_id));
@@ -7,8 +57,8 @@ function applyHiddenSystems(rows: any[], hiddenRows: any[]) {
 }
 
 // Equipment master cache (10 min)
-export const getEquipmentMaster = unstable_cache(
-  async (orgId: string | null) => {
+export async function getEquipmentMaster(orgId: string | null) {
+  return getLocalCached(`calculator:${orgId ?? 'global'}:equipment`, 600, async () => {
     const supabase = createAdminClient();
     const [panels, inverters, batteries, meters, las, commDevices] = await Promise.all([
       supabase.from('eq_panels').select('id, brand, model, wattage_w, selling_price, gst_pct, panel_type').eq('is_active', true),
@@ -26,14 +76,12 @@ export const getEquipmentMaster = unstable_cache(
       lightningArresters: las.data || [],
       commDevices: commDevices.data || [],
     };
-  },
-  ['master-equipment'],
-  { tags: ['master-data', 'equipment'], revalidate: 600 }
-);
+  });
+}
 
 // Structures master cache (15 min)
-export const getStructuresMaster = unstable_cache(
-  async (orgId: string | null) => {
+export async function getStructuresMaster(orgId: string | null) {
+  return getLocalCached(`calculator:${orgId ?? 'global'}:structures`, 900, async () => {
     const supabase = createAdminClient();
     const [structures, weightLookups, structureComponents, structureBom, structureAddons] = await Promise.all([
       supabase.from('eq_mounting_structures').select('*').eq('is_active', true),
@@ -67,14 +115,12 @@ export const getStructuresMaster = unstable_cache(
       ladderTemplates: ladderTemplates.data || [],
       structureComponentMasters: structureComponentMasters.data || [],
     };
-  },
-  ['master-structures'],
-  { tags: ['master-data', 'structures'], revalidate: 900 }
-);
+  });
+}
 
 // Rules master cache (10 min)
-export const getRulesMaster = unstable_cache(
-  async (orgId: string | null) => {
+export async function getRulesMaster(orgId: string | null) {
+  return getLocalCached(`calculator:${orgId ?? 'global'}:rules`, 600, async () => {
     const supabase = createAdminClient();
     const [
       stateRules, slabs, schemes, systems, hiddenSystems, taxHsn, taxGstRates, bomItems,
@@ -105,15 +151,12 @@ export const getRulesMaster = unstable_cache(
       systemStateAvailability: systemStateAvailability?.data || [],
       stateTermsTemplates: stateTermsTemplates?.data || [],
     };
-  },
-  // Cache key bumped to v4 — systems now exclude org-hidden built-in presets.
-  ['master-rules-v4'],
-  { tags: ['master-data', 'rules'], revalidate: 600 }
-);
+  });
+}
 
 // Org context cache (2 min)
-export const getOrgContext = unstable_cache(
-  async (orgId: string | null) => {
+export async function getOrgContext(orgId: string | null) {
+  return getLocalCached(`calculator:${orgId ?? 'global'}:org`, 120, async () => {
     if (!orgId) return { inventorySummary: [], vendors: [], appSettings: null, structureVendors: [] };
     const supabase = createAdminClient();
     const [inventory, vendors, appSettings] = await Promise.all([
@@ -128,7 +171,5 @@ export const getOrgContext = unstable_cache(
       appSettings: appSettings.data || null,
       structureVendors: vData.filter((v: any) => v.is_structure_vendor)
     };
-  },
-  ['master-org'],
-  { tags: ['master-data', 'org'], revalidate: 120 }
-);
+  });
+}

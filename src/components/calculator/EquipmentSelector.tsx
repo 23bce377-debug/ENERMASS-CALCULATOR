@@ -409,7 +409,7 @@ export function EquipmentSelector({
                     `Quantity: ${qty} Nos`,
                     `Total Wattage: ${panel.wattage * qty}W`
                   ]}
-                  gstPct={panel.gst_pct || TAX_CONSTANTS.RESIDENTIAL_GST_RATE}
+                  gstPct={panel.gst_pct || TAX_CONSTANTS.PANEL_GST_RATE}
                   sellingPrice={panel.ratePerWatt * panel.wattage}
                   itemDescForInventory={`${panel.brand} ${panel.model} ${Number(panel.wattage)}W Panel`}
                 />
@@ -3337,7 +3337,7 @@ function StructureConfigTable() {
               `Elevation: ${selectedStructure.elevation_height_mm} mm`,
               `Weight rate: ₹${Number(selectedStructure.rate_per_kg).toFixed(2)}/kg`
             ]}
-            gstPct={selectedStructure.gst_pct || TAX_CONSTANTS.COMMERCIAL_GST_RATE}
+            gstPct={selectedStructure.gst_pct || TAX_CONSTANTS.BOS_GST_RATE}
             sellingPrice={totalCost}
             itemDescForInventory={`${selectedStructure.name} Structure (${selectedStructure.material || ''})`}
           />
@@ -3356,7 +3356,7 @@ function StructureConfigTable() {
               `Total Calculated Weight: ${finalWeight.toFixed(1)} kg`,
               `Custom Rate per kg: ₹${ratePerKg.toFixed(2)}/kg`
             ]}
-            gstPct={TAX_CONSTANTS.COMMERCIAL_GST_RATE}
+            gstPct={TAX_CONSTANTS.BOS_GST_RATE}
             sellingPrice={totalCost}
             itemDescForInventory="Custom Structure"
           />

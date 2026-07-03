@@ -14,7 +14,7 @@ const stateData = {
     sunHoursPerDay: 5,
     performanceRatio: 0.8,
     labourMultiplier: 1,
-    gstOnOutput: 0.138,
+    gstOnOutput: 0.089,
     gridTariffInr: 8,
     subsidyRules: [],
   },
@@ -39,10 +39,10 @@ function baseLine(overrides: Partial<LineResult> = {}): LineResult {
     description: 'PANEL',
     effectiveQty: 2,
     effectiveRate: 1000,
-    effectiveGstPct: 0.12,
+    effectiveGstPct: 0.05,
     lineTotal: 2000,
-    lineGST: 240,
-    lineSubTotal: 2240,
+    lineGST: 100,
+    lineSubTotal: 2100,
     isOverridden: false,
     isDisabled: false,
     ...overrides,
@@ -55,15 +55,15 @@ function baseResult(overrides: Partial<CalcResult> = {}): CalcResult {
     lines: [baseLine()],
     quotedLines: [baseLine()],
     costBeforeGST: 2000,
-    totalInputGST: 240,
-    totalIncGST: 2240,
+    totalInputGST: 100,
+    totalIncGST: 2100,
     effectiveMarginPct: 0.2,
     mrpExclGST: 2400,
     marginAmount: 400,
-    gstOutputRate: 0.18,
-    mrpInclGST: 2832,
+    gstOutputRate: 0.089,
+    mrpInclGST: 2613.6,
     perKWexclGST: 2400,
-    perKWinclGST: 2832,
+    perKWinclGST: 2613.6,
     discountAmount: 32,
     unroundedFinalCustomerPrice: 2850,
     roundOffToThousand: false,
@@ -89,12 +89,12 @@ function baseResult(overrides: Partial<CalcResult> = {}): CalcResult {
 }
 
 describe('math integrity checks', () => {
-  it('normalizes whole-percent GST from DB/custom inputs inside the engine', () => {
+  it('respects editable master GST values and state output GST', () => {
     const system = makeSystem([
-      { description: 'PANEL', qty: 10, ratePerUnit: 1000, gstPct: 12, unit: 'Nos' },
-      { description: 'INVERTER', qty: 1, ratePerUnit: 20000, gstPct: 18, unit: 'Nos' },
+      { description: 'PANEL', qty: 10, ratePerUnit: 1000, gstPct: 7, unit: 'Nos' },
+      { description: 'INVERTER', qty: 1, ratePerUnit: 20000, gstPct: 9, unit: 'Nos' },
       { description: 'BATTERY', qty: 1, ratePerUnit: 30000, gstPct: 18, unit: 'Nos' },
-      { description: 'STRUCTURE', qty: 1, ratePerUnit: 10000, gstPct: 18, unit: 'Set' },
+      { description: 'STRUCTURE', qty: 1, ratePerUnit: 10000, gstPct: 15, unit: 'Set' },
     ]);
 
     const result = calculateSystem({
@@ -104,14 +104,63 @@ describe('math integrity checks', () => {
       stateData,
       projectType: 'commercial',
       dbOrientationMultipliers: { South: 1, 'East/West': 0.9, Flat: 0.85 },
-      gstOnOutput: 18,
+      gstOnOutput: 12,
       applySubsidy: false,
     });
 
-    expect(result.gstOutputRate).toBe(0.18);
-    expect(result.lines.find((line) => line.description === 'PANEL')?.effectiveGstPct).toBe(0.12);
-    expect(result.lines.find((line) => line.description === 'INVERTER')?.effectiveGstPct).toBe(0.18);
+    expect(result.gstOutputRate).toBe(0.12);
+    expect(result.lines.find((line) => line.description === 'PANEL')?.effectiveGstPct).toBe(0.07);
+    expect(result.lines.find((line) => line.description === 'INVERTER')?.effectiveGstPct).toBe(0.09);
     expect(result.lines.find((line) => line.description === 'BATTERY')?.effectiveGstPct).toBe(0.18);
+    expect(result.lines.find((line) => line.description === 'STRUCTURE')?.effectiveGstPct).toBe(0.15);
+    expect(() => assertCalcResultIntegrity(result, { projectType: 'commercial' })).not.toThrow();
+  });
+
+  it('falls back to current GST policy when master GST is missing', () => {
+    const system = makeSystem([
+      { description: 'PANEL', qty: 10, ratePerUnit: 1000, unit: 'Nos' },
+      { description: 'INVERTER', qty: 1, ratePerUnit: 20000, unit: 'Nos' },
+      { description: 'BATTERY', qty: 1, ratePerUnit: 30000, unit: 'Nos' },
+      { description: 'STRUCTURE', qty: 1, ratePerUnit: 10000, unit: 'Set' },
+    ]);
+
+    const result = calculateSystem({
+      systemId: system.id,
+      systems: [system],
+      state: 'Kerala',
+      stateData,
+      projectType: 'commercial',
+      dbOrientationMultipliers: { South: 1, 'East/West': 0.9, Flat: 0.85 },
+      applySubsidy: false,
+    });
+
+    expect(result.gstOutputRate).toBe(0.089);
+    expect(result.lines.find((line) => line.description === 'PANEL')?.effectiveGstPct).toBe(0.05);
+    expect(result.lines.find((line) => line.description === 'INVERTER')?.effectiveGstPct).toBe(0.05);
+    expect(result.lines.find((line) => line.description === 'BATTERY')?.effectiveGstPct).toBe(0.18);
+    expect(result.lines.find((line) => line.description === 'STRUCTURE')?.effectiveGstPct).toBe(0.18);
+    expect(() => assertCalcResultIntegrity(result, { projectType: 'commercial' })).not.toThrow();
+  });
+
+  it('allows explicit output GST override for future tax changes', () => {
+    const system = makeSystem([
+      { description: 'PANEL', qty: 2, ratePerUnit: 1000, gstPct: 0.05, unit: 'Nos' },
+    ]);
+
+    const result = calculateSystem({
+      systemId: system.id,
+      systems: [system],
+      state: 'Kerala',
+      stateData,
+      projectType: 'commercial',
+      dbOrientationMultipliers: { South: 1, 'East/West': 0.9, Flat: 0.85 },
+      gstOnOutput: 0.089,
+      gstOnOutputOverride: 0.12,
+      allowGstOverride: true,
+      applySubsidy: false,
+    });
+
+    expect(result.gstOutputRate).toBe(0.12);
     expect(() => assertCalcResultIntegrity(result, { projectType: 'commercial' })).not.toThrow();
   });
 

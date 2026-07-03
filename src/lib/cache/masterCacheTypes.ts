@@ -146,6 +146,7 @@ export interface CachedBomTemplateItem {
   unit_rate_min: number | null;
   unit_rate_max: number | null;
   default_rate: number | null;
+  gst_pct?: number | null;
   qty_formula: string | null;
   is_survey_dependent: boolean;
   civil_required_only: boolean;

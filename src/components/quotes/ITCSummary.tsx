@@ -1,13 +1,17 @@
+import { TAX_CONSTANTS } from '@/lib/tax-constants';
+
 interface Props {
   systemCostExclGst: number;
+  gstRate?: number | null;
   isCommercial: boolean;
   isGstRegistered: boolean;
 }
 
-export function ITCSummary({ systemCostExclGst, isCommercial, isGstRegistered }: Props) {
+export function ITCSummary({ systemCostExclGst, gstRate, isCommercial, isGstRegistered }: Props) {
   if (!isCommercial || !isGstRegistered) return null;
 
-  const gstAmount = Math.round(systemCostExclGst * 0.18);
+  const effectiveGstRate = gstRate ?? TAX_CONSTANTS.PROJECT_COMPOSITE_GST_RATE;
+  const gstAmount = Math.round(systemCostExclGst * effectiveGstRate);
   const totalInvoice = systemCostExclGst + gstAmount;
   const itcClaimable = gstAmount; // 100% claimable for eligible businesses
   const effectiveNetCost = systemCostExclGst; // GST cancels out
@@ -25,7 +29,7 @@ export function ITCSummary({ systemCostExclGst, isCommercial, isGstRegistered }:
           <span>{fmt(systemCostExclGst)}</span>
         </div>
         <div className="flex justify-between">
-          <span>GST @18% (Payable)</span>
+          <span>GST @{(effectiveGstRate * 100).toFixed(1)}% (Payable)</span>
           <span>+{fmt(gstAmount)}</span>
         </div>
         <div className="flex justify-between border-t border-slate-700 pt-1.5">

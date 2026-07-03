@@ -7,6 +7,7 @@ import {
   useSubsidySchemesQuery,
   useUpdateSubsidyMutation,
   useCreateSubsidyMutation,
+  useDeleteSubsidyMutation,
 } from '@/lib/hooks/useMasters';
 import {
   Plus,
@@ -102,6 +103,7 @@ export default function SubsidyMasterPage() {
   });
   const updateMutation = useUpdateSubsidyMutation();
   const createMutation = useCreateSubsidyMutation();
+  const deleteMutation = useDeleteSubsidyMutation();
 
   const confirm = useConfirm();
   const { toast } = useToast();
@@ -257,6 +259,28 @@ export default function SubsidyMasterPage() {
     }
   };
 
+  const handleDeleteScheme = async (scheme: Scheme) => {
+    const confirmed = await confirm({
+      title: 'Delete Subsidy Scheme?',
+      message: `This will remove "${scheme.name}" from active subsidy calculations. Existing quote records stay unchanged.`,
+      confirmLabel: 'Delete Scheme',
+      cancelLabel: 'Cancel',
+      type: 'danger',
+    });
+    if (!confirmed) return;
+
+    try {
+      await deleteMutation.mutateAsync(scheme.id);
+      if (selectedSchemeId === scheme.id) {
+        setSelectedSchemeId(null);
+        setEditorOpen(false);
+      }
+      toast('Subsidy scheme deleted', 'success');
+    } catch (err: any) {
+      toast(err.message || 'Failed to delete subsidy scheme', 'error');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Info */}
@@ -351,12 +375,22 @@ export default function SubsidyMasterPage() {
                   <span>Max Capacity: <strong>{scheme.max_capacity_kw} kW</strong></span>
                   <span>Max Incentive: <strong>{formatINR(scheme.max_absolute_subsidy)}</strong></span>
                 </div>
-                <button
-                  onClick={() => handleOpenEdit(scheme)}
-                  className="flex items-center gap-1 px-4 py-2 rounded-lg bg-surface border border-border text-xs font-semibold hover:border-accent/40 hover:text-accent transition-all cursor-pointer"
-                >
-                  <Edit2 size={13} /> Edit Scheme & Slabs
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleOpenEdit(scheme)}
+                    className="flex items-center gap-1 px-4 py-2 rounded-lg bg-surface border border-border text-xs font-semibold hover:border-accent/40 hover:text-accent transition-all cursor-pointer"
+                  >
+                    <Edit2 size={13} /> Edit Scheme & Slabs
+                  </button>
+                  <button
+                    onClick={() => handleDeleteScheme(scheme)}
+                    disabled={deleteMutation.isPending}
+                    className="flex items-center gap-1 px-3 py-2 rounded-lg bg-surface border border-border text-xs font-semibold text-text-secondary hover:border-error/40 hover:text-error transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    title="Delete subsidy scheme"
+                  >
+                    <Trash2 size={13} /> Delete
+                  </button>
+                </div>
               </div>
             </div>
           ))}

@@ -1,4 +1,4 @@
-export type GstPct = 0 | 0.05 | 0.12 | 0.138 | 0.18 | 0.28;
+export type GstPct = 0 | 0.05 | 0.089 | 0.12 | 0.138 | 0.18 | 0.28;
 
 export interface BomItem {
   id?: string;
