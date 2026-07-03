@@ -202,10 +202,20 @@ export function Select({
 
   useEffect(() => {
     if (!open || focusedIndex < 0 || !panelRef.current) return;
-    const item = panelRef.current.querySelector<HTMLElement>(
+    const panel = panelRef.current;
+    const item = panel.querySelector<HTMLElement>(
       `[data-index="${focusedIndex}"]`,
     );
-    item?.scrollIntoView({ block: 'nearest' });
+    if (!item) return;
+
+    const panelRect = panel.getBoundingClientRect();
+    const itemRect = item.getBoundingClientRect();
+
+    if (itemRect.top < panelRect.top) {
+      panel.scrollTop -= (panelRect.top - itemRect.top);
+    } else if (itemRect.bottom > panelRect.bottom) {
+      panel.scrollTop += (itemRect.bottom - panelRect.bottom);
+    }
   }, [focusedIndex, open]);
 
   // ── Sizing ────────────────────────────────────────────────────────────────
