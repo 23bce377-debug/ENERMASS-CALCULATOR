@@ -13,6 +13,7 @@ import {
   type SalesInfo,
   generateQuoteId
 } from '../../types/quote';
+import { assertCalcResultIntegrity } from '@/lib/math/integrity';
 
 export const createQuoteSlice: StateCreator<
   CalculatorState,
@@ -60,6 +61,10 @@ export const createQuoteSlice: StateCreator<
     if (!state.selectedSystemId || !state.calcResult) {
       throw new Error('Cannot save quote: no system selected or calculation missing.');
     }
+    assertCalcResultIntegrity(state.calcResult, {
+      projectType: state.projectType,
+      context: 'quote save',
+    });
 
     const { supabase } = await import('../../supabase/client');
     const { data: { session } } = await supabase.auth.getSession();

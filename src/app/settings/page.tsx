@@ -61,6 +61,10 @@ const CATEGORY_LABELS: Record<keyof CategoryMargins, string> = {
   commercial: 'Commercial',
 };
 
+function cloneSettings(settings: AppSettings): AppSettings {
+  return JSON.parse(JSON.stringify(settings));
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -105,7 +109,7 @@ export default function SettingsPage() {
   // Save base copy once loaded to detect dirtiness
   useEffect(() => {
     if (loaded && !originalSettings) {
-      setOriginalSettings(JSON.parse(JSON.stringify(settings)));
+      setOriginalSettings(cloneSettings(settings));
     }
   }, [loaded, settings, originalSettings]);
 
@@ -255,7 +259,7 @@ export default function SettingsPage() {
     if (err) {
       toast(`Commit failed: ${err}`, 'error');
     } else {
-      setOriginalSettings(JSON.parse(JSON.stringify(settings)));
+      setOriginalSettings(cloneSettings(settings));
       setIsDirty(false);
       toast('Settings committed to database successfully ✓', 'success');
       flash();
@@ -287,7 +291,7 @@ export default function SettingsPage() {
           <p className="text-sm text-text-muted mt-1">Configure defaults and company information</p>
         </div>
         
-        {/* Plan Upgrade CTA Badge (Item 67) */}
+        {/* Plan Details CTA Badge (Item 67) */}
         {profile?.is_super_admin && billingInfo && (
           <div className="flex items-center gap-3 bg-surface border border-accent/25 rounded-xl p-3 shadow-md">
             <div>
@@ -297,9 +301,9 @@ export default function SettingsPage() {
             </div>
             <Link
               href="/settings/subscription"
-              className="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-background text-[11px] font-extrabold tracking-wide uppercase transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-background text-[11px] font-extrabold tracking-wide uppercase whitespace-nowrap transition-colors"
             >
-              Upgrade
+              View Details
             </Link>
           </div>
         )}
@@ -567,10 +571,8 @@ export default function SettingsPage() {
                 type: 'danger',
               });
               if (confirmed) {
-                resetSettings();
+                await resetSettings();
                 toast('Settings reset to defaults', 'success');
-                setOriginalSettings(JSON.parse(JSON.stringify(settings)));
-                setIsDirty(false);
                 flash();
               }
             }}
@@ -695,8 +697,11 @@ export default function SettingsPage() {
                   type: 'warning',
                 });
                 if (confirmed) {
-                  setOriginalSettings(null); // reload settings from DB
-                  await loadFromDb();
+                  if (originalSettings) {
+                    const reverted = cloneSettings(originalSettings);
+                    setSettings(reverted);
+                    setOriginalSettings(reverted);
+                  }
                   setIsDirty(false);
                   toast('Changes discarded', 'info');
                 }

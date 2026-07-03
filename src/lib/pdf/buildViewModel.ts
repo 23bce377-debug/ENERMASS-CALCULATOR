@@ -419,7 +419,12 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
   const annualGen = Number(quote.annual_generation_kwh || 0) || projectedAnnualGeneration;
   const annualSavings = Number(quote.annual_savings_inr || 0);
   const twentyFiveYearSavings = annualSavings * 25 * 0.85;
-  const netInvestment = Number(quote.beneficiary_contribution || 0);
+  const grossQuoteValue = Number(quote.final_customer_price || quote.mrp_incl_gst || 0);
+  const subsidyAmount = Number(quote.subsidy_amount || 0);
+  const beneficiaryContribution = Number(
+    quote.beneficiary_contribution ?? Math.max(0, grossQuoteValue - subsidyAmount)
+  );
+  const netInvestment = beneficiaryContribution;
 
   // Generate 10-Year Cash Flow Projection
   const cashFlow = [];
@@ -488,7 +493,7 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
     calculatedPaybackYears = netInvestment / annualSavings;
   }
 
-  const quotedPaymentAmount = Number(quote.final_customer_price || quote.mrp_incl_gst || 0);
+  const quotedPaymentAmount = beneficiaryContribution;
   const upiPayment = buildUpiPaymentPayload({
     amount: quotedPaymentAmount,
     reference: quote.quote_number,
@@ -567,9 +572,9 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
       typeLabel: quote.project_type === 'commercial' 
         ? 'Grid-Connected Commercial Solar Power Plant'
         : 'Grid-Connected Rooftop Solar Power Plant — Net Metering',
-      totalProjectCost: quote.mrp_incl_gst,
-      beneficiaryContribution: netInvestment,
-      subsidyAmount: quote.subsidy_amount,
+      totalProjectCost: grossQuoteValue,
+      beneficiaryContribution,
+      subsidyAmount,
       panelsUsed: panelDisplayName ? appendQty(panelDisplayName, panelQty, 'Nos') : 'Standard High-Efficiency Tier-1 Panels',
       invertersUsed: inverterDisplayName ? appendQty(inverterDisplayName, inverterQty, 'Lot') : 'On-Grid String Inverter',
       structureUsed: 'Galvanized Iron (GI) Structure designed for 150 km/h wind loads'
@@ -588,9 +593,9 @@ export async function buildQuoteViewModel(quoteId: string, orgId: string) {
       upiId: ENERMASS_UPI_ID
     },
     paymentMilestones: {
-      advance: netInvestment * 0.50,
-      delivery: netInvestment * 0.40,
-      commissioning: netInvestment * 0.10
+      advance: beneficiaryContribution * 0.50,
+      delivery: beneficiaryContribution * 0.40,
+      commissioning: beneficiaryContribution * 0.10
     },
     terms: effectiveTerms,
     equipmentSpecs,

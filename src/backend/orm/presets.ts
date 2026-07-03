@@ -53,6 +53,14 @@ export const PresetORM: any = {
       .select('id, state_name, state_code')
       .eq('is_active', true);
     const stateById = new Map((stateRows || []).map((state: any) => [state.id, state]));
+    let hiddenSystemIds = new Set<string>();
+    if (orgId) {
+      const { data: hiddenRows } = await (supabase as any)
+        .from('system_hidden_presets')
+        .select('system_id')
+        .eq('org_id', orgId);
+      hiddenSystemIds = new Set((hiddenRows || []).map((row: any) => row.system_id));
+    }
 
     // 1. Fetch built-in systems if applicable
     if (!options.authorId && !options.isFavoriteFor) {
@@ -66,6 +74,7 @@ export const PresetORM: any = {
       const { data: sysData, error: sysError } = await sysQuery;
       if (!sysError && sysData) {
         sysData.forEach((row: any) => {
+          if (!row.org_id && hiddenSystemIds.has(row.id)) return;
           const state = row.state_id ? stateById.get(row.state_id) : null;
           results.push({
             id: row.id,

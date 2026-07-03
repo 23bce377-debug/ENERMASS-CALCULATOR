@@ -1,9 +1,7 @@
 import { supabase } from '@/lib/supabase/client';
 import { QuoteORM, QuoteItemORM, QuoteAdditionalCostORM, QuoteVariantORM } from '@/backend/orm/quote';
-
-function roundMoney(value: number) {
-  return Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
-}
+import { normalizeGstRate } from '@/lib/utils/gst';
+import { normalizeQuoteItemMath, roundMoney } from '@/lib/math/integrity';
 
 function normalizeMarginPct(value: unknown): number {
   const num = Number(value);
@@ -151,17 +149,8 @@ export async function reviseQuote(
       }
     }
     
-    // Keep quote_items field semantics aligned with the DB trigger:
-    // line_total = excl GST, line_gst = tax, line_subtotal = incl GST.
-    const isIncluded = itemData.is_included !== false;
-    const qty = Number(itemData.qty || 0);
-    const rate = Number(itemData.rate_per_unit || 0);
-    const gstPct = Number(itemData.gst_pct || 0);
-    itemData.line_total = isIncluded ? roundMoney(qty * rate) : 0;
-    itemData.line_gst = isIncluded ? roundMoney(itemData.line_total * gstPct) : 0;
-    itemData.line_subtotal = roundMoney(itemData.line_total + itemData.line_gst);
-
-    return { ...itemData, quote_id: newQuote.id };
+    const normalizedItem = normalizeQuoteItemMath(itemData);
+    return { ...normalizedItem, quote_id: newQuote.id };
   });
 
   if (newItems.length > 0) {
@@ -197,7 +186,7 @@ export async function reviseQuote(
   
   const additionalTotal = roundMoney(newCosts.reduce((sum: number, cost: any) => sum + Number(cost.amount || 0), 0));
   const effectiveMarginPct = deriveMarkupPctFromSavedQuote(quoteDataToCopy);
-  const gstOutputRate = Math.max(0, Number(quoteDataToCopy.gst_output_rate || 0));
+  const gstOutputRate = Math.max(0, normalizeGstRate(quoteDataToCopy.gst_output_rate, 0));
   const marginMode = quoteDataToCopy.margin_mode === 'flat' ? 'flat' : 'percent';
   const targetMarginAmount = Number(quoteDataToCopy.target_margin_amount || 0);
   const marginAmount = marginMode === 'flat'
@@ -209,18 +198,22 @@ export async function reviseQuote(
 
   const discountType = quoteDataToCopy.discount_type || 'none';
   const rawDiscountVal = Number(quoteDataToCopy.discount_val || 0);
-  const discountVal = roundMoney(
+  const discountVal = roundMoney(Math.min(mrpInclGst,
     discountType === 'percent'
       ? mrpInclGst * (Math.min(Math.max(rawDiscountVal, 0), 100) / 100)
       : discountType === 'flat'
-        ? rawDiscountVal
+        ? Math.max(0, rawDiscountVal)
         : 0
-  );
+  ));
 
   const finalCustomerPrice = roundMoney(Math.max(0, mrpInclGst + additionalTotal - discountVal));
   const systemCapacity = Number(quoteDataToCopy.system_capacity_kw || 1) || 1;
-  const perKwInclGst = roundMoney(finalCustomerPrice / systemCapacity);
-  const perKwExclGst = roundMoney((mrpExclGst + additionalTotal - discountVal) / systemCapacity);
+  const perKwInclGst = roundMoney(mrpInclGst / systemCapacity);
+  const perKwExclGst = roundMoney(mrpExclGst / systemCapacity);
+  const itcAmount = quoteDataToCopy.project_type === 'commercial'
+    ? roundMoney(finalCustomerPrice - (finalCustomerPrice / (1 + gstOutputRate)))
+    : 0;
+  const beneficiaryContribution = roundMoney(Math.max(0, finalCustomerPrice - Number(quoteDataToCopy.subsidy_amount || 0) - itcAmount));
 
   // Update new quote with recalculated totals
   await supabase.from('quotes').update({
@@ -234,7 +227,7 @@ export async function reviseQuote(
     final_customer_price: finalCustomerPrice,
     per_kw_incl_gst: perKwInclGst,
     per_kw_excl_gst: perKwExclGst,
-    beneficiary_contribution: roundMoney(Math.max(0, finalCustomerPrice - (quoteDataToCopy.subsidy_amount || 0))),
+    beneficiary_contribution: beneficiaryContribution,
   }).eq('id', newQuote.id);
 
   return newQuote.quote_number;

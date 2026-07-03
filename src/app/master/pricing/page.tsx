@@ -5,11 +5,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select } from '@/components/ui/Select';
 import { supabase } from '@/lib/supabase/client';
 import {
-  useMasterQuery,
-  useMasterCreateMutation,
-  useMasterUpdateMutation,
-  useMasterDeleteMutation,
-  useMasterBulkUpdateMutation,
   getOrgContext
 } from '@/lib/hooks/useMasters';
 import {
@@ -38,13 +33,36 @@ import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
 interface PricingRow {
   id: string;
   bom_item_id: string;
+  item_name: string;
+  rate_master_id?: string | null;
   override_rate: number;
   is_active: boolean;
+  is_override?: boolean;
   bom_description?: string;
   bom_section?: string;
   bom_unit?: string;
   bom_default_rate?: number;
   gst_pct?: number | null;
+}
+
+function normalizeItemName(value: any) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function getBomItemName(item: any) {
+  return String(item?.description || item?.sku_code || 'BOM Item').trim();
+}
+
+function uniqueBomItems(items: any[]) {
+  const map = new Map<string, any>();
+  for (const item of items || []) {
+    const key = `${item.category_id}:${normalizeItemName(item.sku_code || item.description)}`;
+    const existing = map.get(key);
+    if (!existing || item.org_id) {
+      map.set(key, item);
+    }
+  }
+  return Array.from(map.values());
 }
 
 export default function PricingMasterPage() {
@@ -76,11 +94,13 @@ export default function PricingMasterPage() {
   const { data: bomItems } = useQuery({
     queryKey: ['bom-items-pricing'],
     queryFn: async () => {
+      const { orgId } = await getOrgContext();
       const { data, error } = await supabase
         .from('bom_template_items')
-        .select('*');
+        .select('*')
+        .or(`org_id.eq.${orgId},org_id.is.null`);
       if (error) throw error;
-      return data || [];
+      return uniqueBomItems(data || []);
     }
   });
 
@@ -90,39 +110,44 @@ export default function PricingMasterPage() {
     queryFn: async () => {
       const { orgId } = await getOrgContext();
       
-      // Select bom items
-      const { data: boms, error: bomError } = await supabase
-        .from('bom_template_items')
-        .select('*')
-        .or(`org_id.eq.${orgId},org_id.is.null`);
+      const [bomResult, overrideResult] = await Promise.all([
+        supabase
+          .from('bom_template_items')
+          .select('*')
+          .or(`org_id.eq.${orgId},org_id.is.null`),
+        supabase
+          .from('rate_master')
+          .select('*')
+          .eq('org_id', orgId)
+          .eq('is_active', true),
+      ]);
 
-      if (bomError) throw bomError;
+      if (bomResult.error) throw bomResult.error;
+      if (overrideResult.error) throw overrideResult.error;
 
-      // Group by description (or section+sub_type) and prefer org_id if present to override global ones
-      const map = new Map<string, any>();
-      for (const b of boms || []) {
-        const key = `${b.category_id}:${b.sku_code}`;
-        const existing = map.get(key);
-        if (!existing || b.org_id) {
-          map.set(key, b);
-        }
+      const uniqueBoms = uniqueBomItems(bomResult.data || []);
+      const overrides = new Map<string, any>();
+      for (const row of overrideResult.data || []) {
+        overrides.set(normalizeItemName(row.item_name), row);
       }
-
-      const uniqueBoms = Array.from(map.values());
 
       // Map fields directly to PricingRow format
       const rows: PricingRow[] = uniqueBoms.map((b) => {
+        const itemName = getBomItemName(b);
+        const override = overrides.get(normalizeItemName(itemName));
         return {
-          id: b.id,
+          id: override?.id ?? b.id,
           bom_item_id: b.id,
-          override_rate: b.default_rate || 0,
-          is_active: b.is_active,
+          item_name: itemName,
+          rate_master_id: override?.id ?? null,
+          override_rate: Number(override?.override_rate ?? b.default_rate ?? 0),
+          is_active: override?.is_active ?? b.is_active,
+          is_override: !!override,
           bom_description: b.description || 'BOM Item',
           bom_section: b.category_id || 'Accessories',
           bom_unit: b.unit || 'Nos',
           bom_default_rate: b.default_rate || 0,
           gst_pct: b.gst_pct ?? 0.18,
-          is_override: b.org_id !== null,
         } as any;
       });
 
@@ -133,7 +158,7 @@ export default function PricingMasterPage() {
   // 3. Mutations
   const createMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const { orgId, userId } = await getOrgContext();
+      const { orgId } = await getOrgContext();
       
       // Get the metadata of the target global BOM item
       const { data: targetItem, error: fetchError } = await supabase
@@ -143,21 +168,17 @@ export default function PricingMasterPage() {
         .single();
       if (fetchError) throw fetchError;
 
-      // Insert organization override in bom_template_items
+      const itemName = getBomItemName(targetItem);
       const { data, error } = await supabase
-        .from('bom_template_items')
-        .insert({
+        .from('rate_master')
+        .upsert({
           org_id: orgId,
-          category_id: targetItem.category_id,
-          sku_code: targetItem.sku_code,
-          description: targetItem.description,
-          notes: targetItem.notes,
-          unit: targetItem.unit,
-          default_rate: payload.override_rate,
-          gst_pct: normalizeGstRate(payload.gst_pct ?? targetItem.gst_pct, 0.18),
-          is_survey_dependent: targetItem.is_survey_dependent,
-          civil_required_only: targetItem.civil_required_only,
-        })
+          item_name: itemName,
+          override_rate: Number(payload.override_rate || 0),
+          bom_item_id: null,
+          is_active: payload.is_active ?? true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'org_id,item_name' })
         .select()
         .single();
       if (error) throw error;
@@ -171,13 +192,13 @@ export default function PricingMasterPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, override_rate, gst_pct }: { id: string; override_rate: number; gst_pct?: number }) => {
-      const { userId } = await getOrgContext();
+    mutationFn: async ({ id, override_rate, is_active }: { id: string; override_rate: number; gst_pct?: number; is_active?: boolean }) => {
       const { data, error } = await supabase
-        .from('bom_template_items')
+        .from('rate_master')
         .update({
-          default_rate: override_rate,
-          ...(gst_pct !== undefined ? { gst_pct: normalizeGstRate(gst_pct, 0.18) } : {}),
+          override_rate: Number(override_rate || 0),
+          is_active: is_active ?? true,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', id)
         .select()
@@ -196,10 +217,10 @@ export default function PricingMasterPage() {
     mutationFn: async (id: string) => {
       const { orgId } = await getOrgContext();
       const { error } = await supabase
-        .from('bom_template_items')
-        .delete()
+        .from('rate_master')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
         .eq('id', id)
-        .eq('org_id', orgId); // Safe deletion: only delete their org row
+        .eq('org_id', orgId);
       if (error) throw error;
       return id;
     },
@@ -252,33 +273,9 @@ export default function PricingMasterPage() {
         newRate = Math.round(newRate);
 
         if (!(row as any).is_override) {
-          // Create override
-          const { orgId } = await getOrgContext();
-          const { data: targetItem } = await supabase
-            .from('bom_template_items')
-            .select('*')
-            .eq('id', row.bom_item_id)
-            .single();
-          if (targetItem) {
-            await supabase.from('bom_template_items').insert({
-              org_id: orgId,
-              category_id: targetItem.category_id,
-              sku_code: targetItem.sku_code,
-              description: targetItem.description,
-              notes: targetItem.notes,
-              unit: targetItem.unit,
-              default_rate: newRate,
-              gst_pct: targetItem.gst_pct ?? 0.18,
-              is_survey_dependent: targetItem.is_survey_dependent,
-              civil_required_only: targetItem.civil_required_only,
-            });
-          }
+          await createMutation.mutateAsync({ bom_item_id: row.bom_item_id, override_rate: newRate, gst_pct: row.gst_pct });
         } else {
-          // Update override
-          await supabase
-            .from('bom_template_items')
-            .update({ default_rate: newRate })
-            .eq('id', id);
+          await updateMutation.mutateAsync({ id: row.id, override_rate: newRate });
         }
       });
 
@@ -323,7 +320,7 @@ export default function PricingMasterPage() {
         if (!(editingItem as any).is_override) {
           await createMutation.mutateAsync({ bom_item_id: editingItem.bom_item_id, override_rate: draft.override_rate, gst_pct: draft.gst_pct });
         } else {
-          await updateMutation.mutateAsync({ id: editingItem.id, override_rate: draft.override_rate, gst_pct: draft.gst_pct });
+          await updateMutation.mutateAsync({ id: editingItem.id, override_rate: draft.override_rate, gst_pct: draft.gst_pct, is_active: draft.is_active });
         }
       } else {
         await createMutation.mutateAsync(draft);
@@ -362,6 +359,48 @@ export default function PricingMasterPage() {
     }));
     exportToExcel(dataToExport, 'Pricing_Master_Overrides', 'Overrides');
     toast('Overrides exported successfully', 'success');
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const rawData = await importFromExcel(file);
+      const availableBomItems = bomItems || [];
+      const parsedRows = rawData.map((row: any) => {
+        const description = row['BOM Component Description'] || row.Description || row.description || row.item_name || '';
+        const bomItem = availableBomItems.find((item: any) => normalizeItemName(getBomItemName(item)) === normalizeItemName(description));
+        return {
+          bom_item_id: bomItem?.id,
+          override_rate: parseFloat(row['Selling Override Rate (INR)'] || row.override_rate || row.rate || 0),
+          gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct || bomItem?.gst_pct, 0.18),
+        };
+      }).filter((row) => row.bom_item_id && !isNaN(row.override_rate));
+
+      if (parsedRows.length === 0) {
+        toast('No matching pricing rows found. Import requires exported BOM Component Description values.', 'error');
+        return;
+      }
+
+      const confirmed = await confirm({
+        title: `Import ${parsedRows.length} Pricing Overrides?`,
+        message: 'Existing overrides with the same BOM description will be updated.',
+        confirmLabel: 'Import Now',
+        cancelLabel: 'Cancel',
+        type: 'warning',
+      });
+      if (!confirmed) return;
+
+      for (const row of parsedRows) {
+        await createMutation.mutateAsync(row);
+      }
+      toast(`Successfully imported ${parsedRows.length} pricing overrides`, 'success');
+    } catch (err: any) {
+      toast(err.message || 'Import failed', 'error');
+    } finally {
+      e.target.value = '';
+    }
   };
 
   return (
@@ -406,6 +445,11 @@ export default function PricingMasterPage() {
           >
             <Download size={14} /> Export
           </button>
+
+          <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border text-xs text-text-secondary hover:text-text-primary hover:border-border-light transition-all cursor-pointer">
+            <Upload size={14} /> Import
+            <input type="file" accept=".xlsx, .xls, .csv" onChange={handleImport} className="hidden" />
+          </label>
 
           <button
             onClick={() => setHistoryOpen(true)}
@@ -476,7 +520,7 @@ export default function PricingMasterPage() {
                           <Edit2 size={13} />
                         </button>
                         <button
-                          onClick={() => handleDelete(r.id)}
+                          onClick={() => (r as any).is_override ? handleDelete(r.id) : toast('This row is already using the baseline catalog rate.', 'error')}
                           className="p-1 rounded bg-surface border border-border text-text-secondary hover:text-error hover:border-error/30 cursor-pointer"
                         >
                           <Trash2 size={13} />

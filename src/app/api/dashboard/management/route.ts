@@ -12,21 +12,21 @@ export const GET = withLicensedApiRoute(async (request, context) => {
     // 1. Total Revenue (YTD) - from quotes
     const { data: revenueData, error: revError } = await supabase
       .from('quotes')
-      .select('total_inc_gst')
+      .select('total_incl_gst')
       .eq('org_id', orgId)
       .eq('status', 'won');
     if (revError) throw revError;
-    const totalRevenue = revenueData?.reduce((acc, q: any) => acc + Number(q.total_inc_gst || 0), 0) || 0;
+    const totalRevenue = revenueData?.reduce((acc, q: any) => acc + Number(q.total_incl_gst || 0), 0) || 0;
 
     // 2. Avg Margin - from quotes
     const { data: marginData, error: marginError } = await supabase
       .from('quotes')
-      .select('margin_pct')
+      .select('effective_margin_pct')
       .eq('org_id', orgId)
       .eq('status', 'won');
     if (marginError) throw marginError;
     const avgMargin = marginData && marginData.length > 0
-      ? marginData.reduce((acc, q: any) => acc + Number(q.margin_pct || 0), 0) / marginData.length
+      ? marginData.reduce((acc, q: any) => acc + Number(q.effective_margin_pct || 0), 0) / marginData.length
       : 0;
 
     // 3. Active Projects - from quotes or projects. Fallback to won quotes count if projects table not mapped yet

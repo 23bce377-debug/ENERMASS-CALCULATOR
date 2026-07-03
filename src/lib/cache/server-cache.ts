@@ -1,6 +1,11 @@
 import { unstable_cache } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 
+function applyHiddenSystems(rows: any[], hiddenRows: any[]) {
+  const hiddenIds = new Set((hiddenRows || []).map((row: any) => row.system_id));
+  return (rows || []).filter((row: any) => row.org_id || !hiddenIds.has(row.id));
+}
+
 // Equipment master cache (10 min)
 export const getEquipmentMaster = unstable_cache(
   async (orgId: string | null) => {
@@ -72,13 +77,16 @@ export const getRulesMaster = unstable_cache(
   async (orgId: string | null) => {
     const supabase = createAdminClient();
     const [
-      stateRules, slabs, schemes, systems, taxHsn, taxGstRates, bomItems,
+      stateRules, slabs, schemes, systems, hiddenSystems, taxHsn, taxGstRates, bomItems,
       systemStateAvailability, stateTermsTemplates,
     ] = await Promise.all([
       supabase.from('state_rules').select('*').eq('is_active', true),
       supabase.from('scheme_slabs').select('*'),
       supabase.from('calculation_schemes').select('*').eq('is_active', true),
       supabase.from('systems').select('*, system_items(*)').eq('is_active', true).order('capacity_kw', { ascending: true }),
+      orgId
+        ? (supabase as any).from('system_hidden_presets').select('system_id').eq('org_id', orgId)
+        : Promise.resolve({ data: [], error: null }),
       (supabase as any).from('tax_hsn_sac').select('*').eq('is_active', true),
       (supabase as any).from('tax_gst_rates').select('*'),
       supabase.from('bom_template_items').select('*').limit(1000),
@@ -90,7 +98,7 @@ export const getRulesMaster = unstable_cache(
       stateRules: stateRules.data || [],
       slabs: slabs.data || [],
       schemes: schemes.data || [],
-      systems: systems.data || [],
+      systems: applyHiddenSystems(systems.data || [], (hiddenSystems as any)?.data || []),
       taxHsnCodes: taxHsn?.data || [],
       taxGstRates: taxGstRates?.data || [],
       bomItems: bomItems.data || [],
@@ -98,8 +106,8 @@ export const getRulesMaster = unstable_cache(
       stateTermsTemplates: stateTermsTemplates?.data || [],
     };
   },
-  // Cache key bumped to v3 — systems now include state_id for state-wise presets.
-  ['master-rules-v3'],
+  // Cache key bumped to v4 — systems now exclude org-hidden built-in presets.
+  ['master-rules-v4'],
   { tags: ['master-data', 'rules'], revalidate: 600 }
 );
 

@@ -15,6 +15,8 @@ import { calculateEnergyProjections } from './energy';
 import { calculatePricingAndMargins, calculateDiscountAmount, type MarginMode } from './margin';
 import { calculateFinancialProjections } from './financials';
 import { calculatePMSuryaGharSubsidy, type SubsidyResult } from '../subsidy';
+import { assertCalcResultIntegrity } from '@/lib/math/integrity';
+import { normalizeGstRate } from '@/lib/utils/gst';
 
 import { safeEvalFormula, FormulaParseError } from './formulaParser';
 
@@ -336,7 +338,7 @@ function lineTotalPaise(line: LineResult): number {
 function withLineTotal(line: LineResult, lineTotalPaiseValue: number): LineResult {
   const lineTotal = roundToINR(lineTotalPaiseValue / 100);
   const qty = sanitizeNumber(line.effectiveQty, 0);
-  const effectiveRate = qty > 0 ? roundToINR(lineTotal / qty) : 0;
+  const effectiveRate = qty > 0 ? roundTo5(lineTotal / qty) : 0;
   const lineGST = roundToINR(lineTotal * sanitizeNumber(line.effectiveGstPct, 0));
 
   return {
@@ -1480,9 +1482,10 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
       equipmentOverrides,
     ));
 
-    const effectiveGstPct = roundTo5(
-      rowOverride?.gstPct !== undefined ? rowOverride.gstPct : item.gstPct
-    );
+    const effectiveGstPct = roundTo5(normalizeGstRate(
+      rowOverride?.gstPct !== undefined ? rowOverride.gstPct : item.gstPct,
+      TAX_CONSTANTS.BOS_GST_RATE,
+    ));
 
     const lineTotalPaise = isDisabled ? 0 : Math.round(effectiveQty * effectiveRate * 100);
     const lineGSTPaise = isDisabled ? 0 : Math.round(lineTotalPaise * effectiveGstPct);
@@ -1557,25 +1560,27 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
   const resolvedGstOverride = (() => {
     if (rawGstOverride === undefined || input.allowGstOverride !== true) return undefined;
     // Validate: must match a known slab within floating-point tolerance
+    const normalizedOverride = normalizeGstRate(rawGstOverride, rawGstOverride);
     const isValid = [...VALID_OUTPUT_GST_SLABS].some(
-      slab => Math.abs(slab - rawGstOverride) < 0.0001
+      slab => Math.abs(slab - normalizedOverride) < 0.0001
     );
     if (!isValid) {
       throw new Error(
-        `Invalid GST output override: ${(rawGstOverride * 100).toFixed(3)}%. ` +
+        `Invalid GST output override: ${(normalizedOverride * 100).toFixed(3)}%. ` +
         `Must be one of: ${[...VALID_OUTPUT_GST_SLABS].map(s => (s * 100).toFixed(1) + '%').join(', ')}`
       );
     }
-    return rawGstOverride;
+    return normalizedOverride;
   })();
 
-  const gstOutputRate = roundTo5(
+  const gstOutputRate = roundTo5(normalizeGstRate(
     resolvedGstOverride !== undefined
       ? resolvedGstOverride
       : (input.gstOnOutput !== undefined 
           ? input.gstOnOutput 
-          : (input.projectType === 'commercial' ? TAX_CONSTANTS.COMMERCIAL_GST_RATE : TAX_CONSTANTS.RESIDENTIAL_COMPOSITE_GST_RATE))
-  );
+          : (input.projectType === 'commercial' ? TAX_CONSTANTS.COMMERCIAL_GST_RATE : TAX_CONSTANTS.RESIDENTIAL_COMPOSITE_GST_RATE)),
+    input.projectType === 'commercial' ? TAX_CONSTANTS.COMMERCIAL_GST_RATE : TAX_CONSTANTS.RESIDENTIAL_COMPOSITE_GST_RATE,
+  ));
 
   // ── Step 8 & 6: Resolve MRP & Margin ──
   // ITC Handling: The EPC contractor can always claim ITC (if registered), so base cost is always costBeforeGST.
@@ -1754,7 +1759,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
     .reduce((sum, l) => sum + l.lineSubTotal, 0);
 
   // ── Return complete result ──
-  return {
+  const result: CalcResult = {
     capacityKW,
     lines,
     quotedLines,
@@ -1795,6 +1800,13 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
     npv,
     irr,
   };
+
+  assertCalcResultIntegrity(result, {
+    projectType: input.projectType,
+    context: 'calculateSystem',
+  });
+
+  return result;
 }
 
 // ─── Indian Currency Formatter ──────────────────────────────────────────────────

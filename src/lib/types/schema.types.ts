@@ -3907,6 +3907,7 @@ export type Database = {
           last_updated: string
           org_id: string
           reorder_level: number
+          unit: string | null
           weighted_avg_cost: number
         }
         Insert: {
@@ -3917,6 +3918,7 @@ export type Database = {
           last_updated?: string
           org_id: string
           reorder_level?: number
+          unit?: string | null
           weighted_avg_cost?: number
         }
         Update: {
@@ -3927,6 +3929,7 @@ export type Database = {
           last_updated?: string
           org_id?: string
           reorder_level?: number
+          unit?: string | null
           weighted_avg_cost?: number
         }
         Relationships: [
@@ -5309,6 +5312,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          email: string | null
           full_name: string
           id: string
           is_active: boolean
@@ -5321,6 +5325,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           full_name: string
           id: string
           is_active?: boolean
@@ -5333,6 +5338,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           full_name?: string
           id?: string
           is_active?: boolean

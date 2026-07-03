@@ -247,15 +247,13 @@ export default function SystemPresetsPage() {
                       >
                         <Edit3 size={16} />
                       </button>
-                      {!preset.is_org_template && (
-                        <button 
-                          onClick={() => handleDelete(preset.id, preset.name)}
-                          className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors" 
-                          title="Delete Preset"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDelete(preset.id, preset.name)}
+                        className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                        title={preset.is_org_template ? 'Hide Built-In Preset' : 'Delete Preset'}
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </td>
                   </tr>
                 );

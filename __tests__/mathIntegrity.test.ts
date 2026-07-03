@@ -1,0 +1,200 @@
+import { describe, expect, it } from 'vitest';
+import { calculateSystem, type CalcResult, type LineResult } from '../src/lib/engine/calculator';
+import type { SolarSystem } from '../src/lib/data/bom';
+import {
+  assertCalcResultIntegrity,
+  computeLineMath,
+  normalizeQuoteItemMath,
+  validateCalcResultMath,
+} from '../src/lib/math/integrity';
+
+const stateData = {
+  Kerala: {
+    name: 'Kerala',
+    sunHoursPerDay: 5,
+    performanceRatio: 0.8,
+    labourMultiplier: 1,
+    gstOnOutput: 0.138,
+    gridTariffInr: 8,
+    subsidyRules: [],
+  },
+};
+
+function makeSystem(items: SolarSystem['items']): SolarSystem {
+  return {
+    id: 'sys-math',
+    name: 'Math Integrity System',
+    category: 'on-grid',
+    capacityKW: 5,
+    panelWattage: 500,
+    panelQty: 10,
+    targetMarginPct: 0.2,
+    items,
+  };
+}
+
+function baseLine(overrides: Partial<LineResult> = {}): LineResult {
+  return {
+    index: 0,
+    description: 'PANEL',
+    effectiveQty: 2,
+    effectiveRate: 1000,
+    effectiveGstPct: 0.12,
+    lineTotal: 2000,
+    lineGST: 240,
+    lineSubTotal: 2240,
+    isOverridden: false,
+    isDisabled: false,
+    ...overrides,
+  };
+}
+
+function baseResult(overrides: Partial<CalcResult> = {}): CalcResult {
+  return {
+    capacityKW: 1,
+    lines: [baseLine()],
+    quotedLines: [baseLine()],
+    costBeforeGST: 2000,
+    totalInputGST: 240,
+    totalIncGST: 2240,
+    effectiveMarginPct: 0.2,
+    mrpExclGST: 2400,
+    marginAmount: 400,
+    gstOutputRate: 0.18,
+    mrpInclGST: 2832,
+    perKWexclGST: 2400,
+    perKWinclGST: 2832,
+    discountAmount: 32,
+    unroundedFinalCustomerPrice: 2850,
+    roundOffToThousand: false,
+    roundOffAdjustment: 0,
+    finalCustomerPrice: 2850,
+    subsidyResult: { amount: 300, breakdown: 'test', isEligible: true, schemeNote: '' },
+    subsidyAmount: 300,
+    beneficiaryContribution: 2550,
+    additionalCostTotal: 50,
+    civilLogisticsCost: 0,
+    dailyGenerationKWh: 4,
+    monthlyGenerationKWh: 120,
+    annualGenerationKWh: 1460,
+    monthlySavingsINR: 960,
+    annualSavingsINR: 11680,
+    paybackYears: 5,
+    lcoe: 2,
+    lifetimeSavingsINR: 100000,
+    npv: 50000,
+    irr: 0.1,
+    ...overrides,
+  };
+}
+
+describe('math integrity checks', () => {
+  it('normalizes whole-percent GST from DB/custom inputs inside the engine', () => {
+    const system = makeSystem([
+      { description: 'PANEL', qty: 10, ratePerUnit: 1000, gstPct: 12, unit: 'Nos' },
+      { description: 'INVERTER', qty: 1, ratePerUnit: 20000, gstPct: 18, unit: 'Nos' },
+      { description: 'BATTERY', qty: 1, ratePerUnit: 30000, gstPct: 18, unit: 'Nos' },
+      { description: 'STRUCTURE', qty: 1, ratePerUnit: 10000, gstPct: 18, unit: 'Set' },
+    ]);
+
+    const result = calculateSystem({
+      systemId: system.id,
+      systems: [system],
+      state: 'Kerala',
+      stateData,
+      projectType: 'commercial',
+      dbOrientationMultipliers: { South: 1, 'East/West': 0.9, Flat: 0.85 },
+      gstOnOutput: 18,
+      applySubsidy: false,
+    });
+
+    expect(result.gstOutputRate).toBe(0.18);
+    expect(result.lines.find((line) => line.description === 'PANEL')?.effectiveGstPct).toBe(0.12);
+    expect(result.lines.find((line) => line.description === 'INVERTER')?.effectiveGstPct).toBe(0.18);
+    expect(result.lines.find((line) => line.description === 'BATTERY')?.effectiveGstPct).toBe(0.18);
+    expect(() => assertCalcResultIntegrity(result, { projectType: 'commercial' })).not.toThrow();
+  });
+
+  it('keeps discounts, additional costs, subsidy, and commercial ITC balanced', () => {
+    const system = makeSystem([
+      { description: 'PANEL', qty: 2, ratePerUnit: 1000, gstPct: 0.12, unit: 'Nos' },
+    ]);
+
+    const result = calculateSystem({
+      systemId: system.id,
+      systems: [system],
+      state: 'Kerala',
+      stateData,
+      projectType: 'commercial',
+      dbOrientationMultipliers: { South: 1, 'East/West': 0.9, Flat: 0.85 },
+      gstOnOutput: 0.18,
+      discountType: 'flat',
+      discountVal: 999999,
+      additionalCosts: [{ id: 'shipping', description: 'Shipping', amount: 500 }],
+      applySubsidy: true,
+      rpcSubsidyAmount: 100000,
+    });
+
+    expect(result.discountAmount).toBe(result.mrpInclGST);
+    expect(result.unroundedFinalCustomerPrice).toBe(500);
+    expect(result.finalCustomerPrice).toBe(500);
+    expect(result.subsidyAmount).toBe(100000);
+    expect(result.beneficiaryContribution).toBe(0);
+    expect(() => assertCalcResultIntegrity(result, { projectType: 'commercial' })).not.toThrow();
+  });
+
+  it('detects corrupt line totals and aggregate drift', () => {
+    const corrupt = baseResult({
+      lines: [baseLine({ lineGST: 999 })],
+      totalInputGST: 999,
+      totalIncGST: 2999,
+    });
+
+    const report = validateCalcResultMath(corrupt, { projectType: 'residential' });
+    expect(report.ok).toBe(false);
+    expect(report.issues.some((issue) => issue.path.includes('lineGST'))).toBe(true);
+  });
+
+  it('normalizes quote item rows before revision-style persistence', () => {
+    const normalized = normalizeQuoteItemMath({
+      qty: '3',
+      rate_per_unit: '1000',
+      gst_pct: '18',
+      is_included: true,
+    });
+
+    expect(normalized.gst_pct).toBe(0.18);
+    expect(normalized.line_total).toBe(3000);
+    expect(normalized.line_gst).toBe(540);
+    expect(normalized.line_subtotal).toBe(3540);
+  });
+
+  it('zeros excluded quote item math consistently', () => {
+    const line = computeLineMath({
+      qty: 10,
+      rate: 1000,
+      gstPct: 18,
+      isIncluded: false,
+    });
+
+    expect(line.gstPct).toBe(0.18);
+    expect(line.lineTotal).toBe(0);
+    expect(line.lineGST).toBe(0);
+    expect(line.lineSubTotal).toBe(0);
+  });
+
+  it('rejects impossible GST fractions after normalization', () => {
+    const report = validateCalcResultMath(baseResult({
+      lines: [baseLine({
+        effectiveGstPct: 1.8,
+        lineGST: 3600,
+        lineSubTotal: 5600,
+      })],
+      totalInputGST: 3600,
+      totalIncGST: 5600,
+    }));
+
+    expect(report.ok).toBe(false);
+    expect(report.issues.some((issue) => issue.path.includes('effectiveGstPct'))).toBe(true);
+  });
+});

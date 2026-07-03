@@ -664,8 +664,25 @@ export async function deleteSystemPreset(presetId: string) {
     .maybeSingle();
   if (presetError) throw new Error('Failed to load preset: ' + presetError.message);
   if (!preset) throw new Error('Preset not found.');
+  if ((preset as any).org_id === null) {
+    const { error } = await (supabase as any)
+      .from('system_hidden_presets')
+      .upsert({
+        org_id: orgId,
+        system_id: presetId,
+        hidden_by: user.id,
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'org_id,system_id' });
+    if (error) throw new Error('Failed to hide built-in preset: ' + error.message);
+
+    revalidatePath('/settings/presets');
+    revalidatePath('/systems');
+    revalidatePath('/calculator');
+    return;
+  }
+
   if ((preset as any).org_id !== orgId) {
-    throw new Error('Built-in presets cannot be deleted. Save edits first to create an organisation copy.');
+    throw new Error('You can only delete presets that belong to your organisation.');
   }
 
   const { count, error: refError } = await (supabase
@@ -691,6 +708,7 @@ export async function deleteSystemPreset(presetId: string) {
 
   revalidatePath('/settings/presets');
   revalidatePath('/systems');
+  revalidatePath('/calculator');
 }
 
 export async function getCatalogItems(category: string, search?: string) {

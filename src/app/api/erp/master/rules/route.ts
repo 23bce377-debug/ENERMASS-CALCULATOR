@@ -33,7 +33,7 @@ export const GET = withLicensedApiRoute(
     const { bomLimit } = parseResult.data;
     // Bump the version suffix whenever the payload shape changes so stale
     // cached preset/state payloads are not served.
-    const cacheKey = `erp:master:rules:global:v5:bomLimit_${bomLimit}`;
+    const cacheKey = `erp:master:rules:${_context.session.orgId}:v6:bomLimit_${bomLimit}`;
 
     try {
       const data = await getOrSetCache(
@@ -52,7 +52,7 @@ export const GET = withLicensedApiRoute(
           };
 
           const [
-            stateRulesRes, slabsRes, schemesRes, systemsRes, taxHsnRes, taxGstRatesRes, bomItemsRes,
+            stateRulesRes, slabsRes, schemesRes, systemsRes, hiddenSystemsRes, taxHsnRes, taxGstRatesRes, bomItemsRes,
             schemeOverridesRes, systemStateAvailRes, stateTermsRes,
           ] =
             await Promise.all([
@@ -75,6 +75,12 @@ export const GET = withLicensedApiRoute(
                   .select('*, system_items(*)')
                   .eq('is_active', true)
                   .order('capacity_kw', { ascending: true })
+              ),
+              safeQuery(
+                (supabase as any)
+                  .from('system_hidden_presets')
+                  .select('system_id')
+                  .eq('org_id', _context.session.orgId)
               ),
               safeQuery(
                 (supabase as any)
@@ -106,11 +112,15 @@ export const GET = withLicensedApiRoute(
               ),
             ]);
 
+          const hiddenSystemIds = new Set(
+            ((hiddenSystemsRes as any)?.data ?? []).map((row: any) => row.system_id)
+          );
+
           return {
             stateRules: stateRulesRes.data ?? [],
             slabs: slabsRes.data ?? [],
             schemes: schemesRes.data ?? [],
-            systems: systemsRes.data ?? [],
+            systems: (systemsRes.data ?? []).filter((row: any) => row.org_id || !hiddenSystemIds.has(row.id)),
             taxHsnCodes: (taxHsnRes as any)?.data ?? [],
             taxGstRates: (taxGstRatesRes as any)?.data ?? [],
             bomItems: bomItemsRes.data ?? [],

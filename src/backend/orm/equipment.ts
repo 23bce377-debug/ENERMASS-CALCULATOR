@@ -487,16 +487,16 @@ export const StructureComponentVendorRatesORM = {
  */
 export const RateMasterORM = {
   async getAll(orgId: string) {
-    const { data, error } = await (supabase as any).from('rate_master').select('*, bom_template_items(description, category_id, unit)').eq('org_id', orgId).eq('is_active', true);
+    const { data, error } = await (supabase as any).from('rate_master').select('*').eq('org_id', orgId).eq('is_active', true);
     if (error) throw error;
-    return data as Array<{ id: string; org_id: string; bom_item_id: string | null; item_name: string; override_rate: number; is_active: boolean; created_at: string; updated_at: string; bom_template_items: { description: string; category_id: string; unit: string; } | null; }>;
+    return data as Array<{ id: string; org_id: string; bom_item_id: string | null; item_name: string; override_rate: number; is_active: boolean; created_at: string; updated_at: string; }>;
   },
   async asRateMasterDict(orgId: string): Promise<Record<string, { rate: number; active: boolean }>> {
     const rows = await RateMasterORM.getAll(orgId);
     return Object.fromEntries(rows.map(r => [r.item_name, { rate: Number(r.override_rate), active: r.is_active }]));
   },
   async upsert(orgId: string, itemName: string, overrideRate: number, bomItemId?: string) {
-    const { data, error } = await (supabase as any).from('rate_master').upsert({ org_id: orgId, item_name: itemName, override_rate: overrideRate, bom_item_id: bomItemId ?? null, is_active: true }, { onConflict: 'org_id,item_name' }).select().maybeSingle();
+    const { data, error } = await (supabase as any).from('rate_master').upsert({ org_id: orgId, item_name: itemName, override_rate: overrideRate, bom_item_id: null, is_active: true }, { onConflict: 'org_id,item_name' }).select().maybeSingle();
     if (error) throw error;
     return data;
   },

@@ -16,6 +16,7 @@ import { OnboardingTour } from './OnboardingTour';
 import { OfflineBanner } from './OfflineBanner';
 import { SyncConflictResolver } from './SyncConflictResolver';
 import { PwaPrompt } from './PwaPrompt';
+import { useQuotesQuery } from '@/lib/hooks/useQuotes';
 
 /**
  * AppShell wraps all pages with the sidebar, header, and mobile tab bar.
@@ -26,7 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { settings } = useSettings();
   const selectedSystemId = useCalculatorStore((s) => s.selectedSystemId);
-  const quoteCount = useCalculatorStore((s) => s.quotes.length);
+  const storeQuoteCount = useCalculatorStore((s) => s.quotes.length);
   const dbSystems = useCalculatorStore((s) => s.dbSystems);
   const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
   const fetchMasterData = useCalculatorStore((s) => s.fetchMasterData);
@@ -45,6 +46,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     '/unauthorized',
   ]), []);
   const isPublicRoute = publicRoutes.has(pathname);
+  const { data: hydratedQuotes = [] } = useQuotesQuery({ enabled: isAuthenticated && !isPublicRoute });
+  const quoteCount = hydratedQuotes.length || storeQuoteCount;
   const shouldBootstrapMasterData = useMemo(() => {
     const bootstrapPrefixes = [
       '/systems',

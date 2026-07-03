@@ -4,6 +4,8 @@ import type { Quote } from '../types/quote'
 import { useCalculatorStore } from '../store/calculatorStore'
 import { SurveyORM } from '../../backend/orm/survey'
 import { reviseQuote } from '../quotes/reviseQuote'
+import { roundMoney } from '@/lib/math/integrity'
+import { normalizeGstRate } from '@/lib/utils/gst'
 
 function toQuoteStatus(status: string | null | undefined): Quote['status'] {
   switch (status) {
@@ -55,7 +57,7 @@ function mapDbQuoteToQuote(q: any): Quote {
     overrides[item.sort_order] = {
       qty: Number(item.qty),
       ratePerUnit: Number(item.rate_per_unit),
-      gstPct: Number(item.gst_pct),
+      gstPct: normalizeGstRate(item.gst_pct, 0),
     }
   })
 
@@ -74,10 +76,10 @@ function mapDbQuoteToQuote(q: any): Quote {
       unit: item.unit || '',
       effectiveQty: Number(item.qty),
       effectiveRate: Number(item.rate_per_unit),
-      effectiveGstPct: Number(item.gst_pct),
-      lineTotal: Number(item.line_total),
-      lineGST: Number(item.line_gst),
-      lineSubTotal: Number(item.line_subtotal),
+      effectiveGstPct: normalizeGstRate(item.gst_pct, 0),
+      lineTotal: roundMoney(item.line_total),
+      lineGST: roundMoney(item.line_gst),
+      lineSubTotal: roundMoney(item.line_subtotal),
       isOverridden: item.is_qty_overridden || item.is_rate_overridden || !!item.is_gst_overridden,
       isDisabled: !item.is_included,
       sourceTable: item.source_table || undefined,
@@ -91,34 +93,34 @@ function mapDbQuoteToQuote(q: any): Quote {
       unit: item.unit || '',
       effectiveQty: Number(item.qty),
       effectiveRate: Number(item.rate_per_unit),
-      effectiveGstPct: Number(item.gst_pct),
-      lineTotal: Number(item.line_total),
-      lineGST: Number(item.line_gst),
-      lineSubTotal: Number(item.line_subtotal),
+      effectiveGstPct: normalizeGstRate(item.gst_pct, 0),
+      lineTotal: roundMoney(item.line_total),
+      lineGST: roundMoney(item.line_gst),
+      lineSubTotal: roundMoney(item.line_subtotal),
       isOverridden: true,
       isDisabled: !item.is_included,
       sourceTable: item.source_table || undefined,
       sourceItemId: item.source_item_id || undefined,
       sourceLabel: item.source_label || undefined,
     })),
-    costBeforeGST: Number(q.cost_before_gst),
-    totalInputGST: Number(q.total_input_gst),
-    totalIncGST: Number(q.total_incl_gst),
+    costBeforeGST: roundMoney(q.cost_before_gst),
+    totalInputGST: roundMoney(q.total_input_gst),
+    totalIncGST: roundMoney(q.total_incl_gst),
     effectiveMarginPct: Number(q.effective_margin_pct),
-    mrpExclGST: Number(q.mrp_excl_gst),
-    marginAmount: Number(q.mrp_excl_gst) - Number(q.cost_before_gst),
-    gstOutputRate: Number(q.gst_output_rate),
-    mrpInclGST: Number(q.mrp_incl_gst),
-    discountAmount: Number(q.discount_amount),
-    unroundedFinalCustomerPrice: Number(q.equipment_json?.unroundedFinalCustomerPrice ?? q.final_customer_price),
-    roundOffAdjustment: Number(q.equipment_json?.roundOffAdjustment ?? 0),
+    mrpExclGST: roundMoney(q.mrp_excl_gst),
+    marginAmount: roundMoney(Number(q.mrp_excl_gst) - Number(q.cost_before_gst)),
+    gstOutputRate: normalizeGstRate(q.gst_output_rate, 0),
+    mrpInclGST: roundMoney(q.mrp_incl_gst),
+    discountAmount: roundMoney(q.discount_amount),
+    unroundedFinalCustomerPrice: roundMoney(q.equipment_json?.unroundedFinalCustomerPrice ?? q.final_customer_price),
+    roundOffAdjustment: roundMoney(q.equipment_json?.roundOffAdjustment ?? 0),
     roundOffToThousand: Boolean(q.equipment_json?.roundOffToThousand),
-    finalCustomerPrice: Number(q.final_customer_price),
-    subsidyAmount: Number(q.subsidy_amount),
-    beneficiaryContribution: Number(q.beneficiary_contribution),
-    additionalCostTotal: Number(q.additional_costs_total),
-    perKWexclGST: Number(q.per_kw_excl_gst || 0),
-    perKWinclGST: Number(q.per_kw_incl_gst || 0),
+    finalCustomerPrice: roundMoney(q.final_customer_price),
+    subsidyAmount: roundMoney(q.subsidy_amount),
+    beneficiaryContribution: roundMoney(q.beneficiary_contribution),
+    additionalCostTotal: roundMoney(q.additional_costs_total),
+    perKWexclGST: roundMoney(q.per_kw_excl_gst || 0),
+    perKWinclGST: roundMoney(q.per_kw_incl_gst || 0),
     dailyGenerationKWh: Number(q.annual_generation_kwh || 0) / 365,
     monthlyGenerationKWh: Number(q.annual_generation_kwh || 0) / 12,
     annualGenerationKWh: Number(q.annual_generation_kwh || 0),
@@ -231,9 +233,10 @@ function mapDbQuoteToQuote(q: any): Quote {
 
 // ─── Fetch All Quotes Query ──────────────────────────────────────────────────
 
-export function useQuotesQuery() {
+export function useQuotesQuery(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['quotes'],
+    enabled: options.enabled ?? true,
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) throw new Error('Unauthorized')

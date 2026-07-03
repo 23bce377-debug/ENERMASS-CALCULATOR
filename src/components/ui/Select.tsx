@@ -7,7 +7,9 @@ import {
   useCallback,
   useId,
   type ReactNode,
+  type CSSProperties,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -59,6 +61,7 @@ export function Select({
 
   const [open, setOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const [panelStyle, setPanelStyle] = useState<CSSProperties>({});
 
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -72,7 +75,11 @@ export function Select({
     if (!open) return;
 
     const onPointerDown = (e: PointerEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        !containerRef.current?.contains(target) &&
+        !panelRef.current?.contains(target)
+      ) {
         setOpen(false);
         setFocusedIndex(-1);
       }
@@ -81,6 +88,45 @@ export function Select({
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [open]);
+
+  const updatePanelPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const viewportPadding = 8;
+    const estimatedMaxHeight = 224;
+    const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+    const spaceAbove = rect.top - viewportPadding;
+    const openUp = spaceBelow < 160 && spaceAbove > spaceBelow;
+    const maxHeight = Math.max(
+      120,
+      Math.min(estimatedMaxHeight, openUp ? spaceAbove - 4 : spaceBelow - 4),
+    );
+
+    setPanelStyle({
+      position: 'fixed',
+      left: Math.max(viewportPadding, rect.left),
+      top: openUp ? undefined : rect.bottom + 4,
+      bottom: openUp ? window.innerHeight - rect.top + 4 : undefined,
+      minWidth: rect.width,
+      maxWidth: Math.max(rect.width, window.innerWidth - viewportPadding * 2),
+      maxHeight,
+      zIndex: 9999,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updatePanelPosition();
+
+    window.addEventListener('resize', updatePanelPosition);
+    window.addEventListener('scroll', updatePanelPosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePanelPosition);
+      window.removeEventListener('scroll', updatePanelPosition, true);
+    };
+  }, [open, updatePanelPosition]);
 
   // ── Keyboard navigation ───────────────────────────────────────────────────
 
@@ -177,7 +223,11 @@ export function Select({
       className={`relative ${className}`}
       onKeyDown={handleKeyDown}
       onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+        const nextTarget = e.relatedTarget as Node | null;
+        if (
+          !e.currentTarget.contains(nextTarget) &&
+          !panelRef.current?.contains(nextTarget)
+        ) {
           setOpen(false);
           setFocusedIndex(-1);
         }
@@ -233,18 +283,19 @@ export function Select({
       </button>
 
       {/* ── Floating Panel ── */}
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div
           ref={panelRef}
           role="listbox"
           aria-label="Options"
           className={[
-            'absolute z-dropdown mt-1 w-full min-w-max',
+            'min-w-max',
             'bg-surface-2 border border-border rounded-xl',
-            'overflow-auto max-h-56',
+            'overflow-auto',
             'animate-scale-in',
           ].join(' ')}
           style={{
+            ...panelStyle,
             transformOrigin: 'top center',
             boxShadow: '0 8px 32px -4px rgba(0,0,0,0.18), 0 0 0 1px var(--bdr)',
           }}
@@ -299,7 +350,8 @@ export function Select({
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

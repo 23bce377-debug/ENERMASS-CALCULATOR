@@ -209,6 +209,99 @@ function transformToDb(entity: string, item: any, currentItem?: any): any {
   return copy;
 }
 
+function getNaturalKey(entity: string, item: any): Record<string, any> | null {
+  if (!item) return null;
+  if (entity === 'panels') return { brand: item.brand, model: item.model, wattage_w: item.wattage_w };
+  if (entity === 'inverters') return { brand: item.brand, model: item.model, capacity_kw: item.capacity_kw, inverter_type: item.inverter_type };
+  if (entity === 'batteries') return { brand: item.brand, model: item.model, capacity_kwh: item.capacity_kwh };
+  if (entity === 'structures') return { name: item.name, material: item.material, roof_mount_type: item.roof_mount_type };
+  if (entity === 'accessories') return { sku_code: item.sku_code };
+  return null;
+}
+
+function isDuplicateKeyError(error: any) {
+  return error?.code === '23505' || String(error?.message || '').toLowerCase().includes('duplicate key value');
+}
+
+function scopeQuery(query: any, orgId: string | null) {
+  return orgId ? query.eq('org_id', orgId) : query.is('org_id', null);
+}
+
+async function findExistingMasterRow(entity: string, table: string, payload: any, orgId: string | null) {
+  const key = getNaturalKey(entity, payload);
+  if (!key) return null;
+
+  for (const scope of [orgId, null]) {
+    let query: any = scopeQuery((supabase as any).from(table).select('*'), scope);
+    for (const [column, value] of Object.entries(key)) {
+      if (value === undefined || value === null || value === '') return null;
+      query = query.eq(column, value);
+    }
+    const { data, error } = await query.maybeSingle();
+    if (error) throw error;
+    if (data) return data;
+  }
+
+  return null;
+}
+
+async function writeMasterInsertOrUpdate<T>(entity: string, table: string, payload: any, orgId: string, userId: string): Promise<T> {
+  const insertResult = await ((supabase as any)
+    .from(table)
+    .insert(payload)
+    .select()
+    .maybeSingle() as any);
+
+  if (!insertResult.error) {
+    await logAudit(orgId, userId, 'masters', table, insertResult.data.id, 'create', null, insertResult.data);
+    return transformFromDb(entity, insertResult.data) as T;
+  }
+
+  if (!isDuplicateKeyError(insertResult.error)) throw insertResult.error;
+
+  const existing = await findExistingMasterRow(entity, table, payload, orgId);
+  if (!existing) throw insertResult.error;
+
+  const updates = {
+    ...pickMutablePayload(entity, payload),
+    is_active: true,
+    is_custom: true,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (existing.org_id === null && orgId !== null && overrideableEntities.has(entity)) {
+    const overridePayload = buildOverridePayload(entity, existing, updates, orgId, existing.id);
+    const { data: existingOverride, error: overrideLookupError } = await ((supabase as any)
+      .from(table)
+      .select('id')
+      .eq('org_id', orgId)
+      .eq('source_global_id', existing.id)
+      .maybeSingle() as any);
+    if (overrideLookupError) throw overrideLookupError;
+
+    const write = existingOverride?.id
+      ? (supabase as any).from(table).update(overridePayload).eq('id', existingOverride.id)
+      : (supabase as any).from(table).insert(overridePayload);
+
+    const { data, error } = await (write.select().maybeSingle() as any);
+    if (error) throw error;
+
+    await logAudit(orgId, userId, 'masters', table, data.id, existingOverride?.id ? 'import_update_override' : 'import_create_override', existing, data);
+    return transformFromDb(entity, data) as T;
+  }
+
+  const { data, error } = await ((supabase as any)
+    .from(table)
+    .update(updates)
+    .eq('id', existing.id)
+    .select()
+    .maybeSingle() as any);
+  if (error) throw error;
+
+  await logAudit(orgId, userId, 'masters', table, data.id, 'import_update', existing, data);
+  return transformFromDb(entity, data) as T;
+}
+
 export function useMasterQuery<T>(entity: string, options?: any) {
   return useQuery<T[]>({
     queryKey: ['masters', entity],
@@ -281,19 +374,9 @@ export function useMasterCreateMutation<T>(entity: string) {
       const { orgId, userId } = await getOrgContext();
       const table = getEntityTable(entity);
 
-      const payload = { ...transformToDb(entity, newItem), org_id: orgId };
+      const payload = { ...transformToDb(entity, newItem), org_id: orgId, is_custom: true };
       if (activeFlagEntities.has(entity)) payload.is_active = true;
-      const { data, error } = await (supabase
-        .from(table as any)
-        .insert(payload)
-        .select()
-        .maybeSingle() as any);
-
-      if (error) throw error;
-
-      // Log Audit Event
-      await logAudit(orgId, userId, 'masters', table, data.id, 'create', null, data);
-      return transformFromDb(entity, data) as T;
+      return writeMasterInsertOrUpdate<T>(entity, table, payload, orgId, userId);
     },
     onError: (err, newItem, context: any) => {
       if (context?.previousData) {
