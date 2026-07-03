@@ -245,6 +245,81 @@ async function findExistingMasterRow(entity: string, table: string, payload: any
   return null;
 }
 
+async function findExistingOrgOverrideRow(entity: string, table: string, payload: any, orgId: string, sourceGlobalId: string) {
+  const { data: sourceMatch, error: sourceError } = await ((supabase as any)
+    .from(table)
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('source_global_id', sourceGlobalId)
+    .maybeSingle() as any);
+  if (sourceError) throw sourceError;
+  if (sourceMatch) return sourceMatch;
+
+  const key = getNaturalKey(entity, payload);
+  if (!key) return null;
+
+  let query: any = (supabase as any).from(table).select('*').eq('org_id', orgId);
+  for (const [column, value] of Object.entries(key)) {
+    if (value === undefined || value === null || value === '') return null;
+    query = query.eq(column, value);
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function writeOrgOverride<T>(
+  entity: string,
+  table: string,
+  beforeState: any,
+  updates: any,
+  orgId: string,
+  userId: string,
+  sourceGlobalId: string,
+  createAction: string,
+  updateAction: string,
+): Promise<T> {
+  const overridePayload = buildOverridePayload(entity, beforeState, updates, orgId, sourceGlobalId);
+  const existingOverride = await findExistingOrgOverrideRow(entity, table, overridePayload, orgId, sourceGlobalId);
+
+  const write = existingOverride?.id
+    ? (supabase as any).from(table).update(overridePayload).eq('id', existingOverride.id)
+    : (supabase as any).from(table).insert(overridePayload);
+
+  const { data, error } = await (write.select().maybeSingle() as any);
+
+  if (error && isDuplicateKeyError(error)) {
+    const duplicateTarget = await findExistingOrgOverrideRow(entity, table, overridePayload, orgId, sourceGlobalId);
+    if (duplicateTarget?.id) {
+      const retry = await ((supabase as any)
+        .from(table)
+        .update(overridePayload)
+        .eq('id', duplicateTarget.id)
+        .select()
+        .maybeSingle() as any);
+      if (retry.error) throw retry.error;
+
+      await logAudit(orgId, userId, 'masters', table, retry.data.id, updateAction, duplicateTarget, retry.data);
+      return transformFromDb(entity, retry.data) as T;
+    }
+  }
+
+  if (error) throw error;
+
+  await logAudit(
+    orgId,
+    userId,
+    'masters',
+    table,
+    data.id,
+    existingOverride?.id ? updateAction : createAction,
+    existingOverride ?? beforeState,
+    data,
+  );
+  return transformFromDb(entity, data) as T;
+}
+
 async function writeMasterInsertOrUpdate<T>(entity: string, table: string, payload: any, orgId: string, userId: string): Promise<T> {
   const insertResult = await ((supabase as any)
     .from(table)
@@ -270,24 +345,17 @@ async function writeMasterInsertOrUpdate<T>(entity: string, table: string, paylo
   };
 
   if (existing.org_id === null && orgId !== null && overrideableEntities.has(entity)) {
-    const overridePayload = buildOverridePayload(entity, existing, updates, orgId, existing.id);
-    const { data: existingOverride, error: overrideLookupError } = await ((supabase as any)
-      .from(table)
-      .select('id')
-      .eq('org_id', orgId)
-      .eq('source_global_id', existing.id)
-      .maybeSingle() as any);
-    if (overrideLookupError) throw overrideLookupError;
-
-    const write = existingOverride?.id
-      ? (supabase as any).from(table).update(overridePayload).eq('id', existingOverride.id)
-      : (supabase as any).from(table).insert(overridePayload);
-
-    const { data, error } = await (write.select().maybeSingle() as any);
-    if (error) throw error;
-
-    await logAudit(orgId, userId, 'masters', table, data.id, existingOverride?.id ? 'import_update_override' : 'import_create_override', existing, data);
-    return transformFromDb(entity, data) as T;
+    return writeOrgOverride<T>(
+      entity,
+      table,
+      existing,
+      updates,
+      orgId,
+      userId,
+      existing.id,
+      'import_create_override',
+      'import_update_override',
+    );
   }
 
   const { data, error } = await ((supabase as any)
@@ -422,24 +490,17 @@ export function useMasterUpdateMutation<T>(entity: string) {
       // If modifying a global template as an org user, FORK it into an org override
       if (beforeState && beforeState.org_id === null && orgId !== null) {
         const payloadToApply = transformToDb(entity, updates, beforeState);
-        const overridePayload = buildOverridePayload(entity, beforeState, payloadToApply, orgId, id);
-        const { data: existingOverride, error: overrideLookupError } = await (supabase
-          .from(table as any)
-          .select('id')
-          .eq('org_id', orgId)
-          .eq('source_global_id', id)
-          .maybeSingle() as any);
-        if (overrideLookupError) throw overrideLookupError;
-
-        const write = existingOverride?.id
-          ? supabase.from(table as any).update(overridePayload).eq('id', existingOverride.id)
-          : supabase.from(table as any).insert(overridePayload);
-
-        const { data, error } = await (write
-          .select()
-          .maybeSingle() as any);
-
-        if (error) throw error;
+        const data = await writeOrgOverride<any>(
+          entity,
+          table,
+          beforeState,
+          payloadToApply,
+          orgId,
+          userId,
+          id,
+          'create_override',
+          'update_override',
+        );
 
         await (supabase as any)
           .from('master_hidden_items')
@@ -447,8 +508,6 @@ export function useMasterUpdateMutation<T>(entity: string) {
           .eq('org_id', orgId)
           .eq('entity', entity)
           .eq('global_id', id);
-        
-        await logAudit(orgId, userId, 'masters', table, data.id, existingOverride?.id ? 'update_override' : 'create_override', beforeState, data);
         
         await supabase.from('master_data_changes_log').insert({
           entity_type: table,
@@ -608,23 +667,17 @@ export function useMasterBulkUpdateMutation(entity: string) {
         
         if (before && before.org_id === null && orgId !== null) {
           const payloadToApply = transformToDb(entity, updates, before);
-          const overridePayload = buildOverridePayload(entity, before, payloadToApply, orgId, id);
-          const { data: existingOverride, error: overrideLookupError } = await (supabase
-            .from(table as any)
-            .select('id')
-            .eq('org_id', orgId)
-            .eq('source_global_id', id)
-            .maybeSingle() as any);
-          if (overrideLookupError) throw overrideLookupError;
-
-          const write = existingOverride?.id
-            ? supabase.from(table as any).update(overridePayload).eq('id', existingOverride.id)
-            : supabase.from(table as any).insert(overridePayload);
-
-          const { data, error } = await (write
-            .select()
-            .maybeSingle() as any);
-          if (error) throw error;
+          const data = await writeOrgOverride<any>(
+            entity,
+            table,
+            before,
+            payloadToApply,
+            orgId,
+            userId,
+            id,
+            'bulk_create_override',
+            'bulk_update_override',
+          );
 
           await (supabase as any)
             .from('master_hidden_items')
@@ -632,8 +685,6 @@ export function useMasterBulkUpdateMutation(entity: string) {
             .eq('org_id', orgId)
             .eq('entity', entity)
             .eq('global_id', id);
-
-          await logAudit(orgId, userId, 'masters', table, data.id, existingOverride?.id ? 'bulk_update_override' : 'bulk_create_override', before, data);
           
           await supabase.from('master_data_changes_log').insert({
             entity_type: table,

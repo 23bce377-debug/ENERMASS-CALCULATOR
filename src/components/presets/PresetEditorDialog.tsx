@@ -114,6 +114,23 @@ function newBlankItem(catalogItem: any, category: string, sortOrder: number): Li
   };
 }
 
+function getPanelWattage(catalogItem: any): number | null {
+  const wattage = Number(
+    catalogItem.wattageW ??
+    catalogItem.wattage_w ??
+    catalogItem.wattage ??
+    catalogItem.panelWattage ??
+    0,
+  );
+  return Number.isFinite(wattage) && wattage > 0 ? wattage : null;
+}
+
+function getGoalMatchedPanelQty(capacityKw: number, catalogItem: any): number | null {
+  const wattage = getPanelWattage(catalogItem);
+  if (!wattage || !Number.isFinite(capacityKw) || capacityKw <= 0) return null;
+  return Math.max(1, Math.ceil((capacityKw * 1000) / wattage));
+}
+
 function itemTitle(item: LineItem) {
   const sourceName = [item.brand, item.model].filter(Boolean).join(' ').trim();
   return sourceName || item.description || 'Untitled item';
@@ -374,7 +391,19 @@ export function PresetEditorDialog({
   }
 
   function addItemFromCatalog(catalogItem: any, category: string) {
-    setLineItems((prev) => [...prev, newBlankItem(catalogItem, category, prev.length)]);
+    setLineItems((prev) => {
+      const itemCategory = normalizeCategory(catalogItem.category ?? category);
+      const hasExistingPanel = prev.some((item) => normalizeCategory(item.category) === 'panel');
+      const autoPanelQty = itemCategory === 'panel' && !hasExistingPanel
+        ? getGoalMatchedPanelQty(parsedCapacity, catalogItem)
+        : null;
+      const item = newBlankItem(
+        autoPanelQty ? { ...catalogItem, defaultQty: autoPanelQty } : catalogItem,
+        category,
+        prev.length,
+      );
+      return [...prev, item];
+    });
     setAddPickerOpen(false);
   }
 

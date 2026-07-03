@@ -59,8 +59,11 @@ export default function QuoteDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeVersion, setActiveVersion] = useState<number | null>(null);
-  const [statusDraft, setStatusDraft] = useState<QuoteRow['status']>('draft');
   const [statusSaving, setStatusSaving] = useState(false);
+  const [statusNotice, setStatusNotice] = useState<{
+    from: QuoteRow['status'];
+    to: QuoteRow['status'];
+  } | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [duplicateLoading, setDuplicateLoading] = useState(false);
   const [versionLoading, setVersionLoading] = useState(false);
@@ -83,7 +86,6 @@ export default function QuoteDetailPage() {
         const data = await QuoteORM.getById(id);
         if (!data) throw new Error('Quote not found');
         setQuote(data);
-        setStatusDraft(data.status);
         setActiveVersion(data.version || 1);
         await loadVersions(data);
       } catch (err: any) {
@@ -95,8 +97,8 @@ export default function QuoteDetailPage() {
     loadData();
   }, [id]);
 
-  const handleStatusUpdate = async () => {
-    if (!quote || statusDraft === quote.status) return;
+  const handleStatusChange = async (newStatus: QuoteRow['status']) => {
+    if (!quote || newStatus === quote.status) return;
 
     setStatusSaving(true);
     setError(null);
@@ -104,7 +106,7 @@ export default function QuoteDetailPage() {
       const previousStatus = quote.status;
       const now = new Date().toISOString();
       const updated = await QuoteORM.update(quote.id, {
-        status: statusDraft,
+        status: newStatus,
         updated_at: now,
       }, quote.version);
 
@@ -113,7 +115,7 @@ export default function QuoteDetailPage() {
         await QuoteStatusHistoryORM.create({
           quote_id: quote.id,
           old_status: previousStatus,
-          new_status: statusDraft,
+          new_status: newStatus,
           changed_at: now,
           changed_by: sessionData.session?.user?.id ?? null,
           notes: 'Status updated from quote detail page',
@@ -129,10 +131,10 @@ export default function QuoteDetailPage() {
         quote_variants: quote.quote_variants,
         quote_additional_costs: quote.quote_additional_costs,
       });
+      setStatusNotice({ from: previousStatus, to: newStatus });
       await loadVersions({ ...quote, ...updated } as FullQuote);
     } catch (err: any) {
       setError(err.message || 'Failed to update quote status.');
-      setStatusDraft(quote.status);
     } finally {
       setStatusSaving(false);
     }
@@ -341,8 +343,8 @@ export default function QuoteDetailPage() {
           <div className="flex items-center gap-2 rounded-lg border border-[#444] bg-[#2a2a2a] px-2 py-1.5">
             <span className="px-2 text-xs font-semibold uppercase tracking-wider text-[#888]">Status</span>
             <select
-              value={statusDraft}
-              onChange={(event) => setStatusDraft(event.target.value as QuoteRow['status'])}
+              value={quote.status}
+              onChange={(event) => handleStatusChange(event.target.value as QuoteRow['status'])}
               disabled={statusSaving}
               className="min-w-28 rounded-md border border-[#444] bg-[#111] px-2 py-1.5 text-sm font-semibold capitalize text-white outline-none focus:border-[#f0a500]"
             >
@@ -352,17 +354,24 @@ export default function QuoteDetailPage() {
                 </option>
               ))}
             </select>
-            <button
-              type="button"
-              onClick={handleStatusUpdate}
-              disabled={statusSaving || statusDraft === quote.status}
-              className="rounded-md bg-[#f0a500] px-3 py-1.5 text-sm font-bold text-black transition-colors hover:bg-[#f0a500]/90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {statusSaving ? 'Updating...' : 'Update'}
-            </button>
           </div>
         </div>
       </div>
+
+      {statusNotice && (
+        <div className="flex flex-col gap-2 rounded-xl border border-green-500/25 bg-green-500/10 px-4 py-3 text-sm text-green-400 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            Quote state changed from <strong>{titleCaseStatus(statusNotice.from)}</strong> to <strong>{titleCaseStatus(statusNotice.to)}</strong>.
+          </span>
+          <button
+            type="button"
+            onClick={() => setStatusNotice(null)}
+            className="self-start rounded-md px-2 py-1 text-xs font-bold text-green-400 hover:bg-green-500/10 sm:self-auto"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         

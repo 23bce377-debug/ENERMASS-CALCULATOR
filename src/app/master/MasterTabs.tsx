@@ -8,7 +8,6 @@ import {
   Battery,
   Wrench,
   Package,
-  Truck,
   Tag,
   Percent,
   LayoutDashboard,
@@ -30,7 +29,6 @@ const TABS: TabItem[] = [
   { href: '/master/rate-master', label: 'Rate Overrides', icon: <TrendingUp size={15} /> },
   { href: '/master/structures', label: 'Structures', icon: <Wrench size={15} /> },
   { href: '/master/accessories', label: 'Accessories', icon: <Package size={15} /> },
-  { href: '/master/vendors', label: 'Vendors', icon: <Truck size={15} /> },
   { href: '/master/subsidy', label: 'Subsidy Master', icon: <Percent size={15} /> },
   { href: '/master/terms', label: 'Terms', icon: <FileText size={15} /> },
 ];

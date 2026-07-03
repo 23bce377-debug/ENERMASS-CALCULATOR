@@ -7,7 +7,6 @@ import {
   Battery,
   Wrench,
   Package,
-  Truck,
   Tag,
   Percent,
   Clock,
@@ -101,17 +100,6 @@ const CARDS = [
     iconBgHover: 'group-hover:bg-sky-500/10',
   },
   {
-    href: '/master/vendors',
-    label: 'Vendors Master',
-    desc: 'Directory of approved solar engineering manufacturers, address files, and GSTNs.',
-    icon: <Truck size={24} className="text-blue-500" />,
-    entity: 'vendors',
-    table: 'vendors',
-    hoverBorder: 'hover:border-blue-500/30 group-hover:border-blue-500/30',
-    glow: 'bg-blue-500/5',
-    iconBgHover: 'group-hover:bg-blue-500/10',
-  },
-  {
     href: '/master/subsidy',
     label: 'Subsidy Master',
     desc: 'Maintain PM Surya Ghar slabs, piecewise calculations, and state subsidy values.',
@@ -161,9 +149,7 @@ export default function MastersDashboardPage() {
             }
           }
         }
-        if (table !== 'vendors') {
-          q = q.eq('is_active', true);
-        }
+        q = q.eq('is_active', true);
         const { count, error } = await q;
         return error ? 0 : count || 0;
       };
@@ -174,7 +160,6 @@ export default function MastersDashboardPage() {
         fetchCount('eq_batteries').then(c => countsMap.batteries = c),
         fetchCount('eq_mounting_structures').then(c => countsMap.structures = c),
         fetchCount('bom_template_items').then(c => countsMap.accessories = c),
-        fetchCount('vendors', true).then(c => countsMap.vendors = c),
         fetchCount('rate_master', true).then(c => countsMap.pricing = c),
         fetchCount('rate_master', true).then(c => countsMap.rateOverrides = c),
         fetchCount('calculation_schemes').then(c => countsMap.subsidy = c),
@@ -246,7 +231,7 @@ export default function MastersDashboardPage() {
                     {card.icon}
                   </div>
                   <span className="text-xs font-mono font-medium px-2.5 py-0.5 rounded-full bg-surface-2 border border-border text-text-primary transition-colors group-hover:border-accent/30 group-hover:text-accent">
-                    {itemCount} {card.entity === 'vendors' ? 'vendors' : card.entity === 'subsidy' ? 'schemes' : card.entity === 'pricing' || card.entity === 'rateOverrides' ? 'overrides' : card.entity === 'terms' ? 'templates' : 'items'}
+                    {itemCount} {card.entity === 'subsidy' ? 'schemes' : card.entity === 'pricing' || card.entity === 'rateOverrides' ? 'overrides' : card.entity === 'terms' ? 'templates' : 'items'}
                   </span>
                 </div>
 

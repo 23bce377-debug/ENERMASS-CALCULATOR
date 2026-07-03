@@ -9,7 +9,7 @@ import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import {
   Cpu, Zap, ArrowRight, GitCompare, X, Search,
   Plus, Upload, CheckCircle2, AlertCircle, Loader2,
-  Trash2, Edit3, Sun, MapPin
+  Trash2, Edit3, Sun, MapPin, LayoutGrid, List
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
@@ -286,6 +286,147 @@ function SystemCard({ system, selected, compareMode, isCustom, stateLabel, onTog
   );
 }
 
+interface SystemListProps {
+  systems: SolarSystem[];
+  compareMode: boolean;
+  compareIds: string[];
+  getStateLabel: (system: SolarSystem) => string;
+  onToggleCompare: (id: string) => void;
+  onQuickCalc: (id: string) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+
+function SystemList({
+  systems,
+  compareMode,
+  compareIds,
+  getStateLabel,
+  onToggleCompare,
+  onQuickCalc,
+  onEdit,
+  onDelete,
+}: SystemListProps) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-surface">
+      <div className="overflow-hidden">
+        <table className="w-full table-fixed text-sm">
+          <colgroup>
+            {compareMode && <col className="w-[3%]" />}
+            <col className={compareMode ? 'w-[38%]' : 'w-[40%]'} />
+            <col className="w-[13%]" />
+            <col className="w-[8%]" />
+            <col className="w-[7%]" />
+            <col className="w-[8%]" />
+            <col className="w-[5%]" />
+            <col className={compareMode ? 'w-[18%]' : 'w-[19%]'} />
+          </colgroup>
+          <thead className="bg-background/70">
+            <tr className="border-b border-border">
+              {compareMode && (
+                <th className="px-3 py-3 text-left">
+                  <span className="sr-only">Compare</span>
+                </th>
+              )}
+              <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted">Preset Name</th>
+              <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted">State</th>
+              <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted">Type</th>
+              <th className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-text-muted">Capacity</th>
+              <th className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-text-muted">Panels</th>
+              <th className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-text-muted">Margin</th>
+              <th className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-text-muted">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {systems.map((system) => {
+              const selected = compareIds.includes(system.id);
+              const isCustom = system.category === 'custom';
+              const stateLabel = getStateLabel(system);
+
+              return (
+                <tr
+                  key={system.id}
+                  className={`border-b border-border/60 transition-colors last:border-b-0 hover:bg-surface-hover/40 ${
+                    selected ? 'bg-accent/5' : isCustom ? 'bg-accent/[0.025]' : ''
+                  }`}
+                >
+                  {compareMode && (
+                    <td className="px-4 py-3 align-middle">
+                      <button
+                        onClick={() => onToggleCompare(system.id)}
+                        className={`flex h-5 w-5 items-center justify-center rounded-md border-2 transition-all ${
+                          selected
+                            ? 'border-accent bg-accent text-background'
+                            : 'border-border-light bg-surface hover:border-accent/50'
+                        }`}
+                        title={selected ? 'Remove from comparison' : 'Add to comparison'}
+                      >
+                        {selected && <span className="text-[10px] font-bold">✓</span>}
+                      </button>
+                    </td>
+                  )}
+                  <td className="px-4 py-3 align-middle">
+                    <div className="flex items-start gap-3">
+                      {isCustom && <div className="mt-1 h-10 w-0.5 shrink-0 rounded-full bg-accent" />}
+                      <div className="min-w-0">
+                        <p className="whitespace-normal break-words text-sm font-bold leading-5 text-text-primary">
+                          {system.name}
+                        </p>
+                        <p className="mt-1 text-[11px] text-text-muted">{system.items.length} configured line items</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 align-middle">
+                    <div className="flex items-start gap-1.5 text-xs font-semibold text-text-secondary">
+                      <MapPin size={13} className="mt-0.5 shrink-0 text-accent" />
+                      <span className="whitespace-normal break-words">{stateLabel}</span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 align-middle">
+                    <CategoryBadge category={system.category} />
+                  </td>
+                  <td className="px-3 py-3 text-right align-middle font-mono text-text-primary">{system.capacityKW} kW</td>
+                  <td className="px-3 py-3 text-right align-middle font-mono text-text-primary">
+                    {system.panelQty} x {system.panelWattage}W
+                  </td>
+                  <td className="px-3 py-3 text-right align-middle font-mono text-text-primary">
+                    {(system.targetMarginPct * 100).toFixed(0)}%
+                  </td>
+                  <td className="px-3 py-3 align-middle">
+                    <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                      <button
+                        onClick={() => onQuickCalc(system.id)}
+                        className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-accent/10 px-3 py-2 text-xs font-semibold text-accent transition-all hover:bg-accent/20"
+                      >
+                        <Zap size={14} />
+                        Quick Calculate
+                      </button>
+                      <button
+                        onClick={() => onEdit(system.id)}
+                        className="shrink-0 rounded-lg border border-border bg-surface p-2 text-text-secondary transition-all hover:bg-surface-hover hover:text-text-primary"
+                        title="Edit preset"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      <button
+                        onClick={() => onDelete(system.id)}
+                        className="shrink-0 rounded-lg border border-border bg-surface p-2 text-text-secondary transition-all hover:border-error/30 hover:bg-error/10 hover:text-error"
+                        title="Delete preset"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // ─── Comparison Panel ───────────────────────────────────────────────────────────
 
 function ComparisonPanel({ systemIds, onClose }: { systemIds: string[]; onClose: () => void }) {
@@ -402,6 +543,7 @@ export default function SystemsPage() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [compareMode, setCompareMode] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [composerOpen, setComposerOpen] = useState(false);
@@ -594,15 +736,43 @@ export default function SystemsPage() {
 
       {/* Filters */}
       <div className="flex flex-col gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
-            type="text"
-            placeholder="Search systems..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-surface border border-border text-sm text-text-primary placeholder:text-text-muted focus:border-accent/50 focus:ring-1 focus:ring-accent/20 outline-none transition-all"
-          />
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Search systems..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-surface border border-border text-sm text-text-primary placeholder:text-text-muted focus:border-accent/50 focus:ring-1 focus:ring-accent/20 outline-none transition-all"
+            />
+          </div>
+          <div className="inline-flex w-fit rounded-lg border border-border bg-surface p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-accent text-background'
+                  : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
+              }`}
+              aria-pressed={viewMode === 'grid'}
+            >
+              <LayoutGrid size={14} />
+              Grid
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                viewMode === 'list'
+                  ? 'bg-accent text-background'
+                  : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
+              }`}
+              aria-pressed={viewMode === 'list'}
+            >
+              <List size={14} />
+              List
+            </button>
+          </div>
         </div>
         <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold text-text-secondary">
@@ -653,26 +823,41 @@ export default function SystemsPage() {
         />
       )}
 
-      {/* Card Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filtered.map((system) => (
-          <SystemCard
-            key={system.id}
-            system={system}
-            selected={compareIds.includes(system.id)}
-            compareMode={compareMode}
-            isCustom={system.category === 'custom'}
-            stateLabel={getSystemStateLabel(system)}
-            onToggleCompare={() => handleToggleCompare(system.id)}
-            onQuickCalc={() => handleQuickCalc(system.id)}
-            onEdit={(id) => {
-              setComposerSystemId(id);
-              setComposerOpen(true);
-            }}
-            onDelete={removeCustomSystem}
-          />
-        ))}
-      </div>
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.map((system) => (
+            <SystemCard
+              key={system.id}
+              system={system}
+              selected={compareIds.includes(system.id)}
+              compareMode={compareMode}
+              isCustom={system.category === 'custom'}
+              stateLabel={getSystemStateLabel(system)}
+              onToggleCompare={() => handleToggleCompare(system.id)}
+              onQuickCalc={() => handleQuickCalc(system.id)}
+              onEdit={(id) => {
+                setComposerSystemId(id);
+                setComposerOpen(true);
+              }}
+              onDelete={removeCustomSystem}
+            />
+          ))}
+        </div>
+      ) : (
+        <SystemList
+          systems={filtered}
+          compareMode={compareMode}
+          compareIds={compareIds}
+          getStateLabel={getSystemStateLabel}
+          onToggleCompare={handleToggleCompare}
+          onQuickCalc={handleQuickCalc}
+          onEdit={(id) => {
+            setComposerSystemId(id);
+            setComposerOpen(true);
+          }}
+          onDelete={removeCustomSystem}
+        />
+      )}
 
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">

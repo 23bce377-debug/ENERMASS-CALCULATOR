@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../supabase/client'
 import type { Quote } from '../types/quote'
 import { useCalculatorStore } from '../store/calculatorStore'
-import { SurveyORM } from '../../backend/orm/survey'
 import { reviseQuote } from '../quotes/reviseQuote'
 import { roundMoney } from '@/lib/math/integrity'
 import { normalizeGstRate } from '@/lib/utils/gst'
@@ -348,49 +347,13 @@ export function useUpdateQuoteStatusMutation() {
 
       const { data: existingQuote, error: quoteFetchError } = await supabase
         .from('quotes')
-        .select('id, version, status, org_id, survey_id, lead_id, final_customer_price')
+        .select('id, version, status, org_id, final_customer_price')
         .eq('quote_number', quoteId)
         .eq('org_id', orgId)
         .single()
 
       if (quoteFetchError) throw quoteFetchError
       if (!existingQuote) throw new Error('Quote not found')
-      
-      // ── Survey Gate: Draft → Sent requires completed/waived survey ──
-      if (newStatus === 'Sent' && existingQuote.status === 'draft') {
-        const gate = await SurveyORM.checkGate(quoteId)
-        if (gate.blocked) {
-          // Fetch lead_id to pass to the modal
-          const { data: qWithLead } = await supabase
-            .from('quotes')
-            .select('lead_id')
-            .eq('quote_number', quoteId)
-            .maybeSingle()
-          const err = new Error('Site survey required before sending this quote to the customer.')
-          ;(err as any).code = 'SURVEY_GATE_BLOCKED'
-          ;(err as any).leadId = qWithLead?.lead_id ?? null
-          ;(err as any).orgId = existingQuote.org_id
-          throw err
-        }
-      }
-
-      // ── Survey Gate: Sent → Won requires survey_id on quote OR waived survey ──
-      if (newStatus === 'Won') {
-        let isWaived = false;
-        if (existingQuote.lead_id) {
-          const { data: leadSurvey } = await supabase
-            .from('crm_site_surveys')
-            .select('status')
-            .eq('lead_id', existingQuote.lead_id)
-            .eq('status', 'waived')
-            .maybeSingle();
-          if (leadSurvey) isWaived = true;
-        }
-
-        if (!isWaived && !existingQuote.survey_id) {
-          throw new Error('BOM not verified against site survey. Revision required.');
-        }
-      }
       
       const { error } = await supabase
         .from('quotes')

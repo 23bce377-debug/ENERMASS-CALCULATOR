@@ -17,7 +17,6 @@ import {
 import { useConfirm } from '@/components/ui/Confirm';
 import { Select } from '@/components/ui/Select';
 import { useQuotesQuery, useDeleteQuoteMutation, useUpdateQuoteStatusMutation } from '@/lib/hooks/useQuotes';
-import { SurveyGateModal } from '@/components/quotes/SurveyGateModal';
 import { SurveySummaryCard } from '@/components/quotes/SurveySummaryCard';
 import { QuoteVersionHistory } from '@/components/quotes/QuoteVersionHistory';
 import { QuoteReviseModal } from '@/components/quotes/QuoteReviseModal';
@@ -34,12 +33,7 @@ const STATUS_STYLES: Record<Quote['status'], string> = {
   Lost: 'bg-error/12 text-error border-error/20',
 };
 
-const STATUS_CYCLE: Record<Quote['status'], Quote['status'][]> = {
-  Draft: ['Sent'],
-  Sent: ['Won'],
-  Won: ['Draft'],
-  Lost: ['Draft'],
-};
+const STATUS_OPTIONS: Quote['status'][] = ['Draft', 'Sent', 'Won', 'Lost'];
 
 function getQuoteShareText(quote: Quote, companyName: string): string {
   const calc = quote.calculations;
@@ -416,6 +410,12 @@ export default function QuotesPage() {
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [rateAnalysisQuote, setRateAnalysisQuote] = useState<Quote | null>(null);
   const [generatingPdfQuoteId, setGeneratingPdfQuoteId] = useState<string | null>(null);
+  const [updatingStatusQuoteId, setUpdatingStatusQuoteId] = useState<string | null>(null);
+  const [statusNotice, setStatusNotice] = useState<{
+    quoteId: string;
+    from: Quote['status'];
+    to: Quote['status'];
+  } | null>(null);
 
   const handleDownloadPdf = async (quoteId: string) => {
     setGeneratingPdfQuoteId(quoteId);
@@ -449,13 +449,6 @@ export default function QuotesPage() {
     }
   };
 
-  // Survey gate state
-  const [surveyGate, setSurveyGate] = useState<{
-    quoteId: string;
-    leadId: string | null;
-    orgId: string;
-  } | null>(null);
-
   const companyName = settings.company.name || 'ENERMASS Solar';
 
   const goToCalculatorForEdit = (quoteId: string) => {
@@ -468,22 +461,21 @@ export default function QuotesPage() {
     router.push('/calculator');
   };
 
-  // Cycle status
-  const cycleStatus = async (quoteId: string) => {
+  const updateQuoteStatus = async (quoteId: string, newStatus: Quote['status']) => {
     const quote = quotes.find((q) => q.quoteId === quoteId);
     if (!quote) return;
-    const nextOptions = STATUS_CYCLE[quote.status];
-    const next = nextOptions[0];
+    if (quote.status === newStatus) return;
+    const previousStatus = quote.status;
 
+    setUpdatingStatusQuoteId(quoteId);
     try {
-      await updateStatusMutation.mutateAsync({ quoteId, newStatus: next });
+      await updateStatusMutation.mutateAsync({ quoteId, newStatus });
+      setStatusNotice({ quoteId, from: previousStatus, to: newStatus });
     } catch (err: any) {
-      if (err?.code === 'SURVEY_GATE_BLOCKED') {
-        setSurveyGate({ quoteId, leadId: err.leadId ?? null, orgId: err.orgId ?? '' });
-        return;
-      }
       console.error(err);
       alert(err instanceof Error ? err.message : 'Failed to update quote status in database.');
+    } finally {
+      setUpdatingStatusQuoteId(null);
     }
   };
 
@@ -585,6 +577,21 @@ export default function QuotesPage() {
           </button>
         </div>
 
+        {statusNotice && (
+          <div className="flex flex-col gap-2 rounded-xl border border-success/25 bg-success/10 px-4 py-3 text-sm text-success sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              Quote {statusNotice.quoteId} state changed from <strong>{statusNotice.from}</strong> to <strong>{statusNotice.to}</strong>.
+            </span>
+            <button
+              type="button"
+              onClick={() => setStatusNotice(null)}
+              className="self-start rounded-md px-2 py-1 text-xs font-bold text-success hover:bg-success/10 sm:self-auto"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Table View */}
         {isLoading ? (
           <div className="flex justify-center items-center py-20 text-text-muted">
@@ -631,12 +638,19 @@ export default function QuotesPage() {
                       <td className="px-4 py-3 text-right text-text-secondary hidden lg:table-cell">{quote.systemCapacityKW ?? system?.capacityKW ?? '—'} kW</td>
                       <td className="px-4 py-3 text-right font-semibold text-text-primary font-mono">{formatINR(quote.calculations.finalCustomerPrice)}</td>
                       <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => cycleStatus(quote.quoteId)}
-                          className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border cursor-pointer transition-all hover:scale-105 ${STATUS_STYLES[quote.status]}`}
+                        <select
+                          value={quote.status}
+                          disabled={updatingStatusQuoteId === quote.quoteId}
+                          onChange={(event) => updateQuoteStatus(quote.quoteId, event.target.value as Quote['status'])}
+                          className={`rounded-full border px-2.5 py-1 text-center text-xs font-semibold outline-none transition-all focus:ring-2 focus:ring-accent/20 disabled:cursor-wait disabled:opacity-60 ${STATUS_STYLES[quote.status]}`}
+                          title="Change quote status"
                         >
-                          {quote.status}
-                        </button>
+                          {STATUS_OPTIONS.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
@@ -724,20 +738,6 @@ export default function QuotesPage() {
         />
       )}
 
-      {/* Survey Gate Modal */}
-      {surveyGate && (
-        <SurveyGateModal
-          quoteNumber={surveyGate.quoteId}
-          leadId={surveyGate.leadId}
-          orgId={surveyGate.orgId}
-          onClose={() => setSurveyGate(null)}
-          onWaived={async () => {
-            setSurveyGate(null);
-            // Retry the status transition now that survey is waived
-            await cycleStatus(surveyGate.quoteId);
-          }}
-        />
-      )}
     </>
   );
 }

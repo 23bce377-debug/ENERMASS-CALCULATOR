@@ -1,7 +1,8 @@
 import React from 'react';
-import { Package2, Scale, Layers, Milestone, TrendingUp } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { Check, Edit2, Layers, Milestone, Package2, Scale, TrendingUp, X } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/Toast';
 
 export const ErpStructuresView = React.memo(function ErpStructuresView({
   erpSubTab,
@@ -10,6 +11,11 @@ export const ErpStructuresView = React.memo(function ErpStructuresView({
   erpSubTab: 'vendors' | 'templates' | 'addons';
   setErpSubTab: (tab: 'vendors' | 'templates' | 'addons') => void;
 }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [editingRateId, setEditingRateId] = React.useState<string | null>(null);
+  const [rateDraft, setRateDraft] = React.useState<number>(0);
+
   const { data: erpVendors } = useQuery<any[]>({
     queryKey: ['erp-vendors'],
     queryFn: async () => {
@@ -18,6 +24,50 @@ export const ErpStructuresView = React.memo(function ErpStructuresView({
       return data || [];
     }
   });
+
+  const rateMutation = useMutation({
+    mutationFn: async ({ id, rate_per_kg }: { id: string; rate_per_kg: number }) => {
+      const { error } = await (supabase as any)
+        .from('structure_material_rates')
+        .update({ rate_per_kg })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      setEditingRateId(null);
+      queryClient.invalidateQueries({ queryKey: ['erp-rates'] });
+      try {
+        const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
+        await revalidateMasterCache();
+      } catch (err) {
+        console.error('Failed to revalidate master cache:', err);
+      }
+      toast('Structure rate per kg updated ✓', 'success');
+    },
+    onError: (err: any) => {
+      toast(err.message || 'Failed to update structure rate', 'error');
+    }
+  });
+
+  const getVendorName = (vendorId: string | null | undefined) =>
+    erpVendors?.find((vendor: any) => vendor.id === vendorId)?.name || 'Default vendor';
+
+  const getMaterialRate = (materialType: string, vendorId?: string | null) => {
+    const materialRates = erpRates || [];
+    const exactRate = vendorId
+      ? materialRates.find((rate: any) => rate.vendor_id === vendorId && rate.material_type === materialType)
+      : null;
+    return exactRate || materialRates.find((rate: any) => rate.material_type === materialType) || null;
+  };
+
+  const beginRateEdit = (rate: any) => {
+    setEditingRateId(rate.id);
+    setRateDraft(Number(rate.rate_per_kg || 0));
+  };
+
+  const saveRate = (rateId: string) => {
+    rateMutation.mutate({ id: rateId, rate_per_kg: rateDraft });
+  };
 
   const { data: erpRates } = useQuery<any[]>({
     queryKey: ['erp-rates'],
@@ -133,14 +183,15 @@ export const ErpStructuresView = React.memo(function ErpStructuresView({
                     <th className="py-2.5 px-4">Vendor</th>
                     <th className="py-2.5 px-4">Material Type</th>
                     <th className="py-2.5 px-4 text-right">Rate per kg</th>
+                    <th className="py-2.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {erpRates?.map((rate: any) => {
-                    const vendor = erpVendors?.find((v: any) => v.id === rate.vendor_id);
+                    const isEditing = editingRateId === rate.id;
                     return (
                       <tr key={rate.id} className="border-b border-border/40 hover:bg-surface-hover/20">
-                        <td className="py-3 px-4 font-semibold text-text-primary">{vendor?.name || 'Unknown'}</td>
+                        <td className="py-3 px-4 font-semibold text-text-primary">{getVendorName(rate.vendor_id)}</td>
                         <td className="py-3 px-4">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             rate.material_type === 'GI' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-emerald-500/10 text-emerald-400'
@@ -148,13 +199,59 @@ export const ErpStructuresView = React.memo(function ErpStructuresView({
                             {rate.material_type}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-right text-accent font-bold">₹{Number(rate.rate_per_kg).toFixed(2)}</td>
+                        <td className="py-3 px-4 text-right text-accent font-bold">
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              value={rateDraft}
+                              onChange={(e) => setRateDraft(parseFloat(e.target.value) || 0)}
+                              className="w-24 px-2 py-1 rounded bg-background border border-border text-xs text-right text-text-primary outline-none focus:border-accent"
+                              autoFocus
+                            />
+                          ) : (
+                            `₹${Number(rate.rate_per_kg).toFixed(2)}`
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          {isEditing ? (
+                            <div className="flex justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => saveRate(rate.id)}
+                                disabled={rateMutation.isPending}
+                                className="p-1 rounded border border-border text-success hover:border-success/40 hover:bg-success/10 disabled:opacity-50"
+                                title="Save rate per kg"
+                              >
+                                <Check size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingRateId(null)}
+                                className="p-1 rounded border border-border text-error hover:border-error/40 hover:bg-error/10"
+                                title="Cancel"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => beginRateEdit(rate)}
+                              className="ml-auto flex p-1 rounded border border-border bg-surface text-text-secondary hover:text-accent hover:border-accent/40"
+                              title="Edit rate per kg"
+                            >
+                              <Edit2 size={12} />
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
                   {(!erpRates || erpRates.length === 0) && (
                     <tr>
-                      <td colSpan={3} className="p-8 text-center text-text-muted italic font-sans">No material rates found.</td>
+                      <td colSpan={4} className="p-8 text-center text-text-muted italic font-sans">No material rates found.</td>
                     </tr>
                   )}
                 </tbody>
@@ -196,24 +293,76 @@ export const ErpStructuresView = React.memo(function ErpStructuresView({
                       </span>
                       <div className="rounded-lg border border-border bg-background/50 divide-y divide-border/40 overflow-hidden">
                         {primaryItems?.map((item: any) => {
-                          const itemVendor = erpVendors?.find((v: any) => v.id === item.vendor_id);
+                          const itemVendorName = item.vendor_id ? getVendorName(item.vendor_id) : null;
+                          const materialRate = getMaterialRate(template.structure_type, item.vendor_id);
+                          const isRateEditing = materialRate && editingRateId === materialRate.id;
                           return (
-                            <div key={item.id} className="px-4 py-2.5 flex items-center justify-between text-xs font-mono">
-                              <div className="flex flex-col">
-                                <span className="font-semibold text-text-primary font-sans">{item.item}</span>
-                                {itemVendor && (
+                            <div key={item.id} className="px-4 py-2.5 flex items-center justify-between gap-3 text-xs font-mono">
+                              <div className="flex min-w-0 flex-1 flex-col">
+                                <span className="font-semibold text-text-primary font-sans truncate" title={item.item}>{item.item}</span>
+                                {itemVendorName && (
                                   <span className="text-[9px] text-accent uppercase font-bold mt-0.5">
-                                    Vendor-specific: {itemVendor.name}
+                                    Vendor-specific: {itemVendorName}
                                   </span>
                                 )}
                               </div>
-                              <div className="text-right">
-                                <span className="text-text-secondary">{item.qty} Nos</span>
-                                {item.weight && (
-                                  <span className="text-[10px] text-text-muted block mt-0.5">
-                                    {item.weight} kg/unit
-                                  </span>
-                                )}
+                              <div className="flex shrink-0 items-center gap-4 text-right">
+                                <div>
+                                  <span className="text-text-secondary">{item.qty} Nos</span>
+                                  {item.weight && (
+                                    <span className="text-[10px] text-text-muted block mt-0.5">
+                                      {item.weight} kg/unit
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="min-w-[128px]">
+                                  {materialRate ? (
+                                    isRateEditing ? (
+                                      <div className="flex items-center justify-end gap-1">
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          step={0.01}
+                                          value={rateDraft}
+                                          onChange={(e) => setRateDraft(parseFloat(e.target.value) || 0)}
+                                          className="w-20 px-2 py-1 rounded bg-background border border-border text-xs text-right text-text-primary outline-none focus:border-accent"
+                                          autoFocus
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => saveRate(materialRate.id)}
+                                          disabled={rateMutation.isPending}
+                                          className="p-1 rounded border border-border text-success hover:border-success/40 hover:bg-success/10 disabled:opacity-50"
+                                          title="Save rate per kg"
+                                        >
+                                          <Check size={11} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingRateId(null)}
+                                          className="p-1 rounded border border-border text-error hover:border-error/40 hover:bg-error/10"
+                                          title="Cancel"
+                                        >
+                                          <X size={11} />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center justify-end gap-2">
+                                        <span className="text-accent font-bold">₹{Number(materialRate.rate_per_kg).toFixed(2)}/kg</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => beginRateEdit(materialRate)}
+                                          className="p-1 rounded border border-border bg-surface text-text-secondary hover:text-accent hover:border-accent/40"
+                                          title="Edit rate per kg"
+                                        >
+                                          <Edit2 size={11} />
+                                        </button>
+                                      </div>
+                                    )
+                                  ) : (
+                                    <span className="text-[10px] text-error">No rate configured</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           );

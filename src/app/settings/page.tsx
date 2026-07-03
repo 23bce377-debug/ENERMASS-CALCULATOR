@@ -179,7 +179,7 @@ export default function SettingsPage() {
 
   if (!loaded) {
     return (
-      <div className="p-6 flex items-center justify-center h-64">
+      <div className="mx-auto flex h-64 w-full max-w-4xl items-center justify-center p-6">
         <div className="text-text-muted text-sm">Loading settings...</div>
       </div>
     );
@@ -280,7 +280,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6 animate-fade-in max-w-4xl pb-24">
+    <div className="mx-auto w-full max-w-4xl space-y-6 p-4 pb-24 animate-fade-in md:p-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

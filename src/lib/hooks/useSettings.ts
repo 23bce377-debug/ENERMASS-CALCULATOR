@@ -11,7 +11,7 @@ import '../mockStorage';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase/client';
 import localforage from 'localforage';
-import { TAX_CONSTANTS } from '@/lib/tax-constants';
+import { revalidateMasterCache } from '@/app/actions/revalidateMasters';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -39,6 +39,33 @@ export interface CategoryMargins {
   commercial: number;
 }
 
+const CATEGORY_TO_DB: Record<keyof CategoryMargins, string> = {
+  'on-grid': 'on_grid',
+  '3-phase': '3_phase',
+  'micro-inverter': 'micro_inverter',
+  hybrid: 'hybrid',
+  upgrade: 'upgrade',
+  commercial: 'commercial',
+};
+
+const DB_TO_CATEGORY = Object.fromEntries(
+  Object.entries(CATEGORY_TO_DB).map(([settingsKey, dbKey]) => [dbKey, settingsKey])
+) as Record<string, keyof CategoryMargins>;
+
+function mergeCategoryMargins(
+  base: CategoryMargins,
+  rows: Array<{ category: string | null; default_margin_pct: number | null }> | null | undefined
+): CategoryMargins {
+  const next = { ...base };
+  for (const row of rows ?? []) {
+    if (!row.category) continue;
+    const key = DB_TO_CATEGORY[row.category];
+    if (!key) continue;
+    next[key] = normalizeMarginPct(row.default_margin_pct, next[key]);
+  }
+  return next;
+}
+
 export interface AppSettings {
   defaultGridTariff: number;
   categoryMargins: CategoryMargins;
@@ -60,7 +87,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     'micro-inverter': 0.22,
     hybrid: 0.20,
     upgrade: 0.15,
-    commercial: TAX_CONSTANTS.COMPOSITE_GST_RATE,
+    commercial: 0.18,
   },
   company: {
     name: 'ENERMASS Solar',
@@ -116,7 +143,7 @@ export function useSettings() {
         console.warn('[useSettings] Failed to load from IndexedDB:', err);
       }
 
-      setSettingsState({
+      let merged: AppSettings = {
         ...DEFAULT_SETTINGS,
         ...lsSettings,
         ...dbSettings,
@@ -137,7 +164,59 @@ export function useSettings() {
             ...(dbSettings.currentEquipmentRates?.batteries ?? {}),
           },
         },
-      });
+      };
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData.session?.user.id;
+        if (userId) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('org_id')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (profile?.org_id) {
+            const [orgResult, appSettingsResult, marginsResult] = await Promise.all([
+              supabase
+                .from('organisations')
+                .select('name, address, logo_url')
+                .eq('id', profile.org_id)
+                .maybeSingle(),
+              (supabase.from('app_settings') as any)
+                .select('default_grid_tariff_inr')
+                .eq('org_id', profile.org_id)
+                .maybeSingle(),
+              (supabase.from('category_margins') as any)
+                .select('category, default_margin_pct')
+                .eq('org_id', profile.org_id),
+            ]);
+
+            const org = orgResult.data as any;
+            const appSettings = appSettingsResult.data as any;
+
+            merged = {
+              ...merged,
+              company: {
+                name: org?.name === 'Pitbull Corporations'
+                  ? 'Enermass'
+                  : (org?.name ?? merged.company.name),
+                address: org?.address ?? merged.company.address,
+                logoUrl: org?.logo_url ?? merged.company.logoUrl,
+              },
+              defaultGridTariff: appSettings?.default_grid_tariff_inr ?? merged.defaultGridTariff,
+              categoryMargins: mergeCategoryMargins(
+                merged.categoryMargins,
+                !marginsResult.error ? (marginsResult.data as any) : []
+              ),
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('[useSettings] Failed to hydrate DB-backed settings:', err);
+      }
+
+      setSettingsState(merged);
       setLoaded(true);
     }
     loadSettings();
@@ -272,44 +351,44 @@ export function useSettings() {
         return `Failed to save app settings: ${settingsError.message}`;
       }
 
-      // 5. Upsert custom presets — delete removed ones, upsert active ones
-      const customPresets = currentSettings.customSystems ?? [];
-      if (customPresets.length > 0) {
-        // Delete any existing presets for this org that are no longer in local list
-        const localIds = customPresets.map((p) => p.id);
-        await (supabase as any).from('custom_presets')
-          .delete()
-          .eq('org_id', orgId)
-          .not('preset_id', 'in', `(${localIds.map((id) => `"${id}"`).join(',')})`);
-
-        // Upsert each preset
-        const rows = customPresets.map((preset) => ({
-          org_id: orgId,
-          preset_id: preset.id,
-          name: preset.name,
-          category: preset.category,
-          capacity_kw: preset.capacityKW,
-          panel_wattage: preset.panelWattage,
-          panel_qty: preset.panelQty,
-          target_margin_pct: preset.targetMarginPct,
-          items: preset.items,
-          default_equipment: preset.defaultEquipment ?? null,
+      // 5. Persist category margins into the DB table used by the calculator engine.
+      for (const [settingsCategory, dbCategory] of Object.entries(CATEGORY_TO_DB) as [keyof CategoryMargins, string][]) {
+        const payload = {
+          default_margin_pct: normalizeMarginPct(currentSettings.categoryMargins[settingsCategory], DEFAULT_SETTINGS.categoryMargins[settingsCategory]),
+          updated_by: userId,
           updated_at: new Date().toISOString(),
-          created_by: userId,
-        }));
+        };
 
-        const { error: presetsError } = await (supabase as any).from('custom_presets')
-          .upsert(rows, { onConflict: 'org_id,preset_id' });
+        const { data: updatedRows, error: marginUpdateError } = await (supabase.from('category_margins') as any)
+          .update(payload)
+          .eq('org_id', orgId)
+          .eq('category', dbCategory)
+          .select('id');
 
-        if (presetsError) {
-          console.warn('[commitToDb] custom_presets upsert warning:', presetsError.message);
-          // Non-fatal — table may not exist yet; local state is still valid
+        if (marginUpdateError) {
+          console.error('[commitToDb] category_margins update error:', marginUpdateError);
+          return `Failed to save category margin for ${settingsCategory}: ${marginUpdateError.message}`;
         }
-      } else {
-        // Clear all presets for this org if local list is empty
-        await (supabase as any).from('custom_presets')
-          .delete()
-          .eq('org_id', orgId);
+
+        if (!updatedRows || updatedRows.length === 0) {
+          const { error: marginInsertError } = await (supabase.from('category_margins') as any)
+            .insert({
+              org_id: orgId,
+              category: dbCategory,
+              ...payload,
+            });
+
+          if (marginInsertError) {
+            console.error('[commitToDb] category_margins insert error:', marginInsertError);
+            return `Failed to save category margin for ${settingsCategory}: ${marginInsertError.message}`;
+          }
+        }
+      }
+
+      try {
+        await revalidateMasterCache();
+      } catch (cacheError) {
+        console.warn('[commitToDb] Settings saved, but cache revalidation failed:', cacheError);
       }
 
       setLastSynced(new Date());
@@ -366,30 +445,14 @@ export function useSettings() {
         .from('app_settings') as any)
         .select('default_grid_tariff_inr')
         .eq('org_id', orgId)
-        .single();
+        .maybeSingle();
 
-      // Fetch custom presets
-      const { data: dbPresets, error: dbPresetsError } = await (supabase as any)
-        .from('custom_presets')
-        .select('*')
+      const { data: dbMargins, error: dbMarginsError } = await (supabase
+        .from('category_margins') as any)
+        .select('category, default_margin_pct')
         .eq('org_id', orgId);
 
       const current = settings;
-
-      let fetchedPresets: SolarSystem[] = [];
-      if (!dbPresetsError && dbPresets) {
-        fetchedPresets = dbPresets.map((row: any) => ({
-          id: row.preset_id,
-          name: row.name,
-          category: row.category || 'custom',
-          capacityKW: Number(row.capacity_kw),
-          panelWattage: Number(row.panel_wattage),
-          panelQty: Number(row.panel_qty),
-          targetMarginPct: normalizeMarginPct(row.target_margin_pct),
-          items: row.items || [],
-          defaultEquipment: row.default_equipment || undefined,
-        }));
-      }
 
       const merged: AppSettings = {
         ...DEFAULT_SETTINGS,
@@ -402,9 +465,9 @@ export function useSettings() {
         defaultGridTariff: !appSettingsError && appSettingsRow
           ? (appSettingsRow as any).default_grid_tariff_inr
           : (current.defaultGridTariff ?? DEFAULT_SETTINGS.defaultGridTariff),
-        customSystems: !dbPresetsError && dbPresets
-          ? fetchedPresets
-          : (current.customSystems ?? []),
+        categoryMargins: !dbMarginsError
+          ? mergeCategoryMargins(current.categoryMargins ?? DEFAULT_SETTINGS.categoryMargins, dbMargins as any)
+          : (current.categoryMargins ?? DEFAULT_SETTINGS.categoryMargins),
       };
 
       setSettings(merged);
@@ -486,11 +549,11 @@ export function useSettings() {
                   lsUpdate[k] = parsed[k];
                 }
               });
-              dbKeys.forEach(async (k) => {
+              for (const k of dbKeys) {
                 if (parsed[k] !== undefined) {
                   await localforage.setItem(k, parsed[k]);
                 }
-              });
+              }
             } else if (key.startsWith('enermass')) {
               if (typeof window !== 'undefined') {
                 window.localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));

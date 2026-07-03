@@ -841,6 +841,7 @@ export async function getCatalogItems(category: string, search?: string): Promis
       description: [item.brand, item.model].filter(Boolean).join(' ') || item.name || 'Unnamed item',
       brand: item.brand,
       model: item.model,
+      wattageW: normalizedCategory === 'panel' ? Number(item.wattage_w || 0) : null,
       unit: 'Nos',
       defaultQty: 1,
       defaultRate: Number(item.selling_price || 0),
