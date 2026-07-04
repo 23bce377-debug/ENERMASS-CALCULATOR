@@ -1,16 +1,5 @@
 import { Redis } from '@upstash/redis'
 
-const url = process.env.UPSTASH_REDIS_REST_URL
-const token = process.env.UPSTASH_REDIS_REST_TOKEN
-
-const isProduction = process.env.NODE_ENV === 'production';
-const isConfigured = !!(url && !url.includes('your-database-name') && token && token !== 'your-rest-token');
-
-const isProductionBuild = process.env.NEXT_PHASE === 'phase-production-build';
-if (isProduction && !isConfigured && !isProductionBuild) {
-  throw new Error('CRITICAL: Upstash Redis is not configured. Redis is MANDATORY in production environments.');
-}
-
 // In-memory fallback if Redis is not configured
 class MemoryCache {
   private cache = new Map<string, { value: any; expiry: number }>()
@@ -44,6 +33,26 @@ class MemoryCache {
     return deletedCount
   }
 
+  async ttl(key: string): Promise<number> {
+    const entry = this.cache.get(key)
+    if (!entry) return -2
+    const ttlSeconds = Math.ceil((entry.expiry - Date.now()) / 1000)
+    if (ttlSeconds <= 0) {
+      this.cache.delete(key)
+      return -2
+    }
+    return ttlSeconds
+  }
+
+  async incr(key: string): Promise<number> {
+    const current = await this.get<number>(key)
+    const next = Number(current ?? 0) + 1
+    const existing = this.cache.get(key)
+    const ttl = existing ? Math.max(1, Math.ceil((existing.expiry - Date.now()) / 1000)) : 3600
+    await this.set(key, next, { ex: ttl })
+    return next
+  }
+
   async scan(cursor: number | string = 0, options?: { match?: string; count?: number }): Promise<[number, string[]]> {
     const pattern = options?.match;
     const keys = Array.from(this.cache.keys()).filter((key) => {
@@ -65,10 +74,45 @@ class MemoryCache {
   }
 }
 
-export const redis = isConfigured
-  ? new Redis({ url: url!, token: token! })
-  : (new MemoryCache() as unknown as Redis)
+let redisClient: Redis | null = null
+let warnedAboutMemoryFallback = false
 
-if (!isConfigured) {
-  console.warn('Upstash Redis is not fully configured. Falling back to server-side in-memory cache.')
+function isRedisConfigured() {
+  const url = process.env.UPSTASH_REDIS_REST_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN
+  return !!(url && !url.includes('your-database-name') && token && token !== 'your-rest-token')
 }
+
+export function getRedis(): Redis {
+  if (redisClient) return redisClient
+
+  const isProduction = process.env.NODE_ENV === 'production'
+  const isProductionBuild = process.env.NEXT_PHASE === 'phase-production-build'
+  const configured = isRedisConfigured()
+
+  if (isProduction && !configured && !isProductionBuild) {
+    throw new Error('CRITICAL: Upstash Redis is not configured. Redis is MANDATORY in production environments.')
+  }
+
+  redisClient = configured
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL!,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+      })
+    : (new MemoryCache() as unknown as Redis)
+
+  if (!configured && !warnedAboutMemoryFallback) {
+    warnedAboutMemoryFallback = true
+    console.warn('Upstash Redis is not fully configured. Falling back to server-side in-memory cache.')
+  }
+
+  return redisClient
+}
+
+export const redis = new Proxy({} as Redis, {
+  get(_target, prop, receiver) {
+    const client = getRedis() as any
+    const value = Reflect.get(client, prop, receiver)
+    return typeof value === 'function' ? value.bind(client) : value
+  },
+})

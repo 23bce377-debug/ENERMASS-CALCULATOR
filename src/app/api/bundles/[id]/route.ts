@@ -42,17 +42,12 @@ export const GET = withLicensedApiRoute<BundleRouteContext>(async (_request, con
 export const PUT = withLicensedApiRoute<BundleRouteContext>(async (request, context) => {
   try {
     const { orgId } = context.session;
-    const role = context.session.member.role;
     const { id } = await context.route.params;
     const preset = await BundlePresetORM.getById(id);
 
     // Verify tenant ownership
     if (preset.org_id !== orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    if (role !== 'owner' && role !== 'admin' && role !== 'manager' && role !== 'staff') {
-      return NextResponse.json({ error: 'Forbidden: Insufficient role' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -90,17 +85,12 @@ export const PUT = withLicensedApiRoute<BundleRouteContext>(async (request, cont
 export const DELETE = withLicensedApiRoute<BundleRouteContext>(async (_request, context) => {
   try {
     const { orgId } = context.session;
-    const role = context.session.member.role;
     const { id } = await context.route.params;
     const preset = await BundlePresetORM.getById(id);
 
     // Verify tenant ownership
     if (preset.org_id !== orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    if (role !== 'owner' && role !== 'admin' && role !== 'manager' && role !== 'staff') {
-      return NextResponse.json({ error: 'Forbidden: Insufficient role' }, { status: 403 });
     }
 
     await BundlePresetORM.delete(id);

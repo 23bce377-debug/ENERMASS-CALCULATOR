@@ -465,11 +465,33 @@ export function getEquipmentCatalogsFromSettings(dbLoaded: boolean, dbPanels: an
   const basePanels = dbLoaded && dbPanels.length > 0 ? dbPanels : [];
   const baseInverters = dbLoaded && dbInverters.length > 0 ? dbInverters : [];
   const baseBatteries = dbLoaded && dbBatteries.length > 0 ? dbBatteries : [];
+  const rawSettings = typeof window !== 'undefined'
+    ? window.localStorage.getItem('enermass-settings')
+    : null;
+  const rateSettings = rawSettings ? (() => {
+    try {
+      return JSON.parse(rawSettings)?.currentEquipmentRates ?? {};
+    } catch {
+      return {};
+    }
+  })() : {};
+  const panelRateOverrides = rateSettings.panels ?? {};
+  const inverterRateOverrides = rateSettings.inverters ?? {};
+  const batteryRateOverrides = rateSettings.batteries ?? {};
 
   return {
-    panels: [...basePanels, ...customPanels],
-    inverters: [...baseInverters, ...customInverters],
-    batteries: [...baseBatteries, ...customBatteries],
+    panels: [...basePanels, ...customPanels].map((panel) => ({
+      ...panel,
+      ratePerWatt: panelRateOverrides[panel.id] ?? panel.ratePerWatt,
+    })),
+    inverters: [...baseInverters, ...customInverters].map((inverter) => ({
+      ...inverter,
+      rate: inverterRateOverrides[inverter.id] ?? inverter.rate,
+    })),
+    batteries: [...baseBatteries, ...customBatteries].map((battery) => ({
+      ...battery,
+      rate: batteryRateOverrides[battery.id] ?? battery.rate,
+    })),
   };
 }
 
@@ -591,21 +613,19 @@ export function runCalculation(state: CalculatorState): {
       } catch (e) {}
     }
 
-    // Resolve systemId: use selected, or fall back to first available system
+    // Resolve systemId explicitly. Never silently switch to another preset:
+    // a stale draft/preset reference should block calculation instead of
+    // producing a quote from the wrong BOM.
     const systems = state.dbLoaded ? state.dbSystems : [...SYSTEMS, ...customSystems];
-    let resolvedSystemId = state.selectedSystemId
-      ?? (systems.length > 0 ? systems[0].id : null);
-
-    // If the system ID is stale/invalid, fall back to the first available system
-    let system = systems.find(s => s.id === resolvedSystemId);
-    if (!system && systems.length > 0) {
-      system = systems[0];
-      resolvedSystemId = system.id;
-    }
+    const resolvedSystemId = state.selectedSystemId;
+    const system = systems.find(s => s.id === resolvedSystemId);
 
     // If there are truly no systems available at all, we can't calculate
-    if (!resolvedSystemId || !system) {
+    if (!resolvedSystemId) {
       return { result: null, error: null };
+    }
+    if (!system) {
+      return { result: null, error: `Selected preset no longer exists: "${resolvedSystemId}". Please choose a valid preset.` };
     }
 
     let panelRateOverride: number | undefined;
@@ -718,6 +738,7 @@ const result = calculateSystem({
       systems,
       state: state.selectedState,
       projectType: state.projectType,
+      itcEligible: state.itcEligible,
       marginMode: state.marginMode,
       targetMarginPct: state.targetMarginPct ?? undefined,
       targetMarginAmount: state.targetMarginAmount ?? undefined,
@@ -799,6 +820,14 @@ const result = calculateSystem({
       structureMaterialType: state.structureMaterialType ?? undefined,
       walkwayLengthM: state.walkwayLengthM,
       ladderLengthM: state.ladderLengthM,
+      dbPanels: allPanels,
+      dbInverters: allInverters,
+      dbBatteries: allBatteries,
+      panelMix: state.panelMix,
+      selectedPanelId: state.selectedPanelId,
+      selectedInverterMix: state.selectedInverterMix,
+      selectedBatteryMix: state.selectedBatteryMix,
+      dbLoaded: state.dbLoaded,
     });
 
     return { result, error: null };

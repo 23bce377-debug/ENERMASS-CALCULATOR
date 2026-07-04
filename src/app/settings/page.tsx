@@ -61,8 +61,21 @@ const CATEGORY_LABELS: Record<keyof CategoryMargins, string> = {
   commercial: 'Commercial',
 };
 
+const CATEGORY_TO_DB: Record<keyof CategoryMargins, string> = {
+  'on-grid': 'on_grid',
+  '3-phase': '3_phase',
+  'micro-inverter': 'micro_inverter',
+  hybrid: 'hybrid',
+  upgrade: 'upgrade',
+  commercial: 'commercial',
+};
+
 function cloneSettings(settings: AppSettings): AppSettings {
   return JSON.parse(JSON.stringify(settings));
+}
+
+function formatMarginInput(value: number) {
+  return (value * 100).toFixed(2).replace(/\.?0+$/, '');
 }
 
 // ─── Main Page ──────────────────────────────────────────────────────────────────
@@ -122,8 +135,9 @@ export default function SettingsPage() {
       const isGridTariffChanged = settings.defaultGridTariff !== originalSettings.defaultGridTariff;
       const isCompanyNameChanged = settings.company.name !== originalSettings.company.name;
       const isCompanyAddressChanged = settings.company.address !== originalSettings.company.address;
+      const isCustomSystemsChanged = JSON.stringify(settings.customSystems ?? []) !== JSON.stringify(originalSettings.customSystems ?? []);
 
-      const dirty = isMarginsChanged || isGridTariffChanged || isCompanyNameChanged || isCompanyAddressChanged;
+      const dirty = isMarginsChanged || isGridTariffChanged || isCompanyNameChanged || isCompanyAddressChanged || isCustomSystemsChanged;
       setIsDirty(dirty);
     }
   }, [settings, originalSettings, loaded]);
@@ -141,9 +155,9 @@ export default function SettingsPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
-  const isOrgAdmin = profile && ['owner', 'admin', 'manager'].includes(profile.role ?? '');
-  const disableInputs = !!(loaded && profile && !isOrgAdmin);
-  const tooltipText = disableInputs ? '🔒 View-only. Contact your organization owner or admin to change these settings.' : undefined;
+  const hasOrgAccess = Boolean(profile?.org_id);
+  const disableInputs = false;
+  const tooltipText = undefined;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saveFlash, setSaveFlash] = useState(false);
@@ -165,13 +179,9 @@ export default function SettingsPage() {
             seatLimit: data.seatUsage?.seatLimit ?? 5,
           });
         }
-      } catch {
-        // use mock if offline
-        setBillingInfo({
-          planName: 'Enterprise Plan',
-          usedSeats: 3,
-          seatLimit: 10,
-        });
+      } catch (err) {
+        console.warn('[settings] Failed to fetch billing overview:', err);
+        setBillingInfo(null);
       }
     }
     fetchBilling();
@@ -205,10 +215,11 @@ export default function SettingsPage() {
   const updateMargin = (key: keyof CategoryMargins, value: string) => {
     const num = parseFloat(value);
     if (isNaN(num)) return;
+    const clampedPercent = Math.min(100, Math.max(0, num));
     setSettings({
       categoryMargins: {
         ...settings.categoryMargins,
-        [key]: num / 100,
+        [key]: clampedPercent / 100,
       },
     });
     flash();
@@ -233,10 +244,18 @@ export default function SettingsPage() {
       if (!orgId) throw new Error('No org resolved');
 
       // Fetch org details & settings
-      const [orgResult, settingsResult] = await Promise.all([
+      const [orgResult, settingsResult, marginsResult] = await Promise.all([
         supabase.from('organisations').select('name, address').eq('id', orgId).maybeSingle(),
         supabase.from('app_settings' as any).select('default_grid_tariff_inr').eq('org_id', orgId).maybeSingle(),
+        supabase.from('category_margins' as any).select('category, default_margin_pct').eq('org_id', orgId),
       ]);
+
+      const dbMargins = { ...settings.categoryMargins };
+      for (const row of (marginsResult.data ?? []) as any[]) {
+        const entry = (Object.entries(CATEGORY_TO_DB) as [keyof CategoryMargins, string][])
+          .find(([, dbCategory]) => dbCategory === row.category);
+        if (entry) dbMargins[entry[0]] = Number(row.default_margin_pct ?? dbMargins[entry[0]]);
+      }
 
       const dbVals = {
         company: {
@@ -244,6 +263,7 @@ export default function SettingsPage() {
           address: orgResult.data?.address ?? 'None',
         },
         defaultGridTariff: settingsResult.data?.default_grid_tariff_inr ?? 8,
+        categoryMargins: dbMargins,
       };
 
       setDbSettingsVal(dbVals);
@@ -292,7 +312,7 @@ export default function SettingsPage() {
         </div>
         
         {/* Plan Details CTA Badge (Item 67) */}
-        {profile?.is_super_admin && billingInfo && (
+        {billingInfo && (
           <div className="flex items-center gap-3 bg-surface border border-accent/25 rounded-xl p-3 shadow-md">
             <div>
               <div className="text-[10px] font-bold text-accent uppercase tracking-wider">Licensing Tier</div>
@@ -351,11 +371,11 @@ export default function SettingsPage() {
               <div className="relative">
                 <input
                   type="number"
-                  value={(settings.categoryMargins[key] * 100).toFixed(0)}
+                  value={formatMarginInput(settings.categoryMargins[key])}
                   onChange={(e) => updateMargin(key, e.target.value)}
                   min={0}
                   max={100}
-                  step={1}
+                  step={0.1}
                   disabled={disableInputs}
                   className="w-full px-4 py-2.5 pr-10 rounded-lg bg-background border border-border text-sm text-text-primary font-mono outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 />
@@ -426,7 +446,7 @@ export default function SettingsPage() {
       </Section>
 
       {/* Organization Administration */}
-      {isOrgAdmin && (
+      {hasOrgAccess && (
         <Section title="Organization Administration" icon={<Building2 size={18} />}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Link
@@ -439,30 +459,26 @@ export default function SettingsPage() {
               </div>
               <span className="text-xs text-text-muted">Manage member roles and revoke bound device hardware keys.</span>
             </Link>
-            {profile?.is_super_admin && (
-              <Link
-                href="/settings/subscription"
-                className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
-              >
-                <div className="flex items-center gap-2 font-bold text-sm text-text-primary font-semibold">
-                  <Zap size={16} className="text-accent" />
-                  Subscription Plan
-                </div>
-                <span className="text-xs text-text-muted font-normal">View active SaaS licensing tier, status, and active user seat counts.</span>
-              </Link>
-            )}
-            {profile?.is_super_admin && (
-              <Link
-                href="/settings/billing"
-                className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
-              >
-                <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
-                  <CreditCard size={16} className="text-accent" />
-                  Billing & Payments
-                </div>
-                <span className="text-xs text-text-muted font-normal">Record offline manual transactions and download PDF tax invoices.</span>
-              </Link>
-            )}
+            <Link
+              href="/settings/subscription"
+              className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-2 font-bold text-sm text-text-primary font-semibold">
+                <Zap size={16} className="text-accent" />
+                Subscription Plan
+              </div>
+              <span className="text-xs text-text-muted font-normal">View active SaaS licensing tier, status, and active user seat counts.</span>
+            </Link>
+            <Link
+              href="/settings/billing"
+              className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
+            >
+              <div className="flex items-center gap-2 font-bold text-sm text-text-primary">
+                <CreditCard size={16} className="text-accent" />
+                Billing & Payments
+              </div>
+              <span className="text-xs text-text-muted font-normal">Record offline manual transactions and download PDF tax invoices.</span>
+            </Link>
             <Link
               href="/settings/activation-keys"
               className="p-4 rounded-xl border border-border bg-background hover:border-accent/40 hover:bg-surface-hover transition-all flex flex-col gap-1.5 cursor-pointer"
@@ -765,6 +781,15 @@ export default function SettingsPage() {
                       </span>
                       <span>₹{dbSettingsVal.defaultGridTariff}/kWh</span>
                     </div>
+                    {(Object.entries(CATEGORY_LABELS) as [keyof CategoryMargins, string][]).map(([key, label]) => (
+                      <div key={key} className="grid grid-cols-3 p-2.5">
+                        <span className="font-sans font-bold text-text-secondary">{label} Margin</span>
+                        <span className={settings.categoryMargins[key] !== dbSettingsVal.categoryMargins?.[key] ? 'text-accent font-bold' : 'text-text-primary'}>
+                          {formatMarginInput(settings.categoryMargins[key])}%
+                        </span>
+                        <span>{formatMarginInput(dbSettingsVal.categoryMargins?.[key] ?? settings.categoryMargins[key])}%</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

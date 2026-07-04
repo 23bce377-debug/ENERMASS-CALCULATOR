@@ -5,7 +5,11 @@
 import pg from 'pg';
 const { Client } = pg;
 
-const DB_URL = 'postgresql://postgres.xjdqpwmizmfkcdcgcxqv:9BTkCoHcgWtYvE36@aws-1-ap-south-1.pooler.supabase.com:6543/postgres';
+const DB_URL = process.env.DATABASE_URL;
+
+if (!DB_URL) {
+  throw new Error('Missing DATABASE_URL. Set it in your environment before running this script.');
+}
 
 const POLICIES_SQL = `
 -- Drop if exists (idempotent)

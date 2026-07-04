@@ -144,10 +144,13 @@ export default function QuoteDetailPage() {
     if (!quote) return;
     setPdfLoading(true);
     setError(null);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 60_000);
     try {
       const response = await fetch('/api/quotes/generate-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ quoteId: quote.quote_number, download: true }),
       });
       if (!response.ok) {
@@ -163,10 +166,11 @@ export default function QuoteDetailPage() {
       document.body.appendChild(a);
       a.click();
       a.remove();
-      window.URL.revokeObjectURL(url);
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     } catch (err: any) {
-      setError(err.message || 'Failed to download PDF.');
+      setError(err instanceof DOMException && err.name === 'AbortError' ? 'PDF generation timed out. Please try again.' : err.message || 'Failed to download PDF.');
     } finally {
+      window.clearTimeout(timeoutId);
       setPdfLoading(false);
     }
   };

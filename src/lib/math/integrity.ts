@@ -162,6 +162,7 @@ export function validateCalcResultMath(
   result: CalcResult,
   options: {
     projectType?: ProjectType;
+    itcEligible?: boolean;
     context?: string;
   } = {},
 ): MathIntegrityReport {
@@ -218,7 +219,11 @@ export function validateCalcResultMath(
     pushIssue(issues, `${prefix}finalCustomerPrice`, 'must be rounded to the nearest thousand when round-off is enabled', result.finalCustomerPrice);
   }
 
-  const itcAmount = options.projectType === 'commercial'
+  if (result.subsidyAmount - result.finalCustomerPrice > MONEY_TOLERANCE) {
+    pushIssue(issues, `${prefix}subsidyAmount`, 'must not exceed customer final price', result.subsidyAmount, result.finalCustomerPrice);
+  }
+
+  const itcAmount = options.projectType === 'commercial' && options.itcEligible === true
     ? roundMoney(result.finalCustomerPrice - result.finalCustomerPrice / (1 + normalizedOutputGst))
     : 0;
   const expectedBeneficiaryContribution = roundMoney(Math.max(0, result.finalCustomerPrice - result.subsidyAmount - itcAmount));
@@ -241,6 +246,7 @@ export function assertCalcResultIntegrity(
   result: CalcResult,
   options: {
     projectType?: ProjectType;
+    itcEligible?: boolean;
     context?: string;
   } = {},
 ) {

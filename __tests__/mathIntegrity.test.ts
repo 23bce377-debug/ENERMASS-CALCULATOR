@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { calculateSystem, type CalcResult, type LineResult } from '../src/lib/engine/calculator';
 import type { SolarSystem } from '../src/lib/data/bom';
+import { INITIAL_STATE, runCalculation } from '../src/lib/store/calculatorTypes';
 import {
   assertCalcResultIntegrity,
   computeLineMath,
@@ -142,6 +143,78 @@ describe('math integrity checks', () => {
     expect(() => assertCalcResultIntegrity(result, { projectType: 'commercial' })).not.toThrow();
   });
 
+  it('calculates mixed panel quantity, weighted price, GST, and capacity from the selected panel mix', () => {
+    const system = makeSystem([
+      { description: 'PANEL', qty: 2, ratePerUnit: 1, gstPct: 0.05, unit: 'Nos' },
+    ]);
+
+    const dbPanels = [
+      { id: 'p540', brand: 'Waaree', model: '540W', wattage: 540, ratePerWatt: 21, gst_pct: 0.05 },
+      { id: 'p620', brand: 'Gautam', model: '620W', wattage: 620, ratePerWatt: 27, gst_pct: 0.05 },
+      { id: 'p585', brand: 'Adani', model: '585W', wattage: 585, ratePerWatt: 15.5, gst_pct: 0.05 },
+    ];
+    const panelMix = { p540: 2, p620: 1, p585: 1 };
+    const expectedPanelTotal = (2 * 540 * 21) + (1 * 620 * 27) + (1 * 585 * 15.5);
+    const expectedPanelQty = 4;
+    const expectedCapacityKW = ((2 * 540) + 620 + 585) / 1000;
+
+    const result = calculateSystem({
+      systemId: system.id,
+      systems: [system],
+      state: 'Kerala',
+      stateData,
+      projectType: 'commercial',
+      dbPanels,
+      panelMix,
+      selectedPanelId: 'p540',
+      panelRateOverride: expectedPanelTotal / expectedPanelQty,
+      panelQtyOverride: expectedPanelQty,
+      panelCapacityKW: expectedCapacityKW,
+      dbOrientationMultipliers: { South: 1, 'East/West': 0.9, Flat: 0.85 },
+      applySubsidy: false,
+    });
+
+    const panelLine = result.lines.find((line) => line.description === 'PANEL');
+    expect(panelLine).toBeTruthy();
+    expect(panelLine?.effectiveQty).toBe(expectedPanelQty);
+    expect(panelLine?.effectiveRate).toBeCloseTo(expectedPanelTotal / expectedPanelQty, 5);
+    expect(panelLine?.lineTotal).toBeCloseTo(expectedPanelTotal, 2);
+    expect(panelLine?.lineGST).toBe(Math.round(expectedPanelTotal * 0.05 * 100) / 100);
+    expect(result.capacityKW).toBeCloseTo(expectedCapacityKW, 5);
+    expect(result.lines.filter((line) => line.description.toUpperCase().startsWith('PANEL'))).toHaveLength(1);
+    expect(() => assertCalcResultIntegrity(result, { projectType: 'commercial' })).not.toThrow();
+  });
+
+  it('passes mixed panel selections from calculator state into the engine', () => {
+    const system = makeSystem([
+      { description: 'PANEL', qty: 2, ratePerUnit: 1, gstPct: 0.05, unit: 'Nos' },
+    ]);
+    const dbPanels = [
+      { id: 'p540', brand: 'Waaree', model: '540W', wattage: 540, ratePerWatt: 21, gst_pct: 0.05 },
+      { id: 'p620', brand: 'Gautam', model: '620W', wattage: 620, ratePerWatt: 27, gst_pct: 0.05 },
+    ];
+
+    const { result, error } = runCalculation({
+      ...INITIAL_STATE,
+      dbLoaded: true,
+      selectedSystemId: system.id,
+      dbSystems: [system],
+      selectedState: 'Kerala',
+      dbStateData: stateData,
+      projectType: 'commercial',
+      dbPanels,
+      panelMix: { p540: 2, p620: 1 },
+      selectedPanelId: 'p540',
+      applySubsidy: false,
+    } as any);
+
+    expect(error).toBeNull();
+    const panelLine = result?.lines.find((line) => line.description === 'PANEL');
+    expect(panelLine?.effectiveQty).toBe(3);
+    expect(panelLine?.lineTotal).toBeCloseTo((2 * 540 * 21) + (620 * 27), 2);
+    expect(result?.capacityKW).toBeCloseTo(((2 * 540) + 620) / 1000, 5);
+  });
+
   it('allows explicit output GST override for future tax changes', () => {
     const system = makeSystem([
       { description: 'PANEL', qty: 2, ratePerUnit: 1000, gstPct: 0.05, unit: 'Nos' },
@@ -187,9 +260,9 @@ describe('math integrity checks', () => {
     expect(result.discountAmount).toBe(result.mrpInclGST);
     expect(result.unroundedFinalCustomerPrice).toBe(500);
     expect(result.finalCustomerPrice).toBe(500);
-    expect(result.subsidyAmount).toBe(100000);
+    expect(result.subsidyAmount).toBe(500);
     expect(result.beneficiaryContribution).toBe(0);
-    expect(() => assertCalcResultIntegrity(result, { projectType: 'commercial' })).not.toThrow();
+    expect(() => assertCalcResultIntegrity(result, { projectType: 'commercial', itcEligible: false })).not.toThrow();
   });
 
   it('detects corrupt line totals and aggregate drift', () => {

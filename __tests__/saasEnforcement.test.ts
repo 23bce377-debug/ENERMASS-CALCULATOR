@@ -174,14 +174,22 @@ describe('requireLicensedSession', () => {
     ).resolves.toBeDefined();
   });
 
-  it('throws UnauthorizedRoleError when viewer role tries admin route', async () => {
+  it('allows viewer role on normal licensed routes when the route lists admin roles', async () => {
     const deps = {
       ...happyDeps(),
       resolveActiveMembership: vi.fn().mockResolvedValue(mkMember({ role: 'viewer' })),
     };
-    await expect(
-      requireLicensedSession(makeRequest(validHeaders()), { feature: 'calculator', roles: ['admin', 'owner'] }, deps)
-    ).rejects.toBeInstanceOf(UnauthorizedRoleError);
+    const session = await requireLicensedSession(
+      makeRequest(validHeaders()),
+      { feature: 'calculator', roles: ['admin', 'owner'] },
+      deps
+    );
+
+    expect(session.member.role).toBe('viewer');
+    expect(session.permissions.canManageBilling).toBe(true);
+    expect(session.permissions.canManageOrg).toBe(true);
+    expect(session.permissions.canManageUsers).toBe(true);
+    expect(session.permissions.canManageDevices).toBe(true);
   });
 
   it('succeeds for a fully licensed staff user accessing a staff-allowed route', async () => {
@@ -285,7 +293,7 @@ describe('withLicensedApiRoute HTTP responses', () => {
     expect(body.ok).toBe(true);
   });
 
-  it('returns 403 for insufficient role (viewer on admin route)', async () => {
+  it('returns 200 for viewer on normal licensed routes even when admin roles are listed', async () => {
     const handler = withLicensedApiRoute(
       async () => NextResponse.json({ ok: true }),
       {
@@ -298,9 +306,9 @@ describe('withLicensedApiRoute HTTP responses', () => {
       }
     );
     const response = await handler(makeRequest(validHeaders()), { params: Promise.resolve({}) });
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.error).toBe('UnauthorizedRoleError');
+    expect(body.ok).toBe(true);
   });
 
   it('passes session to handler on success', async () => {

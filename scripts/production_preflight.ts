@@ -147,10 +147,53 @@ async function checkSchema(): Promise<void> {
   }
 }
 
+async function checkAtomicQuotePersistenceRpc(): Promise<void> {
+  section('3. Atomic Persistence RPCs');
+
+  const { error } = await (supabase as any).rpc('persist_quote_atomic', {
+    p_quote_data: {},
+    p_items: [],
+    p_costs: [],
+    p_existing_quote_id: null,
+    p_expected_version: null,
+    p_force_overwrite: false,
+  });
+
+  if (!error) {
+    fail('persist_quote_atomic guard', 'RPC accepted an empty quote payload');
+    return;
+  }
+
+  const message = error.message || JSON.stringify(error);
+  if (message.includes('Quote org_id is required')) {
+    pass('persist_quote_atomic exists', 'RPC rejected invalid payload as expected');
+  } else {
+    fail('persist_quote_atomic exists', message);
+  }
+
+  const { error: presetError } = await (supabase as any).rpc('replace_system_items_atomic', {
+    p_system_id: '00000000-0000-0000-0000-000000000001',
+    p_items: [],
+    p_state_id: null,
+  });
+
+  if (!presetError) {
+    fail('replace_system_items_atomic guard', 'RPC accepted a fake preset id');
+    return;
+  }
+
+  const presetMessage = presetError.message || JSON.stringify(presetError);
+  if (presetMessage.includes('System preset not found')) {
+    pass('replace_system_items_atomic exists', 'RPC rejected fake preset id as expected');
+  } else {
+    fail('replace_system_items_atomic exists', presetMessage);
+  }
+}
+
 // ─── CHECK 3: Cache Data Shape ────────────────────────────────────────────────
 
 async function checkCacheShape(): Promise<void> {
-  section('3. Master Cache Data Shape');
+  section('4. Master Cache Data Shape');
 
   // Fetch from the DB using the same SELECT strings as masterCache.ts
   const invertersRes = await supabase
@@ -230,7 +273,7 @@ async function checkCacheShape(): Promise<void> {
 // ─── CHECK 4: Calculator Math Sanity ─────────────────────────────────────────
 
 async function checkCalculatorMath(): Promise<void> {
-  section('4. Calculator Math Sanity (3kW Residential, Gujarat)');
+  section('5. Calculator Math Sanity (3kW Residential, Gujarat)');
 
   // Load a panel + inverter from DB
   const panelRes = await supabase
@@ -286,7 +329,7 @@ async function checkCalculatorMath(): Promise<void> {
 // ─── CHECK 5: Structure Engine Tables ─────────────────────────────────────────
 
 async function checkStructureEngine(): Promise<void> {
-  section('5. Structure Engine Tables');
+  section('6. Structure Engine Tables');
 
   const tables = [
     'structure_accessory_rates',
@@ -311,7 +354,7 @@ async function checkStructureEngine(): Promise<void> {
 // ─── CHECK 6: Stale Column References Not Present ────────────────────────────
 
 async function checkNoLegacyColumns(): Promise<void> {
-  section('6. Legacy Column Absence Verification');
+  section('7. Legacy Column Absence Verification');
 
   // flat_rate should NOT exist on eq_mounting_structures
   const { error } = await supabase
@@ -341,7 +384,7 @@ async function checkNoLegacyColumns(): Promise<void> {
 // ─── CHECK 7: Rate Quality (No Zero-Rate Active Equipment) ───────────────────
 
 async function checkRateQuality(): Promise<void> {
-  section('7. Active Equipment Rate Quality');
+  section('8. Active Equipment Rate Quality');
 
   // Count panels with rate_per_watt = 0
   const { data: zeroPanels } = await supabase
@@ -384,7 +427,7 @@ async function checkRateQuality(): Promise<void> {
 }
 
 async function checkGstPolicy(): Promise<void> {
-  section('8. GST Rate Policy');
+  section('9. GST Rate Policy');
 
   const checks = [
     { label: 'Panel GST 5%', table: 'eq_panels', column: 'gst_pct', expected: 0.05 },
@@ -419,6 +462,7 @@ async function main(): Promise<void> {
 
   await checkDbConnectivity();
   await checkSchema();
+  await checkAtomicQuotePersistenceRpc();
   await checkCacheShape();
   await checkCalculatorMath();
   await checkStructureEngine();

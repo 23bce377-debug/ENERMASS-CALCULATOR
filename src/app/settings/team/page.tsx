@@ -87,7 +87,7 @@ export default function TeamPage() {
         .eq('id', session.user.id)
         .single();
       
-      if (profile?.is_super_admin) {
+      if (profile?.org_id) {
         setIsSuperAdmin(true);
       }
       

@@ -159,17 +159,21 @@ describe('requireLicensedSession', () => {
     expect(nextMocks.redirect).toHaveBeenCalledWith('/subscription-expired');
   });
 
-  it('rejects users with the wrong role', async () => {
-    await expect(
-      requireLicensedSession(
-        new Request('https://app.test/calculator', { headers: { 'cookie': 'enermass_device_token=token' } }),
-        {
-          feature: 'calculator',
-          roles: ['admin'],
-        },
-        licensedDeps()
-      )
-    ).rejects.toBeInstanceOf(UnauthorizedRoleError);
+  it('allows licensed users even when the route lists a narrower role set', async () => {
+    const session = await requireLicensedSession(
+      new Request('https://app.test/calculator', { headers: { 'cookie': 'enermass_device_token=token' } }),
+      {
+        feature: 'calculator',
+        roles: ['admin'],
+      },
+      licensedDeps()
+    );
+
+    expect(session.member.role).toBe('staff');
+    expect(session.permissions.canManageBilling).toBe(true);
+    expect(session.permissions.canManageOrg).toBe(true);
+    expect(session.permissions.canManageUsers).toBe(true);
+    expect(session.permissions.canManageDevices).toBe(true);
   });
 
   it('rejects disabled users during membership resolution', async () => {

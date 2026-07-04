@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { PresetORM, type PresetRow } from '@/backend/orm/presets';
 import { PresetEditorDialog } from '@/components/presets/PresetEditorDialog';
-import { deleteSystemPreset, getPresetStates, type PresetStateOption } from '@/lib/actions/presets';
+import { DuplicatePresetChoiceDialog, type DuplicatePresetChoice } from '@/components/presets/DuplicatePresetChoiceDialog';
+import { deleteSystemPreset, duplicateSystemPreset, getPresetStates, type PresetStateOption } from '@/lib/actions/presets';
 import type { LineItem } from '@/lib/actions/presets';
 import {
   Settings2, Plus, Box, Zap, Search,
@@ -35,7 +36,13 @@ function validSystemType(value: string | null | undefined) {
 
 function legacyPresetToEditorData(preset: PresetRow) {
   const state = preset.calculator_state ?? {};
-  const items = Array.isArray(state.items) ? state.items : [];
+  const items =
+    (Array.isArray(state.items) && state.items) ||
+    (Array.isArray(state.lineItems) && state.lineItems) ||
+    (Array.isArray(state.bomItems) && state.bomItems) ||
+    (Array.isArray(state.calculation?.lines) && state.calculation.lines) ||
+    (Array.isArray(state.calcResult?.lines) && state.calcResult.lines) ||
+    [];
 
   return {
     id: preset.id,
@@ -54,9 +61,9 @@ function legacyPresetToEditorData(preset: PresetRow) {
       model: item.model ?? '',
       specificationDetails: item.specificationDetails ?? item.specification_details ?? item.notes ?? '',
       unit: item.unit ?? 'Nos',
-      quantity: Number(item.qty ?? item.quantity ?? 0),
-      unitRate: Number(item.ratePerUnit ?? item.unitRate ?? 0),
-      gstPct: item.gstPct,
+      quantity: Number(item.qty ?? item.quantity ?? item.effectiveQty ?? 0),
+      unitRate: Number(item.ratePerUnit ?? item.unitRate ?? item.effectiveRate ?? 0),
+      gstPct: item.gstPct ?? item.effectiveGstPct,
       isIncluded: item.isIncluded ?? true,
       isSurveyDependent: item.isSurveyDependent ?? false,
       sortOrder: index,
@@ -81,6 +88,18 @@ function editorLineItemToBomItem(item: LineItem) {
   };
 }
 
+function buildUniquePresetName(baseName: string, existingNames: string[]) {
+  const cleanBase = baseName.trim() || 'Preset';
+  const names = new Set(existingNames.map((name) => name.toLowerCase()));
+  let index = 1;
+  let candidate = `${cleanBase} (${index})`;
+  while (names.has(candidate.toLowerCase())) {
+    index += 1;
+    candidate = `${cleanBase} (${index})`;
+  }
+  return candidate;
+}
+
 export default function SystemPresetsPage() {
   const [presets, setPresets] = useState<PresetRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +111,8 @@ export default function SystemPresetsPage() {
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerSystemId, setComposerSystemId] = useState<string | null>(null);
   const [composerMode, setComposerMode] = useState<'create' | 'edit' | 'duplicate'>('create');
+  const [duplicateTarget, setDuplicateTarget] = useState<PresetRow | null>(null);
+  const [duplicating, setDuplicating] = useState(false);
   const activeComposerPreset = presets.find((preset) => preset.id === composerSystemId) ?? null;
   const legacyComposerPreset = activeComposerPreset?.source === 'custom_presets' ? activeComposerPreset : null;
   const selectedFilterState = states.find((state) => state.id === stateFilter) ?? null;
@@ -166,14 +187,60 @@ export default function SystemPresetsPage() {
   };
 
   const handleUsePreset = (preset: PresetRow) => {
-    window.sessionStorage.setItem('enermass-preset-to-load', JSON.stringify({
-      id: preset.id,
-      source: preset.source,
-      stateId: preset.state_id ?? null,
-      stateName: preset.state_name ?? null,
-      calculatorState: preset.calculator_state ?? null,
-    }));
-    window.location.href = '/calculator';
+    try {
+      window.sessionStorage.setItem('enermass-preset-to-load', JSON.stringify({
+        id: preset.id,
+        source: preset.source,
+        stateId: preset.state_id ?? null,
+        stateName: preset.state_name ?? null,
+        calculatorState: preset.calculator_state ?? null,
+      }));
+      window.location.href = '/calculator';
+    } catch (err) {
+      console.error('[presets] failed to hand off preset to calculator', err);
+      setError('Could not load this preset into the calculator because the browser refused the handoff data. Please reopen the preset and try again.');
+    }
+  };
+
+  const handleDuplicateChoice = async (choice: DuplicatePresetChoice) => {
+    if (!duplicateTarget) return;
+    setDuplicating(true);
+    setError(null);
+    try {
+      let duplicateId = '';
+      let duplicateName = '';
+
+      if (duplicateTarget.source === 'custom_presets') {
+        duplicateName = buildUniquePresetName(duplicateTarget.name, presets.map((preset) => preset.name));
+        const duplicated = await PresetORM.create({
+          name: duplicateName,
+          capacity_kw: duplicateTarget.capacity_kw,
+          state_id: duplicateTarget.state_id ?? duplicateTarget.calculator_state?.stateId ?? null,
+          calculator_state: {
+            ...(duplicateTarget.calculator_state ?? {}),
+            name: duplicateName,
+            presetName: duplicateName,
+          },
+        }, []);
+        duplicateId = duplicated.id;
+      } else {
+        const duplicated = await duplicateSystemPreset(duplicateTarget.id);
+        duplicateId = duplicated.id;
+        duplicateName = duplicated.name;
+      }
+
+      setDuplicateTarget(null);
+      await fetchPresets();
+      if (choice === 'edit-now') {
+        setComposerSystemId(duplicateId);
+        setComposerMode('edit');
+        setComposerOpen(true);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to duplicate preset.');
+    } finally {
+      setDuplicating(false);
+    }
   };
 
   if (loading && presets.length === 0) {
@@ -314,9 +381,7 @@ export default function SystemPresetsPage() {
                       </button>
                       <button
                         onClick={() => {
-                          setComposerSystemId(preset.id);
-                          setComposerMode('duplicate');
-                          setComposerOpen(true);
+                          setDuplicateTarget(preset);
                         }}
                         className="p-1.5 text-text-muted hover:text-accent hover:bg-accent-dim rounded transition-colors"
                         title="Create Duplicate"
@@ -392,6 +457,16 @@ export default function SystemPresetsPage() {
           } : undefined}
         />
       )}
+
+      <DuplicatePresetChoiceDialog
+        open={Boolean(duplicateTarget)}
+        presetName={duplicateTarget?.name ?? ''}
+        saving={duplicating}
+        onChoose={handleDuplicateChoice}
+        onClose={() => {
+          if (!duplicating) setDuplicateTarget(null);
+        }}
+      />
     </div>
   );
 }

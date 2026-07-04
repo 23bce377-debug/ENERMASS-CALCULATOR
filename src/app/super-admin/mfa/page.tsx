@@ -33,15 +33,14 @@ export default function SuperAdminMfaPage() {
           return;
         }
 
-        // Verify they are super admin or org admin
+        // Master Control MFA is reserved for super admins.
         const { data: profile, error: profileErr } = await supabase
           .from('profiles')
-          .select('is_super_admin, is_active, role')
+          .select('is_super_admin, is_active')
           .eq('id', session.user.id)
           .maybeSingle();
 
-        const isOrgAdmin = ['owner', 'admin', 'manager'].includes(profile?.role ?? '');
-        if (profileErr || !profile || profile.is_active === false || (!profile.is_super_admin && !isOrgAdmin)) {
+        if (profileErr || !profile || profile.is_active === false || !profile.is_super_admin) {
           router.replace('/unauthorized');
           return;
         }

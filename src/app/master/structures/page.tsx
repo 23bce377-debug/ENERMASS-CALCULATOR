@@ -46,6 +46,7 @@ import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
 
 interface Structure {
   id: string;
+  source_global_id?: string | null;
   name: string;
   material: string;
   roof_mount_type: string;
@@ -131,6 +132,56 @@ export default function StructuresMasterPage() {
   // State for tabs
   const [mainTab, setMainTab] = useState<'erp' | 'legacy'>('erp');
   const [erpSubTab, setErpSubTab] = useState<'vendors' | 'templates' | 'addons'>('templates');
+
+  const readImportCell = (row: any, ...keys: string[]) => {
+    for (const key of keys) {
+      if (row[key] !== undefined && row[key] !== null && row[key] !== '') return row[key];
+      const normalizedKey = Object.keys(row).find((candidate) => candidate.trim().toLowerCase() === key.trim().toLowerCase());
+      if (normalizedKey && row[normalizedKey] !== undefined && row[normalizedKey] !== null && row[normalizedKey] !== '') {
+        return row[normalizedKey];
+      }
+    }
+    return '';
+  };
+
+  const sameText = (a: unknown, b: unknown) =>
+    String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
+
+  const sameNumber = (a: unknown, b: unknown, precision = 4) => {
+    const left = Number(a);
+    const right = Number(b);
+    if (!Number.isFinite(left) && !Number.isFinite(right)) return true;
+    return Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) < Math.pow(10, -precision);
+  };
+
+  const findImportMatch = (row: any) => {
+    const ids = [row.__master_id, row.__source_global_id].filter(Boolean).map(String);
+    const idMatch = structures?.find((item) => ids.includes(item.id) || (item.source_global_id ? ids.includes(item.source_global_id) : false));
+    if (idMatch) return idMatch;
+
+    return structures?.find((item) =>
+      sameText(item.name, row.name) &&
+      sameText(item.material, row.material) &&
+      sameText(item.roof_mount_type, row.roof_mount_type)
+    );
+  };
+
+  const structureRowChanged = (existing: Structure, row: any) =>
+    !sameText(existing.name, row.name) ||
+    !sameText(existing.material, row.material) ||
+    !sameText(existing.roof_mount_type, row.roof_mount_type) ||
+    !sameNumber(existing.elevation_height_mm, row.elevation_height_mm, 0) ||
+    !sameNumber(existing.raw_material_rate, row.raw_material_rate, 2) ||
+    !sameNumber(existing.fabrication_rate, row.fabrication_rate, 2) ||
+    !sameNumber(existing.galvanizing_rate, row.galvanizing_rate, 2) ||
+    !sameNumber(existing.wastage_pct, row.wastage_pct, 5) ||
+    !sameNumber(existing.fastener_weight_pct, row.fastener_weight_pct, 5) ||
+    !sameNumber(existing.base_weight_kg, row.base_weight_kg, 4) ||
+    !sameNumber(existing.flat_rate, row.flat_rate, 2) ||
+    !sameNumber(existing.per_watt_rate, row.per_watt_rate, 4) ||
+    !sameNumber(normalizeGstRate(existing.gst_pct, 0.18), row.gst_pct, 5) ||
+    !sameText(existing.description, row.description) ||
+    !sameText(existing.specification_details, row.specification_details);
 
   // Fetch ERP Structure Data
   
@@ -479,6 +530,9 @@ export default function StructuresMasterPage() {
 
   const handleExport = () => {
     const dataToExport = filteredStructures.map((s) => ({
+      'Master ID': s.id,
+      'Source Global ID': s.source_global_id || '',
+      Scope: s.org_id ? 'Org Override' : 'Global Baseline',
       Name: s.name,
       Material: s.material,
       'Roof Mount Type': s.roof_mount_type,
@@ -507,21 +561,23 @@ export default function StructuresMasterPage() {
       const rawData = await importFromExcel(file);
       
       const parsedRows = rawData.map((row: any) => ({
-        name: row.Name || row.name,
-        material: normalizeStructureMaterial(row.Material || row.material),
-        roof_mount_type: normalizeRoofMountType(row['Roof Mount Type'] || row.roof_mount_type),
-        elevation_height_mm: parseInt(row['Elevation (mm)'] || row.elevation_height_mm || 0, 10),
-        raw_material_rate: parseFloat(row['Raw Rate (INR/kg)'] || row.raw_material_rate || 0),
-        fabrication_rate: parseFloat(row['Fab Rate (INR/kg)'] || row.fabrication_rate || 0),
-        galvanizing_rate: parseFloat(row['Galv Rate (INR/kg)'] || row.galvanizing_rate || 0),
-        wastage_pct: parseFloat(row['Wastage (%)'] || row.wastage_pct || 0.05),
-        fastener_weight_pct: parseFloat(row['Fasteners (%)'] || row.fastener_weight_pct || 0.02),
-        base_weight_kg: parseFloat(row['Base Weight (kg)'] || row.base_weight_kg || 0),
-        flat_rate: row['Flat Rate (INR)'] || row.flat_rate ? parseFloat(row['Flat Rate (INR)'] || row.flat_rate) : null,
-        per_watt_rate: row['Per Watt Rate (INR)'] || row.per_watt_rate ? parseFloat(row['Per Watt Rate (INR)'] || row.per_watt_rate) : null,
-        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, 0.18),
-        description: row.Description || row.description || '',
-        specification_details: row['Specification Details'] || row.specification_details || row.Specifications || row.specifications || row.Description || row.description || '',
+        __master_id: readImportCell(row, 'Master ID', 'master_id', 'id'),
+        __source_global_id: readImportCell(row, 'Source Global ID', 'source_global_id'),
+        name: readImportCell(row, 'Name', 'name'),
+        material: normalizeStructureMaterial(readImportCell(row, 'Material', 'material')),
+        roof_mount_type: normalizeRoofMountType(readImportCell(row, 'Roof Mount Type', 'roof_mount_type')),
+        elevation_height_mm: parseInt(readImportCell(row, 'Elevation (mm)', 'elevation_height_mm') || 0, 10),
+        raw_material_rate: parseFloat(readImportCell(row, 'Raw Rate (INR/kg)', 'raw_material_rate') || 0),
+        fabrication_rate: parseFloat(readImportCell(row, 'Fab Rate (INR/kg)', 'fabrication_rate') || 0),
+        galvanizing_rate: parseFloat(readImportCell(row, 'Galv Rate (INR/kg)', 'galvanizing_rate') || 0),
+        wastage_pct: parseFloat(readImportCell(row, 'Wastage (%)', 'wastage_pct') || 0.05),
+        fastener_weight_pct: parseFloat(readImportCell(row, 'Fasteners (%)', 'fastener_weight_pct') || 0.02),
+        base_weight_kg: parseFloat(readImportCell(row, 'Base Weight (kg)', 'base_weight_kg') || 0),
+        flat_rate: readImportCell(row, 'Flat Rate (INR)', 'flat_rate') ? parseFloat(readImportCell(row, 'Flat Rate (INR)', 'flat_rate')) : null,
+        per_watt_rate: readImportCell(row, 'Per Watt Rate (INR)', 'per_watt_rate') ? parseFloat(readImportCell(row, 'Per Watt Rate (INR)', 'per_watt_rate')) : null,
+        gst_pct: normalizeGstRate(readImportCell(row, 'GST Percentage', 'gst_pct'), 0.18),
+        description: readImportCell(row, 'Description', 'description') || '',
+        specification_details: readImportCell(row, 'Specification Details', 'specification_details', 'Specifications', 'specifications', 'Description', 'description') || '',
       })).filter((r) => r.name && !isNaN(r.raw_material_rate));
 
       if (parsedRows.length === 0) {
@@ -539,11 +595,28 @@ export default function StructuresMasterPage() {
 
       if (!confirmed) return;
 
+      let created = 0;
+      let updated = 0;
+      let skipped = 0;
+
       for (const row of parsedRows) {
-        await createMutation.mutateAsync(row);
+        const { __master_id, __source_global_id, ...payload } = row;
+        const existing = findImportMatch(row);
+
+        if (existing) {
+          if (structureRowChanged(existing, payload)) {
+            await updateMutation.mutateAsync({ id: existing.id, updates: payload });
+            updated += 1;
+          } else {
+            skipped += 1;
+          }
+        } else {
+          await createMutation.mutateAsync(payload);
+          created += 1;
+        }
       }
 
-      toast(`Successfully imported ${parsedRows.length} structure specs`, 'success');
+      toast(`Import complete: ${created} created, ${updated} updated, ${skipped} unchanged`, 'success');
     } catch (err: any) {
       toast(err.message || 'Import failed', 'error');
     } finally {

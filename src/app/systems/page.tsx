@@ -9,12 +9,13 @@ import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import {
   Cpu, Zap, ArrowRight, GitCompare, X, Search,
   Plus, Upload, CheckCircle2, AlertCircle, Loader2,
-  Trash2, Edit3, Sun, MapPin, LayoutGrid, List
+  Trash2, Edit3, Sun, MapPin, LayoutGrid, List, Copy
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { PresetEditorDialog } from '@/components/presets/PresetEditorDialog';
-import { deleteSystemPreset, type LineItem } from '@/lib/actions/presets';
+import { DuplicatePresetChoiceDialog, type DuplicatePresetChoice } from '@/components/presets/DuplicatePresetChoiceDialog';
+import { deleteSystemPreset, duplicateSystemPreset, type LineItem } from '@/lib/actions/presets';
 
 // ─── Category Config ──────────────────────────────────────────────────────────
 
@@ -162,6 +163,18 @@ function editorLineItemToBomItem(item: LineItem) {
   };
 }
 
+function buildUniquePresetName(baseName: string, existingNames: string[]) {
+  const cleanBase = baseName.trim() || 'Preset';
+  const names = new Set(existingNames.map((name) => name.toLowerCase()));
+  let index = 1;
+  let candidate = `${cleanBase} (${index})`;
+  while (names.has(candidate.toLowerCase())) {
+    index += 1;
+    candidate = `${cleanBase} (${index})`;
+  }
+  return candidate;
+}
+
 function CategoryBadge({ category }: { category: string }) {
   const cfg = CATEGORY_CONFIG[category] ?? { label: category, color: '#888', bg: 'rgba(128,128,128,0.12)' };
   return (
@@ -185,10 +198,11 @@ interface SystemCardProps {
   onToggleCompare: () => void;
   onQuickCalc: () => void;
   onEdit?: (id: string) => void;
+  onDuplicate?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
-function SystemCard({ system, selected, compareMode, isCustom, stateLabel, onToggleCompare, onQuickCalc, onEdit, onDelete }: SystemCardProps) {
+function SystemCard({ system, selected, compareMode, isCustom, stateLabel, onToggleCompare, onQuickCalc, onEdit, onDuplicate, onDelete }: SystemCardProps) {
   return (
     <div
       className={`group relative flex flex-col bg-surface rounded-xl border transition-all duration-300 overflow-hidden
@@ -274,6 +288,15 @@ function SystemCard({ system, selected, compareMode, isCustom, stateLabel, onTog
               <Edit3 size={14} />
             </button>
           )}
+          {onDuplicate && (
+            <button
+              onClick={() => onDuplicate(system.id)}
+              className="p-2 rounded-lg bg-surface hover:bg-surface-hover border border-border text-text-secondary hover:text-accent transition-all cursor-pointer"
+              title="Create duplicate"
+            >
+              <Copy size={14} />
+            </button>
+          )}
           <button
             onClick={() => onDelete?.(system.id)}
             className="p-2 rounded-lg bg-surface hover:bg-error/10 border border-border hover:border-error/30 text-text-secondary hover:text-error transition-all cursor-pointer"
@@ -294,6 +317,7 @@ interface SystemListProps {
   onToggleCompare: (id: string) => void;
   onQuickCalc: (id: string) => void;
   onEdit: (id: string) => void;
+  onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
@@ -305,6 +329,7 @@ function SystemList({
   onToggleCompare,
   onQuickCalc,
   onEdit,
+  onDuplicate,
   onDelete,
 }: SystemListProps) {
   return (
@@ -407,6 +432,13 @@ function SystemList({
                         title="Edit preset"
                       >
                         <Edit3 size={14} />
+                      </button>
+                      <button
+                        onClick={() => onDuplicate(system.id)}
+                        className="shrink-0 rounded-lg border border-border bg-surface p-2 text-text-secondary transition-all hover:bg-surface-hover hover:text-accent"
+                        title="Create duplicate"
+                      >
+                        <Copy size={14} />
                       </button>
                       <button
                         onClick={() => onDelete(system.id)}
@@ -548,6 +580,8 @@ export default function SystemsPage() {
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerSystemId, setComposerSystemId] = useState<string | null>(null);
+  const [duplicateTarget, setDuplicateTarget] = useState<SolarSystem | null>(null);
+  const [duplicating, setDuplicating] = useState(false);
   
   const [commitStatus, setCommitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [commitMsg, setCommitMsg] = useState('');
@@ -640,6 +674,53 @@ export default function SystemsPage() {
   };
 
   const fetchMasterData = useCalculatorStore((s) => s.fetchMasterData);
+
+  const duplicateLocalSystem = (system: SolarSystem) => {
+    const uniqueName = buildUniquePresetName(system.name, allSystems.map((item) => item.name));
+    const duplicate: SolarSystem = {
+      ...system,
+      id: `custom_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      name: uniqueName,
+      items: system.items.map((item, index) => ({
+        ...item,
+        id: `${Date.now()}_${index}_${Math.random().toString(36).slice(2)}`,
+      })),
+    };
+    setSettings({ customSystems: [duplicate, ...customSystems] });
+    return duplicate;
+  };
+
+  const handleDuplicateChoice = async (choice: DuplicatePresetChoice) => {
+    if (!duplicateTarget) return;
+    setDuplicating(true);
+    try {
+      if (duplicateTarget.id.startsWith('custom_')) {
+        const duplicate = duplicateLocalSystem(duplicateTarget);
+        toast(`Created duplicate "${duplicate.name}" locally. Press Commit to sync.`, 'success');
+        setDuplicateTarget(null);
+        if (choice === 'edit-now') {
+          setComposerSystemId(duplicate.id);
+          setComposerOpen(true);
+        }
+        return;
+      }
+
+      const duplicate = await duplicateSystemPreset(duplicateTarget.id);
+      toast(`Created duplicate "${duplicate.name}"`, 'success');
+      setDuplicateTarget(null);
+      await fetchMasterData();
+      if (choice === 'edit-now') {
+        setComposerSystemId(duplicate.id);
+        setComposerOpen(true);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown duplicate error.';
+      toast(`Failed to duplicate preset: ${message}`, 'error');
+      console.warn('[systems] failed to duplicate preset', { id: duplicateTarget.id, message });
+    } finally {
+      setDuplicating(false);
+    }
+  };
 
   const removeCustomSystem = async (id: string) => {
     const isCustom = id.startsWith('custom_');
@@ -839,6 +920,10 @@ export default function SystemsPage() {
                 setComposerSystemId(id);
                 setComposerOpen(true);
               }}
+              onDuplicate={(id) => {
+                const system = allSystems.find((item) => item.id === id);
+                if (system) setDuplicateTarget(system);
+              }}
               onDelete={removeCustomSystem}
             />
           ))}
@@ -854,6 +939,10 @@ export default function SystemsPage() {
           onEdit={(id) => {
             setComposerSystemId(id);
             setComposerOpen(true);
+          }}
+          onDuplicate={(id) => {
+            const system = allSystems.find((item) => item.id === id);
+            if (system) setDuplicateTarget(system);
           }}
           onDelete={removeCustomSystem}
         />
@@ -905,6 +994,16 @@ export default function SystemsPage() {
           } : undefined}
         />
       )}
+
+      <DuplicatePresetChoiceDialog
+        open={Boolean(duplicateTarget)}
+        presetName={duplicateTarget?.name ?? ''}
+        saving={duplicating}
+        onChoose={handleDuplicateChoice}
+        onClose={() => {
+          if (!duplicating) setDuplicateTarget(null);
+        }}
+      />
     </div>
   );
 }

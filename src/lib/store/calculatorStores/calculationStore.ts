@@ -79,6 +79,16 @@ function quoteSpec(item: any): string | undefined {
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = 15_000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 function buildGeneratedSystems(
   panels: Array<{ id: string; wattage: number; ratePerWatt: number; gst_pct?: number }>,
   inverters: Array<{ id: string; capacityKW: number; rate: number; gst_pct?: number; type?: string }>,
@@ -336,6 +346,14 @@ export const createCalculationSlice: StateCreator<
 
     const systems = get().dbLoaded ? get().dbSystems : [...SYSTEMS, ...customSystems];
     const system = systems.find((s: SolarSystem) => s.id === id);
+    if (!system) {
+      set({
+        selectedSystemId: null,
+        calcResult: null,
+        calcError: `Selected preset no longer exists: "${id}". Please choose a valid preset.`,
+      });
+      return;
+    }
     const selectedSystemState = system?.stateName || state.dbSystemStateMap[id]?.[0] || state.selectedState;
 
     if (system && system.defaultEquipment) {
@@ -598,12 +616,6 @@ export const createCalculationSlice: StateCreator<
   },
 
   recalculate: () => {
-    const state = get();
-    // Auto-assign first system if none selected but master data is loaded
-    // Use soft-set to preserve current equipment selections
-    if (!state.selectedSystemId && state.dbLoaded && state.dbSystems.length > 0) {
-      set({ selectedSystemId: state.dbSystems[0].id });
-    }
     const { result, error } = runCalculation(get());
     set({ calcResult: result, calcError: error });
   },
@@ -628,10 +640,10 @@ export const createCalculationSlice: StateCreator<
       let rawBootstrap: any;
       try {
         const responses = await Promise.all([
-          fetch('/api/erp/master/equipment', requestInit),
-          fetch('/api/erp/master/structures', requestInit),
-          fetch('/api/erp/master/rules?bomLimit=5000', requestInit),
-          fetch('/api/erp/master/org?invLimit=2000', requestInit)
+          fetchWithTimeout('/api/erp/master/equipment', requestInit),
+          fetchWithTimeout('/api/erp/master/structures', requestInit),
+          fetchWithTimeout('/api/erp/master/rules?bomLimit=5000', requestInit),
+          fetchWithTimeout('/api/erp/master/org?invLimit=2000', requestInit)
         ]);
 
         const failedRes = responses.find(r => !r.ok);
@@ -652,9 +664,9 @@ export const createCalculationSlice: StateCreator<
       } catch (componentFetchError) {
         console.warn('[fetchMasterData] Component-level fetch failed, falling back to consolidated bootstrap:', componentFetchError);
 
-        let bootstrapRes = await fetch('/api/erp/bootstrap?bomLimit=5000&invLimit=2000', requestInit);
+        let bootstrapRes = await fetchWithTimeout('/api/erp/bootstrap?bomLimit=5000&invLimit=2000', requestInit, 20_000);
         if (bootstrapRes.status === 404) {
-          bootstrapRes = await fetch('/api/master', requestInit);
+          bootstrapRes = await fetchWithTimeout('/api/master', requestInit, 20_000);
         }
 
         if (!bootstrapRes.ok) {
@@ -1012,8 +1024,14 @@ export const createCalculationSlice: StateCreator<
 
       const currentSystemId = get().selectedSystemId;
       const systemExists = mappedSystems.some(s => s.id === currentSystemId);
-      if ((!currentSystemId || !systemExists) && mappedSystems.length > 0) {
+      if (!currentSystemId && mappedSystems.length > 0) {
         get().selectSystem(mappedSystems[0].id);
+      } else if (currentSystemId && !systemExists) {
+        set({
+          selectedSystemId: null,
+          calcResult: null,
+          calcError: `Selected preset no longer exists: "${currentSystemId}". Please choose a valid preset.`,
+        });
       } else {
         get().recalculate();
       }
@@ -1360,8 +1378,7 @@ export const createCalculationSlice: StateCreator<
       }
 
       // Mark store loaded if core data is hydrated
-      const isLoaded = (stateUpdate.dbPanels || get().dbPanels).length > 0 &&
-                        (stateUpdate.dbSystems || get().dbSystems).length > 0;
+      const isLoaded = (stateUpdate.dbSystems || get().dbSystems).length > 0;
       if (isLoaded) {
         stateUpdate.dbLoaded = true;
       }
@@ -1380,8 +1397,14 @@ export const createCalculationSlice: StateCreator<
       if (stateUpdate.dbSystems && stateUpdate.dbSystems.length > 0) {
         const currentSystemId = get().selectedSystemId;
         const systemExists = stateUpdate.dbSystems.some(s => s.id === currentSystemId);
-        if ((!currentSystemId || !systemExists)) {
+        if (!currentSystemId) {
           get().selectSystem(stateUpdate.dbSystems[0].id);
+        } else if (!systemExists) {
+          set({
+            selectedSystemId: null,
+            calcResult: null,
+            calcError: `Selected preset no longer exists: "${currentSystemId}". Please choose a valid preset.`,
+          });
         } else {
           get().recalculate();
         }

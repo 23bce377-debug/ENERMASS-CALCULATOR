@@ -12,11 +12,11 @@ import type { Quote } from '@/lib/types/quote';
 import {
   Search, FileText, Download, Trash2, Eye, X,
   ArrowUpDown, PenSquare, Copy, BarChart3,
-  Mail, MessageCircle, GitPullRequest, History, UploadCloud
+  Mail, MessageCircle, GitPullRequest, History
 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/Confirm';
 import { Select } from '@/components/ui/Select';
-import { useQuotesQuery, useDeleteQuoteMutation, useUpdateQuoteStatusMutation } from '@/lib/hooks/useQuotes';
+import { fetchQuotesForCurrentUser, useQuotesQuery, useDeleteQuoteMutation, useUpdateQuoteStatusMutation } from '@/lib/hooks/useQuotes';
 import { SurveySummaryCard } from '@/components/quotes/SurveySummaryCard';
 import { QuoteVersionHistory } from '@/components/quotes/QuoteVersionHistory';
 import { QuoteReviseModal } from '@/components/quotes/QuoteReviseModal';
@@ -85,12 +85,15 @@ function QuoteDetailModal({
 
   const handleDownloadPdf = async () => {
     setIsGeneratingPdf(true);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 60_000);
     try {
       const response = await fetch('/api/quotes/generate-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
         body: JSON.stringify({
           quoteId: quote.quoteId,
           download: true,
@@ -109,11 +112,12 @@ function QuoteDetailModal({
       document.body.appendChild(a);
       a.click();
       a.remove();
-      window.URL.revokeObjectURL(url);
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     } catch (err) {
       console.error('Error downloading PDF:', err);
-      alert(err instanceof Error ? err.message : 'Failed to generate PDF.');
+      alert(err instanceof DOMException && err.name === 'AbortError' ? 'PDF generation timed out. Please try again.' : err instanceof Error ? err.message : 'Failed to generate PDF.');
     } finally {
+      window.clearTimeout(timeoutId);
       setIsGeneratingPdf(false);
     }
   };
@@ -310,30 +314,6 @@ function QuoteDetailModal({
             </div>
           </InfoSection>
 
-          {/* File Attachments */}
-          <InfoSection title="File Attachments">
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-background/50">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-accent/10 text-accent rounded-lg">
-                    <FileText size={16} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-text-primary">Site_Survey_Report.pdf</p>
-                    <p className="text-[10px] text-text-muted">2.4 MB • Uploaded on {quote.date}</p>
-                  </div>
-                </div>
-                <button className="p-1.5 text-text-muted hover:text-text-primary">
-                  <Download size={14} />
-                </button>
-              </div>
-              <button className="flex items-center justify-center gap-2 w-full py-3 border border-dashed border-border rounded-lg text-sm text-text-secondary hover:text-accent hover:border-accent hover:bg-accent/5 transition-all">
-                <UploadCloud size={16} />
-                <span>Upload New Attachment</span>
-              </button>
-            </div>
-          </InfoSection>
-
           {/* Site Survey Summary */}
           <SurveySummaryCard quoteNumber={quote.quoteId} />
         </div>
@@ -419,12 +399,15 @@ export default function QuotesPage() {
 
   const handleDownloadPdf = async (quoteId: string) => {
     setGeneratingPdfQuoteId(quoteId);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 60_000);
     try {
       const response = await fetch('/api/quotes/generate-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
         body: JSON.stringify({ quoteId, download: true }),
       });
 
@@ -440,25 +423,38 @@ export default function QuotesPage() {
       document.body.appendChild(a);
       a.click();
       a.remove();
-      window.URL.revokeObjectURL(url);
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     } catch (err) {
       console.error('Error downloading PDF:', err);
-      alert(err instanceof Error ? err.message : 'Failed to generate PDF.');
+      alert(err instanceof DOMException && err.name === 'AbortError' ? 'PDF generation timed out. Please try again.' : err instanceof Error ? err.message : 'Failed to generate PDF.');
     } finally {
+      window.clearTimeout(timeoutId);
       setGeneratingPdfQuoteId(null);
     }
   };
 
   const companyName = settings.company.name || 'ENERMASS Solar';
 
-  const goToCalculatorForEdit = (quoteId: string) => {
-    loadQuote(quoteId);
-    router.push('/calculator');
+  const goToCalculatorForEdit = async (quoteId: string) => {
+    try {
+      await fetchQuotesForCurrentUser();
+      loadQuote(quoteId);
+      router.push('/calculator');
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : 'Failed to load the latest quote from the database.');
+    }
   };
 
-  const cloneQuoteAsTemplate = (quoteId: string) => {
-    duplicateQuote(quoteId);
-    router.push('/calculator');
+  const cloneQuoteAsTemplate = async (quoteId: string) => {
+    try {
+      await fetchQuotesForCurrentUser();
+      duplicateQuote(quoteId);
+      router.push('/calculator');
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : 'Failed to load the latest quote from the database.');
+    }
   };
 
   const updateQuoteStatus = async (quoteId: string, newStatus: Quote['status']) => {

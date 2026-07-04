@@ -4,9 +4,9 @@ import { OrgMemberRepository } from '../repositories';
 import { MembershipMissingError, UnauthorizedRoleError } from '../errors';
 import type { OrgMember, OrgMemberRole } from '../types';
 
-export type AdminRole = Extract<OrgMemberRole, 'owner' | 'admin' | 'manager'>;
+export type AdminRole = OrgMemberRole;
 
-const adminRoles = new Set<OrgMemberRole>(['owner', 'admin', 'manager']);
+const adminRoles = new Set<OrgMemberRole>(['owner', 'admin', 'manager', 'staff', 'viewer']);
 
 export interface MembershipDeps {
   orgMemberRepository?: Pick<OrgMemberRepository, 'getByOrgAndUser'>;

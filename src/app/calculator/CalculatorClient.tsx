@@ -12,6 +12,7 @@ import { formatINR } from '@/lib/engine/calculator';
 import type { Quote } from '@/lib/types/quote';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { pickCalculatorDraftState, useCalculatorAutoSave } from '@/lib/hooks/useCalculatorAutoSave';
+import { MASTER_DATA_UPDATED_EVENT } from '@/lib/hooks/useMasters';
 import { supabase } from '@/lib/supabase/client';
 import { type SystemConfig, validateSystemConfig } from '@/lib/validation/systemValidation';
 import { EquipmentSelector } from '@/components/calculator/EquipmentSelector';
@@ -203,6 +204,7 @@ export default function CalculatorClient({
   const { settings } = useSettings();
   const { toast } = useToast();
   const calcResult = useCalculatorStore((s) => s.calcResult);
+  const calcError = useCalculatorStore((s) => s.calcError);
   const marginMode = useCalculatorStore((s) => s.marginMode);
   const targetMarginPct = useCalculatorStore((s) => s.targetMarginPct);
   const targetMarginAmount = useCalculatorStore((s) => s.targetMarginAmount);
@@ -215,6 +217,7 @@ export default function CalculatorClient({
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [restoredDate, setRestoredDate] = useState<Date | null>(null);
   const presetHandoffLoadedRef = useRef(false);
+  const masterRefreshInFlightRef = useRef(false);
 
   // 1. Hydrate critical data on mount/initial load (immediate render capability)
   useEffect(() => {
@@ -260,37 +263,100 @@ export default function CalculatorClient({
 
   useEffect(() => {
     async function loadDraft() {
-      // If we are already editing/viewing an active quote, do not load draft!
-      const currentStore = useCalculatorStore.getState();
-      if (currentStore.activeQuoteId) {
+      try {
+        if (typeof window !== 'undefined' && window.sessionStorage.getItem('enermass-preset-to-load')) {
+          setDraftLoaded(true);
+          return;
+        }
+
+        // If we are already editing/viewing an active quote, do not load draft!
+        const currentStore = useCalculatorStore.getState();
+        if (currentStore.activeQuoteId) {
+          setDraftLoaded(true);
+          return;
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast('Could not restore your draft because your session has expired. Please sign in again.', 'error');
+          setDraftLoaded(true);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('draft_quotes')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(); // Use maybeSingle to prevent PGRST116 single row error if not found
+
+        if (error) {
+          throw error;
+        }
+
+        if (data && !data.state_json) {
+          toast('Your saved draft exists but could not be restored because its state is incomplete.', 'error');
+        }
+
+        if (data?.state_json) {
+          setInitialDraftId(data.id);
+          setRestoredDate(new Date(data.updated_at));
+          const store = useCalculatorStore as any;
+          const draftState = pickCalculatorDraftState(data.state_json);
+          const selectedDraftSystemId = draftState.selectedSystemId;
+          const currentSystems = store.getState().dbSystems ?? [];
+          if (
+            selectedDraftSystemId &&
+            currentSystems.length > 0 &&
+            !currentSystems.some((system: any) => system.id === selectedDraftSystemId)
+          ) {
+            draftState.selectedSystemId = null;
+            toast('Your saved draft references a preset that no longer exists. Please choose a preset again.', 'error');
+          }
+          store.setState(draftState);
+          store.getState().recalculate();
+        }
+      } catch (err) {
+        console.error('[calculator] draft restore failed', err);
+        toast('Could not restore your saved draft. Please refresh or sign in again.', 'error');
+      } finally {
         setDraftLoaded(true);
-        return;
       }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setDraftLoaded(true); return; }
-
-      const { data, error } = await supabase
-        .from('draft_quotes')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(); // Use maybeSingle to prevent PGRST116 single row error if not found
-      
-      if (data && !error && data.state_json) {
-        setInitialDraftId(data.id);
-        setRestoredDate(new Date(data.updated_at));
-        const store = useCalculatorStore as any;
-        store.setState(pickCalculatorDraftState(data.state_json));
-        store.getState().recalculate();
-      }
-      setDraftLoaded(true);
     }
     loadDraft();
-  }, []);
+  }, [toast]);
 
   const { syncState, forceSave, draftId } = useCalculatorAutoSave(initialDraftId);
+
+  useEffect(() => {
+    const refreshMasterData = async () => {
+      if (masterRefreshInFlightRef.current) return;
+      masterRefreshInFlightRef.current = true;
+      try {
+        await useCalculatorStore.getState().fetchMasterData();
+        useCalculatorStore.getState().recalculate();
+      } catch (err) {
+        console.error('[calculator] failed to refresh master data after update signal', err);
+      } finally {
+        masterRefreshInFlightRef.current = false;
+      }
+    };
+
+    window.addEventListener(MASTER_DATA_UPDATED_EVENT, refreshMasterData);
+    let channel: BroadcastChannel | null = null;
+    try {
+      if ('BroadcastChannel' in window) {
+        channel = new BroadcastChannel(MASTER_DATA_UPDATED_EVENT);
+        channel.onmessage = refreshMasterData;
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener(MASTER_DATA_UPDATED_EVENT, refreshMasterData);
+      channel?.close();
+    };
+  }, []);
 
   const handleDismissDraft = () => {
     // Just hide the banner — do NOT reset the store or the draft
@@ -305,14 +371,22 @@ export default function CalculatorClient({
       selectSystem(stateOrId);
     } else if (stateOrId && typeof stateOrId === 'object') {
       const store = useCalculatorStore as any;
-      store.setState(stateOrId);
+      store.setState(pickCalculatorDraftState(stateOrId));
       store.getState().recalculate();
     }
   };
 
   const handleSaveModalOpen = () => {
     const store = useCalculatorStore as any;
-    const payload = JSON.parse(JSON.stringify(store.getState()));
+    const snapshot = store.getState();
+    const payload = JSON.parse(JSON.stringify({
+      selectedSystemId: snapshot.selectedSystemId,
+      selectedState: snapshot.selectedState,
+      dbStateData: snapshot.dbStateData,
+      dbSystems: snapshot.dbSystems,
+      calcResult: snapshot.calcResult,
+      targetMarginPct: snapshot.targetMarginPct,
+    }));
     setPresetPayload(payload);
     setIsSavePresetOpen(true);
   };
@@ -336,25 +410,25 @@ export default function CalculatorClient({
     const raw = window.sessionStorage.getItem('enermass-preset-to-load');
     if (!raw) return;
 
-    presetHandoffLoadedRef.current = true;
-    window.sessionStorage.removeItem('enermass-preset-to-load');
-
     try {
       const handoff = JSON.parse(raw);
       const store = useCalculatorStore as any;
+      presetHandoffLoadedRef.current = true;
 
       if (handoff?.source === 'custom_presets' && handoff.calculatorState) {
-        store.setState({
+        store.setState(pickCalculatorDraftState({
           ...handoff.calculatorState,
           selectedState: handoff.stateName || handoff.calculatorState.selectedState || handoff.calculatorState.state,
-        });
+        } as any));
         store.getState().recalculate();
+        window.sessionStorage.removeItem('enermass-preset-to-load');
         toast('Preset loaded in calculator.', 'success');
         return;
       }
 
       if (handoff?.id) {
         selectSystem(handoff.id);
+        window.sessionStorage.removeItem('enermass-preset-to-load');
         toast(
           handoff.stateName
             ? `Preset loaded. State set to ${handoff.stateName}.`
@@ -472,12 +546,15 @@ export default function CalculatorClient({
     setIsModalOpen(false);
     if (modalIntent === 'print') {
       toast('Quote saved! Downloading PDF...', 'success');
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 60_000);
       try {
         const response = await fetch('/api/quotes/generate-pdf', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
+          signal: controller.signal,
           body: JSON.stringify({
             quoteId: quote.quoteId,
             download: true,
@@ -496,26 +573,24 @@ export default function CalculatorClient({
         document.body.appendChild(a);
         a.click();
         a.remove();
-        window.URL.revokeObjectURL(url);
+        window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
         
         toast('PDF downloaded successfully!', 'success');
       } catch (err) {
         console.error('Error generating PDF:', err);
-        toast('Quote saved, but PDF download failed.', 'error');
+        toast(err instanceof DOMException && err.name === 'AbortError'
+          ? 'Quote saved, but PDF generation timed out. Please try downloading from Quotes.'
+          : 'Quote saved, but PDF download failed.',
+          'error');
+      } finally {
+        window.clearTimeout(timeoutId);
       }
     } else {
       toast(`Quote ${quote.quoteId} saved as draft!`, 'success');
     }
 
     if (draftId) {
-      const { data: quoteRow } = await supabase
-        .from('quotes')
-        .select('id')
-        .eq('quote_number', quote.quoteId)
-        .single();
-      if (quoteRow?.id) {
-        await supabase.from('draft_quotes').delete().eq('id', draftId);
-      }
+      await supabase.from('draft_quotes').delete().eq('id', draftId);
     }
   };
 
@@ -585,6 +660,16 @@ export default function CalculatorClient({
           <button type="button" onClick={handleDismissDraft} className="p-1 rounded-md hover:bg-accent/20 text-accent transition-colors cursor-pointer" title="Dismiss notification">
             <X size={16} />
           </button>
+        </div>
+      )}
+
+      {calcError && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <div>
+            <div className="font-semibold">Calculation needs attention</div>
+            <div className="text-error/90">{calcError}</div>
+          </div>
         </div>
       )}
 

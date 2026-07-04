@@ -160,7 +160,7 @@ export default function MastersDashboardPage() {
         fetchCount('eq_batteries').then(c => countsMap.batteries = c),
         fetchCount('eq_mounting_structures').then(c => countsMap.structures = c),
         fetchCount('bom_template_items').then(c => countsMap.accessories = c),
-        fetchCount('rate_master', true).then(c => countsMap.pricing = c),
+        fetchCount('bom_template_items').then(c => countsMap.pricing = c),
         fetchCount('rate_master', true).then(c => countsMap.rateOverrides = c),
         fetchCount('calculation_schemes').then(c => countsMap.subsidy = c),
         fetchCount('state_terms_templates').then(c => countsMap.terms = c),

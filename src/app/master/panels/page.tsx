@@ -26,6 +26,7 @@ import { z } from 'zod';
 
 interface Panel {
   id: string;
+  source_global_id?: string | null;
   brand: string;
   model: string;
   wattage_w: number;
@@ -131,9 +132,6 @@ export default function PanelsMasterPage() {
     setColumnsOrder(newOrder);
   };
 
-  // 3. Row Spacing Density (Item 91)
-  const [rowDensity, setRowDensity] = useState<'compact' | 'comfortable'>('comfortable');
-
   // 4. Advanced Filters / Saved Views (Item 92)
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [currentViewName, setCurrentViewName] = useState('');
@@ -228,6 +226,49 @@ export default function PanelsMasterPage() {
   const [duplicateConflicts, setDuplicateConflicts] = useState<any[]>([]);
   const [showConflictsModal, setShowConflictsModal] = useState(false);
 
+  const readImportCell = (row: any, ...keys: string[]) => {
+    for (const key of keys) {
+      if (row[key] !== undefined && row[key] !== null && row[key] !== '') return row[key];
+      const normalizedKey = Object.keys(row).find((candidate) => candidate.trim().toLowerCase() === key.trim().toLowerCase());
+      if (normalizedKey && row[normalizedKey] !== undefined && row[normalizedKey] !== null && row[normalizedKey] !== '') {
+        return row[normalizedKey];
+      }
+    }
+    return '';
+  };
+
+  const sameText = (a: unknown, b: unknown) =>
+    String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
+
+  const sameNumber = (a: unknown, b: unknown, precision = 4) => {
+    const left = Number(a);
+    const right = Number(b);
+    if (!Number.isFinite(left) && !Number.isFinite(right)) return true;
+    return Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) < Math.pow(10, -precision);
+  };
+
+  const findImportMatch = (row: any) => {
+    const ids = [row.__master_id, row.__source_global_id].filter(Boolean).map(String);
+    const idMatch = panels?.find((item) => ids.includes(item.id) || (item.source_global_id ? ids.includes(item.source_global_id) : false));
+    if (idMatch) return idMatch;
+
+    return panels?.find((item) =>
+      sameText(item.brand, row.brand) &&
+      sameText(item.model, row.model) &&
+      sameNumber(item.wattage_w, row.wattage_w, 0)
+    );
+  };
+
+  const panelRowChanged = (existing: Panel, row: any) =>
+    !sameText(existing.brand, row.brand) ||
+    !sameText(existing.model, row.model) ||
+    !sameNumber(existing.wattage_w, row.wattage_w, 0) ||
+    !sameText(existing.panel_type, row.panel_type) ||
+    !sameNumber(existing.rate_per_watt, row.rate_per_watt, 4) ||
+    !sameNumber(normalizeGstRate(existing.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE), row.gst_pct, 5) ||
+    !sameText(existing.description, row.description) ||
+    !sameText(existing.specification_details, row.specification_details);
+
   const handleImportFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -268,45 +309,41 @@ export default function PanelsMasterPage() {
     // Parse raw rows based on mappings
     const parsedRows = importDataList.map((row: any) => {
       return {
-        brand: row[importMappings.brand] || 'Unknown Brand',
-        model: row[importMappings.model] || 'Unknown Model',
-        wattage_w: parseInt(row[importMappings.wattage_w]) || 550,
-        panel_type: row[importMappings.panel_type] || 'Mono PERC',
-        rate_per_watt: parseFloat(row[importMappings.rate_per_watt]) || 20,
-        gst_pct: normalizeGstRate(row[importMappings.gst_pct], TAX_CONSTANTS.PANEL_GST_RATE),
-        description: row[importMappings.description] || '',
-        specification_details: row[importMappings.specification_details] || row[importMappings.description] || '',
+        __master_id: readImportCell(row, 'Master ID', 'master_id', 'id'),
+        __source_global_id: readImportCell(row, 'Source Global ID', 'source_global_id'),
+        brand: row[importMappings.brand] || readImportCell(row, 'Brand', 'brand') || 'Unknown Brand',
+        model: row[importMappings.model] || readImportCell(row, 'Model', 'model') || 'Unknown Model',
+        wattage_w: parseInt(row[importMappings.wattage_w] || readImportCell(row, 'Wattage (W)', 'wattage_w', 'capacity'), 10) || 550,
+        panel_type: row[importMappings.panel_type] || readImportCell(row, 'Panel Type', 'panel_type') || 'Mono PERC',
+        rate_per_watt: parseFloat(row[importMappings.rate_per_watt] || readImportCell(row, 'Rate per Watt (INR)', 'rate_per_watt', 'rate')) || 20,
+        gst_pct: normalizeGstRate(row[importMappings.gst_pct] || readImportCell(row, 'GST Percentage', 'gst_pct'), TAX_CONSTANTS.PANEL_GST_RATE),
+        description: row[importMappings.description] || readImportCell(row, 'Description', 'description') || '',
+        specification_details: row[importMappings.specification_details] || readImportCell(row, 'Specification Details', 'specification_details', 'Specifications', 'specifications') || row[importMappings.description] || readImportCell(row, 'Description', 'description') || '',
       };
-    });
+    }).filter((row) => row.brand && row.model && !Number.isNaN(row.wattage_w) && !Number.isNaN(row.rate_per_watt));
 
-    // Check duplicate SKUs in database (Item 96)
-    const conflicts: any[] = [];
-    const nonConflicts: any[] = [];
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
 
-    parsedRows.forEach((row) => {
-      const isDuplicate = panels?.some((p) => p.brand.toLowerCase() === row.brand.toLowerCase() && p.model.toLowerCase() === row.model.toLowerCase());
-      if (isDuplicate) {
-        conflicts.push(row);
+    for (const row of parsedRows) {
+      const { __master_id, __source_global_id, ...payload } = row;
+      const existing = findImportMatch(row);
+
+      if (existing) {
+        if (panelRowChanged(existing, payload)) {
+          await updateMutation.mutateAsync({ id: existing.id, updates: payload });
+          updated += 1;
+        } else {
+          skipped += 1;
+        }
       } else {
-        nonConflicts.push(row);
+        await createMutation.mutateAsync(payload);
+        created += 1;
       }
-    });
-
-    if (conflicts.length > 0) {
-      setDuplicateConflicts(conflicts);
-      setShowConflictsModal(true);
-      
-      // Upload non conflicts first
-      for (const row of nonConflicts) {
-        await createMutation.mutateAsync(row);
-      }
-    } else {
-      // Direct upload
-      for (const row of parsedRows) {
-        await createMutation.mutateAsync(row);
-      }
-      toast(`Successfully imported ${parsedRows.length} panels`, 'success');
     }
+
+    toast(`Import complete: ${created} created, ${updated} updated, ${skipped} unchanged`, 'success');
   };
 
   const resolveDuplicateConflicts = async (strategy: 'overwrite' | 'skip' | 'duplicate') => {
@@ -545,6 +582,9 @@ export default function PanelsMasterPage() {
 
   const handleExport = () => {
     const dataToExport = filteredPanels.map((p) => ({
+      'Master ID': p.id,
+      'Source Global ID': p.source_global_id || '',
+      Scope: p.org_id ? 'Org Override' : 'Global Baseline',
       Brand: p.brand,
       Model: p.model,
       'Wattage (W)': p.wattage_w,
@@ -698,16 +738,6 @@ export default function PanelsMasterPage() {
               </div>
             )}
           </div>
-
-          {/* Row density Spacing toggle (Item 91) */}
-          <select
-            value={rowDensity}
-            onChange={(e) => setRowDensity(e.target.value as any)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-text-primary outline-none"
-          >
-            <option value="comfortable">Comfortable Spacing</option>
-            <option value="compact">Compact Spacing</option>
-          </select>
         </div>
 
         {/* Action Buttons */}
@@ -828,8 +858,7 @@ export default function PanelsMasterPage() {
                     {columnsOrder.map((col) => {
                       if (!visibleColumns[col]) return null;
 
-                      // Apply padding dynamically based on density (Item 91)
-                      const paddingClass = rowDensity === 'compact' ? 'py-1 px-3' : 'py-3.5 px-3';
+                      const paddingClass = 'py-3.5 px-3';
 
                       if (col === 'select') {
                         return (

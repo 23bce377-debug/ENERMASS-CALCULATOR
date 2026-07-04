@@ -33,6 +33,7 @@ import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
 
 interface BomItem {
   id: string;
+  source_global_id?: string | null;
   org_id: string | null;
   category_id: string;
   sku_code: string;
@@ -103,6 +104,45 @@ export default function AccessoriesMasterPage() {
       { value: 'false', label: 'No' }
     ]},
   ], [sectionOptions]);
+
+  const readImportCell = (row: any, ...keys: string[]) => {
+    for (const key of keys) {
+      if (row[key] !== undefined && row[key] !== null && row[key] !== '') return row[key];
+      const normalizedKey = Object.keys(row).find((candidate) => candidate.trim().toLowerCase() === key.trim().toLowerCase());
+      if (normalizedKey && row[normalizedKey] !== undefined && row[normalizedKey] !== null && row[normalizedKey] !== '') {
+        return row[normalizedKey];
+      }
+    }
+    return '';
+  };
+
+  const sameText = (a: unknown, b: unknown) =>
+    String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
+
+  const sameNumber = (a: unknown, b: unknown, precision = 4) => {
+    const left = Number(a);
+    const right = Number(b);
+    if (!Number.isFinite(left) && !Number.isFinite(right)) return true;
+    return Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) < Math.pow(10, -precision);
+  };
+
+  const findImportMatch = (row: any) => {
+    const ids = [row.__master_id, row.__source_global_id].filter(Boolean).map(String);
+    const idMatch = items?.find((item) => ids.includes(item.id) || (item.source_global_id ? ids.includes(item.source_global_id) : false));
+    if (idMatch) return idMatch;
+
+    return items?.find((item) => sameText(item.sku_code, row.sku_code));
+  };
+
+  const accessoryRowChanged = (existing: BomItem, row: any) =>
+    !sameText(existing.category_id, row.category_id) ||
+    !sameText(existing.sku_code, row.sku_code) ||
+    !sameText(existing.description, row.description) ||
+    !sameText(existing.specification_details, row.specification_details) ||
+    !sameText(existing.notes, row.notes) ||
+    !sameText(existing.unit, row.unit) ||
+    !sameNumber(existing.default_rate, row.default_rate, 2) ||
+    !sameNumber(normalizeGstRate(existing.gst_pct, 0.18), row.gst_pct, 5);
 
   // ─── Filter & Search Logic ──────────────────────────────────────────────────
   
@@ -225,6 +265,9 @@ export default function AccessoriesMasterPage() {
 
   const handleExport = () => {
     const dataToExport = filteredItems.map((i) => ({
+      'Master ID': i.id,
+      'Source Global ID': i.source_global_id || '',
+      Scope: i.org_id ? 'Org Override' : 'Global Baseline',
       Category: i.category_id,
       'SKU Code': i.sku_code,
       Description: i.description,
@@ -246,14 +289,16 @@ export default function AccessoriesMasterPage() {
       const rawData = await importFromExcel(file);
       
       const parsedRows = rawData.map((row: any) => ({
-        category_id: row.Category || row.category_id || row.Section || row.section || (categories?.[0]?.id ?? 'electrical_protection'),
-        sku_code: row['SKU Code'] || row.sku_code || row['Sub Type'] || row.sub_type || 'ACCESSORY',
-        description: row.Description || row.description,
-        specification_details: row['Specification Details'] || row.specification_details || row.Specifications || row.specifications || row.Notes || row.notes || row.Remarks || row.remarks || '',
-        notes: row.Notes || row.notes || row.Remarks || row.remarks || '',
-        unit: row.Unit || row.unit || 'Nos',
-        default_rate: parseFloat(row['Selling Rate (INR)'] || row.default_rate || row.rate || 0),
-        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, 0.18),
+        __master_id: readImportCell(row, 'Master ID', 'master_id', 'id'),
+        __source_global_id: readImportCell(row, 'Source Global ID', 'source_global_id'),
+        category_id: readImportCell(row, 'Category', 'category_id', 'Section', 'section') || (categories?.[0]?.id ?? 'electrical_protection'),
+        sku_code: readImportCell(row, 'SKU Code', 'sku_code', 'Sub Type', 'sub_type') || 'ACCESSORY',
+        description: readImportCell(row, 'Description', 'description'),
+        specification_details: readImportCell(row, 'Specification Details', 'specification_details', 'Specifications', 'specifications', 'Notes', 'notes', 'Remarks', 'remarks') || '',
+        notes: readImportCell(row, 'Notes', 'notes', 'Remarks', 'remarks') || '',
+        unit: readImportCell(row, 'Unit', 'unit') || 'Nos',
+        default_rate: parseFloat(readImportCell(row, 'Selling Rate (INR)', 'default_rate', 'rate') || 0),
+        gst_pct: normalizeGstRate(readImportCell(row, 'GST Percentage', 'gst_pct'), 0.18),
         is_survey_dependent: false,
         civil_required_only: false,
       })).filter((r) => r.description && !isNaN(r.default_rate));
@@ -273,11 +318,28 @@ export default function AccessoriesMasterPage() {
 
       if (!confirmed) return;
 
+      let created = 0;
+      let updated = 0;
+      let skipped = 0;
+
       for (const row of parsedRows) {
-        await createMutation.mutateAsync(row);
+        const { __master_id, __source_global_id, ...payload } = row;
+        const existing = findImportMatch(row);
+
+        if (existing) {
+          if (accessoryRowChanged(existing, payload)) {
+            await updateMutation.mutateAsync({ id: existing.id, updates: payload });
+            updated += 1;
+          } else {
+            skipped += 1;
+          }
+        } else {
+          await createMutation.mutateAsync(payload);
+          created += 1;
+        }
       }
 
-      toast(`Successfully imported ${parsedRows.length} accessories`, 'success');
+      toast(`Import complete: ${created} created, ${updated} updated, ${skipped} unchanged`, 'success');
     } catch (err: any) {
       toast(err.message || 'Import failed', 'error');
     } finally {

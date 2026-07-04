@@ -11,23 +11,10 @@ import {
   orgAdminTabs,
 } from '@/components/saas/ManagementUi';
 import { requireOrgAdminPageSession } from '@/lib/saas/managementPageGuards';
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
 import { getBillingOverview } from '@/lib/saas/services/managementService';
 
 export default async function BillingPage() {
   const session = await requireOrgAdminPageSession();
-  
-  const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_super_admin')
-    .eq('id', session.user.id)
-    .single();
-
-  if (!profile?.is_super_admin) {
-    redirect('/unauthorized');
-  }
 
   const billing = await getBillingOverview(session.orgId);
 

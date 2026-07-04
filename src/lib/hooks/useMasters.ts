@@ -1,6 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase/client';
 
+export const MASTER_DATA_UPDATED_EVENT = 'enermass-master-data-updated';
+
+function notifyMasterDataUpdated(entity?: string) {
+  if (typeof window === 'undefined') return;
+  const detail = { entity, updatedAt: Date.now() };
+  window.dispatchEvent(new CustomEvent(MASTER_DATA_UPDATED_EVENT, { detail }));
+  try {
+    if ('BroadcastChannel' in window) {
+      const channel = new BroadcastChannel(MASTER_DATA_UPDATED_EVENT);
+      channel.postMessage(detail);
+      channel.close();
+    }
+  } catch {}
+}
+
 // ─── Common Helper ────────────────────────────────────────────────────────────
 
 export async function getOrgContext() {
@@ -567,6 +582,7 @@ export function useMasterCreateMutation<T>(entity: string) {
       }
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
       queryClient.invalidateQueries({ queryKey: ['masters', 'dashboard'] });
+      notifyMasterDataUpdated(entity);
     }
   });
 }
@@ -665,6 +681,7 @@ export function useMasterUpdateMutation<T>(entity: string) {
         console.error('Failed to revalidate master cache:', err);
       }
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
+      notifyMasterDataUpdated(entity);
     }
   });
 }
@@ -748,6 +765,7 @@ export function useMasterDeleteMutation(entity: string) {
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
       queryClient.invalidateQueries({ queryKey: ['masters', 'dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['bom-items-pricing'] });
+      notifyMasterDataUpdated(entity);
     }
   });
 }
@@ -837,6 +855,7 @@ export function useMasterBulkUpdateMutation(entity: string) {
         console.error('Failed to revalidate master cache:', err);
       }
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
+      notifyMasterDataUpdated(entity);
     }
   });
 }
@@ -1020,6 +1039,7 @@ export function useUpdateSubsidyMutation() {
       }
       queryClient.invalidateQueries({ queryKey: ['masters', 'subsidy'] });
       queryClient.invalidateQueries({ queryKey: ['masters', 'state_rules'] });
+      notifyMasterDataUpdated('subsidy');
     }
   });
 }
@@ -1102,6 +1122,7 @@ export function useCreateSubsidyMutation() {
       }
       queryClient.invalidateQueries({ queryKey: ['masters', 'subsidy'] });
       queryClient.invalidateQueries({ queryKey: ['masters', 'state_rules'] });
+      notifyMasterDataUpdated('subsidy');
     }
   });
 }
@@ -1157,6 +1178,7 @@ export function useDeleteSubsidyMutation() {
       }
       queryClient.invalidateQueries({ queryKey: ['masters', 'subsidy'] });
       queryClient.invalidateQueries({ queryKey: ['masters', 'state_rules'] });
+      notifyMasterDataUpdated('subsidy');
     }
   });
 }

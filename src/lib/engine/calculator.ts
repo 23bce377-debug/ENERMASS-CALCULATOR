@@ -102,6 +102,7 @@ export interface CalcInput {
   gstOnOutput?: number;
   gstOnOutputOverride?: number;
   allowGstOverride?: boolean;
+  itcEligible?: boolean;
   overrides?: Record<number, RowOverride>;
   rateMaster?: RateMaster;
   disabledItemIndices?: Record<number, boolean>;
@@ -381,6 +382,9 @@ export function buildQuotedLines(
   const targetPaise = Math.max(0, Math.round(sanitizeNumber(targetMrpExclGST, 0) * 100));
 
   if (included.length === 0 || baseTotalPaise <= 0) {
+    if (targetPaise > 0) {
+      throw new Error('Cannot allocate quote total because all included BOM lines are zero. Select priced BOM items before saving.');
+    }
     return lines.map((line) => withLineTotal(line, 0));
   }
 
@@ -874,8 +878,7 @@ export function resolveStructureItems(
           
           structureQty = (lookupWeight + baseWeight) * (1 + wastage) * (1 + fasteners);
           if (ratePerKg === 0 && structureQty > 0) {
-              // Enforce 5000/kW default if DB rates are missing
-              ratePerKg = (5000 * capacityKW) / structureQty;
+            throw new Error(`Missing rate per kg for structure "${struct.name}". Update the structure master before quoting.`);
           }
           structureRate = ratePerKg;
           structureUnit = 'kg';
@@ -956,9 +959,6 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
   const systems = input.systems ?? SYSTEMS;
   // ── Step 1: Lookup system ──
   let system = systems.find((s) => s.id === input.systemId);
-  if (!system && systems.length > 0) {
-    system = systems[0];
-  }
   if (!system) {
     throw new Error(`System not found: "${input.systemId}"`);
   }
@@ -966,9 +966,6 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
   // ── Step 2: Lookup state ──
   const stateDataResolved = input.stateData ?? {};
   let stateData = stateDataResolved[input.state];
-  if (!stateData) {
-    stateData = stateDataResolved['Kerala'] || Object.values(stateDataResolved)[0];
-  }
   if (!stateData) {
     throw new Error(`State not found: "${input.state}"`);
   }
@@ -981,6 +978,54 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
     inverterQtyOverride: input.inverterQtyOverride,
     batteryRateOverride: input.batteryRateOverride,
     batteryQtyOverride: input.batteryQtyOverride,
+  };
+  const panelMixEntries = Object.entries(input.panelMix ?? {}).filter(
+    ([, qty]) => Number.isFinite(qty) && qty > 0
+  );
+  const panelMixTotalQty = panelMixEntries.reduce((sum, [, qty]) => sum + qty, 0);
+  const inverterMixTotalQty = Object.values(input.selectedInverterMix ?? {}).reduce(
+    (sum, qty) => sum + (Number.isFinite(qty) && qty > 0 ? qty : 0),
+    0,
+  );
+  const batteryMixTotalQty = Object.values(input.selectedBatteryMix ?? {}).reduce(
+    (sum, qty) => sum + (Number.isFinite(qty) && qty > 0 ? qty : 0),
+    0,
+  );
+  const buildPanelMixItem = (remarks?: string): BomItem | null => {
+    if (panelMixEntries.length === 0 || !input.dbPanels || input.dbPanels.length === 0) {
+      return null;
+    }
+
+    let totalQty = 0;
+    let totalAmount = 0;
+    let totalGstAmount = 0;
+    let totalWatts = 0;
+
+    for (const [panelId, qty] of panelMixEntries) {
+      const panel = input.dbPanels.find((entry) => entry.id === panelId);
+      if (!panel) continue;
+
+      const wattage = sanitizeNumber(panel.wattage, 0);
+      const ratePerPanel = sanitizeNumber(panel.ratePerWatt, 0) * wattage;
+      const gstPct = normalizeGstRate(panel.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE);
+
+      totalQty += qty;
+      totalAmount += ratePerPanel * qty;
+      totalGstAmount += ratePerPanel * qty * gstPct;
+      totalWatts += wattage * qty;
+    }
+
+    if (totalQty <= 0) return null;
+
+    return {
+      description: 'PANEL',
+      qty: totalQty,
+      ratePerUnit: totalAmount / totalQty,
+      gstPct: totalAmount > 0 ? totalGstAmount / totalAmount : TAX_CONSTANTS.PANEL_GST_RATE,
+      unit: 'Nos',
+      remarks: remarks || 'Mixed panel selection',
+      unitWattage: totalWatts > 0 ? totalWatts / totalQty : undefined,
+    };
   };
 
   let capacityKW = input.panelCapacityKW || system.capacityKW || (system as any).capacity_kw || 1.0;
@@ -998,26 +1043,11 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
 
     if (descUpper === 'PANEL') {
       processedPanels = true;
-      const panelMixEntries = Object.entries(input.panelMix ?? {}).filter(
-        ([, qty]) => Number.isFinite(qty) && qty > 0
-      );
       const hasPanelSelection = panelMixEntries.length > 0 || !!input.selectedPanelId;
       if (hasPanelSelection && input.dbPanels && input.dbPanels.length > 0) {
         if (panelMixEntries.length > 0) {
-          for (const [panelId, qty] of panelMixEntries) {
-            const p = input.dbPanels.find(x => x.id === panelId);
-            if (p) {
-              resolvedItems.push({
-                description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
-                qty: qty,
-                ratePerUnit: p.ratePerWatt * p.wattage,
-                gstPct: p.gst_pct ?? TAX_CONSTANTS.PANEL_GST_RATE,
-                unit: 'Nos',
-                remarks: item.remarks ?? '',
-                unitWattage: p.wattage,
-              });
-            }
-          }
+          const panelMixItem = buildPanelMixItem(item.remarks ?? 'Mixed panel selection');
+          if (panelMixItem) resolvedItems.push(panelMixItem);
         } else if (input.selectedPanelId) {
           const p = input.dbPanels.find(x => x.id === input.selectedPanelId);
           if (p) {
@@ -1122,24 +1152,11 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
 
   // Ensure PANEL, INVERTER, and BATTERY are included even if missing from system.items
   if (!processedPanels) {
-    const panelMixEntries = Object.entries(input.panelMix ?? {}).filter(([, qty]) => Number.isFinite(qty) && qty > 0);
     const hasPanelSelection = panelMixEntries.length > 0 || !!input.selectedPanelId;
     if (hasPanelSelection && input.dbPanels && input.dbPanels.length > 0) {
       if (panelMixEntries.length > 0) {
-        for (const [panelId, qty] of panelMixEntries) {
-          const p = input.dbPanels.find(x => x.id === panelId);
-          if (p) {
-            resolvedItems.push({
-              description: `PANEL ${p.brand} ${p.model} (${p.wattage}W)`,
-              qty: qty,
-              ratePerUnit: p.ratePerWatt * p.wattage,
-              gstPct: p.gst_pct ?? TAX_CONSTANTS.PANEL_GST_RATE,
-              unit: 'Nos',
-              remarks: '',
-              unitWattage: p.wattage,
-            });
-          }
-        }
+        const panelMixItem = buildPanelMixItem('Mixed panel selection');
+        if (panelMixItem) resolvedItems.push(panelMixItem);
       } else if (input.selectedPanelId) {
         const p = input.dbPanels.find(x => x.id === input.selectedPanelId);
         if (p) {
@@ -1417,9 +1434,15 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
   const systemKw = capacityKW;
   const panelCount = equipmentOverrides.panelQtyOverride ?? system.panelQty ?? 0;
   
-  // Phase and Inverter approximations based on current state parameters
+  // Phase and inverter count based on the selected DB inverter mix.
   const inverterCount = resolvedItems.filter(i => i.description.toUpperCase().includes('INVERTER')).reduce((acc, curr) => acc + curr.qty, 0) || 1;
-  const phase = systemKw > 5 ? 3 : 1; 
+  const selectedInverterEntries = Object.entries(input.selectedInverterMix ?? {})
+    .filter(([, qty]) => Number.isFinite(qty) && qty > 0);
+  const selectedInverterPhase = selectedInverterEntries.reduce((resolvedPhase, [inverterId]) => {
+    const inverter = input.dbInverters?.find((entry: any) => entry.id === inverterId);
+    return Math.max(resolvedPhase, Number(inverter?.phases ?? 0));
+  }, 0) || 1;
+  const phase: 1 | 3 = selectedInverterPhase >= 3 ? 3 : 1;
 
   const electricalBOM = generateElectricalBOM({
     systemKw,
@@ -1483,17 +1506,24 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
     const sourceLabel = rowOverride?.sourceLabel ?? item.sourceLabel;
 
     // Resolve effective values
+    const isPanelLine = resolvedDescription.toUpperCase() === 'PANEL';
+    const isInverterLine = resolvedDescription.toUpperCase() === 'INVERTER';
+    const isBatteryLine = resolvedDescription.toUpperCase() === 'BATTERY';
+
     const effectiveQty = roundTo5(
-      rowOverride?.qty !== undefined
+      isPanelLine && panelMixTotalQty > 0
+        ? panelMixTotalQty
+        : isInverterLine && inverterMixTotalQty > 0
+        ? inverterMixTotalQty
+        : isBatteryLine && batteryMixTotalQty > 0
+        ? batteryMixTotalQty
+        : rowOverride?.qty !== undefined
         ? rowOverride.qty
-        : resolvedDescription.toUpperCase() === 'PANEL' &&
-          equipmentOverrides.panelQtyOverride !== undefined
+        : isPanelLine && equipmentOverrides.panelQtyOverride !== undefined
         ? equipmentOverrides.panelQtyOverride
-        : resolvedDescription.toUpperCase() === 'INVERTER' &&
-          equipmentOverrides.inverterQtyOverride !== undefined
+        : isInverterLine && equipmentOverrides.inverterQtyOverride !== undefined
         ? equipmentOverrides.inverterQtyOverride
-        : resolvedDescription.toUpperCase() === 'BATTERY' &&
-          equipmentOverrides.batteryQtyOverride !== undefined
+        : isBatteryLine && equipmentOverrides.batteryQtyOverride !== undefined
         ? equipmentOverrides.batteryQtyOverride
         : resolvedDescription.toUpperCase() === 'DC CABLE' && input.dcCableLengthM !== undefined
         ? input.dcCableLengthM
@@ -1711,13 +1741,13 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
     }
   }
 
-  const subsidyAmount = roundToINR(subsidyResult.amount);
+  const subsidyAmount = roundToINR(Math.min(sanitizeNumber(subsidyResult.amount, 0), finalCustomerPrice));
 
   // ── Step 14: Beneficiary contribution ──
   // Commercial customers can claim GST Input Tax Credit on the system price.
   // The ITC is exactly the output GST portion of the final invoice price.
   let itcAmount = 0;
-  if (input.projectType === 'commercial') {
+  if (input.projectType === 'commercial' && input.itcEligible === true) {
     const finalCustomerPriceExclGST = finalCustomerPrice / (1 + gstOutputRate);
     itcAmount = finalCustomerPrice - finalCustomerPriceExclGST;
   }
@@ -1822,6 +1852,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
 
   assertCalcResultIntegrity(result, {
     projectType: input.projectType,
+    itcEligible: input.itcEligible,
     context: 'calculateSystem',
   });
 

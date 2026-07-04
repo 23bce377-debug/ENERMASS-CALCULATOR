@@ -303,6 +303,34 @@ export const PresetORM: any = {
   },
 
   async delete(id: string) {
+    const { data: { session } } = await supabase.auth.getSession();
+    let orgId = null;
+    if (session?.user?.id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('org_id')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      orgId = profile?.org_id;
+    }
+
+    let quoteUsageQuery = supabase
+      .from('quotes')
+      .select('id', { count: 'exact', head: true })
+      .eq('system_id', id);
+    if (orgId) quoteUsageQuery = quoteUsageQuery.eq('org_id', orgId);
+    const { count, error: usageError } = await quoteUsageQuery;
+    if (usageError) throw usageError;
+
+    if ((count ?? 0) > 0) {
+      const { error } = await supabase
+        .from('custom_presets')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      return true;
+    }
+
     const { error } = await supabase
       .from('custom_presets')
       .delete()

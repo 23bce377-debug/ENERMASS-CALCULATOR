@@ -232,32 +232,31 @@ function mapDbQuoteToQuote(q: any): Quote {
 
 // ─── Fetch All Quotes Query ──────────────────────────────────────────────────
 
+export async function fetchQuotesForCurrentUser(): Promise<Quote[]> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) throw new Error('Unauthorized')
+
+  const { ProfileORM } = await import('../../backend/orm/profile')
+  const profile = await ProfileORM.getById(session.user.id)
+  const orgId = profile.org_id
+
+  const { data, error } = await supabase
+    .from('quotes')
+    .select('*, quote_items(*), quote_additional_costs(*), quote_status_history(*)')
+    .eq('org_id', orgId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  const mapped = (data || []).map(mapDbQuoteToQuote)
+  useCalculatorStore.setState({ quotes: mapped })
+  return mapped
+}
+
 export function useQuotesQuery(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['quotes'],
     enabled: options.enabled ?? true,
-    queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) throw new Error('Unauthorized')
-
-      const { ProfileORM } = await import('../../backend/orm/profile')
-      const profile = await ProfileORM.getById(session.user.id)
-      const orgId = profile.org_id
-
-      const { data, error } = await supabase
-        .from('quotes')
-        .select('*, quote_items(*), quote_additional_costs(*), quote_status_history(*)')
-        .eq('org_id', orgId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      const mapped = (data || []).map(mapDbQuoteToQuote)
-      
-      // Keep store quotes list in sync for calculator logic fallback
-      useCalculatorStore.setState({ quotes: mapped })
-      
-      return mapped
-    },
+    queryFn: fetchQuotesForCurrentUser,
   })
 }
 

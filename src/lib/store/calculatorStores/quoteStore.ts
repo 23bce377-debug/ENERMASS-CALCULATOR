@@ -63,6 +63,7 @@ export const createQuoteSlice: StateCreator<
     }
     assertCalcResultIntegrity(state.calcResult, {
       projectType: state.projectType,
+      itcEligible: state.itcEligible,
       context: 'quote save',
     });
 
@@ -369,65 +370,13 @@ export const createQuoteSlice: StateCreator<
       target_margin_amount: state.targetMarginAmount,
       validation_acknowledged: info.validationAcknowledged ?? [],
     };
-    const stripMarginColumns = (row: any) => {
-      const { margin_mode, target_margin_amount, ...rest } = row;
-      return rest;
-    };
-    const isMarginSchemaCacheMiss = (error: any) => {
-      const message = error?.message || JSON.stringify(error);
-      return message.includes('margin_mode') || message.includes('target_margin_amount');
-    };
-
-    if (existingDbId) {
-      const versionToUse = forceOverwrite ? dbVersion : (state.quotes.find((q) => q.quoteId === state.activeQuoteId)?.version ?? 1);
-      const { data: updatedRows, error: updateError } = await supabase
-        .from('quotes')
-        .update(dbQuoteData)
-        .eq('id', existingDbId)
-        .eq('version', versionToUse)
-        .select();
-      let finalUpdatedRows = updatedRows;
-      if (updateError && isMarginSchemaCacheMiss(updateError)) {
-        const { data: fallbackRows, error: fallbackError } = await supabase
-          .from('quotes')
-          .update(stripMarginColumns(dbQuoteData))
-          .eq('id', existingDbId)
-          .eq('version', versionToUse)
-          .select();
-        if (fallbackError) throw new Error(fallbackError.message || JSON.stringify(fallbackError));
-        finalUpdatedRows = fallbackRows;
-      } else if (updateError) {
-        throw new Error(updateError.message || JSON.stringify(updateError));
-      }
-      if (!finalUpdatedRows || finalUpdatedRows.length === 0) {
-        throw new Error('CONCURRENCY_CONFLICT');
-      }
-    } else {
+    if (!existingDbId) {
       dbQuoteData.created_at = now;
-      const { data: newQuote, error: insertError } = await supabase
-        .from('quotes')
-        .insert(dbQuoteData)
-        .select('id')
-        .single();
-      if (insertError && isMarginSchemaCacheMiss(insertError)) {
-        const { data: fallbackQuote, error: fallbackInsertError } = await supabase
-          .from('quotes')
-          .insert(stripMarginColumns(dbQuoteData))
-          .select('id')
-          .single();
-        if (fallbackInsertError) throw new Error(fallbackInsertError.message || JSON.stringify(fallbackInsertError));
-        existingDbId = fallbackQuote.id;
-      } else {
-        if (insertError) throw new Error(insertError.message || JSON.stringify(insertError));
-        existingDbId = newQuote.id;
-      }
     }
 
-    // Delete old items & costs
-    await Promise.all([
-      supabase.from('quote_items').delete().eq('quote_id', existingDbId),
-      supabase.from('quote_additional_costs').delete().eq('quote_id', existingDbId),
-    ]);
+    const versionToUse = existingDbId
+      ? (forceOverwrite ? dbVersion : (state.quotes.find((q) => q.quoteId === state.activeQuoteId)?.version ?? 1))
+      : null;
 
     // Insert customer-quoted items. Base/procurement rates are retained in original_* fields.
     const baseLineByIndex = new Map((quote.calculations.lines ?? []).map((line: any) => [line.index, line]));
@@ -474,41 +423,6 @@ export const createQuoteSlice: StateCreator<
     };
     });
 
-    if (dbItems.length > 0) {
-      const { error: itemsError } = await supabase.from('quote_items').insert(dbItems);
-      if (itemsError) {
-        const message = itemsError.message || JSON.stringify(itemsError);
-        if (
-          message.includes('source_table') ||
-          message.includes('source_item_id') ||
-          message.includes('source_label') ||
-          message.includes('quoted_rate_date') ||
-          message.includes('original_qty') ||
-          message.includes('original_rate') ||
-          message.includes('original_gst')
-        ) {
-          const legacyItems = dbItems.map((item: any) => {
-            const {
-              source_table,
-              source_item_id,
-              source_label,
-              quoted_rate_date,
-              original_qty,
-              original_rate,
-              original_gst,
-              ...legacyItem
-            } = item;
-            return legacyItem;
-          });
-          const { error: legacyItemsError } = await supabase.from('quote_items').insert(legacyItems);
-          if (legacyItemsError) throw new Error(legacyItemsError.message || JSON.stringify(legacyItemsError));
-        } else {
-          throw new Error(message);
-        }
-      }
-    }
-
-    // Insert new costs
     const dbCosts = quote.additionalCosts.map((cost: any, idx: number) => ({
       quote_id: existingDbId,
       description: cost.description,
@@ -516,14 +430,47 @@ export const createQuoteSlice: StateCreator<
       sort_order: idx,
     }));
 
-    if (dbCosts.length > 0) {
-      const { error: costsError } = await supabase.from('quote_additional_costs').insert(dbCosts);
-      if (costsError) throw new Error(costsError.message || JSON.stringify(costsError));
+    const { data: persistedQuote, error: persistError } = await (supabase as any).rpc('persist_quote_atomic', {
+      p_quote_data: dbQuoteData,
+      p_items: dbItems,
+      p_costs: dbCosts,
+      p_existing_quote_id: existingDbId,
+      p_expected_version: versionToUse,
+      p_force_overwrite: Boolean(forceOverwrite),
+    });
+
+    if (persistError) {
+      const message = persistError.message || JSON.stringify(persistError);
+      if (message.includes('CONCURRENCY_CONFLICT')) {
+        throw new Error('CONCURRENCY_CONFLICT');
+      }
+      if (message.includes('persist_quote_atomic') || message.includes('Could not find the function')) {
+        throw new Error('Atomic quote persistence RPC is missing. Apply the latest database migrations before saving quotes.');
+      }
+      throw new Error(message);
     }
+
+    existingDbId = persistedQuote?.id ?? persistedQuote?.quote_id ?? existingDbId;
+    if (!existingDbId) {
+      throw new Error('Quote save failed: database did not return a persisted quote id.');
+    }
+    if (dbItems.length > 0) {
+      const { count: persistedItemCount, error: itemCountError } = await supabase
+        .from('quote_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('quote_id', existingDbId);
+      if (itemCountError) {
+        throw new Error(`Quote save verification failed: ${itemCountError.message}`);
+      }
+      if ((persistedItemCount ?? 0) !== dbItems.length) {
+        throw new Error(`Quote save verification failed: expected ${dbItems.length} line items, found ${persistedItemCount ?? 0}.`);
+      }
+    }
+    const persistedVersion = Number(persistedQuote?.version ?? (versionToUse ? versionToUse + 1 : 1));
 
     // Update local store quotes
     const localQuotes = state.quotes.filter((q) => q.quoteId !== quote.quoteId);
-    quote.version = existingDbId ? (forceOverwrite ? dbVersion : (state.quotes.find((q) => q.quoteId === state.activeQuoteId)?.version ?? 1)) + 1 : 1;
+    quote.version = persistedVersion;
     set({
       quotes: [...localQuotes, quote],
       activeQuoteId: quote.quoteId,
@@ -622,6 +569,10 @@ export const createQuoteSlice: StateCreator<
     const quote = get().quotes.find((q) => q.quoteId === quoteId);
     if (!quote) return;
     get().loadQuote(quoteId);
-    set({ activeQuoteId: null });
+    set({
+      activeQuoteId: null,
+      overrides: { ...(quote.overrides ?? {}) },
+    });
+    get().recalculate();
   },
 });

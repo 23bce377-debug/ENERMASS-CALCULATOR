@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { normalizeGstRate } from '@/lib/utils/gst';
 import { getBatteryGstRate, TAX_CONSTANTS } from '@/lib/tax-constants';
 
@@ -401,9 +401,10 @@ export async function savePresetWithComponents(
     lineItems: LineItem[];
   }
 ) {
-  const supabase = await createClient();
+  const authClient = await createClient();
+  const supabase = createAdminClient();
   let targetPresetId = presetId;
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await authClient.auth.getUser();
   let orgId: string | null = null;
   if (user?.id) {
     const { data: profile } = await supabase
@@ -424,6 +425,7 @@ export async function savePresetWithComponents(
 
   async function validateCatalogReferences(lineItems: LineItem[]) {
     const checks = new Map<string, Map<string, string[]>>();
+    const seenCatalogItems = new Map<string, string>();
     const addCheck = (table: string, id: string, description: string) => {
       if (!checks.has(table)) checks.set(table, new Map());
       const entries = checks.get(table)!;
@@ -435,6 +437,12 @@ export async function savePresetWithComponents(
       const itemCategory = canonicalPresetCategory(item.category);
       const description = item.description || item.skuCode || item.catalogItemId;
       const text = `${item.description ?? ''} ${item.brand ?? ''} ${item.model ?? ''}`.toLowerCase();
+      const duplicateKey = `${itemCategory}:${item.catalogType}:${item.catalogItemId}`;
+      const firstDescription = seenCatalogItems.get(duplicateKey);
+      if (firstDescription) {
+        throw new Error(`Preset contains duplicate catalog item "${description}" already added as "${firstDescription}". Remove one entry or adjust its quantity.`);
+      }
+      seenCatalogItems.set(duplicateKey, description);
 
       if (itemCategory === 'panel') addCheck('eq_panels', item.catalogItemId, description);
       else if (itemCategory === 'inverter') addCheck('eq_inverters', item.catalogItemId, description);
@@ -507,6 +515,9 @@ export async function savePresetWithComponents(
 
     if (existingErr) throw mapDatabaseError(existingErr, 'Failed to check existing preset');
     if (!existingPreset) throw new Error('Preset not found in system presets.');
+    if ((existingPreset as any).org_id && (existingPreset as any).org_id !== orgId) {
+      throw new Error('You can only modify presets that belong to your organisation.');
+    }
 
     const shouldForkGlobalPreset = (existingPreset as any).org_id === null && orgId !== null;
 
@@ -542,12 +553,6 @@ export async function savePresetWithComponents(
 
       if (presetErr) throw mapDatabaseError(presetErr, 'Failed to update system metadata');
 
-      const { error: delErr } = await supabase
-        .from('system_items' as any)
-        .delete()
-        .eq('system_id', targetPresetId);
-
-      if (delErr) throw mapDatabaseError(delErr, 'Failed to delete old system items');
     }
   } else {
     const { data: newPreset, error: presetErr } = await supabase
@@ -668,7 +673,7 @@ export async function savePresetWithComponents(
     });
   }
 
-  // 3. Insert new system items
+  // 3. Replace system items atomically in the database.
   const itemsToInsert = preparedLineItems.map((item, idx) => {
     const itemCategory = canonicalPresetCategory(item.category);
     const isSolarMeter = itemCategory === 'accessory' && item.description.toLowerCase().includes('solar');
@@ -701,23 +706,12 @@ export async function savePresetWithComponents(
     };
   });
 
-  if (itemsToInsert.length > 0) {
-    const { error: insErr } = await supabase
-      .from('system_items' as any)
-      .insert(itemsToInsert);
-
-    if (insErr) throw mapDatabaseError(insErr, 'Failed to insert new system items');
-  }
-
-  await supabase
-    .from('system_state_availability' as any)
-    .delete()
-    .eq('system_id', targetPresetId);
-
-  const { error: stateErr } = await supabase
-    .from('system_state_availability' as any)
-    .insert({ system_id: targetPresetId, state_id: updates.stateId });
-  if (stateErr) throw mapDatabaseError(stateErr, 'Failed to update preset state');
+  const { error: replaceErr } = await (supabase as any).rpc('replace_system_items_atomic', {
+    p_system_id: targetPresetId,
+    p_items: itemsToInsert,
+    p_state_id: updates.stateId,
+  });
+  if (replaceErr) throw mapDatabaseError(replaceErr, 'Failed to save preset BOM items');
 
   revalidatePath('/');
   revalidatePath('/systems');
@@ -726,8 +720,9 @@ export async function savePresetWithComponents(
 }
 
 export async function deleteSystemPreset(presetId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const authClient = await createClient();
+  const supabase = createAdminClient();
+  const { data: { user } } = await authClient.auth.getUser();
   if (!user?.id) throw new Error('Unauthorized');
 
   const { data: profile } = await supabase
@@ -790,6 +785,172 @@ export async function deleteSystemPreset(presetId: string) {
   revalidatePath('/settings/presets');
   revalidatePath('/systems');
   revalidatePath('/calculator');
+}
+
+function buildDuplicateName(baseName: string, existingNames: Set<string>) {
+  const cleanBase = baseName.trim() || 'Preset';
+  let index = 1;
+  let candidate = `${cleanBase} (${index})`;
+  while (existingNames.has(candidate.toLowerCase())) {
+    index += 1;
+    candidate = `${cleanBase} (${index})`;
+  }
+  return candidate;
+}
+
+export async function duplicateSystemPreset(presetId: string): Promise<{ id: string; name: string }> {
+  const authClient = await createClient();
+  const supabase = createAdminClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user?.id) throw new Error('Unauthorized. Please sign in again before duplicating presets.');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('org_id')
+    .eq('id', user.id)
+    .maybeSingle();
+  const orgId = profile?.org_id ?? null;
+  if (!orgId) throw new Error('Organisation context not found. Please reload and try again.');
+
+  const { data: sourcePreset, error: sourceErr } = await supabase
+    .from('systems' as any)
+    .select(`
+      id,
+      org_id,
+      name,
+      category,
+      capacity_kw,
+      state_id,
+      target_margin_pct,
+      panel_qty,
+      panel_wattage_w,
+      row_number,
+      sheet_name,
+      source_file,
+      version
+    `)
+    .eq('id', presetId)
+    .maybeSingle();
+
+  if (sourceErr) throw mapDatabaseError(sourceErr, 'Failed to load source preset');
+  if (!sourcePreset) throw new Error('Source preset not found.');
+  if ((sourcePreset as any).org_id && (sourcePreset as any).org_id !== orgId) {
+    throw new Error('You can only duplicate presets visible to your organisation.');
+  }
+
+  const { data: existingSystems, error: namesErr } = await (supabase as any)
+    .from('systems')
+    .select('name')
+    .or(`org_id.eq.${orgId},org_id.is.null`);
+  if (namesErr) throw mapDatabaseError(namesErr, 'Failed to check existing preset names');
+
+  const { data: existingLegacyPresets } = await supabase
+    .from('custom_presets')
+    .select('name')
+    .eq('org_id', orgId)
+    .eq('is_active', true);
+
+  const existingNames = new Set([
+    ...((existingSystems || []) as any[]).map((row) => String(row.name || '').toLowerCase()),
+    ...((existingLegacyPresets || []) as any[]).map((row) => String(row.name || '').toLowerCase()),
+  ]);
+  const duplicateName = buildDuplicateName((sourcePreset as any).name, existingNames);
+
+  const { data: newPreset, error: createErr } = await supabase
+    .from('systems' as any)
+    .insert({
+      org_id: orgId,
+      name: duplicateName,
+      category: (sourcePreset as any).category,
+      capacity_kw: Number((sourcePreset as any).capacity_kw || 0),
+      state_id: (sourcePreset as any).state_id ?? null,
+      target_margin_pct: normalizeMarginPct((sourcePreset as any).target_margin_pct),
+      panel_qty: (sourcePreset as any).panel_qty ?? null,
+      panel_wattage_w: (sourcePreset as any).panel_wattage_w ?? null,
+      row_number: (sourcePreset as any).row_number ?? null,
+      sheet_name: (sourcePreset as any).sheet_name ?? null,
+      source_file: (sourcePreset as any).source_file ?? null,
+      version: (sourcePreset as any).version ?? 1,
+      is_active: true,
+      is_custom: true,
+    })
+    .select('id, name')
+    .maybeSingle();
+
+  if (createErr) throw mapDatabaseError(createErr, 'Failed to create duplicate preset');
+  const newPresetId = (newPreset as any)?.id as string | undefined;
+  if (!newPresetId) throw new Error('Failed to create duplicate preset.');
+
+  const { data: sourceItems, error: itemsErr } = await supabase
+    .from('system_items' as any)
+    .select(`
+      battery_id,
+      bom_item_id,
+      comm_device_id,
+      default_qty,
+      description,
+      inverter_id,
+      is_included_by_default,
+      is_mandatory,
+      la_id,
+      net_meter_id,
+      panel_id,
+      remarks,
+      row_number,
+      section,
+      sheet_name,
+      solar_meter_id,
+      sort_order,
+      source_file,
+      structure_component_id,
+      structure_id,
+      unit
+    `)
+    .eq('system_id', presetId)
+    .order('sort_order', { ascending: true });
+  if (itemsErr) throw mapDatabaseError(itemsErr, 'Failed to load source preset items');
+
+  const copiedItems = ((sourceItems || []) as any[]).map((item) => ({
+    ...item,
+    system_id: newPresetId,
+    import_batch_id: null,
+    imported_at: null,
+    imported_by: null,
+  }));
+
+  if (copiedItems.length > 0) {
+    const { error: copyItemsErr } = await supabase
+      .from('system_items' as any)
+      .insert(copiedItems);
+    if (copyItemsErr) throw mapDatabaseError(copyItemsErr, 'Failed to copy preset items');
+  }
+
+  const { data: availabilityRows, error: availabilityErr } = await (supabase as any)
+    .from('system_state_availability')
+    .select('state_id')
+    .eq('system_id', presetId);
+  if (availabilityErr) throw mapDatabaseError(availabilityErr, 'Failed to load source preset state');
+
+  const stateIds = Array.from(new Set(
+    ((availabilityRows || []) as any[])
+      .map((row) => row.state_id)
+      .filter(Boolean)
+      .concat((sourcePreset as any).state_id ? [(sourcePreset as any).state_id] : []),
+  ));
+
+  if (stateIds.length > 0) {
+    const { error: stateErr } = await (supabase as any)
+      .from('system_state_availability')
+      .insert(stateIds.map((stateId) => ({ system_id: newPresetId, state_id: stateId })));
+    if (stateErr) throw mapDatabaseError(stateErr, 'Failed to copy preset state');
+  }
+
+  revalidatePath('/');
+  revalidatePath('/systems');
+  revalidatePath('/settings/presets');
+  revalidatePath('/calculator');
+
+  return { id: newPresetId, name: duplicateName };
 }
 
 export async function getCatalogItems(category: string, search?: string): Promise<any[]> {
