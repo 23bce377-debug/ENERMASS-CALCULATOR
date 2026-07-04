@@ -45,8 +45,9 @@ export const GET = withLicensedApiRoute(async (request, context) => {
         status: 304,
         headers: {
           'ETag': etag,
-          'Cache-Control': 'public, max-age=300, stale-while-revalidate=60',
+          'Cache-Control': 'private, max-age=300, stale-while-revalidate=60',
           'X-Cache-Version': CACHE_VERSION,
+          'Vary': 'Cookie, Authorization',
         },
       });
     }
@@ -55,13 +56,12 @@ export const GET = withLicensedApiRoute(async (request, context) => {
       status: 200,
       headers: {
         // 5 min max-age + 60s SWR window so clients see fresh data within 6 min
-        'Cache-Control': 'public, max-age=300, stale-while-revalidate=60',
+        'Cache-Control': 'private, max-age=300, stale-while-revalidate=60',
         'ETag': etag,
         'Content-Type': 'application/json; charset=utf-8',
         'X-Cache-Version': CACHE_VERSION,
         'X-Generated-At': data.generatedAt,
-        // CORS — allow all origins (master data is non-sensitive public data)
-        'Vary': 'Accept-Encoding',
+        'Vary': 'Cookie, Authorization, Accept-Encoding',
       },
     });
   } catch (error) {

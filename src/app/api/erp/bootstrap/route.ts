@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 import { getOrSetCache } from '@/lib/cache/redisCache';
+import { privateJsonCacheHeaders } from '@/lib/cache/httpCache';
 import { z } from 'zod';
 
 const bootstrapQuerySchema = z.object({
@@ -152,7 +153,9 @@ export const GET = withLicensedApiRoute(async (request, context) => {
       };
     }, 300); // Cache for 5 minutes
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: privateJsonCacheHeaders(120, 300),
+    });
   } catch (err: any) {
     console.error('[GET /api/erp/bootstrap] Error:', err);
     return NextResponse.json({ error: err.message || 'Internal server error during bootstrap load' }, { status: 500 });

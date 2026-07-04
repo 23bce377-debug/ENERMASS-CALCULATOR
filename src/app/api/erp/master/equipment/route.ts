@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 import { getOrSetCache } from '@/lib/cache/redisCache';
+import { privateJsonCacheHeaders } from '@/lib/cache/httpCache';
 
 /**
  * GET /api/erp/master/equipment
@@ -116,7 +117,9 @@ export const GET = withLicensedApiRoute(
         600 // 10 minutes
       );
 
-      return NextResponse.json(data);
+      return NextResponse.json(data, {
+        headers: privateJsonCacheHeaders(300, 600),
+      });
     } catch (err: any) {
       console.error('[GET /api/erp/master/equipment] Error:', err);
       return NextResponse.json(

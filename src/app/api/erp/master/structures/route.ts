@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
 import { getOrSetCache } from '@/lib/cache/redisCache';
+import { privateJsonCacheHeaders } from '@/lib/cache/httpCache';
 
 /**
  * GET /api/erp/master/structures
@@ -100,7 +101,9 @@ export const GET = withLicensedApiRoute(
         900 // 15 minutes — structure data is essentially static
       );
 
-      return NextResponse.json(data);
+      return NextResponse.json(data, {
+        headers: privateJsonCacheHeaders(900, 1800),
+      });
     } catch (err: any) {
       console.error('[GET /api/erp/master/structures] Error:', err);
       return NextResponse.json(

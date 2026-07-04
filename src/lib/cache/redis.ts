@@ -43,6 +43,21 @@ class MemoryCache {
     }
     return deletedCount
   }
+
+  async scan(cursor: number | string = 0, options?: { match?: string; count?: number }): Promise<[number, string[]]> {
+    const pattern = options?.match;
+    const keys = Array.from(this.cache.keys()).filter((key) => {
+      const entry = this.cache.get(key)
+      if (!entry || Date.now() > entry.expiry) {
+        this.cache.delete(key)
+        return false
+      }
+      if (!pattern) return true
+      if (pattern.endsWith('*')) return key.startsWith(pattern.slice(0, -1))
+      return key === pattern
+    })
+    return [0, keys]
+  }
   
   async flushall(): Promise<'OK'> {
     this.cache.clear()

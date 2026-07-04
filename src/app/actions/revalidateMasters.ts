@@ -3,7 +3,7 @@
 import { revalidateTag } from 'next/cache';
 import { CACHE_TAG, orgCacheKey, invalidateMasterCache } from '@/lib/cache/masterCache';
 import { invalidateServerCalculatorCache } from '@/lib/cache/server-cache';
-import { invalidateCacheKeys } from '@/lib/cache/redisCache';
+import { invalidateCacheKeys, invalidateCachePrefixes } from '@/lib/cache/redisCache';
 import { requireLicensedPage } from '@/lib/auth/requireLicensedPage';
 
 /**
@@ -41,11 +41,14 @@ export async function revalidateMasterCache(
       orgCacheKey(targetOrgId, 'inverters'),
       orgCacheKey(targetOrgId, 'batteries'),
       `rate_master:org:${targetOrgId}`,
-      `erp:bootstrap:${targetOrgId}`,
-      `erp:master:equipment:${targetOrgId}:v2`,
-      `erp:master:equipment:${targetOrgId}:v3`,
-      'erp:master:structures:global',
       `category_margins:org:${targetOrgId}`
+    );
+    await invalidateCachePrefixes(
+      `erp:bootstrap:${targetOrgId}:`,
+      `erp:master:equipment:${targetOrgId}:`,
+      `erp:master:rules:${targetOrgId}:`,
+      `erp:master:org:${targetOrgId}:`,
+      'erp:master:structures:global:'
     );
     await invalidateMasterCache(targetOrgId);
   }
@@ -57,9 +60,14 @@ export async function revalidateMasterCache(
       'eq:global:panels:active',
       'eq:global:inverters:active',
       'eq:global:batteries:active',
-      'erp:master:structures:global',
       'state_rules:all',
       'subsidy_schemes:active'
+    );
+    await invalidateCachePrefixes(
+      'erp:bootstrap:',
+      'erp:master:equipment:',
+      'erp:master:rules:',
+      'erp:master:structures:global:'
     );
     await invalidateMasterCache(null);
   }

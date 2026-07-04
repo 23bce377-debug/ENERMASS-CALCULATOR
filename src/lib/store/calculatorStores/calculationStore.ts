@@ -622,7 +622,6 @@ export const createCalculationSlice: StateCreator<
   fetchMasterData: async () => {
     try {
       const requestInit = {
-        cache: 'no-store' as RequestCache,
         credentials: 'include' as RequestCredentials,
       };
 
@@ -653,7 +652,7 @@ export const createCalculationSlice: StateCreator<
       } catch (componentFetchError) {
         console.warn('[fetchMasterData] Component-level fetch failed, falling back to consolidated bootstrap:', componentFetchError);
 
-        let bootstrapRes = await fetch('/api/erp/bootstrap?bomLimit=10000&invLimit=10000', requestInit);
+        let bootstrapRes = await fetch('/api/erp/bootstrap?bomLimit=5000&invLimit=2000', requestInit);
         if (bootstrapRes.status === 404) {
           bootstrapRes = await fetch('/api/master', requestInit);
         }
