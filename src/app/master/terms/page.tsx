@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileText, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
@@ -54,6 +54,8 @@ export default function TermsMasterPage() {
   const { toast } = useToast();
   const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
   const [draft, setDraft] = useState<string[] | null>(null);
+  const pendingFocusIndexRef = useRef<number | null>(null);
+  const clauseRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['masters', 'terms'],
@@ -97,8 +99,26 @@ export default function TermsMasterPage() {
   };
 
   const addClause = () => {
+    pendingFocusIndexRef.current = effectiveClauses.length;
     setDraft([...effectiveClauses, EMPTY_CLAUSE]);
   };
+
+  useEffect(() => {
+    const index = pendingFocusIndexRef.current;
+    if (index === null) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const textarea = clauseRefs.current[index];
+      if (!textarea) return;
+
+      textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      textarea.focus({ preventScroll: true });
+      textarea.select();
+      pendingFocusIndexRef.current = null;
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [effectiveClauses.length]);
 
   const removeClause = (index: number) => {
     const next = effectiveClauses.filter((_, clauseIndex) => clauseIndex !== index);
@@ -244,6 +264,9 @@ export default function TermsMasterPage() {
                   <div key={index} className="grid grid-cols-[36px_1fr_auto] gap-3 items-start">
                     <span className="mt-2 text-right text-xs font-mono text-text-muted">{index + 1}.</span>
                     <textarea
+                      ref={(element) => {
+                        clauseRefs.current[index] = element;
+                      }}
                       value={clause}
                       onChange={(event) => updateClause(index, event.target.value)}
                       className="w-full min-h-20 px-3 py-2 rounded-lg bg-background border border-border text-sm text-text-primary outline-none focus:border-accent resize-y"

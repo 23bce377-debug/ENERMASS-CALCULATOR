@@ -44,6 +44,7 @@ interface Inverter {
   description: string | null;
   specification_details: string | null;
   org_id: string | null;
+  source_global_id?: string | null;
 }
 
 export default function InvertersMasterPage() {
@@ -110,6 +111,47 @@ const bulkEditFields: FieldSchema[] = [
     const parsed = parseInt(String(value || '').replace(/\D/g, ''), 10);
     return parsed === 3 ? 3 : 1;
   };
+
+  const readImportCell = (row: any, ...keys: string[]) => {
+    for (const key of keys) {
+      if (row[key] !== undefined && row[key] !== null && row[key] !== '') return row[key];
+    }
+    return undefined;
+  };
+
+  const sameText = (a: unknown, b: unknown) =>
+    String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
+
+  const sameNumber = (a: unknown, b: unknown, precision = 4) => {
+    const left = Number(a);
+    const right = Number(b);
+    if (!Number.isFinite(left) && !Number.isFinite(right)) return true;
+    return Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) < Math.pow(10, -precision);
+  };
+
+  const findImportMatch = (row: any) => {
+    const ids = [row.__master_id, row.__source_global_id].filter(Boolean).map(String);
+    const idMatch = inverters?.find((item) => ids.includes(item.id) || (item.source_global_id ? ids.includes(item.source_global_id) : false));
+    if (idMatch) return idMatch;
+
+    return inverters?.find((item) =>
+      sameText(item.brand, row.brand) &&
+      sameText(item.model, row.model) &&
+      sameNumber(item.capacity_kw, row.capacity_kw) &&
+      normalizeInverterType(item.inverter_type) === row.inverter_type
+    );
+  };
+
+  const inverterRowChanged = (existing: Inverter, row: any) =>
+    !sameText(existing.brand, row.brand) ||
+    !sameText(existing.model, row.model) ||
+    !sameNumber(existing.capacity_kw, row.capacity_kw) ||
+    normalizeInverterType(existing.inverter_type) !== row.inverter_type ||
+    normalizePhases(existing.phases) !== row.phases ||
+    !sameNumber(existing.rate, row.rate, 2) ||
+    !sameNumber(normalizeGstRate(existing.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE), row.gst_pct, 5) ||
+    !sameText(existing.description, row.description) ||
+    !sameText(existing.specification_details, row.specification_details);
 
   // ─── Filter & Search Logic ──────────────────────────────────────────────────
   
@@ -241,6 +283,9 @@ const bulkEditFields: FieldSchema[] = [
 
   const handleExport = () => {
     const dataToExport = filteredInverters.map((i) => ({
+      'Master ID': i.id,
+      'Source Global ID': i.source_global_id || '',
+      Scope: i.org_id ? 'Org Override' : 'Global Baseline',
       Brand: i.brand,
       Model: i.model,
       'Capacity (kW)': i.capacity_kw,
@@ -263,15 +308,17 @@ const bulkEditFields: FieldSchema[] = [
       const rawData = await importFromExcel(file);
       
       const parsedRows = rawData.map((row: any) => ({
-        brand: row.Brand || row.brand,
-        model: row.Model || row.model,
-        capacity_kw: parseFloat(row['Capacity (kW)'] || row.capacity_kw || row.capacity),
-        inverter_type: normalizeInverterType(row['Inverter Type'] || row.inverter_type),
-        phases: normalizePhases(row.Phases || row.phases),
-        rate: parseFloat(row['Selling Rate (INR)'] || row.rate || 0),
-        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, TAX_CONSTANTS.INVERTER_GST_RATE),
-        description: row.Description || row.description || '',
-        specification_details: row['Specification Details'] || row.specification_details || row.Specifications || row.specifications || row.Description || row.description || '',
+        __master_id: readImportCell(row, 'Master ID', 'master_id', 'id'),
+        __source_global_id: readImportCell(row, 'Source Global ID', 'source_global_id'),
+        brand: readImportCell(row, 'Brand', 'brand'),
+        model: readImportCell(row, 'Model', 'model'),
+        capacity_kw: parseFloat(readImportCell(row, 'Capacity (kW)', 'capacity_kw', 'capacity')),
+        inverter_type: normalizeInverterType(readImportCell(row, 'Inverter Type', 'inverter_type')),
+        phases: normalizePhases(readImportCell(row, 'Phases', 'phases')),
+        rate: parseFloat(readImportCell(row, 'Selling Rate (INR)', 'rate') || 0),
+        gst_pct: normalizeGstRate(readImportCell(row, 'GST Percentage', 'gst_pct'), TAX_CONSTANTS.INVERTER_GST_RATE),
+        description: readImportCell(row, 'Description', 'description') || '',
+        specification_details: readImportCell(row, 'Specification Details', 'specification_details', 'Specifications', 'specifications', 'Description', 'description') || '',
       })).filter((r) => r.brand && r.model && !isNaN(r.capacity_kw) && !isNaN(r.rate));
 
       if (parsedRows.length === 0) {
@@ -289,11 +336,28 @@ const bulkEditFields: FieldSchema[] = [
 
       if (!confirmed) return;
 
+      let created = 0;
+      let updated = 0;
+      let skipped = 0;
+
       for (const row of parsedRows) {
-        await createMutation.mutateAsync(row);
+        const { __master_id, __source_global_id, ...payload } = row;
+        const existing = findImportMatch(row);
+
+        if (existing) {
+          if (inverterRowChanged(existing, payload)) {
+            await updateMutation.mutateAsync({ id: existing.id, updates: payload });
+            updated += 1;
+          } else {
+            skipped += 1;
+          }
+        } else {
+          await createMutation.mutateAsync(payload);
+          created += 1;
+        }
       }
 
-      toast(`Successfully imported ${parsedRows.length} inverters`, 'success');
+      toast(`Import complete: ${created} created, ${updated} updated, ${skipped} unchanged`, 'success');
     } catch (err: any) {
       toast(err.message || 'Import failed', 'error');
     } finally {

@@ -141,6 +141,40 @@ function groupLines(lines: LineResult[]): GroupedLines[] {
   return groups;
 }
 
+function normalizeBomText(value: unknown): string {
+  return String(value ?? '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+}
+
+function getSavedBomMatcher(lineDescription: string): ((item: any) => boolean) | null {
+  const text = normalizeBomText(lineDescription);
+  const includesSurgeProtection = (value: string) => value.includes('SURGE') && value.includes('PROTECTION');
+  const isSurgeProtection = (value: string) => value.includes('SPD') || includesSurgeProtection(value);
+
+  if (text.includes('AC') && isSurgeProtection(text)) {
+    return (item) => {
+      const itemText = normalizeBomText(item.description);
+      return itemText.includes('AC') && isSurgeProtection(itemText);
+    };
+  }
+
+  if (text.includes('DC') && isSurgeProtection(text)) {
+    return (item) => {
+      const itemText = normalizeBomText(item.description);
+      return itemText.includes('DC') && isSurgeProtection(itemText);
+    };
+  }
+
+  if (text.includes('ACDB')) {
+    return (item) => normalizeBomText(item.description).includes('ACDB');
+  }
+
+  if (text.includes('DCDB')) {
+    return (item) => normalizeBomText(item.description).includes('DCDB');
+  }
+
+  return null;
+}
+
 // ─── Inline Edit Cell ───────────────────────────────────────────────────────────
 
 interface InlineCellProps {
@@ -259,11 +293,13 @@ interface BOMRowProps {
   inventorySummary?: import('@/backend/orm/acquisition').InventorySummary[];
   dbMeters?: any[];
   dbLAs?: any[];
+  dbSavedBomItems?: any[];
   solarMeterId?: string | null;
   netMeterId?: string | null;
   lightningArresterId?: string | null;
   onSelectMeter?: (type: 'solar' | 'net', id: string | null) => void;
   onSelectLA?: (id: string | null) => void;
+  onSelectSavedBomItem?: (index: number, item: any) => void;
 }
 
 const BOMRow = memo(function BOMRow({
@@ -281,11 +317,13 @@ const BOMRow = memo(function BOMRow({
   inventorySummary,
   dbMeters,
   dbLAs,
+  dbSavedBomItems,
   solarMeterId,
   netMeterId,
   lightningArresterId,
   onSelectMeter,
   onSelectLA,
+  onSelectSavedBomItem,
 }: BOMRowProps) {
   const isMandatory = false;
   const isDimmed = line.isDisabled;
@@ -294,6 +332,20 @@ const BOMRow = memo(function BOMRow({
   const inventoryItem = inventorySummary?.find(
     (item) => item.item_description.toUpperCase() === line.description.toUpperCase()
   );
+  const savedBomOptions = useMemo(() => {
+    const items = dbSavedBomItems ?? [];
+    const matcher = getSavedBomMatcher(line.description);
+    const selectedId = line.sourceTable === 'bom_template_items' ? line.sourceItemId : undefined;
+    const selectedItem = selectedId ? items.find((item: any) => item.id === selectedId) : undefined;
+    const matches = matcher ? items.filter((item: any) => matcher(item)) : [];
+    const uniqueItems = new Map<string, any>();
+
+    for (const item of [selectedItem, ...matches]) {
+      if (item?.id) uniqueItems.set(item.id, item);
+    }
+
+    return Array.from(uniqueItems.values());
+  }, [dbSavedBomItems, line.description, line.sourceItemId, line.sourceTable]);
 
   return (
     <tr className={`border-b border-border/30 group transition-all duration-200 hover:bg-surface-hover/50
@@ -399,6 +451,27 @@ const BOMRow = memo(function BOMRow({
                 })),
                 { value: 'custom', label: 'Custom Lightning Arrester' }
               ]}
+            />
+          </div>
+        ) : savedBomOptions.length > 0 ? (
+          <div className="flex flex-col gap-1 w-72">
+            <span className={`text-[10px] uppercase font-bold text-text-secondary tracking-wider ${dimClass}`}>
+              {line.sourceLabel || displayName || line.description}
+            </span>
+            <Select
+              size="sm"
+              value={line.sourceTable === 'bom_template_items' && line.sourceItemId ? line.sourceItemId : ''}
+              onChange={(val) => {
+                const nextItem = savedBomOptions.find((item: any) => item.id === val);
+                if (nextItem) onSelectSavedBomItem?.(line.index, nextItem);
+              }}
+              placeholder="Select saved BOM item"
+              triggerClassName={isDimmed ? 'opacity-35' : ''}
+              options={savedBomOptions.map((item: any) => ({
+                value: item.id,
+                label: item.description || item.sku_code || 'Saved BOM item',
+                hint: `₹${new Intl.NumberFormat('en-IN').format(Number(item.rate ?? item.default_rate ?? item.selling_price ?? 0))}`,
+              }))}
             />
           </div>
         ) : (
@@ -829,6 +902,7 @@ export function BOMTable() {
   const setCableLengths = useCalculatorStore((s) => s.setCableLengths);
   const dbMeters = useCalculatorStore((s) => s.dbMeters);
   const dbLAs = useCalculatorStore((s) => s.dbLAs);
+  const dbStructureParts = useCalculatorStore((s) => s.dbStructureParts);
   const solarMeterId = useCalculatorStore((s) => s.solarMeterId);
   const netMeterId = useCalculatorStore((s) => s.netMeterId);
   const lightningArresterId = useCalculatorStore((s) => s.lightningArresterId);
@@ -971,6 +1045,25 @@ export function BOMTable() {
     (index: number, gst: number) => setRowOverride(index, { gstPct: gst }),
     [setRowOverride],
   );
+  const handleSavedBomItemSelection = useCallback(
+    (index: number, item: any) => {
+      const rate = Number(item.rate ?? item.default_rate ?? item.selling_price ?? 0);
+      const gstPct = normalizeGstRate(item.gst_pct, 0.18);
+      const remarks = item.specification_details || item.notes || 'Saved BOM item';
+
+      setRowOverride(index, {
+        description: item.description || item.sku_code || 'Saved BOM item',
+        remarks,
+        unit: item.unit || 'Nos',
+        ratePerUnit: Number.isFinite(rate) ? rate : 0,
+        gstPct,
+        sourceTable: 'bom_template_items',
+        sourceItemId: item.id,
+        sourceLabel: item.description || item.sku_code || 'Saved BOM item',
+      });
+    },
+    [setRowOverride],
+  );
 
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden shadow-sm" id="bom-table">
@@ -1076,11 +1169,13 @@ export function BOMTable() {
                             inventorySummary={inventorySummary}
                             dbMeters={dbMeters}
                             dbLAs={dbLAs}
+                            dbSavedBomItems={dbStructureParts}
                             solarMeterId={solarMeterId}
                             netMeterId={netMeterId}
                             lightningArresterId={lightningArresterId}
                             onSelectMeter={setMeterSelection}
                             onSelectLA={setLASelection}
+                            onSelectSavedBomItem={handleSavedBomItemSelection}
                           />
                           {!isCollapsed && isPanelLine && isPanelExpanded && (
                             <PanelSelectionDetailRow

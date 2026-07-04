@@ -1,0 +1,10 @@
+
+> enermass-calculator@0.1.0 dev
+> cross-env NODE_OPTIONS=--no-deprecation next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://172.16.0.2:3001
+- Environments: .env.local
+✓ Ready in 426ms
+[?25h

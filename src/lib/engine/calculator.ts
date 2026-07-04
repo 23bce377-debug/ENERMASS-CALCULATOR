@@ -67,6 +67,12 @@ export interface RowOverride {
   qty?: number;
   ratePerUnit?: number;
   gstPct?: number;
+  description?: string;
+  remarks?: string;
+  unit?: string;
+  sourceTable?: string;
+  sourceItemId?: string;
+  sourceLabel?: string;
 }
 
 export interface RateMaster {
@@ -280,6 +286,9 @@ export interface LineResult {
   unitRateMin?: number;
   unitRateMax?: number;
   isSurveyDependent?: boolean;
+  sourceTable?: string;
+  sourceItemId?: string;
+  sourceLabel?: string;
 }
 
 export interface CalcResult {
@@ -1250,6 +1259,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
       resolvedItems[idx] = { ...resolvedItems[idx], ...itemData } as import('../data/bom').BomItem;
     } else if (forceAdd || (itemData.qty !== undefined && itemData.qty > 0)) {
       resolvedItems.push({
+        ...itemData,
         description,
         qty: itemData.qty ?? 0,
         ratePerUnit: itemData.ratePerUnit ?? 0,
@@ -1465,23 +1475,29 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
   const lines: LineResult[] = allItems.map((item, index) => {
     const rowOverride = input.overrides?.[index];
     const isDisabled = input.disabledItemIndices?.[index] === true;
+    const resolvedDescription = rowOverride?.description ?? item.description;
+    const resolvedRemarks = rowOverride?.remarks ?? item.remarks;
+    const resolvedUnit = rowOverride?.unit ?? item.unit;
+    const sourceTable = rowOverride?.sourceTable ?? item.sourceTable;
+    const sourceItemId = rowOverride?.sourceItemId ?? item.sourceItemId;
+    const sourceLabel = rowOverride?.sourceLabel ?? item.sourceLabel;
 
     // Resolve effective values
     const effectiveQty = roundTo5(
       rowOverride?.qty !== undefined
         ? rowOverride.qty
-        : item.description.toUpperCase() === 'PANEL' &&
+        : resolvedDescription.toUpperCase() === 'PANEL' &&
           equipmentOverrides.panelQtyOverride !== undefined
         ? equipmentOverrides.panelQtyOverride
-        : item.description.toUpperCase() === 'INVERTER' &&
+        : resolvedDescription.toUpperCase() === 'INVERTER' &&
           equipmentOverrides.inverterQtyOverride !== undefined
         ? equipmentOverrides.inverterQtyOverride
-        : item.description.toUpperCase() === 'BATTERY' &&
+        : resolvedDescription.toUpperCase() === 'BATTERY' &&
           equipmentOverrides.batteryQtyOverride !== undefined
         ? equipmentOverrides.batteryQtyOverride
-        : item.description.toUpperCase() === 'DC CABLE' && input.dcCableLengthM !== undefined
+        : resolvedDescription.toUpperCase() === 'DC CABLE' && input.dcCableLengthM !== undefined
         ? input.dcCableLengthM
-        : item.description.toUpperCase() === 'AC CABLE' && input.acCableLengthM !== undefined
+        : resolvedDescription.toUpperCase() === 'AC CABLE' && input.acCableLengthM !== undefined
         ? input.acCableLengthM
         : item.qty
     );
@@ -1494,7 +1510,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
       equipmentOverrides,
     ));
 
-    const standardGstRate = resolveStandardGstRate(item.description);
+    const standardGstRate = resolveStandardGstRate(resolvedDescription);
     const effectiveGstPct = roundTo5(normalizeGstRate(
       rowOverride?.gstPct !== undefined ? rowOverride.gstPct : (item.gstPct ?? standardGstRate),
       standardGstRate,
@@ -1508,24 +1524,26 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
     const lineGST = lineGSTPaise / 100;
     const lineSubTotal = lineSubTotalPaise / 100;
 
-    const descUpper = item.description.toUpperCase();
+    const descUpper = resolvedDescription.toUpperCase();
     const isEquipment = ['PANEL', 'INVERTER', 'BATTERY'].some(prefix =>
       descUpper === prefix || descUpper.startsWith(prefix + ' ') || descUpper.startsWith(prefix + ':')
     );
-    const masterEntry = isEquipment ? undefined : getMasterEntry(item.description, input.rateMaster);
+    const masterEntry = isEquipment ? undefined : getMasterEntry(resolvedDescription, input.rateMaster);
     const isOverridden =
       rowOverride?.qty !== undefined ||
       rowOverride?.ratePerUnit !== undefined ||
       rowOverride?.gstPct !== undefined ||
-      (item.description.toUpperCase() === 'PANEL' &&
+      rowOverride?.description !== undefined ||
+      rowOverride?.sourceItemId !== undefined ||
+      (resolvedDescription.toUpperCase() === 'PANEL' &&
         (input.panelRateOverride !== undefined ||
           input.panelQtyOverride !== undefined)) ||
-      (item.description.toUpperCase() === 'INVERTER' &&
+      (resolvedDescription.toUpperCase() === 'INVERTER' &&
         (input.inverterRateOverride !== undefined || input.inverterQtyOverride !== undefined)) ||
-      (item.description.toUpperCase() === 'BATTERY' &&
+      (resolvedDescription.toUpperCase() === 'BATTERY' &&
         (input.batteryRateOverride !== undefined || input.batteryQtyOverride !== undefined)) ||
-      (item.description.toUpperCase() === 'DC CABLE' && input.dcCableLengthM !== undefined) ||
-      (item.description.toUpperCase() === 'AC CABLE' && input.acCableLengthM !== undefined) ||
+      (resolvedDescription.toUpperCase() === 'DC CABLE' && input.dcCableLengthM !== undefined) ||
+      (resolvedDescription.toUpperCase() === 'AC CABLE' && input.acCableLengthM !== undefined) ||
       (masterEntry?.active === true) ||
       false;
 
@@ -1534,9 +1552,9 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
 
     return {
       index,
-      description: item.description,
-      remarks: item.remarks,
-      unit: item.unit,
+      description: resolvedDescription,
+      remarks: resolvedRemarks,
+      unit: resolvedUnit,
       effectiveQty,
       effectiveRate,
       effectiveGstPct,
@@ -1547,7 +1565,10 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
       isCustomItem,
       customItemIndex,
       isDisabled,
-      categoryName: resolveCategoryName(item.description, (item as any).section),
+      categoryName: resolveCategoryName(resolvedDescription, (item as any).section),
+      sourceTable,
+      sourceItemId,
+      sourceLabel,
     };
   });
 

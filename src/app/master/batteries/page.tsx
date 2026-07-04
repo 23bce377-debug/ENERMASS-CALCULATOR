@@ -45,6 +45,7 @@ interface Battery {
   description: string | null;
   specification_details: string | null;
   org_id: string | null;
+  source_global_id?: string | null;
 }
 
 export default function BatteriesMasterPage() {
@@ -111,6 +112,47 @@ export default function BatteriesMasterPage() {
     const fraction = parsed > 1 ? parsed / 100 : parsed;
     return Math.min(1, Math.max(0, fraction));
   };
+
+  const readImportCell = (row: any, ...keys: string[]) => {
+    for (const key of keys) {
+      if (row[key] !== undefined && row[key] !== null && row[key] !== '') return row[key];
+    }
+    return undefined;
+  };
+
+  const sameText = (a: unknown, b: unknown) =>
+    String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
+
+  const sameNumber = (a: unknown, b: unknown, precision = 4) => {
+    const left = Number(a);
+    const right = Number(b);
+    if (!Number.isFinite(left) && !Number.isFinite(right)) return true;
+    return Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) < Math.pow(10, -precision);
+  };
+
+  const findImportMatch = (row: any) => {
+    const ids = [row.__master_id, row.__source_global_id].filter(Boolean).map(String);
+    const idMatch = batteries?.find((item) => ids.includes(item.id) || (item.source_global_id ? ids.includes(item.source_global_id) : false));
+    if (idMatch) return idMatch;
+
+    return batteries?.find((item) =>
+      sameText(item.brand, row.brand) &&
+      sameText(item.model, row.model) &&
+      sameNumber(item.capacity_kwh, row.capacity_kwh)
+    );
+  };
+
+  const batteryRowChanged = (existing: Battery, row: any) =>
+    !sameText(existing.brand, row.brand) ||
+    !sameText(existing.model, row.model) ||
+    !sameNumber(existing.capacity_kwh, row.capacity_kwh) ||
+    !sameNumber(existing.voltage_v, row.voltage_v) ||
+    normalizeBatteryChemistry(existing.chemistry) !== row.chemistry ||
+    !sameNumber(normalizeDodPct(existing.dod_pct), row.dod_pct, 5) ||
+    !sameNumber(existing.rate, row.rate, 2) ||
+    !sameNumber(normalizeGstRate(existing.gst_pct, getBatteryGstRate(existing)), row.gst_pct, 5) ||
+    !sameText(existing.description, row.description) ||
+    !sameText(existing.specification_details, row.specification_details);
 
   // ─── Filter & Search Logic ──────────────────────────────────────────────────
   
@@ -250,6 +292,9 @@ export default function BatteriesMasterPage() {
 
   const handleExport = () => {
     const dataToExport = filteredBatteries.map((b) => ({
+      'Master ID': b.id,
+      'Source Global ID': b.source_global_id || '',
+      Scope: b.org_id ? 'Org Override' : 'Global Baseline',
       Brand: b.brand,
       Model: b.model,
       'Capacity (kWh)': b.capacity_kwh,
@@ -273,16 +318,18 @@ export default function BatteriesMasterPage() {
       const rawData = await importFromExcel(file);
       
       const parsedRows = rawData.map((row: any) => ({
-        brand: row.Brand || row.brand,
-        model: row.Model || row.model,
-        capacity_kwh: parseFloat(row['Capacity (kWh)'] || row.capacity_kwh || row.capacity),
-        chemistry: normalizeBatteryChemistry(row.Chemistry || row.chemistry),
-        voltage_v: row['Voltage (V)'] || row.voltage_v ? parseInt(row['Voltage (V)'] || row.voltage_v, 10) : null,
-        dod_pct: normalizeDodPct(row['DoD Percentage'] || row.dod_pct || 80),
-        rate: parseFloat(row['Selling Rate (INR)'] || row.rate || 0),
-        gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct, getBatteryGstRate(row)),
-        description: row.Description || row.description || '',
-        specification_details: row['Specification Details'] || row.specification_details || row.Specifications || row.specifications || row.Description || row.description || '',
+        __master_id: readImportCell(row, 'Master ID', 'master_id', 'id'),
+        __source_global_id: readImportCell(row, 'Source Global ID', 'source_global_id'),
+        brand: readImportCell(row, 'Brand', 'brand'),
+        model: readImportCell(row, 'Model', 'model'),
+        capacity_kwh: parseFloat(readImportCell(row, 'Capacity (kWh)', 'capacity_kwh', 'capacity')),
+        chemistry: normalizeBatteryChemistry(readImportCell(row, 'Chemistry', 'chemistry')),
+        voltage_v: readImportCell(row, 'Voltage (V)', 'voltage_v') ? parseInt(readImportCell(row, 'Voltage (V)', 'voltage_v'), 10) : null,
+        dod_pct: normalizeDodPct(readImportCell(row, 'DoD Percentage', 'dod_pct') || 80),
+        rate: parseFloat(readImportCell(row, 'Selling Rate (INR)', 'rate') || 0),
+        gst_pct: normalizeGstRate(readImportCell(row, 'GST Percentage', 'gst_pct'), getBatteryGstRate(row)),
+        description: readImportCell(row, 'Description', 'description') || '',
+        specification_details: readImportCell(row, 'Specification Details', 'specification_details', 'Specifications', 'specifications', 'Description', 'description') || '',
       })).filter((r) => r.brand && r.model && !isNaN(r.capacity_kwh) && !isNaN(r.rate));
 
       if (parsedRows.length === 0) {
@@ -300,11 +347,28 @@ export default function BatteriesMasterPage() {
 
       if (!confirmed) return;
 
+      let created = 0;
+      let updated = 0;
+      let skipped = 0;
+
       for (const row of parsedRows) {
-        await createMutation.mutateAsync(row);
+        const { __master_id, __source_global_id, ...payload } = row;
+        const existing = findImportMatch(row);
+
+        if (existing) {
+          if (batteryRowChanged(existing, payload)) {
+            await updateMutation.mutateAsync({ id: existing.id, updates: payload });
+            updated += 1;
+          } else {
+            skipped += 1;
+          }
+        } else {
+          await createMutation.mutateAsync(payload);
+          created += 1;
+        }
       }
 
-      toast(`Successfully imported ${parsedRows.length} battery items`, 'success');
+      toast(`Import complete: ${created} created, ${updated} updated, ${skipped} unchanged`, 'success');
     } catch (err: any) {
       toast(err.message || 'Import failed', 'error');
     } finally {

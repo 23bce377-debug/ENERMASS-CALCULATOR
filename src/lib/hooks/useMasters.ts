@@ -153,12 +153,41 @@ async function fetchHiddenGlobalIds(entity: string, orgId: string | null): Promi
 
 function filterOrgVisibleRows(entity: string, rows: any[], hiddenGlobalIds: Set<string>) {
   if (!overrideableEntities.has(entity)) return rows;
-  const overriddenGlobalIds = new Set(
-    rows
-      .filter((row) => row.org_id && row.source_global_id)
-      .map((row) => row.source_global_id),
-  );
+  const globalById = new Map(rows.filter((row) => !row.org_id).map((row) => [row.id, row]));
+  const globalByNaturalKey = new Map<string, any>();
+  for (const row of rows) {
+    if (!row.org_id) {
+      const signature = getNaturalKeySignature(entity, row);
+      if (signature) globalByNaturalKey.set(signature, row);
+    }
+  }
+
+  const redundantOrgIds = new Set<string>();
+  const overriddenGlobalIds = new Set<string>();
+
+  for (const row of rows) {
+    if (!row.org_id) continue;
+
+    const naturalGlobal = getNaturalKeySignature(entity, row);
+    const sourceGlobal = row.source_global_id
+      ? globalById.get(row.source_global_id)
+      : naturalGlobal
+        ? globalByNaturalKey.get(naturalGlobal)
+        : null;
+
+    if (sourceGlobal) {
+      if (masterPayloadHasChanges(entity, sourceGlobal, pickMutablePayload(entity, row))) {
+        overriddenGlobalIds.add(sourceGlobal.id);
+      } else {
+        redundantOrgIds.add(row.id);
+      }
+    } else if (row.source_global_id) {
+      overriddenGlobalIds.add(row.source_global_id);
+    }
+  }
+
   return rows.filter((row) => {
+    if (row.org_id && redundantOrgIds.has(row.id)) return false;
     if (!row.org_id && hiddenGlobalIds.has(row.id)) return false;
     if (!row.org_id && overriddenGlobalIds.has(row.id)) return false;
     return true;
@@ -219,6 +248,22 @@ function getNaturalKey(entity: string, item: any): Record<string, any> | null {
   return null;
 }
 
+function getNaturalKeySignature(entity: string, item: any): string | null {
+  const key = getNaturalKey(entity, item);
+  if (!key) return null;
+
+  const parts = Object.entries(key).map(([column, value]) => {
+    if (value === undefined || value === null || value === '') return null;
+    const normalizedValue = typeof value === 'number'
+      ? Number(value).toFixed(5)
+      : String(value).trim().toLowerCase();
+    return `${column}:${normalizedValue}`;
+  });
+
+  if (parts.some((part) => part === null)) return null;
+  return parts.join('|');
+}
+
 function isDuplicateKeyError(error: any) {
   return error?.code === '23505' || String(error?.message || '').toLowerCase().includes('duplicate key value');
 }
@@ -267,6 +312,28 @@ async function findExistingOrgOverrideRow(entity: string, table: string, payload
   const { data, error } = await query.maybeSingle();
   if (error) throw error;
   return data;
+}
+
+function equivalentMasterValue(left: any, right: any) {
+  const leftEmpty = left === null || left === undefined || left === '';
+  const rightEmpty = right === null || right === undefined || right === '';
+  if (leftEmpty || rightEmpty) return leftEmpty && rightEmpty;
+
+  const leftNumber = Number(left);
+  const rightNumber = Number(right);
+  if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
+    return Math.abs(leftNumber - rightNumber) < 0.00001;
+  }
+
+  return String(left).trim() === String(right).trim();
+}
+
+function masterPayloadHasChanges(entity: string, existing: any, payload: any) {
+  const ignoredColumns = new Set(['is_active', 'is_custom', 'updated_at']);
+  const columns = (mutableColumnsByEntity[entity] ?? Object.keys(payload))
+    .filter((column) => !ignoredColumns.has(column) && Object.prototype.hasOwnProperty.call(payload, column));
+
+  return columns.some((column) => !equivalentMasterValue(existing?.[column], payload?.[column]));
 }
 
 async function writeOrgOverride<T>(
@@ -321,6 +388,46 @@ async function writeOrgOverride<T>(
 }
 
 async function writeMasterInsertOrUpdate<T>(entity: string, table: string, payload: any, orgId: string, userId: string): Promise<T> {
+  const existingBeforeInsert = await findExistingMasterRow(entity, table, payload, orgId);
+
+  if (existingBeforeInsert) {
+    const updates = {
+      ...pickMutablePayload(entity, payload),
+      is_active: true,
+      is_custom: existingBeforeInsert.org_id === null ? existingBeforeInsert.is_custom : true,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (!masterPayloadHasChanges(entity, existingBeforeInsert, updates)) {
+      return transformFromDb(entity, existingBeforeInsert) as T;
+    }
+
+    if (existingBeforeInsert.org_id === null && orgId !== null && overrideableEntities.has(entity)) {
+      return writeOrgOverride<T>(
+        entity,
+        table,
+        existingBeforeInsert,
+        updates,
+        orgId,
+        userId,
+        existingBeforeInsert.id,
+        'import_create_override',
+        'import_update_override',
+      );
+    }
+
+    const { data, error } = await ((supabase as any)
+      .from(table)
+      .update(updates)
+      .eq('id', existingBeforeInsert.id)
+      .select()
+      .maybeSingle() as any);
+    if (error) throw error;
+
+    await logAudit(orgId, userId, 'masters', table, data.id, 'import_update', existingBeforeInsert, data);
+    return transformFromDb(entity, data) as T;
+  }
+
   const insertResult = await ((supabase as any)
     .from(table)
     .insert(payload)
