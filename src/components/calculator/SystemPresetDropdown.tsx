@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, ChevronDown, Plus, Save, Edit3, Zap, MapPin, Globe2 } from 'lucide-react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { SolarSystem } from '@/lib/data/bom';
-import { PresetComposerDrawer } from './PresetComposerDrawer';
+import { PresetEditorDialog } from '@/components/presets/PresetEditorDialog';
 
 interface SystemPresetDropdownProps {
   onSaveConfig: () => void;
@@ -17,6 +17,7 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
   const dbLoaded = useCalculatorStore((s) => s.dbLoaded);
   const selectedState = useCalculatorStore((s) => s.selectedState);
   const dbSystemStateMap = useCalculatorStore((s) => s.dbSystemStateMap);
+  const fetchMasterData = useCalculatorStore((s) => s.fetchMasterData);
 
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -279,10 +280,19 @@ export function SystemPresetDropdown({ onSaveConfig }: SystemPresetDropdownProps
       </div>
 
       {composerOpen && (
-        <PresetComposerDrawer
-          isOpen={composerOpen}
-          onClose={() => setComposerOpen(false)}
-          presetId={composerSystemId}
+        <PresetEditorDialog
+          open={composerOpen}
+          presetId={composerSystemId || ''}
+          mode={composerSystemId ? 'edit' : 'create'}
+          onClose={() => {
+            setComposerOpen(false);
+            setComposerSystemId(null);
+          }}
+          onSaved={async (id, name) => {
+            setComposerOpen(false);
+            setComposerSystemId(null);
+            await fetchMasterData();
+          }}
         />
       )}
     </>

@@ -1,6 +1,7 @@
 import { redis } from './redis'
 
 const pendingLoads = new Map<string, Promise<unknown>>();
+const REDIS_DELETE_BATCH_SIZE = 100;
 
 /**
  * Get a value from Redis cache. If not found, fetch it with the function,
@@ -52,7 +53,9 @@ export async function getOrSetCache<T>(
 export async function invalidateCacheKeys(...keys: string[]): Promise<void> {
   try {
     if (keys.length > 0) {
-      await redis.del(...keys)
+      for (let i = 0; i < keys.length; i += REDIS_DELETE_BATCH_SIZE) {
+        await redis.del(...keys.slice(i, i + REDIS_DELETE_BATCH_SIZE))
+      }
       keys.forEach((key) => pendingLoads.delete(key));
     }
   } catch (err) {
@@ -93,7 +96,9 @@ export async function invalidateCachePrefixes(...prefixes: string[]): Promise<vo
       } while (String(cursor) !== '0');
 
       if (keysToDelete.length > 0) {
-        await redis.del(...keysToDelete);
+        for (let i = 0; i < keysToDelete.length; i += REDIS_DELETE_BATCH_SIZE) {
+          await redis.del(...keysToDelete.slice(i, i + REDIS_DELETE_BATCH_SIZE));
+        }
         keysToDelete.forEach((key) => pendingLoads.delete(key));
       }
     }

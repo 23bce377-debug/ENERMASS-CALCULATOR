@@ -6,10 +6,20 @@ interface CatalogItemPickerProps {
   category: string;
   onSelect: (item: any, category: string) => void;
   onClose: () => void;
+  excludeCategories?: string[];
+  initialSearch?: string;
+  searchPlaceholder?: string;
 }
 
-export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPickerProps) {
-  const [search, setSearch] = useState('');
+export function CatalogItemPicker({
+  category,
+  onSelect,
+  onClose,
+  excludeCategories = [],
+  initialSearch = '',
+  searchPlaceholder,
+}: CatalogItemPickerProps) {
+  const [search, setSearch] = useState(initialSearch);
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +30,11 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
   const [customRate, setCustomRate] = useState('');
 
   const categoryLabel = category.replace(/_/g, ' ');
+  const excludedCategoriesKey = excludeCategories.join('|');
+
+  useEffect(() => {
+    setSearch(initialSearch);
+  }, [initialSearch]);
 
   function addCustomItem() {
     const description = customDescription.trim() || search.trim();
@@ -52,7 +67,9 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
     setError(null);
     getCatalogItems(category, search)
       .then((data: any[]) => {
-        if (mounted) setItems(data);
+        if (!mounted) return;
+        const excluded = new Set(excludedCategoriesKey ? excludedCategoriesKey.split('|') : []);
+        setItems(data.filter((item) => !excluded.has(item.category ?? item.type)));
       })
       .catch((err: unknown) => {
         if (!mounted) return;
@@ -63,7 +80,7 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
         if (mounted) setLoading(false);
       });
     return () => { mounted = false; };
-  }, [category, search]);
+  }, [category, search, excludedCategoriesKey]);
 
   return (
     <div className="w-[min(92vw,28rem)] overflow-hidden rounded-xl border border-border bg-surface shadow-2xl">
@@ -84,7 +101,7 @@ export function CatalogItemPicker({ category, onSelect, onClose }: CatalogItemPi
           autoFocus
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder={`Search ${categoryLabel} by brand or model...`}
+          placeholder={searchPlaceholder || `Search ${categoryLabel} by name, SKU, category, specs...`}
           className="w-full bg-background text-text-primary text-sm px-3 py-2.5 rounded-lg border border-border focus:border-accent outline-none placeholder:text-text-muted"
         />
       </div>

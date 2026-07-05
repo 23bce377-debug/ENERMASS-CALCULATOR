@@ -6,6 +6,7 @@ import { Select } from '@/components/ui/Select';
 import { supabase } from '@/lib/supabase/client';
 import {
   getOrgContext,
+  notifyMasterDataUpdated,
   useMasterUpdateMutation
 } from '@/lib/hooks/useMasters';
 import {
@@ -95,6 +96,18 @@ export default function PricingMasterPage() {
     gst_pct: 0.18,
     is_active: true,
   });
+
+  const refreshPricingCaches = async () => {
+    queryClient.invalidateQueries({ queryKey: ['masters', 'pricing'] });
+    queryClient.invalidateQueries({ queryKey: ['bom-items-pricing'] });
+    try {
+      const { revalidateMasterCache } = await import('@/app/actions/revalidateMasters');
+      await revalidateMasterCache();
+    } catch (err) {
+      console.error('Failed to revalidate master cache:', err);
+    }
+    notifyMasterDataUpdated('pricing');
+  };
 
   // 1. Fetch BOM Items to show standard baseline rates
   const { data: bomItems } = useQuery({
@@ -190,8 +203,8 @@ export default function PricingMasterPage() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['masters', 'pricing'] });
+    onSuccess: async () => {
+      await refreshPricingCaches();
       toast('Pricing override created ✓', 'success');
       setEditorOpen(false);
     }
@@ -212,8 +225,8 @@ export default function PricingMasterPage() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['masters', 'pricing'] });
+    onSuccess: async () => {
+      await refreshPricingCaches();
       toast('Pricing override updated ✓', 'success');
       setEditorOpen(false);
     }
@@ -230,8 +243,8 @@ export default function PricingMasterPage() {
       if (error) throw error;
       return id;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['masters', 'pricing'] });
+    onSuccess: async () => {
+      await refreshPricingCaches();
       toast('Pricing override removed', 'success');
     }
   });
@@ -266,10 +279,9 @@ export default function PricingMasterPage() {
 
   const handleApplyMarkup = async () => {
     try {
-      const promises = selectedIds.map(async (id) => {
+      const rows = selectedIds.map((id) => {
         const row = pricingRows?.find((r) => r.id === id);
-        if (!row) return;
-
+        if (!row) throw new Error(`Selected pricing row ${id} is no longer available.`);
         let newRate = row.override_rate;
         if (markupType === 'percent') {
           newRate = row.override_rate * (1 + markupValue / 100);
@@ -277,18 +289,26 @@ export default function PricingMasterPage() {
           newRate = row.override_rate + markupValue;
         }
         newRate = Math.round(newRate);
+        return { row, newRate };
+      });
 
+      for (let index = 0; index < rows.length; index += 1) {
+        const { row, newRate } = rows[index];
+        try {
         if (!(row as any).is_override) {
           await createMutation.mutateAsync({ bom_item_id: row.bom_item_id, override_rate: newRate, gst_pct: row.gst_pct });
         } else {
           await updateMutation.mutateAsync({ id: row.id, override_rate: newRate });
         }
-      });
-
-      await Promise.all(promises);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          throw new Error(`Markup failed on row ${index + 1} of ${rows.length}: ${message}`);
+        }
+      }
       setSelectedIds([]);
       setMarkupOpen(false);
       refetch();
+      await refreshPricingCaches();
       toast(`Markup adjusted successfully across selected pricing profiles`, 'success');
     } catch (err: any) {
       toast(err.message || 'Failed to adjust markup', 'error');

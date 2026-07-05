@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
 import type { CustomerInfo, AddressInfo, SiteInfo, SalesInfo, Quote } from '@/lib/types/quote';
+import { fetchQuotesForCurrentUser } from '@/lib/hooks/useQuotes';
 
 interface QuoteSaveModalProps {
   isOpen: boolean;
@@ -128,6 +129,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
   const [formError, setFormError] = useState<string | null>(null);
   const [showConflict, setShowConflict] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [reloadingConflict, setReloadingConflict] = useState(false);
 
   // Form states
   const [customer, setCustomer] = useState<CustomerInfo>({ name: '', phone: '', whatsapp: '', email: '', isGstRegistered: false });
@@ -449,6 +451,24 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
     setShowConflict(false);
     setStep(0);
     onClose();
+  };
+
+  const handleDiscardAndReload = async () => {
+    if (!activeQuoteId) return;
+    setReloadingConflict(true);
+    setFormError(null);
+    try {
+      const latestQuotes = await fetchQuotesForCurrentUser();
+      queryClient.setQueryData(['quotes'], latestQuotes);
+      useCalculatorStore.setState({ quotes: latestQuotes });
+      loadQuote(activeQuoteId);
+      handleClose();
+    } catch (err) {
+      console.error(err);
+      setFormError(err instanceof Error ? err.message : 'Failed to reload the latest quote from the database.');
+    } finally {
+      setReloadingConflict(false);
+    }
   };
 
   return createPortal(
@@ -827,24 +847,21 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
             <div className="flex gap-2 w-full">
               <button 
                 onClick={() => setShowConflict(false)}
+                disabled={reloadingConflict || saving}
                 className="flex-1 px-3 py-2 rounded-lg border border-border text-text-primary hover:bg-surface-hover transition-colors font-medium text-xs"
               >
                 Cancel
               </button>
               <button 
-                onClick={() => {
-                  if (activeQuoteId) {
-                    loadQuote(activeQuoteId);
-                  }
-                  handleClose();
-                }}
+                onClick={handleDiscardAndReload}
+                disabled={reloadingConflict || saving}
                 className="flex-1 px-3 py-2 rounded-lg border border-error/30 text-error hover:bg-error/10 transition-colors font-medium text-xs"
               >
-                Discard & Reload
+                {reloadingConflict ? 'Reloading...' : 'Discard & Reload'}
               </button>
               <button 
                 onClick={() => handleSave(true)}
-                disabled={saving}
+                disabled={saving || reloadingConflict}
                 className="flex-1 px-3 py-2 rounded-lg bg-accent hover:bg-accent-hover text-background font-bold transition-colors text-xs disabled:opacity-50"
               >
                 {saving ? 'Overwriting...' : 'Overwrite Changes'}

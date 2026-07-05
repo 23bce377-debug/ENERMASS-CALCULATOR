@@ -247,9 +247,7 @@ export async function fetchQuotesForCurrentUser(): Promise<Quote[]> {
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  const mapped = (data || []).map(mapDbQuoteToQuote)
-  useCalculatorStore.setState({ quotes: mapped })
-  return mapped
+  return (data || []).map(mapDbQuoteToQuote)
 }
 
 export function useQuotesQuery(options: { enabled?: boolean } = {}) {
@@ -354,7 +352,7 @@ export function useUpdateQuoteStatusMutation() {
       if (quoteFetchError) throw quoteFetchError
       if (!existingQuote) throw new Error('Quote not found')
       
-      const { error } = await supabase
+      const { data: updatedQuote, error } = await supabase
         .from('quotes')
         .update({
           status: newStatus.toLowerCase() as any,
@@ -363,8 +361,11 @@ export function useUpdateQuoteStatusMutation() {
         .eq('id', existingQuote.id)
         .eq('org_id', orgId)
         .eq('version', existingQuote.version)
+        .select('id')
+        .maybeSingle()
       
       if (error) throw error
+      if (!updatedQuote) throw new Error('CONCURRENCY_CONFLICT')
 
       // Write status history log
       const { error: historyErr } = await (supabase as any)

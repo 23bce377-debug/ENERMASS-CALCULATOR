@@ -14,7 +14,8 @@ import {
   ArrowRight,
   TrendingUp,
   UserCheck,
-  FileText
+  FileText,
+  Boxes
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
@@ -100,6 +101,17 @@ const CARDS = [
     iconBgHover: 'group-hover:bg-sky-500/10',
   },
   {
+    href: '/master/bom-presets',
+    label: 'BOM Preset Master',
+    desc: 'Build reusable BOM item sets and import them into system preset creation or editing.',
+    icon: <Boxes size={24} className="text-cyan-500" />,
+    entity: 'bomPresets',
+    table: 'bom_presets',
+    hoverBorder: 'hover:border-cyan-500/30 group-hover:border-cyan-500/30',
+    glow: 'bg-cyan-500/5',
+    iconBgHover: 'group-hover:bg-cyan-500/10',
+  },
+  {
     href: '/master/subsidy',
     label: 'Subsidy Master',
     desc: 'Maintain PM Surya Ghar slabs, piecewise calculations, and state subsidy values.',
@@ -160,6 +172,7 @@ export default function MastersDashboardPage() {
         fetchCount('eq_batteries').then(c => countsMap.batteries = c),
         fetchCount('eq_mounting_structures').then(c => countsMap.structures = c),
         fetchCount('bom_template_items').then(c => countsMap.accessories = c),
+        fetchCount('bom_presets', true).then(c => countsMap.bomPresets = c),
         fetchCount('bom_template_items').then(c => countsMap.pricing = c),
         fetchCount('rate_master', true).then(c => countsMap.rateOverrides = c),
         fetchCount('calculation_schemes').then(c => countsMap.subsidy = c),
@@ -205,7 +218,7 @@ export default function MastersDashboardPage() {
       {/* Welcome Banner */}
       <div>
         <h1 className="text-xl font-bold text-text-primary flex items-center gap-2">
-          Price Masters Dashboard
+          Masters Dashboard
         </h1>
         <p className="text-xs text-text-muted mt-0.5">
           Central directory panel to standardize equipment specifications, installer references, and subsidy grids.

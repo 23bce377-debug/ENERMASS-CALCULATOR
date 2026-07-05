@@ -200,65 +200,13 @@ export default function QuoteDetailPage() {
     setDuplicateLoading(true);
     setError(null);
     try {
-      const {
-        id: _id,
-        quote_number: originalQuoteNumber,
-        created_at: _createdAt,
-        updated_at: _updatedAt,
-        parent_quote_id: _parentQuoteId,
-        version_reason: _versionReason,
-        quote_items: originalItems,
-        quote_variants: originalVariants,
-        quote_additional_costs: originalCosts = [],
-        ...copyableQuote
-      } = quote as any;
-      const now = new Date().toISOString();
-      const copyNumber = `${originalQuoteNumber}-COPY-${now.replace(/\D/g, '').slice(8, 14)}`;
-
-      const { data: newQuote, error: quoteError } = await supabase
-        .from('quotes')
-        .insert({
-          ...copyableQuote,
-          quote_number: copyNumber,
-          status: 'draft',
-          version: 1,
-          parent_quote_id: null,
-          version_reason: null,
-          created_at: now,
-          updated_at: now,
-        })
-        .select('id')
-        .single();
-      if (quoteError || !newQuote) throw quoteError || new Error('Failed to duplicate quote.');
-
-      const clonedItems = (originalItems || []).map((item: any) => {
-        const { id: _itemId, quote_id: _quoteId, created_at: _itemCreated, updated_at: _itemUpdated, ...itemData } = item;
-        return { ...itemData, quote_id: newQuote.id, created_at: now, updated_at: now };
-      });
-      if (clonedItems.length) {
-        const { error: itemsError } = await supabase.from('quote_items').insert(clonedItems);
-        if (itemsError) throw itemsError;
+      const { data: newQuoteId, error: duplicateError } = await (supabase as any)
+        .rpc('duplicate_quote_atomic', { p_quote_id: quote.id });
+      if (duplicateError || !newQuoteId) {
+        throw duplicateError || new Error('Failed to duplicate quote.');
       }
 
-      const clonedCosts = (originalCosts || []).map((cost: any) => {
-        const { id: _costId, quote_id: _quoteId, created_at: _costCreated, ...costData } = cost;
-        return { ...costData, quote_id: newQuote.id, created_at: now };
-      });
-      if (clonedCosts.length) {
-        const { error: costsError } = await supabase.from('quote_additional_costs').insert(clonedCosts);
-        if (costsError) throw costsError;
-      }
-
-      const clonedVariants = (originalVariants || []).map((variant: any) => {
-        const { id: _variantId, quote_id: _quoteId, created_at: _variantCreated, updated_at: _variantUpdated, ...variantData } = variant;
-        return { ...variantData, quote_id: newQuote.id, created_at: now, updated_at: now };
-      });
-      if (clonedVariants.length) {
-        const { error: variantsError } = await supabase.from('quote_variants').insert(clonedVariants);
-        if (variantsError) throw variantsError;
-      }
-
-      router.push(`/quotes/${newQuote.id}`);
+      router.push(`/quotes/${newQuoteId}`);
     } catch (err: any) {
       setError(err.message || 'Failed to duplicate quote.');
     } finally {

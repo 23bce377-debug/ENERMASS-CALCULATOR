@@ -1,6 +1,6 @@
 import { revalidateTag } from 'next/cache';
 
-export async function invalidateMasterCache(orgId?: string | null) {
+export async function invalidateNextjsTagCache(orgId?: string | null) {
   revalidateTag('master-data', 'max');
   if (orgId) {
     revalidateTag(`org:${orgId}:master`, 'max');

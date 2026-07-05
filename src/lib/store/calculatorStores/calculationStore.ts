@@ -788,6 +788,18 @@ export const createCalculationSlice: StateCreator<
         };
       });
 
+      const mappedRateMaster = Object.fromEntries(
+        (bootstrap.rateMaster || [])
+          .filter((row: any) => row?.item_name)
+          .map((row: any) => [
+            row.item_name,
+            {
+              rate: Number(row.override_rate ?? 0),
+              active: row.is_active !== false,
+            },
+          ]),
+      );
+
       const mappedCommDevices = (bootstrap.commDevices || []).map((c: any) => {
         return {
           ...c,
@@ -1007,6 +1019,7 @@ export const createCalculationSlice: StateCreator<
         dbStructureBom: bootstrap.structureBom || [],
         dbStructureAddons: bootstrap.structureAddons || [],
         dbOrientationMultipliers: orientationMultipliers,
+        rateMaster: mappedRateMaster,
         inventorySummary: bootstrap.inventorySummary,
         dbStructureComponentMasters: mappedStructureComponentMasters,
         dbLoaded: true
@@ -1181,6 +1194,20 @@ export const createCalculationSlice: StateCreator<
           notes: b.notes ?? '',
           specification_details: b.specification_details ?? '',
         }));
+      }
+
+      if (bootstrap.rateMaster) {
+        stateUpdate.rateMaster = Object.fromEntries(
+          (bootstrap.rateMaster || [])
+            .filter((row: any) => row?.item_name)
+            .map((row: any) => [
+              row.item_name,
+              {
+                rate: Number(row.override_rate ?? 0),
+                active: row.is_active !== false,
+              },
+            ]),
+        );
       }
 
       if (bootstrap.structures) {

@@ -5,8 +5,9 @@ import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { SYSTEMS } from '@/lib/data/bom';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/Confirm';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { supabase } from '@/lib/supabase/client';
 import { Loader2 } from 'lucide-react';
@@ -17,6 +18,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { SyncConflictResolver } from './SyncConflictResolver';
 import { PwaPrompt } from './PwaPrompt';
 import { useQuotesQuery } from '@/lib/hooks/useQuotes';
+import { MASTER_DATA_UPDATED_EVENT } from '@/lib/hooks/useMasters';
 
 /**
  * AppShell wraps all pages with the sidebar, header, and mobile tab bar.
@@ -25,6 +27,7 @@ import { useQuotesQuery } from '@/lib/hooks/useQuotes';
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { settings } = useSettings();
   const selectedSystemId = useCalculatorStore((s) => s.selectedSystemId);
   const storeQuoteCount = useCalculatorStore((s) => s.quotes.length);
@@ -35,6 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [loadingSession, setLoadingSession] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const activeUserIdRef = useRef<string | null>(null);
   const publicRoutes = useMemo(() => new Set([
     '/login',
     '/signup',
@@ -69,12 +73,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
+    useCalculatorStore.setState({ quotes: hydratedQuotes });
+  }, [hydratedQuotes]);
+
+  useEffect(() => {
     let mounted = true;
 
     async function checkSession() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
+          activeUserIdRef.current = session.user.id;
           const { data: profile } = await supabase
             .from('profiles')
             .select('is_super_admin, is_active')
@@ -106,6 +115,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
 
       if (session) {
+        if (activeUserIdRef.current && activeUserIdRef.current !== session.user.id) {
+          queryClient.clear();
+          useCalculatorStore.setState({ quotes: [] });
+        }
+        activeUserIdRef.current = session.user.id;
         setIsAuthenticated(true);
         supabase
           .from('profiles')
@@ -114,6 +128,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           .maybeSingle()
           .then(({ data }) => setIsSuperAdmin(data?.is_active !== false && (data?.is_super_admin ?? false)));
       } else {
+        activeUserIdRef.current = null;
+        queryClient.clear();
+        useCalculatorStore.setState({ quotes: [] });
         setIsAuthenticated(false);
         setIsSuperAdmin(false);
         if (!isPublicRoute) {
@@ -133,13 +150,50 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [isPublicRoute, pathname, router]);
+  }, [isPublicRoute, pathname, queryClient, router]);
 
   useEffect(() => {
     if (isAuthenticated && shouldBootstrapMasterData) {
       fetchMasterData();
     }
   }, [isAuthenticated, shouldBootstrapMasterData, fetchMasterData]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let refreshInFlight = false;
+    const refreshMasterQueries = async () => {
+      queryClient.invalidateQueries({ queryKey: ['masters'] });
+      queryClient.invalidateQueries({ queryKey: ['bom-items-pricing'] });
+      queryClient.invalidateQueries({ queryKey: ['erp-master-rules'] });
+      queryClient.invalidateQueries({ queryKey: ['erp-rates'] });
+
+      if (!shouldBootstrapMasterData || refreshInFlight) return;
+      refreshInFlight = true;
+      try {
+        await fetchMasterData();
+        useCalculatorStore.getState().recalculate();
+      } catch (err) {
+        console.error('[AppShell] failed to refresh master data after update signal', err);
+      } finally {
+        refreshInFlight = false;
+      }
+    };
+
+    window.addEventListener(MASTER_DATA_UPDATED_EVENT, refreshMasterQueries);
+    let channel: BroadcastChannel | null = null;
+    try {
+      if ('BroadcastChannel' in window) {
+        channel = new BroadcastChannel(MASTER_DATA_UPDATED_EVENT);
+        channel.onmessage = refreshMasterQueries;
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener(MASTER_DATA_UPDATED_EVENT, refreshMasterQueries);
+      channel?.close();
+    };
+  }, [fetchMasterData, isAuthenticated, queryClient, shouldBootstrapMasterData]);
 
   const systemName = useMemo(() => {
     if (!selectedSystemId) return null;
@@ -176,7 +230,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
     if (pathname === '/master' || pathname.startsWith('/master/')) {
       return {
-        contextLabel: 'Price Masters',
+        contextLabel: 'Masters',
         contextValue: 'Master Data Management',
       };
     }

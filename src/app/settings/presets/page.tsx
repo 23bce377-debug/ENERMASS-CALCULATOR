@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PresetORM, type PresetRow } from '@/backend/orm/presets';
+import { BomPresetMaster } from '@/components/presets/BomPresetMaster';
 import { PresetEditorDialog } from '@/components/presets/PresetEditorDialog';
 import { DuplicatePresetChoiceDialog, type DuplicatePresetChoice } from '@/components/presets/DuplicatePresetChoiceDialog';
 import { deleteSystemPreset, duplicateSystemPreset, getPresetStates, type PresetStateOption } from '@/lib/actions/presets';
@@ -16,12 +17,13 @@ function categoryFromBomDescription(description: string) {
   if (value.includes('panel') || value.includes('module')) return 'panel';
   if (value.includes('inverter') || value.includes('communication')) return 'inverter';
   if (value.includes('battery')) return 'battery';
+  if (value.includes('walkway') || value.includes('walk way') || value.includes('ladder') || value.includes('clamp') || value.includes('wiring pipe') || value.includes('pvc elbow') || value.includes('pvc tee') || value.includes('cable tie') || value.includes('mc4')) return 'accessory';
   if (value.includes('structure') || value.includes('mount')) return 'structure';
-  if (value.includes('dcdb') || value.includes('dc protection') || value.includes('isolator') || value.includes('lightning') || value.includes('l/a')) return 'dc_protection';
-  if (value.includes('acdb') || value.includes('ac protection') || value.includes('meter box')) return 'ac_protection';
-  if (value.includes('cable') || value.includes('mc4') || value.includes('copper') || value.includes('wiring pipe')) return 'cable';
-  if (value.includes('earth') || value.includes('gi strip') || value.includes('chamber')) return 'earthing';
-  if (value.includes('civil') || value.includes('foundation') || value.includes('concrete')) return 'civil';
+  if (value.includes('earth') || value.includes('gi strip') || value.includes('chamber') || value.includes('l/a') || value.includes('lightning')) return 'earthing';
+  if (value.includes('dcdb') || value.includes('dc protection')) return 'dc_protection';
+  if (value.includes('acdb') || value.includes('ac protection') || value.includes('isolator')) return 'ac_protection';
+  if (value.includes('cable') || value.includes('copper')) return 'cable';
+  if (value.includes('civil') || value.includes('foundation') || value.includes('concrete') || value.includes('installation') || value.includes('commission') || value.includes('site visit')) return 'civil';
   if (value.includes('logistic') || value.includes('transport') || value.includes('freight')) return 'logistics';
   if (value.includes('accessor') || value.includes('meter') || value.includes('wifi') || value.includes('monitor')) return 'accessory';
   return 'other';
@@ -107,6 +109,7 @@ export default function SystemPresetsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [states, setStates] = useState<PresetStateOption[]>([]);
   const [stateFilter, setStateFilter] = useState('all');
+  const [activeManager, setActiveManager] = useState<'systems' | 'bom'>('systems');
   
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerSystemId, setComposerSystemId] = useState<string | null>(null);
@@ -265,16 +268,18 @@ export default function SystemPresetsPage() {
           </div>
         </div>
 
-        <button 
-          onClick={() => {
-            setComposerSystemId(null);
-            setComposerMode('create');
-            setComposerOpen(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-background hover:bg-accent-hover transition-colors text-sm font-bold shadow-sm"
-        >
-          <Plus size={16} /> Create Preset
-        </button>
+        {activeManager === 'systems' && (
+          <button 
+            onClick={() => {
+              setComposerSystemId(null);
+              setComposerMode('create');
+              setComposerOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-background hover:bg-accent-hover transition-colors text-sm font-bold shadow-sm"
+          >
+            <Plus size={16} /> Create Preset
+          </button>
+        )}
       </div>
 
       {error && (
@@ -282,6 +287,36 @@ export default function SystemPresetsPage() {
           {error}
         </div>
       )}
+
+      <div className="inline-flex rounded-xl border border-border bg-surface p-1 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setActiveManager('systems')}
+          className={`rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+            activeManager === 'systems'
+              ? 'bg-accent text-background'
+              : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
+          }`}
+        >
+          System Presets
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveManager('bom')}
+          className={`rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+            activeManager === 'bom'
+              ? 'bg-accent text-background'
+              : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
+          }`}
+        >
+          BOM Preset Master
+        </button>
+      </div>
+
+      {activeManager === 'bom' ? (
+        <BomPresetMaster />
+      ) : (
+        <>
 
       <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
         <div className="p-4 border-b border-border bg-background/60 space-y-4">
@@ -467,6 +502,8 @@ export default function SystemPresetsPage() {
           if (!duplicating) setDuplicateTarget(null);
         }}
       />
+        </>
+      )}
     </div>
   );
 }

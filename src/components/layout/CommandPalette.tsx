@@ -62,9 +62,9 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
     },
     {
       id: 'master-dashboard',
-      title: 'Go to Price Masters Dashboard',
+      title: 'Go to Masters Dashboard',
       subtitle: 'Open all editable pricing and master data sections',
-      category: 'Price Masters',
+      category: 'Masters',
       icon: <Database size={15} />,
       action: () => { router.push('/master'); onClose(); }
     },
@@ -72,7 +72,7 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
       id: 'master-panels',
       title: 'Go to Solar Panels Directory',
       subtitle: 'Manage PV module catalogs, wattages, and master inventories',
-      category: 'Price Masters',
+      category: 'Masters',
       icon: <Database size={15} />,
       action: () => { router.push('/master/panels'); onClose(); }
     },
@@ -80,15 +80,23 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
       id: 'master-terms',
       title: 'Go to Terms & Conditions Master',
       subtitle: 'Edit global and state-wise quotation terms for generated PDFs',
-      category: 'Price Masters',
+      category: 'Masters',
       icon: <FileText size={15} />,
       action: () => { router.push('/master/terms'); onClose(); }
+    },
+    {
+      id: 'master-bom-presets',
+      title: 'Go to BOM Preset Master',
+      subtitle: 'Create reusable BOM item sets for system presets',
+      category: 'Masters',
+      icon: <Wrench size={15} />,
+      action: () => { router.push('/master/bom-presets'); onClose(); }
     },
     {
       id: 'master-rate-overrides',
       title: 'Go to Rate Overrides',
       subtitle: 'Edit audited BOM item override rates',
-      category: 'Price Masters',
+      category: 'Masters',
       icon: <TrendingUp size={15} />,
       action: () => { router.push('/master/rate-master'); onClose(); }
     },

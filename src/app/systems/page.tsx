@@ -34,12 +34,13 @@ function categoryFromBomDescription(description: string) {
   if (value.includes('panel') || value.includes('module')) return 'panel';
   if (value.includes('inverter') || value.includes('communication')) return 'inverter';
   if (value.includes('battery')) return 'battery';
+  if (value.includes('walkway') || value.includes('walk way') || value.includes('ladder') || value.includes('clamp') || value.includes('wiring pipe') || value.includes('pvc elbow') || value.includes('pvc tee') || value.includes('cable tie') || value.includes('mc4')) return 'accessory';
   if (value.includes('structure') || value.includes('mount')) return 'structure';
-  if (value.includes('dcdb') || value.includes('dc protection') || value.includes('isolator') || value.includes('lightning') || value.includes('l/a')) return 'dc_protection';
-  if (value.includes('acdb') || value.includes('ac protection') || value.includes('meter box')) return 'ac_protection';
-  if (value.includes('cable') || value.includes('mc4') || value.includes('copper') || value.includes('wiring pipe')) return 'cable';
-  if (value.includes('earth') || value.includes('gi strip') || value.includes('chamber')) return 'earthing';
-  if (value.includes('civil') || value.includes('foundation') || value.includes('concrete')) return 'civil';
+  if (value.includes('earth') || value.includes('gi strip') || value.includes('chamber') || value.includes('l/a') || value.includes('lightning')) return 'earthing';
+  if (value.includes('dcdb') || value.includes('dc protection')) return 'dc_protection';
+  if (value.includes('acdb') || value.includes('ac protection') || value.includes('isolator')) return 'ac_protection';
+  if (value.includes('cable') || value.includes('copper')) return 'cable';
+  if (value.includes('civil') || value.includes('foundation') || value.includes('concrete') || value.includes('installation') || value.includes('commission') || value.includes('site visit')) return 'civil';
   if (value.includes('logistic') || value.includes('transport') || value.includes('freight')) return 'logistics';
   if (value.includes('accessor') || value.includes('meter') || value.includes('wifi') || value.includes('monitor')) return 'accessory';
   return 'other';

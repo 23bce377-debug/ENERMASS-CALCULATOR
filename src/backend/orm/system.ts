@@ -85,6 +85,26 @@ export const SystemORM = {
   }
 };
 
+function mapCategoryToSection(category: string): string {
+  const norm = String(category || '').toLowerCase().trim();
+  switch (norm) {
+    case 'panel': return 'solar_panels';
+    case 'inverter': return 'power_electronics';
+    case 'battery': return 'power_electronics';
+    case 'structure': return 'mounting_structure';
+    case 'dc_protection':
+    case 'ac_protection': return 'electrical_protection';
+    case 'cable': return 'cabling';
+    case 'earthing': return 'earthing';
+    case 'civil':
+    case 'logistics': return 'services';
+    case 'accessory': return 'wiring';
+    case 'miscellaneous':
+    case 'other': return 'services';
+    default: return 'services';
+  }
+}
+
 export const SystemItemORM = {
   async getBySystemId(systemId: string) {
     const { data, error } = await supabase
@@ -142,11 +162,19 @@ export const SystemItemORM = {
       categoryId?: string;
       isIncludedByDefault?: boolean;
       remarks?: string;
+      catalogItemId?: string;
+      catalogType?: string;
+      category?: string;
+      sourceItemId?: string;
+      sourceTable?: string;
     }>,
     existingSystemId?: string
   ) {
     if (!metadata.state_id) {
       throw new Error('Please select a state before saving a system preset.');
+    }
+    if (!lines || lines.length === 0) {
+      throw new Error('Preset must contain at least one BOM item.');
     }
 
     const { data: sessionData } = await supabase.auth.getSession();
@@ -170,9 +198,6 @@ export const SystemItemORM = {
         updated_at: new Date().toISOString()
       }).eq('id', existingSystemId);
       if (sysErr) throw mapDatabaseError(sysErr, 'Failed to update system metadata');
-      
-      // Delete old items
-      await supabase.from('system_items').delete().eq('system_id', existingSystemId);
     } else {
       // Create new
       const { data: newSys, error: sysErr } = await supabase.from('systems').insert({
@@ -191,36 +216,60 @@ export const SystemItemORM = {
 
     if (!systemId) throw new Error('Failed to determine system ID');
 
-    await (supabase as any)
-      .from('system_state_availability')
-      .delete()
-      .eq('system_id', systemId);
+    const itemsToInsert = lines.map((line, idx) => {
+      const category = line.category || line.categoryId || '';
+      const catalogType = line.catalogType || line.sourceTable || 'custom';
+      const catalogItemId = line.catalogItemId || line.sourceItemId || null;
+      const remarks = line.remarks || null;
+      const normalizedCategory = String(category).toLowerCase().trim();
+      const lowerDescription = String(line.description || '').toLowerCase();
+      const isLightningArrester = (
+        catalogType === 'eq_lightning_arresters' ||
+        catalogType === 'lightning_arrester' ||
+        (
+          ['dc_protection', 'ac_protection', 'earthing'].includes(normalizedCategory) &&
+          (lowerDescription.includes('lightning') || lowerDescription.includes('l/a') || lowerDescription.includes('l-a'))
+        )
+      );
+      const isSolarMeter = (
+        catalogType === 'eq_meters' &&
+        (normalizedCategory === 'solar_meter' || lowerDescription.includes('solar'))
+      );
+      const isNetMeter = (
+        catalogType === 'eq_meters' &&
+        (normalizedCategory === 'net_meter' || lowerDescription.includes('net'))
+      );
+      const isCommunicationDevice = catalogType === 'eq_communication_devices' || catalogType === 'communication_device';
+      const isEquipment = catalogType === 'equipment';
 
-    const { error: stateErr } = await (supabase as any)
-      .from('system_state_availability')
-      .insert({ system_id: systemId, state_id: metadata.state_id });
-    if (stateErr) throw mapDatabaseError(stateErr, 'Failed to update preset state');
-
-    // Insert new items
-    if (lines && lines.length > 0) {
-      const itemsToInsert = lines.map((line, idx) => ({
-        system_id: systemId!,
-        section: (line.categoryId || 'mounting_structure') as any,
+      return {
+        section: mapCategoryToSection(category),
         description: line.description,
         unit: line.unit || 'Nos',
-        default_qty: line.effectiveQty,
+        default_qty: Number(line.effectiveQty ?? 0),
         sort_order: idx + 1,
         is_included_by_default: line.isIncludedByDefault ?? true,
         is_mandatory: true,
-        remarks: line.remarks
-      }));
-      
-      const { error: itemsErr } = await supabase.from('system_items').insert(itemsToInsert);
-      if (itemsErr) {
-        console.error('Error inserting items:', itemsErr);
-        throw mapDatabaseError(itemsErr, 'Failed to insert new system items');
-      }
-    }
+        remarks: remarks,
+        panel_id: (catalogType === 'eq_panels' || (isEquipment && normalizedCategory === 'panel')) ? catalogItemId : null,
+        inverter_id: (catalogType === 'eq_inverters' || (isEquipment && normalizedCategory === 'inverter')) ? catalogItemId : null,
+        battery_id: (catalogType === 'eq_batteries' || (isEquipment && normalizedCategory === 'battery')) ? catalogItemId : null,
+        structure_id: (catalogType === 'eq_mounting_structures' || catalogType === 'eq_structure' || (isEquipment && normalizedCategory === 'structure')) ? catalogItemId : null,
+        solar_meter_id: isSolarMeter || (isEquipment && normalizedCategory === 'solar_meter') ? catalogItemId : null,
+        net_meter_id: isNetMeter || (isEquipment && normalizedCategory === 'net_meter') ? catalogItemId : null,
+        la_id: isLightningArrester || (isEquipment && normalizedCategory === 'lightning_arrester') ? catalogItemId : null,
+        bom_item_id: (catalogType === 'bom_template_items' || catalogType === 'bom_template') ? catalogItemId : null,
+        comm_device_id: isCommunicationDevice ? catalogItemId : null,
+        structure_component_id: (catalogType === 'structure_component_master' || catalogType === 'structure_component') ? catalogItemId : null,
+      };
+    });
+    
+    const { error: replaceErr } = await (supabase as any).rpc('replace_system_items_atomic', {
+      p_system_id: systemId,
+      p_items: itemsToInsert,
+      p_state_id: metadata.state_id,
+    });
+    if (replaceErr) throw mapDatabaseError(replaceErr, 'Failed to update system items');
 
     return systemId;
   }

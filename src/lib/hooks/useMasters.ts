@@ -3,7 +3,7 @@ import { supabase } from '../supabase/client';
 
 export const MASTER_DATA_UPDATED_EVENT = 'enermass-master-data-updated';
 
-function notifyMasterDataUpdated(entity?: string) {
+export function notifyMasterDataUpdated(entity?: string) {
   if (typeof window === 'undefined') return;
   const detail = { entity, updatedAt: Date.now() };
   window.dispatchEvent(new CustomEvent(MASTER_DATA_UPDATED_EVENT, { detail }));
@@ -87,6 +87,22 @@ function assertValidMasterPayload(entity: string, item: any) {
   if (!['panels', 'inverters', 'batteries'].includes(entity) || !item) return;
   if (isPlaceholderMaster(entity, item)) {
     throw new Error('Please enter a real brand and model. Placeholder names like Unknown are not allowed in masters.');
+  }
+  if (entity === 'panels') {
+    if ('wattage_w' in item && (!Number.isFinite(Number(item.wattage_w)) || Number(item.wattage_w) <= 0)) {
+      throw new Error('Panel wattage must be greater than zero.');
+    }
+    if ('rate_per_watt' in item && (!Number.isFinite(Number(item.rate_per_watt)) || Number(item.rate_per_watt) <= 0)) {
+      throw new Error('Panel selling rate must be greater than zero.');
+    }
+    if ('selling_price' in item && (!Number.isFinite(Number(item.selling_price)) || Number(item.selling_price) <= 0)) {
+      throw new Error('Panel selling price must be greater than zero.');
+    }
+  }
+  if ((entity === 'inverters' || entity === 'batteries') && 'rate' in item) {
+    if (!Number.isFinite(Number(item.rate)) || Number(item.rate) <= 0) {
+      throw new Error('Selling price must be greater than zero.');
+    }
   }
 }
 
@@ -231,6 +247,12 @@ function transformToDb(entity: string, item: any, currentItem?: any): any {
     if ('rate_per_watt' in copy || 'wattage_w' in copy) {
       const ratePerWatt = copy.rate_per_watt ?? (currentItem?.selling_price && currentItem?.wattage_w ? Number(currentItem.selling_price) / Number(currentItem.wattage_w) : 0);
       const wattage = copy.wattage_w ?? currentItem?.wattage_w ?? 550;
+      if (!Number.isFinite(Number(ratePerWatt)) || Number(ratePerWatt) <= 0) {
+        throw new Error('Panel selling rate must be greater than zero.');
+      }
+      if (!Number.isFinite(Number(wattage)) || Number(wattage) <= 0) {
+        throw new Error('Panel wattage must be greater than zero.');
+      }
       copy.selling_price = Number(ratePerWatt) * Number(wattage);
       delete copy.rate_per_watt;
     }
@@ -539,7 +561,7 @@ export function useMasterQuery<T>(entity: string, options?: any) {
         .filter((item: any) => !isPlaceholderMaster(entity, item))
         .map((item: any) => transformFromDb(entity, item)) as T[];
     },
-    staleTime: 24 * 60 * 60 * 1000, // 24 hours cache validity
+    staleTime: 2 * 60 * 1000,
     ...options
   });
 }
@@ -785,66 +807,81 @@ export function useMasterBulkUpdateMutation(entity: string) {
         .select('*')
         .in('id', ids) as any);
 
-      // 2. Perform updates row by row (or in bulk if fields allow)
-      // Since it's a bulk operation on a relational database, doing updates in batch matches Supabase syntax
-      const promises = ids.map(async (id) => {
-        const before = beforeStates?.find((b: any) => b.id === id);
-        
-        if (before && before.org_id === null && orgId !== null) {
-          const payloadToApply = transformToDb(entity, updates, before);
-          const data = await writeOrgOverride<any>(
-            entity,
-            table,
-            before,
-            payloadToApply,
-            orgId,
-            userId,
-            id,
-            'bulk_create_override',
-            'bulk_update_override',
-          );
+      const beforeById = new Map(((beforeStates || []) as any[]).map((row: any) => [row.id, row]));
+      const operations = ids.map((id) => {
+        const before = beforeById.get(id);
+        if (!before) throw new Error(`Bulk update aborted: row ${id} was not found or is not accessible.`);
+        return {
+          id,
+          before,
+          payload: transformToDb(entity, updates, before),
+          shouldForkGlobal: before.org_id === null && orgId !== null,
+        };
+      });
 
-          await (supabase as any)
-            .from('master_hidden_items')
-            .delete()
-            .eq('org_id', orgId)
-            .eq('entity', entity)
-            .eq('global_id', id);
+      const results: any[] = [];
+      for (const operation of operations) {
+        const { id, before, payload, shouldForkGlobal } = operation;
+
+        try {
+          if (shouldForkGlobal) {
+            const data = await writeOrgOverride<any>(
+              entity,
+              table,
+              before,
+              payload,
+              orgId,
+              userId,
+              id,
+              'bulk_create_override',
+              'bulk_update_override',
+            );
+
+            await (supabase as any)
+              .from('master_hidden_items')
+              .delete()
+              .eq('org_id', orgId)
+              .eq('entity', entity)
+              .eq('global_id', id);
+            
+            await supabase.from('master_data_changes_log').insert({
+              entity_type: table,
+              entity_id: data.id,
+              change_type: 'created',
+              old_values: before,
+              new_values: data,
+            });
+
+            results.push(transformFromDb(entity, data));
+            continue;
+          }
+
+          const { data, error } = await (supabase
+            .from(table as any)
+            .update({ ...payload, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .maybeSingle() as any);
+          if (error) throw error;
+          if (!data) throw new Error('Update returned no row.');
+
+          // Log Audit Event for each
+          await logAudit(orgId, userId, 'masters', table, id, 'bulk_update', before, data);
           
           await supabase.from('master_data_changes_log').insert({
             entity_type: table,
-            entity_id: data.id,
-            change_type: 'created',
+            entity_id: id,
+            change_type: 'updated',
             old_values: before,
             new_values: data,
           });
 
-          return transformFromDb(entity, data);
+          results.push(transformFromDb(entity, data));
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          throw new Error(`Bulk update failed on row ${results.length + 1} of ${operations.length}: ${message}`);
         }
-
-        const { data, error } = await (supabase
-          .from(table as any)
-          .update({ ...transformToDb(entity, updates, before), updated_at: new Date().toISOString() })
-          .eq('id', id)
-          .select()
-          .maybeSingle() as any);
-        if (error) throw error;
-
-        // Log Audit Event for each
-        await logAudit(orgId, userId, 'masters', table, id, 'bulk_update', before, data);
-        
-        await supabase.from('master_data_changes_log').insert({
-          entity_type: table,
-          entity_id: id,
-          change_type: 'updated',
-          old_values: before,
-          new_values: data,
-        });
-
-        return transformFromDb(entity, data);
-      });
-
-      const results = await Promise.all(promises);
+      }
       return results;
     },
     onSuccess: async () => {
@@ -886,7 +923,8 @@ export function useAuditLogsQuery(entityTable: string, entityId?: string) {
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -907,7 +945,8 @@ export function useChangesLogQuery(entityTable: string, entityId?: string) {
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -968,55 +1007,15 @@ export function useUpdateSubsidyMutation() {
         .eq('id', schemeId)
         .maybeSingle() as any);
 
-      // 2. Update scheme
-      const { data: scheme, error: schemeErr } = await (supabase
-        .from('calculation_schemes')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', schemeId)
-        .select()
-        .maybeSingle() as any);
+      const { data: afterScheme, error: rpcError } = await (supabase as any)
+        .rpc('update_subsidy_scheme_atomic', {
+          p_scheme_id: schemeId,
+          p_updates: updates,
+          p_slabs: slabs ?? [],
+          p_state_overrides: stateOverrides ?? [],
+        });
 
-      if (schemeErr) throw schemeErr;
-
-      // 3. Replace scheme slabs
-      await supabase.from('scheme_slabs').delete().eq('scheme_id', schemeId);
-      if (slabs && slabs.length > 0) {
-        const slabsToInsert = slabs.map((s, idx) => ({
-          scheme_id: schemeId,
-          slab_index: idx + 1,
-          start_kw: parseFloat(s.startKW ?? s.start_kw),
-          end_kw: s.endKW || s.end_kw ? parseFloat(s.endKW ?? s.end_kw) : null,
-          rate_per_kw: parseFloat(s.ratePerKW ?? s.rate_per_kw ?? 0),
-          is_fixed_amount: s.isFixedAmount ?? s.is_fixed_amount ?? false,
-          fixed_amount: s.fixedAmount || s.fixed_amount ? parseFloat(s.fixedAmount ?? s.fixed_amount) : null,
-          formula: s.formula ?? null,
-        }));
-
-        const { error: slabsErr } = await supabase.from('scheme_slabs').insert(slabsToInsert);
-        if (slabsErr) throw slabsErr;
-      }
-
-      await supabase.from('state_scheme_overrides' as any).delete().eq('scheme_id', schemeId);
-      if (stateOverrides && stateOverrides.length > 0) {
-        const overridesToInsert = stateOverrides.map((override) => ({
-          scheme_id: schemeId,
-          state_id: override.state_id,
-          max_absolute_override: override.max_absolute_override === '' || override.max_absolute_override == null
-            ? null
-            : Number(override.max_absolute_override),
-          additional_state_subsidy: Number(override.additional_state_subsidy || 0),
-          is_active: true,
-        }));
-        const { error: overridesErr } = await supabase.from('state_scheme_overrides' as any).insert(overridesToInsert);
-        if (overridesErr) throw overridesErr;
-      }
-
-      // 4. Log Audit Trail
-      const { data: afterScheme } = await (supabase
-        .from('calculation_schemes')
-        .select('*, scheme_slabs(*)')
-        .eq('id', schemeId)
-        .maybeSingle() as any);
+      if (rpcError) throw rpcError;
 
       await logAudit(orgId, userId, 'masters', 'calculation_schemes', schemeId, 'update', beforeScheme, afterScheme);
       
@@ -1051,55 +1050,18 @@ export function useCreateSubsidyMutation() {
     mutationFn: async ({ updates, slabs, stateOverrides }: { updates: any; slabs: any[]; stateOverrides?: any[] }) => {
       const { orgId, userId } = await getOrgContext();
 
-      // 1. Insert scheme
-      const { data: scheme, error: schemeErr } = await (supabase
-        .from('calculation_schemes')
-        .insert({ ...updates, org_id: orgId, is_active: true, updated_at: new Date().toISOString() })
-        .select()
-        .maybeSingle() as any);
+      const { data: afterScheme, error: rpcError } = await (supabase as any)
+        .rpc('create_subsidy_scheme_atomic', {
+          p_org_id: orgId,
+          p_updates: updates,
+          p_slabs: slabs ?? [],
+          p_state_overrides: stateOverrides ?? [],
+        });
 
-      if (schemeErr) throw schemeErr;
-      if (!scheme) throw new Error('Failed to create subsidy scheme');
+      if (rpcError) throw rpcError;
+      if (!afterScheme?.id) throw new Error('Failed to create subsidy scheme');
 
-      const schemeId = scheme.id;
-
-      // 2. Insert scheme slabs
-      if (slabs && slabs.length > 0) {
-        const slabsToInsert = slabs.map((s, idx) => ({
-          scheme_id: schemeId,
-          slab_index: idx + 1,
-          start_kw: parseFloat(s.startKW ?? s.start_kw),
-          end_kw: s.endKW || s.end_kw ? parseFloat(s.endKW ?? s.end_kw) : null,
-          rate_per_kw: parseFloat(s.ratePerKW ?? s.rate_per_kw ?? 0),
-          is_fixed_amount: s.isFixedAmount ?? s.is_fixed_amount ?? false,
-          fixed_amount: s.fixedAmount || s.fixed_amount ? parseFloat(s.fixedAmount ?? s.fixed_amount) : null,
-          formula: s.formula ?? null,
-        }));
-
-        const { error: slabsErr } = await supabase.from('scheme_slabs').insert(slabsToInsert);
-        if (slabsErr) throw slabsErr;
-      }
-
-      if (stateOverrides && stateOverrides.length > 0) {
-        const overridesToInsert = stateOverrides.map((override) => ({
-          scheme_id: schemeId,
-          state_id: override.state_id,
-          max_absolute_override: override.max_absolute_override === '' || override.max_absolute_override == null
-            ? null
-            : Number(override.max_absolute_override),
-          additional_state_subsidy: Number(override.additional_state_subsidy || 0),
-          is_active: true,
-        }));
-        const { error: overridesErr } = await supabase.from('state_scheme_overrides' as any).insert(overridesToInsert);
-        if (overridesErr) throw overridesErr;
-      }
-
-      // 3. Log Audit Trail
-      const { data: afterScheme } = await (supabase
-        .from('calculation_schemes')
-        .select('*, scheme_slabs(*)')
-        .eq('id', schemeId)
-        .maybeSingle() as any);
+      const schemeId = afterScheme.id;
 
       await logAudit(orgId, userId, 'masters', 'calculation_schemes', schemeId, 'create', null, afterScheme);
       

@@ -55,13 +55,14 @@ export const GET = withLicensedApiRoute(async (request, context) => {
       ]);
 
       // Chunk 2: Structures & App Config
-      const [structuresRes, weightLookupsRes, structureComponentsRes, structureBomRes, structureAddonsRes, appSettingsRes] = await Promise.all([
+      const [structuresRes, weightLookupsRes, structureComponentsRes, structureBomRes, structureAddonsRes, appSettingsRes, categoryMarginsRes] = await Promise.all([
         safeQuery(supabase.from('eq_mounting_structures').select('*').eq('is_active', true)),
         safeQuery(supabase.from('structure_weight_lookup').select('*')),
         safeQuery(supabase.from('eq_structure_components').select('*').eq('is_active', true)),
         safeQuery(supabase.from('eq_structure_bom').select('*')),
         safeQuery(supabase.from('eq_structure_addons').select('*').eq('is_active', true)),
-        safeQuery(supabase.from('app_settings').select('*').eq('org_id', orgId).maybeSingle())
+        safeQuery(supabase.from('app_settings').select('*').eq('org_id', orgId).maybeSingle()),
+        safeQuery(supabase.from('category_margins').select('*').eq('org_id', orgId))
       ]);
 
       // Chunk 3: Rules, Schemes, Vendors, Systems, and GST Master
@@ -84,6 +85,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
       // Chunk 4: Heavy BOM & Structural Templates
       const [
         bomItemsRes,
+        rateMasterRes,
         structureAccessoryRatesRes,
         structureMaterialRatesRes,
         structureTemplatesRes,
@@ -93,6 +95,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
         structureComponentMasterRes
       ] = await Promise.all([
         safeQuery(supabase.from('bom_template_items').select('*').limit(bomLimit)),
+        safeQuery(supabase.from('rate_master').select('*').eq('org_id', orgId).eq('is_active', true)),
         safeQuery(supabase.from('structure_accessory_rates').select('*').eq('is_active', true)),
         safeQuery(supabase.from('structure_material_rates').select('*')),
         safeQuery(supabase.from('structure_templates').select('*')),
@@ -140,6 +143,8 @@ export const GET = withLicensedApiRoute(async (request, context) => {
         structureBom: structureBomRes.data || [],
         structureAddons: structureAddonsRes.data || [],
         appSettings: appSettingsRes.data || null,
+        categoryMargins: categoryMarginsRes.data || [],
+        rateMaster: rateMasterRes.data || [],
         structureVendors: (vendorsRes.data || []).filter((v: any) => v.is_structure_vendor),
         structureAccessoryRates: structureAccessoryRatesRes.data || [],
         structureMaterialRates: structureMaterialRatesRes.data || [],

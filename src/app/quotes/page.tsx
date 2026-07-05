@@ -437,7 +437,8 @@ export default function QuotesPage() {
 
   const goToCalculatorForEdit = async (quoteId: string) => {
     try {
-      await fetchQuotesForCurrentUser();
+      const latestQuotes = await fetchQuotesForCurrentUser();
+      useCalculatorStore.setState({ quotes: latestQuotes });
       loadQuote(quoteId);
       router.push('/calculator');
     } catch (err) {
@@ -448,7 +449,8 @@ export default function QuotesPage() {
 
   const cloneQuoteAsTemplate = async (quoteId: string) => {
     try {
-      await fetchQuotesForCurrentUser();
+      const latestQuotes = await fetchQuotesForCurrentUser();
+      useCalculatorStore.setState({ quotes: latestQuotes });
       duplicateQuote(quoteId);
       router.push('/calculator');
     } catch (err) {
@@ -469,7 +471,9 @@ export default function QuotesPage() {
       setStatusNotice({ quoteId, from: previousStatus, to: newStatus });
     } catch (err: any) {
       console.error(err);
-      alert(err instanceof Error ? err.message : 'Failed to update quote status in database.');
+      alert(err instanceof Error && err.message === 'CONCURRENCY_CONFLICT'
+        ? 'Quote status changed elsewhere. Refresh and try again.'
+        : err instanceof Error ? err.message : 'Failed to update quote status in database.');
     } finally {
       setUpdatingStatusQuoteId(null);
     }

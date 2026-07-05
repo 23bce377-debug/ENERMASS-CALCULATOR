@@ -5,7 +5,10 @@ import { createPortal } from 'react-dom';
 import {
   getPresetStates,
   getPresetWithComponents,
+  getBomPresetWithItems,
+  listBomPresets,
   savePresetWithComponents,
+  type BomPresetSummary,
   type LineItem,
   type PresetStateOption,
 } from '@/lib/actions/presets';
@@ -50,7 +53,7 @@ const CATEGORY_ORDER = [
   'miscellaneous',
 ];
 
-const CORE_CATEGORIES = ['panel', 'inverter', 'battery'];
+const CORE_CATEGORIES = ['panel', 'inverter', 'battery', 'structure'];
 
 const CATEGORY_LABELS: Record<string, string> = {
   all: 'All Saved Items',
@@ -79,16 +82,24 @@ const SYSTEM_TYPE_OPTIONS = [
 
 const STAGES = [
   { id: 'details', label: 'Basics', hint: 'Name, state, goal wattage' },
-  { id: 'core', label: 'Core Components', hint: 'Panel, inverter, batteries' },
-  { id: 'bom', label: 'BOM Items', hint: 'All saved DB items' },
+  { id: 'core', label: 'Core Components', hint: 'Panel, inverter, batteries, structure' },
+  { id: 'bom', label: 'BOM Items', hint: 'Other saved DB items' },
   { id: 'review', label: 'Review', hint: 'Final check and save' },
 ] as const;
 
 type StageId = (typeof STAGES)[number]['id'];
 
 function normalizeCategory(category: string | null | undefined) {
-  if (!category || category === 'other' || category === 'all') return 'miscellaneous';
-  return category;
+  const normalized = String(category ?? '').trim().toLowerCase().replace(/&/g, 'and').replace(/[\s-]+/g, '_');
+  if (!normalized || normalized === 'other' || normalized === 'all') return 'miscellaneous';
+  if (normalized === 'mounting_structure' || normalized === 'monitoring_and_safety' || normalized === 'accessories') return 'accessory';
+  if (normalized === 'cables_and_conduit' || normalized === 'cabling' || normalized === 'wiring') return 'cable';
+  if (normalized === 'dc_side_protection') return 'dc_protection';
+  if (normalized === 'ac_side_protection') return 'ac_protection';
+  if (normalized === 'civil_works' || normalized === 'services') return 'civil';
+  if (normalized === 'logistics_and_handling' || normalized === 'handling') return 'logistics';
+  if (normalized === 'earthings') return 'earthing';
+  return normalized;
 }
 
 function newBlankItem(catalogItem: any, category: string, sortOrder: number): LineItem {
@@ -131,6 +142,19 @@ function getGoalMatchedPanelQty(capacityKw: number, catalogItem: any): number | 
   return Math.max(1, Math.ceil((capacityKw * 1000) / wattage));
 }
 
+function resolveAddedCategory(catalogItem: any, pickerCategory: string) {
+  const normalizedPickerCategory = normalizeCategory(pickerCategory);
+  if (CORE_CATEGORIES.includes(normalizedPickerCategory)) {
+    return normalizedPickerCategory;
+  }
+
+  const itemCategory = normalizeCategory(catalogItem.category ?? pickerCategory);
+  if (CORE_CATEGORIES.includes(itemCategory) && !CORE_CATEGORIES.includes(normalizedPickerCategory)) {
+    return 'miscellaneous';
+  }
+  return itemCategory;
+}
+
 function itemTitle(item: LineItem) {
   const sourceName = [item.brand, item.model].filter(Boolean).join(' ').trim();
   return sourceName || item.description || 'Untitled item';
@@ -140,10 +164,12 @@ function PresetItemEditor({
   item,
   onUpdate,
   onRemove,
+  lockedCategory,
 }: {
   item: LineItem;
   onUpdate: (field: keyof LineItem, value: any) => void;
   onRemove: () => void;
+  lockedCategory?: string;
 }) {
   const amount = item.isSurveyDependent ? null : Number(item.quantity || 0) * Number(item.unitRate || 0);
 
@@ -169,9 +195,10 @@ function PresetItemEditor({
           <select
             value={normalizeCategory(item.category)}
             onChange={(event) => onUpdate('category', event.target.value)}
+            disabled={Boolean(lockedCategory)}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
           >
-            {CATEGORY_ORDER.map((category) => (
+            {(lockedCategory ? [lockedCategory] : CATEGORY_ORDER).map((category) => (
               <option key={category} value={category}>
                 {CATEGORY_LABELS[category]}
               </option>
@@ -287,6 +314,11 @@ export function PresetEditorDialog({
   const [systemType, setSystemType] = useState('on_grid');
   const [stateId, setStateId] = useState('');
   const [states, setStates] = useState<PresetStateOption[]>([]);
+  const [bomPresets, setBomPresets] = useState<BomPresetSummary[]>([]);
+  const [selectedBomPresetId, setSelectedBomPresetId] = useState('');
+  const [bomPresetBusy, setBomPresetBusy] = useState(false);
+  const [bomPresetNotice, setBomPresetNotice] = useState<string | null>(null);
+  const [bomImportPromptOpen, setBomImportPromptOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [addPickerOpen, setAddPickerOpen] = useState<string | false>(false);
@@ -363,6 +395,26 @@ export function PresetEditorDialog({
       .finally(() => setLoading(false));
   }, [open, presetId, initialData, dialogMode]);
 
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    listBomPresets()
+      .then((presets) => {
+        if (cancelled) return;
+        setBomPresets(presets);
+        setSelectedBomPresetId((current) => current || presets[0]?.id || '');
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error('Failed to load BOM presets:', err);
+          setBomPresets([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   const grouped = useMemo(() => {
     const groups: Record<string, LineItem[]> = {};
     for (const category of CATEGORY_ORDER) {
@@ -374,6 +426,10 @@ export function PresetEditorDialog({
   const bomItems = useMemo(
     () => lineItems.filter((item) => !CORE_CATEGORIES.includes(normalizeCategory(item.category))),
     [lineItems],
+  );
+  const selectedBomPreset = useMemo(
+    () => bomPresets.find((preset) => preset.id === selectedBomPresetId) ?? null,
+    [bomPresets, selectedBomPresetId],
   );
 
   const totalCost = lineItems
@@ -392,19 +448,86 @@ export function PresetEditorDialog({
 
   function addItemFromCatalog(catalogItem: any, category: string) {
     setLineItems((prev) => {
-      const itemCategory = normalizeCategory(catalogItem.category ?? category);
+      const itemCategory = resolveAddedCategory(catalogItem, category);
       const hasExistingPanel = prev.some((item) => normalizeCategory(item.category) === 'panel');
       const autoPanelQty = itemCategory === 'panel' && !hasExistingPanel
         ? getGoalMatchedPanelQty(parsedCapacity, catalogItem)
         : null;
       const item = newBlankItem(
-        autoPanelQty ? { ...catalogItem, defaultQty: autoPanelQty } : catalogItem,
-        category,
+        autoPanelQty ? { ...catalogItem, category: itemCategory, defaultQty: autoPanelQty } : { ...catalogItem, category: itemCategory },
+        itemCategory,
         prev.length,
       );
       return [...prev, item];
     });
     setAddPickerOpen(false);
+  }
+
+  function catalogDuplicateKey(item: LineItem) {
+    if (!item.catalogItemId || item.catalogType === 'custom') return null;
+    return `${normalizeCategory(item.category)}:${item.catalogType}:${item.catalogItemId}`;
+  }
+
+  async function applyBomPreset(mode: 'append' | 'replace') {
+    if (!selectedBomPresetId) {
+      setBomPresetNotice('Select a BOM preset to import.');
+      return;
+    }
+
+    setBomPresetBusy(true);
+    setBomPresetNotice(null);
+    setBomImportPromptOpen(false);
+    try {
+      const preset = await getBomPresetWithItems(selectedBomPresetId);
+      let addedCount = 0;
+      let skippedCount = 0;
+      setLineItems((prev) => {
+        const preservedItems = mode === 'replace'
+          ? prev.filter((item) => CORE_CATEGORIES.includes(normalizeCategory(item.category)))
+          : [...prev];
+        const existingKeys = new Set(preservedItems.map(catalogDuplicateKey).filter(Boolean) as string[]);
+        const nextItems = [...preservedItems];
+        for (const item of preset.lineItems) {
+          const key = catalogDuplicateKey(item);
+          if (key && existingKeys.has(key)) {
+            skippedCount += 1;
+            continue;
+          }
+          if (key) existingKeys.add(key);
+          nextItems.push({
+            ...item,
+            id: `bom_apply_${Date.now()}_${addedCount}`,
+            sortOrder: nextItems.length,
+          });
+          addedCount += 1;
+        }
+        return nextItems.map((item, index) => ({ ...item, sortOrder: index }));
+      });
+      setBomPresetNotice(
+        mode === 'replace'
+          ? `Replaced BOM items with ${addedCount} item(s) from "${preset.name}".`
+          : skippedCount > 0
+            ? `Imported ${addedCount} item(s) from "${preset.name}". Skipped ${skippedCount} duplicate item(s).`
+            : `Imported ${addedCount} item(s) from "${preset.name}".`,
+      );
+    } catch (err) {
+      console.error('Failed to import BOM preset:', err);
+      setBomPresetNotice(err instanceof Error ? err.message : 'Failed to import BOM preset.');
+    } finally {
+      setBomPresetBusy(false);
+    }
+  }
+
+  function handleImportBomPreset() {
+    if (!selectedBomPresetId) {
+      setBomPresetNotice('Select a BOM preset to import.');
+      return;
+    }
+    if (bomItems.length > 0) {
+      setBomImportPromptOpen(true);
+      return;
+    }
+    void applyBomPreset('append');
   }
 
   function goToNextStage() {
@@ -475,7 +598,7 @@ export function PresetEditorDialog({
     }
   }
 
-  function renderPicker(category: string, align: 'left' | 'right' = 'right') {
+  function renderPicker(category: string, align: 'left' | 'right' = 'right', excludeCategories: string[] = []) {
     if (addPickerOpen !== category) return null;
 
     return (
@@ -484,6 +607,7 @@ export function PresetEditorDialog({
           category={category}
           onSelect={addItemFromCatalog}
           onClose={() => setAddPickerOpen(false)}
+          excludeCategories={excludeCategories}
         />
       </div>
     );
@@ -684,18 +808,8 @@ export function PresetEditorDialog({
                       <p className="text-xs font-bold uppercase tracking-wider text-accent">Stage 2</p>
                       <h3 className="text-xl font-bold text-text-primary">Core components</h3>
                       <p className="text-sm text-text-muted">
-                        Pick saved panels, inverters, and batteries from DB. Batteries can stay empty for non-hybrid presets.
+                        Pick saved panels, inverters, batteries, and mounting structure from DB. Batteries can stay empty for non-hybrid presets.
                       </p>
-                    </div>
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setAddPickerOpen(addPickerOpen === 'all' ? false : 'all')}
-                        className="rounded-lg border border-accent/40 bg-accent/10 px-4 py-2 text-sm font-bold text-accent hover:bg-accent/20"
-                      >
-                        + Add Any Saved Item
-                      </button>
-                      {renderPicker('all')}
                     </div>
                   </div>
 
@@ -727,6 +841,7 @@ export function PresetEditorDialog({
                                 item={item}
                                 onUpdate={(field, value) => updateItem(item.id as string, field, value)}
                                 onRemove={() => removeItem(item.id as string)}
+                                lockedCategory={category}
                               />
                             ))}
                           </div>
@@ -759,7 +874,7 @@ export function PresetEditorDialog({
                       >
                         + Browse All Saved Items
                       </button>
-                      {renderPicker('all')}
+                      {renderPicker('all', 'right', CORE_CATEGORIES)}
                     </div>
                   </div>
 
@@ -779,6 +894,47 @@ export function PresetEditorDialog({
                         </div>
                       ))}
                     </div>
+                  </section>
+
+                  <section className="rounded-xl border border-border bg-background/45 p-4">
+                    <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-text-muted">Import BOM preset</p>
+                        <p className="mt-1 text-sm text-text-muted">
+                          Pull a saved BOM set from Masters into this system preset.
+                        </p>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-[minmax(260px,1fr)_auto]">
+                        <select
+                          value={selectedBomPresetId}
+                          onChange={(event) => setSelectedBomPresetId(event.target.value)}
+                          className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                        >
+                          {bomPresets.length === 0 ? (
+                            <option value="">No BOM presets saved yet</option>
+                          ) : (
+                            bomPresets.map((preset) => (
+                              <option key={preset.id} value={preset.id}>
+                                {preset.name} ({preset.itemCount})
+                              </option>
+                            ))
+                          )}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={handleImportBomPreset}
+                          disabled={bomPresetBusy || !selectedBomPresetId}
+                          className="rounded-lg border border-accent/40 bg-accent/10 px-4 py-2 text-xs font-bold text-accent hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {bomPresetBusy ? 'Importing...' : 'Import BOM Preset'}
+                        </button>
+                      </div>
+                    </div>
+                    {bomPresetNotice && (
+                      <p className="mt-3 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary">
+                        {bomPresetNotice}
+                      </p>
+                    )}
                   </section>
 
                   {bomItems.length > 0 ? (
@@ -930,6 +1086,53 @@ export function PresetEditorDialog({
           </div>
         </div>
       </div>
+
+      {bomImportPromptOpen && selectedBomPreset && (
+        <div className="absolute inset-0 z-[170] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/45"
+            aria-label="Cancel BOM preset import"
+            onClick={() => setBomImportPromptOpen(false)}
+          />
+          <section className="relative w-full max-w-lg rounded-2xl border border-border bg-surface p-5 shadow-2xl">
+            <p className="text-xs font-bold uppercase tracking-wider text-accent">Import BOM preset</p>
+            <h3 className="mt-1 text-lg font-bold text-text-primary">{selectedBomPreset.name}</h3>
+            <p className="mt-2 text-sm text-text-muted">
+              This preset already has {bomItems.length} BOM item(s). Choose how to apply the imported set.
+            </p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => applyBomPreset('append')}
+                disabled={bomPresetBusy}
+                className="rounded-xl border border-border bg-background px-4 py-3 text-left hover:border-accent/50 disabled:opacity-50"
+              >
+                <span className="block text-sm font-bold text-text-primary">Keep old items</span>
+                <span className="mt-1 block text-xs text-text-muted">Append this BOM preset and skip duplicate catalog items.</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => applyBomPreset('replace')}
+                disabled={bomPresetBusy}
+                className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-left hover:bg-accent/20 disabled:opacity-50"
+              >
+                <span className="block text-sm font-bold text-accent">Replace old BOM items</span>
+                <span className="mt-1 block text-xs text-text-muted">Keep core components and replace only detailed BOM rows.</span>
+              </button>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setBomImportPromptOpen(false)}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+              >
+                Cancel
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>,
     document.body,
   );

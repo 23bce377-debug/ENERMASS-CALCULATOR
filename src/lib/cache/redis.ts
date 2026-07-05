@@ -45,16 +45,19 @@ class MemoryCache {
   }
 
   async incr(key: string): Promise<number> {
-    const current = await this.get<number>(key)
-    const next = Number(current ?? 0) + 1
     const existing = this.cache.get(key)
-    const ttl = existing ? Math.max(1, Math.ceil((existing.expiry - Date.now()) / 1000)) : 3600
-    await this.set(key, next, { ex: ttl })
+    const now = Date.now()
+    const current = existing && now <= existing.expiry ? Number(existing.value ?? 0) : 0
+    const next = current + 1
+    const expiry = existing && now <= existing.expiry ? existing.expiry : now + 3600 * 1000
+    this.cache.set(key, { value: next, expiry })
     return next
   }
 
   async scan(cursor: number | string = 0, options?: { match?: string; count?: number }): Promise<[number, string[]]> {
     const pattern = options?.match;
+    const count = Math.max(1, options?.count ?? 100);
+    const start = Math.max(0, Number(cursor) || 0);
     const keys = Array.from(this.cache.keys()).filter((key) => {
       const entry = this.cache.get(key)
       if (!entry || Date.now() > entry.expiry) {
@@ -65,7 +68,9 @@ class MemoryCache {
       if (pattern.endsWith('*')) return key.startsWith(pattern.slice(0, -1))
       return key === pattern
     })
-    return [0, keys]
+    const page = keys.slice(start, start + count)
+    const nextCursor = start + count >= keys.length ? 0 : start + count
+    return [nextCursor, page]
   }
   
   async flushall(): Promise<'OK'> {

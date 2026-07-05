@@ -4,6 +4,7 @@ type LocalCacheEntry<T> = {
   expiresAt: number;
   value?: T;
   promise?: Promise<T>;
+  failedAt?: number;
 };
 
 const localCache = new Map<string, LocalCacheEntry<unknown>>();
@@ -18,7 +19,7 @@ async function getLocalCached<T>(
 
   if (existing && existing.expiresAt > now) {
     if (existing.value !== undefined) return existing.value;
-    if (existing.promise) return existing.promise;
+    if (existing.promise && !existing.failedAt) return existing.promise;
   }
 
   const promise = loader()
@@ -30,7 +31,10 @@ async function getLocalCached<T>(
       return value;
     })
     .catch((error) => {
-      localCache.delete(key);
+      const current = localCache.get(key) as LocalCacheEntry<T> | undefined;
+      if (current?.promise === promise) {
+        localCache.delete(key);
+      }
       throw error;
     });
 
@@ -83,15 +87,25 @@ export async function getEquipmentMaster(orgId: string | null) {
 export async function getStructuresMaster(orgId: string | null) {
   return getLocalCached(`calculator:${orgId ?? 'global'}:structures`, 900, async () => {
     const supabase = createAdminClient();
-    const [structures, weightLookups, structureComponents, structureBom, structureAddons] = await Promise.all([
+    const [
+      structures,
+      weightLookups,
+      structureComponents,
+      structureBom,
+      structureAddons,
+      structureAccessoryRates,
+      structureMaterialRates,
+      structureTemplates,
+      structureTemplateItems,
+      walkwayTemplates,
+      ladderTemplates,
+      structureComponentMasters
+    ] = await Promise.all([
       supabase.from('eq_mounting_structures').select('*').eq('is_active', true),
       supabase.from('structure_weight_lookup').select('*'),
       supabase.from('eq_structure_components').select('*').eq('is_active', true),
       supabase.from('eq_structure_bom').select('*'),
       supabase.from('eq_structure_addons').select('*').eq('is_active', true),
-    ]);
-    // Also adding heavy structural templates
-    const [structureAccessoryRates, structureMaterialRates, structureTemplates, structureTemplateItems, walkwayTemplates, ladderTemplates, structureComponentMasters] = await Promise.all([
       supabase.from('structure_accessory_rates').select('*').eq('is_active', true),
       supabase.from('structure_material_rates').select('*'),
       supabase.from('structure_templates').select('*'),

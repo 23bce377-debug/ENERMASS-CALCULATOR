@@ -12,6 +12,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase/client';
 import localforage from 'localforage';
 import { revalidateMasterCache } from '@/app/actions/revalidateMasters';
+import { notifyMasterDataUpdated } from './useMasters';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -205,10 +206,9 @@ export function useSettings() {
                 logoUrl: org?.logo_url ?? merged.company.logoUrl,
               },
               defaultGridTariff: appSettings?.default_grid_tariff_inr ?? merged.defaultGridTariff,
-              categoryMargins: mergeCategoryMargins(
-                merged.categoryMargins,
-                !marginsResult.error ? (marginsResult.data as any) : []
-              ),
+              categoryMargins: !marginsResult.error && Array.isArray(marginsResult.data) && marginsResult.data.length > 0
+                ? mergeCategoryMargins(DEFAULT_SETTINGS.categoryMargins, marginsResult.data as any)
+                : DEFAULT_SETTINGS.categoryMargins,
             };
           }
         }
@@ -315,74 +315,27 @@ export function useSettings() {
 
       const orgId = profile.org_id;
       const currentSettings = settings;
+      const dbMargins = Object.fromEntries(
+        (Object.entries(CATEGORY_TO_DB) as [keyof CategoryMargins, string][]).map(([settingsCategory, dbCategory]) => [
+          dbCategory,
+          normalizeMarginPct(currentSettings.categoryMargins[settingsCategory], DEFAULT_SETTINGS.categoryMargins[settingsCategory]),
+        ])
+      );
 
-      // 3. Update company info in organisations table
-      if (currentSettings.company) {
-        const { error: orgError } = await (supabase.from('organisations') as any)
-          .update({
-            name: currentSettings.company.name || undefined,
-            address: currentSettings.company.address || null,
-            logo_url: currentSettings.company.logoUrl || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', orgId);
-
-        if (orgError) {
-          console.error('[commitToDb] organisations update error:', orgError);
-          return `Failed to save company info: ${orgError.message}`;
-        }
-      }
-
-      // 4. Upsert app_settings (numeric defaults + margins blob)
-      const { error: settingsError } = await (supabase
-        .from('app_settings') as any)
-        .upsert(
-          {
-            org_id: orgId,
-            default_grid_tariff_inr: currentSettings.defaultGridTariff ?? DEFAULT_SETTINGS.defaultGridTariff,
-            updated_by: userId,
-            updated_at: new Date().toISOString(),
+      const { error: rpcError } = await (supabase as any)
+        .rpc('commit_org_settings_atomic', {
+          p_org_id: orgId,
+          p_company: currentSettings.company ?? DEFAULT_SETTINGS.company,
+          p_app_settings: {
+            defaultGridTariff: currentSettings.defaultGridTariff ?? DEFAULT_SETTINGS.defaultGridTariff,
           },
-          { onConflict: 'org_id' }
-        );
+          p_category_margins: dbMargins,
+          p_user_id: userId,
+        });
 
-      if (settingsError) {
-        console.error('[commitToDb] app_settings upsert error:', settingsError);
-        return `Failed to save app settings: ${settingsError.message}`;
-      }
-
-      // 5. Persist category margins into the DB table used by the calculator engine.
-      for (const [settingsCategory, dbCategory] of Object.entries(CATEGORY_TO_DB) as [keyof CategoryMargins, string][]) {
-        const payload = {
-          default_margin_pct: normalizeMarginPct(currentSettings.categoryMargins[settingsCategory], DEFAULT_SETTINGS.categoryMargins[settingsCategory]),
-          updated_by: userId,
-          updated_at: new Date().toISOString(),
-        };
-
-        const { data: updatedRows, error: marginUpdateError } = await (supabase.from('category_margins') as any)
-          .update(payload)
-          .eq('org_id', orgId)
-          .eq('category', dbCategory)
-          .select('id');
-
-        if (marginUpdateError) {
-          console.error('[commitToDb] category_margins update error:', marginUpdateError);
-          return `Failed to save category margin for ${settingsCategory}: ${marginUpdateError.message}`;
-        }
-
-        if (!updatedRows || updatedRows.length === 0) {
-          const { error: marginInsertError } = await (supabase.from('category_margins') as any)
-            .insert({
-              org_id: orgId,
-              category: dbCategory,
-              ...payload,
-            });
-
-          if (marginInsertError) {
-            console.error('[commitToDb] category_margins insert error:', marginInsertError);
-            return `Failed to save category margin for ${settingsCategory}: ${marginInsertError.message}`;
-          }
-        }
+      if (rpcError) {
+        console.error('[commitToDb] settings RPC error:', rpcError);
+        return `Failed to save settings: ${rpcError.message}`;
       }
 
       try {
@@ -390,6 +343,7 @@ export function useSettings() {
       } catch (cacheError) {
         console.warn('[commitToDb] Settings saved, but cache revalidation failed:', cacheError);
       }
+      notifyMasterDataUpdated('settings');
 
       setLastSynced(new Date());
       return null; // success
@@ -465,12 +419,13 @@ export function useSettings() {
         defaultGridTariff: !appSettingsError && appSettingsRow
           ? (appSettingsRow as any).default_grid_tariff_inr
           : (current.defaultGridTariff ?? DEFAULT_SETTINGS.defaultGridTariff),
-        categoryMargins: !dbMarginsError
-          ? mergeCategoryMargins(current.categoryMargins ?? DEFAULT_SETTINGS.categoryMargins, dbMargins as any)
-          : (current.categoryMargins ?? DEFAULT_SETTINGS.categoryMargins),
+        categoryMargins: !dbMarginsError && Array.isArray(dbMargins) && dbMargins.length > 0
+          ? mergeCategoryMargins(DEFAULT_SETTINGS.categoryMargins, dbMargins as any)
+          : DEFAULT_SETTINGS.categoryMargins,
       };
 
       setSettings(merged);
+      notifyMasterDataUpdated('settings');
       setLastSynced(new Date());
       return null;
     } catch (err) {

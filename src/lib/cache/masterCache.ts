@@ -43,6 +43,8 @@ interface CacheEntry {
   payload: MasterDataPayload;
   expiresAt: number;
   refreshing: boolean;
+  retryAfter?: number;
+  failureCount?: number;
 }
 
 // In-memory cache: key = orgId | '__global__'
@@ -328,18 +330,25 @@ export async function getCachedMasterData(
       return entry.payload;
     }
     // Cache hit (stale) — return immediately and refresh in background
-    if (!entry.refreshing) {
+    if (!entry.refreshing && (!entry.retryAfter || now >= entry.retryAfter)) {
       entry.refreshing = true;
       loadMasterData(orgId ?? null)
         .then((payload) => {
-          cache.set(key, { payload, expiresAt: Date.now() + ttl, refreshing: false });
+          cache.set(key, { payload, expiresAt: Date.now() + ttl, refreshing: false, failureCount: 0 });
         })
         .catch((err) => {
           console.error('[MasterCache] Background refresh failed:', err);
-          // Keep stale entry but allow next caller to retry
+          // Keep stale entry and back off retries during DB/cache outages.
           if (cache.get(key)?.refreshing) {
             const stale = cache.get(key)!;
-            cache.set(key, { ...stale, refreshing: false });
+            const failureCount = (stale.failureCount ?? 0) + 1;
+            const backoffMs = Math.min(60_000, 5_000 * 2 ** Math.min(5, failureCount - 1));
+            cache.set(key, {
+              ...stale,
+              refreshing: false,
+              failureCount,
+              retryAfter: Date.now() + backoffMs,
+            });
           }
         });
     }
@@ -348,7 +357,7 @@ export async function getCachedMasterData(
 
   // Cache miss — load synchronously
   const payload = await loadMasterData(orgId ?? null);
-  cache.set(key, { payload, expiresAt: now + ttl, refreshing: false });
+  cache.set(key, { payload, expiresAt: now + ttl, refreshing: false, failureCount: 0 });
   return payload;
 }
 
@@ -359,8 +368,11 @@ export async function getCachedMasterData(
 export async function invalidateMasterCache(orgId?: string | null): Promise<void> {
   const key = cacheKey(orgId ?? null);
   cache.delete(key);
+  if (orgId) {
+    cache.delete(cacheKey(null));
+  }
   console.log(
-    `[MasterCache] Invalidated cache key: ${key}`
+    `[MasterCache] Invalidated cache key: ${key}${orgId ? ' and __global__' : ''}`
   );
 }
 

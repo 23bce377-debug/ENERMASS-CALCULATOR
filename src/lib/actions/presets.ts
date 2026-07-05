@@ -29,6 +29,26 @@ export interface PresetStateOption {
   state_code: string;
 }
 
+export interface BomPresetSummary {
+  id: string;
+  name: string;
+  description?: string | null;
+  itemCount: number;
+  updatedAt: string;
+}
+
+const CORE_PRESET_CATEGORIES = new Set(['panel', 'inverter', 'battery', 'structure']);
+const BOM_PRESET_CATEGORIES = new Set([
+  'dc_protection',
+  'ac_protection',
+  'cable',
+  'earthing',
+  'civil',
+  'logistics',
+  'accessory',
+  'miscellaneous',
+]);
+
 function isPlaceholderEquipment(item: { brand?: string | null; model?: string | null; name?: string | null }) {
   const brand = String(item.brand ?? '').trim().toLowerCase();
   const model = String(item.model ?? '').trim().toLowerCase();
@@ -45,19 +65,45 @@ function isPlaceholderEquipment(item: { brand?: string | null; model?: string | 
 }
 
 const CATALOG_CATEGORY_ALIASES: Record<string, string[]> = {
-  structure: ['Mounting Structure', 'Structure', 'Structures'],
-  dc_protection: ['DC Protection', 'DC Side Protection', 'Electrical Protection', 'Monitoring & Safety'],
+  structure: ['Structure', 'Structures'],
+  dc_protection: ['DC Protection', 'DC Side Protection', 'Electrical Protection'],
   ac_protection: ['AC Protection', 'AC Side Protection', 'Electrical Protection'],
   cable: ['Cables', 'Cables & Conduit', 'Cabling', 'Cable', 'Wiring'],
-  earthing: ['Earthing', 'Earthings', 'Monitoring & Safety'],
+  earthing: ['Earthing', 'Earthings'],
   civil: ['Civil Works', 'Civil', 'Services'],
   logistics: ['Logistics', 'Logistics & Handling', 'Handling', 'Services'],
-  accessory: ['Accessories', 'Accessory', 'Monitoring & Safety', 'Wiring'],
+  accessory: ['Accessories', 'Accessory', 'Monitoring & Safety', 'Wiring', 'Mounting Structure'],
   miscellaneous: ['Miscellaneous', 'Miscellenous', 'Misc', 'Other'],
 };
 
 function normalizeCatalogName(value: string) {
   return value.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function compactCatalogName(value: string) {
+  return normalizeCatalogName(value).replace(/\s+/g, '');
+}
+
+function catalogSearchScore(searchTerm: string | undefined, parts: Array<string | number | null | undefined>) {
+  const normalizedSearch = normalizeCatalogName(searchTerm || '');
+  if (!normalizedSearch) return 1;
+
+  const haystack = normalizeCatalogName(parts.filter((part) => part !== null && part !== undefined).join(' '));
+  const compactHaystack = compactCatalogName(haystack);
+  const compactSearch = compactCatalogName(normalizedSearch);
+  const tokens = normalizedSearch.split(/\s+/).filter(Boolean);
+
+  if (!haystack) return 0;
+  if (haystack === normalizedSearch || compactHaystack === compactSearch) return 100;
+  if (haystack.startsWith(normalizedSearch) || compactHaystack.startsWith(compactSearch)) return 80;
+  if (haystack.includes(normalizedSearch) || compactHaystack.includes(compactSearch)) return 60;
+
+  const matchedTokens = tokens.filter((token) => haystack.includes(token) || compactHaystack.includes(token));
+  if (matchedTokens.length === tokens.length) return 40 + matchedTokens.length;
+  if (tokens.length > 1 && matchedTokens.length >= Math.ceil(tokens.length * 0.65)) return 20 + matchedTokens.length;
+  if (tokens.length === 1 && matchedTokens.length === 1) return 20;
+
+  return 0;
 }
 
 function canonicalPresetCategory(category: string | null | undefined) {
@@ -72,14 +118,14 @@ function inferCatalogCategoryFromText(...parts: Array<string | null | undefined>
   if (/\b(panel|module|pv module)\b/.test(value)) return 'panel';
   if (/\b(inverter|mppt)\b/.test(value)) return 'inverter';
   if (/\b(battery|bms|lfp|lithium)\b/.test(value)) return 'battery';
-  if (/\b(structure|mounting|rail|clamp|walkway|ladder)\b/.test(value)) return 'structure';
-  if (/\b(dcdb|dc protection|dc side|dc spd|dc mcb|dc isolator|combiner|string box|mc4|la|l a|lightning arrester|lightning protection)\b/.test(value)) return 'dc_protection';
-  if (/\b(acdb|ac protection|ac side|ac spd|ac mcb|ac isolator|meter box)\b/.test(value)) return 'ac_protection';
-  if (/\b(cable|cabling|wire|wiring|conduit|tray)\b/.test(value)) return 'cable';
-  if (/\b(earthing|earth|electrode|rod|strip|chemical earth)\b/.test(value)) return 'earthing';
-  if (/\b(civil|cement|sand|aggregate|brick|anchor|rmc|concrete)\b/.test(value)) return 'civil';
+  if (/\b(walkway|walk way|ladder|u clamp|end clamp|clamp|block|chemical|wiring pipe|pvc elbow|pvc tee|pipe accessories|cable tie|flexible pipe|flexible hose|green sleeve|pvc channel|fisher|screw)\b/.test(value)) return 'accessory';
+  if (/\b(earthing|earth|electrode|rod|strip|chemical earth|earth compound|chamber box|earth bench|lug|holder nylon|l a|lightning arrester|lightning protection)\b/.test(value)) return 'earthing';
+  if (/\b(dcdb|dc protection|dc side|dc spd|dc mcb|dc isolator|combiner|string box)\b/.test(value)) return 'dc_protection';
+  if (/\b(acdb|ac protection|ac side|ac spd|ac mcb|ac isolator)\b/.test(value)) return 'ac_protection';
+  if (/\b(cable|cabling|wire|wiring|conduit|tray|alum cable|dc cable|ac cable)\b/.test(value)) return 'cable';
+  if (/\b(civil|cement|sand|aggregate|brick|anchor|rmc|concrete|installation|commission|site visit)\b/.test(value)) return 'civil';
   if (/\b(logistic|transport|handling|packing|loading|unloading)\b/.test(value)) return 'logistics';
-  if (/\b(accessory|meter|communication|monitoring|dtu|dongle|logger)\b/.test(value)) return 'accessory';
+  if (/\b(accessory|meter|meter box|connector|mc4|communication|monitoring|dtu|dongle|logger)\b/.test(value)) return 'accessory';
 
   return 'miscellaneous';
 }
@@ -114,6 +160,13 @@ function categoryFromBomItem(item: {
   return categoryFromCatalogName(item.bom_categories?.name, fallback);
 }
 
+function defaultQtyFromFormula(qtyFormula: string | null | undefined) {
+  const value = String(qtyFormula ?? '').trim();
+  if (!value || !/^\d+(\.\d+)?$/.test(value)) return 1;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 1;
+}
+
 function normalizeMarginPct(value: unknown, fallback = 0.2): number {
   const num = Number(value);
   if (!Number.isFinite(num) || num < 0) return fallback;
@@ -140,6 +193,26 @@ function categoryFromCatalogName(name: string | null | undefined, fallback: stri
     }
   }
   return normalizedFallback;
+}
+
+async function getAuthenticatedOrgContext() {
+  const authClient = await createClient();
+  const supabase = createAdminClient();
+  const { data: { user } } = await authClient.auth.getUser();
+
+  if (!user?.id) throw new Error('Unauthorized. Please sign in again.');
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('org_id')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (error) throw mapDatabaseError(error, 'Failed to resolve organisation context');
+  const orgId = profile?.org_id ?? null;
+  if (!orgId) throw new Error('Organisation context not found. Please reload and try again.');
+
+  return { supabase, userId: user.id, orgId };
 }
 
 export async function getPresetStates(): Promise<PresetStateOption[]> {
@@ -378,6 +451,9 @@ function mapDatabaseError(error: any, fallbackMessage: string): Error {
   if (!error) return new Error(fallbackMessage);
   const msg = (error.message || '').toLowerCase();
   const code = error.code || '';
+  if (code === '23505' || msg.includes('duplicate key value')) {
+    return new Error(`${fallbackMessage}: a preset with this name already exists.`);
+  }
   if (msg.includes('row-level security') || msg.includes('violates row-level security policy') || code === '42501') {
     if (msg.includes('system_state_availability')) {
       return new Error('You do not have permission to assign this preset to the selected state. Please contact your administrator.');
@@ -388,6 +464,253 @@ function mapDatabaseError(error: any, fallbackMessage: string): Error {
     return new Error('Access Denied: You do not have the required permissions to perform this action.');
   }
   return new Error(`${fallbackMessage}: ${error.message}`);
+}
+
+function toBomPresetCategory(category: string) {
+  const normalized = canonicalPresetCategory(category);
+  if (normalized === 'other') return 'miscellaneous';
+  return BOM_PRESET_CATEGORIES.has(normalized) ? normalized : null;
+}
+
+function prepareBomPresetLineItems(lineItems: LineItem[]) {
+  return lineItems.map((item, index) => {
+    const category = toBomPresetCategory(item.category);
+    if (!category || CORE_PRESET_CATEGORIES.has(canonicalPresetCategory(item.category))) {
+      throw new Error(`"${item.description || 'Item'}" is a core component. BOM presets can only contain non-core BOM items.`);
+    }
+    if (!item.description?.trim()) {
+      throw new Error(`BOM preset item ${index + 1} needs a description.`);
+    }
+    const quantity = Number(item.quantity ?? 0);
+    const unitRate = Number(item.unitRate ?? 0);
+    if (!Number.isFinite(quantity) || quantity < 0) {
+      throw new Error(`BOM preset item "${item.description}" has an invalid quantity.`);
+    }
+    if (!Number.isFinite(unitRate) || unitRate < 0) {
+      throw new Error(`BOM preset item "${item.description}" has an invalid rate.`);
+    }
+
+    return {
+      category,
+      catalog_item_id: item.catalogItemId || null,
+      catalog_type: item.catalogType || 'custom',
+      sku_code: item.skuCode || null,
+      description: item.description.trim(),
+      brand: item.brand || null,
+      model: item.model || null,
+      specification_details: item.specificationDetails || null,
+      unit: item.unit || 'Nos',
+      quantity,
+      unit_rate: unitRate,
+      gst_pct: item.gstPct == null ? null : normalizeGstRate(item.gstPct, 0.18),
+      is_included: item.isIncluded,
+      is_survey_dependent: item.isSurveyDependent,
+      sort_order: index + 1,
+    };
+  });
+}
+
+async function validateBomPresetCatalogReferences(supabase: ReturnType<typeof createAdminClient>, lineItems: LineItem[]) {
+  const seenCatalogItems = new Map<string, string>();
+  for (const item of lineItems) {
+    if (!item.catalogItemId || item.catalogType === 'custom') continue;
+    const itemCategory = canonicalPresetCategory(item.category);
+    const description = item.description || item.skuCode || item.catalogItemId;
+    const duplicateKey = `${itemCategory}:${item.catalogType}:${item.catalogItemId}`;
+    const firstDescription = seenCatalogItems.get(duplicateKey);
+    if (firstDescription) {
+      throw new Error(`BOM preset contains duplicate catalog item "${description}" already added as "${firstDescription}". Remove one entry or adjust its quantity.`);
+    }
+    seenCatalogItems.set(duplicateKey, description);
+  }
+
+  const bomIds = new Set<string>();
+  const equipmentIds = new Map<string, string>();
+
+  for (const item of lineItems) {
+    if (!item.catalogItemId || item.catalogType === 'custom') continue;
+    const category = canonicalPresetCategory(item.category);
+    if (CORE_PRESET_CATEGORIES.has(category)) {
+      throw new Error(`"${item.description || 'Item'}" is a core component. Use the core component section instead.`);
+    }
+    if (item.catalogType === 'bom_template') {
+      bomIds.add(item.catalogItemId);
+      continue;
+    }
+    if (item.catalogType === 'equipment') {
+      equipmentIds.set(item.catalogItemId, `${category}:${item.description || item.catalogItemId}`);
+      continue;
+    }
+    throw new Error(`Unsupported BOM preset catalog source for "${item.description || item.catalogItemId}".`);
+  }
+
+  if (bomIds.size > 0) {
+    const ids = Array.from(bomIds);
+    const { data, error } = await (supabase as any)
+      .from('bom_template_items')
+      .select('id, is_active')
+      .in('id', ids);
+    if (error) throw mapDatabaseError(error, 'Failed to validate BOM item references');
+    const activeIds = new Set(((data || []) as any[]).filter((row) => row.is_active !== false).map((row) => row.id));
+    const missing = ids.filter((id) => !activeIds.has(id));
+    if (missing.length > 0) {
+      throw new Error('BOM preset contains inactive or missing BOM item references. Please reselect those items.');
+    }
+  }
+
+  if (equipmentIds.size > 0) {
+    const ids = Array.from(equipmentIds.keys());
+    const [metersRes, commRes, laRes] = await Promise.all([
+      (supabase as any).from('eq_meters').select('id, is_active').in('id', ids),
+      (supabase as any).from('eq_communication_devices').select('id, is_active').in('id', ids),
+      (supabase as any).from('eq_lightning_arresters').select('id, is_active').in('id', ids),
+    ]);
+    for (const result of [metersRes, commRes, laRes]) {
+      if (result.error) throw mapDatabaseError(result.error, 'Failed to validate equipment references');
+    }
+    const activeIds = new Set(
+      [...(metersRes.data || []), ...(commRes.data || []), ...(laRes.data || [])]
+        .filter((row: any) => row.is_active !== false)
+        .map((row: any) => row.id),
+    );
+    const missing = ids.filter((id) => !activeIds.has(id));
+    if (missing.length > 0) {
+      throw new Error('BOM preset contains inactive or missing equipment references. Please reselect those items.');
+    }
+  }
+}
+
+export async function listBomPresets(): Promise<BomPresetSummary[]> {
+  const { supabase, orgId } = await getAuthenticatedOrgContext();
+  const { data: presets, error } = await (supabase as any)
+    .from('bom_presets')
+    .select('id, name, description, updated_at')
+    .eq('org_id', orgId)
+    .eq('is_active', true)
+    .order('updated_at', { ascending: false });
+
+  if (error) throw mapDatabaseError(error, 'Failed to load BOM presets');
+  const rows = (presets || []) as any[];
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((row) => row.id);
+  const { data: items, error: itemsError } = await (supabase as any)
+    .from('bom_preset_items')
+    .select('bom_preset_id')
+    .in('bom_preset_id', ids);
+  if (itemsError) throw mapDatabaseError(itemsError, 'Failed to load BOM preset item counts');
+
+  const counts = new Map<string, number>();
+  for (const item of (items || []) as any[]) {
+    counts.set(item.bom_preset_id, (counts.get(item.bom_preset_id) ?? 0) + 1);
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    itemCount: counts.get(row.id) ?? 0,
+    updatedAt: row.updated_at,
+  }));
+}
+
+export async function getBomPresetWithItems(bomPresetId: string): Promise<{ id: string; name: string; description?: string | null; lineItems: LineItem[] }> {
+  const { supabase, orgId } = await getAuthenticatedOrgContext();
+  const { data: preset, error: presetError } = await (supabase as any)
+    .from('bom_presets')
+    .select('id, name, description, org_id')
+    .eq('id', bomPresetId)
+    .eq('org_id', orgId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (presetError) throw mapDatabaseError(presetError, 'Failed to load BOM preset');
+  if (!preset) throw new Error('BOM preset not found.');
+
+  const { data: items, error: itemsError } = await (supabase as any)
+    .from('bom_preset_items')
+    .select('*')
+    .eq('bom_preset_id', bomPresetId)
+    .order('sort_order', { ascending: true });
+  if (itemsError) throw mapDatabaseError(itemsError, 'Failed to load BOM preset items');
+
+  return {
+    id: preset.id,
+    name: preset.name,
+    description: preset.description,
+    lineItems: ((items || []) as any[]).map((item, index) => ({
+      id: `bom_preset_${bomPresetId}_${item.id ?? index}`,
+      category: item.category,
+      catalogItemId: item.catalog_item_id ?? undefined,
+      catalogType: item.catalog_type ?? 'custom',
+      skuCode: item.sku_code ?? '',
+      description: item.description,
+      brand: item.brand ?? '',
+      model: item.model ?? '',
+      specificationDetails: item.specification_details ?? '',
+      unit: item.unit || 'Nos',
+      quantity: Number(item.quantity ?? 0),
+      unitRate: Number(item.unit_rate ?? 0),
+      gstPct: item.gst_pct == null ? undefined : normalizeGstRate(item.gst_pct, 0.18),
+      isIncluded: item.is_included ?? true,
+      isSurveyDependent: item.is_survey_dependent ?? false,
+      sortOrder: index,
+    })),
+  };
+}
+
+export async function saveBomPresetWithItems(updates: {
+  presetId?: string | null;
+  name: string;
+  description?: string;
+  lineItems: LineItem[];
+}): Promise<string> {
+  const { supabase, userId, orgId } = await getAuthenticatedOrgContext();
+  const name = updates.name.trim();
+  if (!name) throw new Error('Enter a BOM preset name before saving.');
+  if (!updates.lineItems.length) throw new Error('Add at least one BOM item before saving a BOM preset.');
+
+  await validateBomPresetCatalogReferences(supabase, updates.lineItems);
+  const preparedItems = prepareBomPresetLineItems(updates.lineItems);
+
+  const { data, error } = await (supabase as any).rpc('save_bom_preset_atomic', {
+    p_bom_preset_id: updates.presetId || null,
+    p_org_id: orgId,
+    p_name: name,
+    p_description: updates.description || null,
+    p_items: preparedItems,
+    p_user_id: userId,
+  });
+
+  if (error) throw mapDatabaseError(error, 'Failed to save BOM preset');
+
+  revalidatePath('/systems');
+  revalidatePath('/settings/presets');
+  return String(data);
+}
+
+export async function deleteBomPreset(bomPresetId: string): Promise<void> {
+  const { supabase, orgId } = await getAuthenticatedOrgContext();
+  if (!bomPresetId) throw new Error('Select a BOM preset before deleting.');
+
+  const { data: preset, error: presetError } = await (supabase as any)
+    .from('bom_presets')
+    .select('id, org_id')
+    .eq('id', bomPresetId)
+    .eq('org_id', orgId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (presetError) throw mapDatabaseError(presetError, 'Failed to load BOM preset');
+  if (!preset) throw new Error('BOM preset not found.');
+
+  const { error } = await (supabase as any)
+    .from('bom_presets')
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq('id', bomPresetId)
+    .eq('org_id', orgId);
+  if (error) throw mapDatabaseError(error, 'Failed to delete BOM preset');
+
+  revalidatePath('/systems');
+  revalidatePath('/settings/presets');
 }
 
 export async function savePresetWithComponents(
@@ -450,7 +773,11 @@ export async function savePresetWithComponents(
       else if (itemCategory === 'structure' && item.catalogType === 'eq_structure') addCheck('eq_mounting_structures', item.catalogItemId, description);
       else if (itemCategory === 'structure' && item.catalogType === 'structure_component') addCheck('structure_component_master', item.catalogItemId, description);
       else if (item.catalogType === 'bom_template') addCheck('bom_template_items', item.catalogItemId, description);
-      else if ((itemCategory === 'dc_protection' || itemCategory === 'ac_protection') && item.catalogType === 'equipment' && text.includes('lightning')) addCheck('eq_lightning_arresters', item.catalogItemId, description);
+      else if (
+        (itemCategory === 'dc_protection' || itemCategory === 'ac_protection' || itemCategory === 'earthing') &&
+        item.catalogType === 'equipment' &&
+        (text.includes('lightning') || text.includes('l/a') || text.includes('l-a'))
+      ) addCheck('eq_lightning_arresters', item.catalogItemId, description);
       else if (itemCategory === 'accessory' && item.catalogType === 'equipment' && (text.includes('solar') || text.includes('net'))) addCheck('eq_meters', item.catalogItemId, description);
       else if (itemCategory === 'accessory' && item.catalogType === 'equipment' && (text.includes('comm') || text.includes('dtu') || text.includes('dongle') || text.includes('logger'))) addCheck('eq_communication_devices', item.catalogItemId, description);
     }
@@ -596,8 +923,12 @@ export async function savePresetWithComponents(
     }
   }
 
+  const resolvedCategoryIds = new Map<string, string>();
   async function ensureBomCategoryId(category: string) {
     const normalizedCategory = canonicalPresetCategory(category);
+    if (resolvedCategoryIds.has(normalizedCategory)) {
+      return resolvedCategoryIds.get(normalizedCategory)!;
+    }
     const aliases = CATALOG_CATEGORY_ALIASES[normalizedCategory] ?? [normalizedCategory];
     const aliasSet = new Set(aliases.map(normalizeCatalogName));
 
@@ -609,7 +940,10 @@ export async function savePresetWithComponents(
     if (categoryLoadErr) throw mapDatabaseError(categoryLoadErr, 'Failed to load BOM categories');
 
     const existing = ((categories || []) as any[]).find((item: any) => aliasSet.has(normalizeCatalogName(item.name || '')));
-    if (existing?.id) return existing.id as string;
+    if (existing?.id) {
+      resolvedCategoryIds.set(normalizedCategory, existing.id as string);
+      return existing.id as string;
+    }
 
     const displayOrder = Object.keys(CATALOG_CATEGORY_ALIASES).indexOf(normalizedCategory) + 1 || 99;
     const { data: newCategory, error: categoryCreateErr } = await supabase
@@ -626,6 +960,7 @@ export async function savePresetWithComponents(
     if (categoryCreateErr) throw mapDatabaseError(categoryCreateErr, 'Failed to create BOM category');
     const id = (newCategory as any)?.id;
     if (!id) throw new Error('Failed to create BOM category.');
+    resolvedCategoryIds.set(normalizedCategory, id as string);
     return id as string;
   }
 
@@ -679,7 +1014,16 @@ export async function savePresetWithComponents(
     const isSolarMeter = itemCategory === 'accessory' && item.description.toLowerCase().includes('solar');
     const isNetMeter = itemCategory === 'accessory' && item.description.toLowerCase().includes('net');
     const isCommDevice = itemCategory === 'accessory' && item.description.toLowerCase().includes('comm');
-    const isLA = (itemCategory === 'dc_protection' || itemCategory === 'ac_protection') && item.description.toLowerCase().includes('lightning');
+    const lowerDescription = item.description.toLowerCase();
+    const isLA = (
+      itemCategory === 'dc_protection' ||
+      itemCategory === 'ac_protection' ||
+      itemCategory === 'earthing'
+    ) && (
+      lowerDescription.includes('lightning') ||
+      lowerDescription.includes('l/a') ||
+      lowerDescription.includes('l-a')
+    );
 
     return {
       system_id: targetPresetId,
@@ -838,6 +1182,35 @@ export async function duplicateSystemPreset(presetId: string): Promise<{ id: str
     throw new Error('You can only duplicate presets visible to your organisation.');
   }
 
+  const { data: sourceItems, error: itemsErr } = await supabase
+    .from('system_items' as any)
+    .select(`
+      battery_id,
+      bom_item_id,
+      comm_device_id,
+      default_qty,
+      description,
+      inverter_id,
+      is_included_by_default,
+      is_mandatory,
+      la_id,
+      net_meter_id,
+      panel_id,
+      remarks,
+      section,
+      solar_meter_id,
+      sort_order,
+      structure_component_id,
+      structure_id,
+      unit
+    `)
+    .eq('system_id', presetId)
+    .order('sort_order', { ascending: true });
+  if (itemsErr) throw mapDatabaseError(itemsErr, 'Failed to load source preset items');
+  if (!sourceItems?.length) {
+    throw new Error('Source preset has no BOM items to duplicate.');
+  }
+
   const { data: existingSystems, error: namesErr } = await (supabase as any)
     .from('systems')
     .select('name')
@@ -881,50 +1254,6 @@ export async function duplicateSystemPreset(presetId: string): Promise<{ id: str
   const newPresetId = (newPreset as any)?.id as string | undefined;
   if (!newPresetId) throw new Error('Failed to create duplicate preset.');
 
-  const { data: sourceItems, error: itemsErr } = await supabase
-    .from('system_items' as any)
-    .select(`
-      battery_id,
-      bom_item_id,
-      comm_device_id,
-      default_qty,
-      description,
-      inverter_id,
-      is_included_by_default,
-      is_mandatory,
-      la_id,
-      net_meter_id,
-      panel_id,
-      remarks,
-      row_number,
-      section,
-      sheet_name,
-      solar_meter_id,
-      sort_order,
-      source_file,
-      structure_component_id,
-      structure_id,
-      unit
-    `)
-    .eq('system_id', presetId)
-    .order('sort_order', { ascending: true });
-  if (itemsErr) throw mapDatabaseError(itemsErr, 'Failed to load source preset items');
-
-  const copiedItems = ((sourceItems || []) as any[]).map((item) => ({
-    ...item,
-    system_id: newPresetId,
-    import_batch_id: null,
-    imported_at: null,
-    imported_by: null,
-  }));
-
-  if (copiedItems.length > 0) {
-    const { error: copyItemsErr } = await supabase
-      .from('system_items' as any)
-      .insert(copiedItems);
-    if (copyItemsErr) throw mapDatabaseError(copyItemsErr, 'Failed to copy preset items');
-  }
-
   const { data: availabilityRows, error: availabilityErr } = await (supabase as any)
     .from('system_state_availability')
     .select('state_id')
@@ -938,10 +1267,42 @@ export async function duplicateSystemPreset(presetId: string): Promise<{ id: str
       .concat((sourcePreset as any).state_id ? [(sourcePreset as any).state_id] : []),
   ));
 
+  const copiedItems = ((sourceItems || []) as any[]).map((item, idx) => ({
+    section: item.section,
+    description: item.description,
+    unit: item.unit ?? 'Nos',
+    default_qty: item.default_qty ?? 0,
+    sort_order: item.sort_order ?? idx + 1,
+    is_included_by_default: item.is_included_by_default ?? true,
+    is_mandatory: item.is_mandatory ?? true,
+    remarks: item.remarks ?? null,
+    panel_id: item.panel_id ?? null,
+    inverter_id: item.inverter_id ?? null,
+    battery_id: item.battery_id ?? null,
+    structure_id: item.structure_id ?? null,
+    solar_meter_id: item.solar_meter_id ?? null,
+    net_meter_id: item.net_meter_id ?? null,
+    la_id: item.la_id ?? null,
+    bom_item_id: item.bom_item_id ?? null,
+    comm_device_id: item.comm_device_id ?? null,
+    structure_component_id: item.structure_component_id ?? null,
+  }));
+
+  const primaryStateId = (sourcePreset as any).state_id ?? stateIds[0] ?? null;
+  const { error: copyItemsErr } = await (supabase as any).rpc('replace_system_items_atomic', {
+    p_system_id: newPresetId,
+    p_items: copiedItems,
+    p_state_id: primaryStateId,
+  });
+  if (copyItemsErr) throw mapDatabaseError(copyItemsErr, 'Failed to copy preset items');
+
   if (stateIds.length > 0) {
     const { error: stateErr } = await (supabase as any)
       .from('system_state_availability')
-      .insert(stateIds.map((stateId) => ({ system_id: newPresetId, state_id: stateId })));
+      .upsert(
+        stateIds.map((stateId) => ({ system_id: newPresetId, state_id: stateId })),
+        { onConflict: 'system_id,state_id' },
+      );
     if (stateErr) throw mapDatabaseError(stateErr, 'Failed to copy preset state');
   }
 
@@ -992,11 +1353,10 @@ export async function getCatalogItems(category: string, search?: string): Promis
     if (normalizedCategory === 'battery') tableName = 'eq_batteries';
     
     let query = supabase.from(tableName as any).select('*').eq('is_active', true);
-    if (searchTerm) {
-      query = query.or(`brand.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`);
-    }
-    const { data } = await query.limit(50);
-    return (data || []).filter((item: any) => !isPlaceholderEquipment(item)).map((item: any) => ({
+    const { data } = await query.limit(100);
+    return (data || [])
+      .filter((item: any) => !isPlaceholderEquipment(item))
+      .map((item: any) => ({
       id: item.id,
       type: normalizedCategory,
       description: [item.brand, item.model].filter(Boolean).join(' ') || item.name || 'Unnamed item',
@@ -1016,7 +1376,22 @@ export async function getCatalogItems(category: string, search?: string): Promis
             : getBatteryGstRate(item)
       ),
       isSurveyDependent: false,
-    }));
+    }))
+      .map((item: any) => ({
+        ...item,
+        _searchScore: catalogSearchScore(searchTerm, [
+          item.description,
+          item.brand,
+          item.model,
+          item.wattageW,
+          item.defaultRate,
+          normalizedCategory,
+        ]),
+      }))
+      .filter((item: any) => !searchTerm || item._searchScore > 0)
+      .sort((a: any, b: any) => b._searchScore - a._searchScore || String(a.description).localeCompare(String(b.description)))
+      .slice(0, 50)
+      .map(({ _searchScore, ...item }: any) => item);
   }
 
   const catalogItems: any[] = [];
@@ -1137,34 +1512,37 @@ export async function getCatalogItems(category: string, search?: string): Promis
 
   let bomQuery = supabase
     .from('bom_template_items' as any)
-    .select('id, sku_code, description, specification_details, notes, unit, default_rate, gst_pct, is_survey_dependent, category_id, bom_categories(name)');
+    .select('id, sku_code, description, specification_details, notes, unit, default_rate, gst_pct, qty_formula, is_survey_dependent, category_id, bom_categories(name)');
 
   const { data: bomItems, error: bomError } = await bomQuery.limit(500);
   if (bomError) throw new Error('Failed to fetch BOM catalog items: ' + bomError.message);
 
   const categoryById = new Map(((categories || []) as any[]).map((item: any) => [item.id, item.name]));
-  const searchText = normalizeCatalogName(searchTerm || '');
-
-  const matchingBomItems = (bomItems || []).filter((item: any) => {
+  const matchingBomItems = (bomItems || []).map((item: any) => {
     const categoryName = item.bom_categories?.name ?? categoryById.get(item.category_id);
     const inferred = inferCatalogCategoryFromText(item.sku_code, item.description, item.notes, item.specification_details);
-    const matchesSearch = !searchText || normalizeCatalogName([
+    const score = catalogSearchScore(searchTerm, [
       item.sku_code,
       item.description,
       item.notes,
       item.specification_details,
+      item.unit,
+      item.default_rate,
       categoryName,
-    ].filter(Boolean).join(' ')).includes(searchText);
+      inferred,
+    ]);
 
-    if (!matchesSearch) return false;
+    return { item, categoryName, inferred, score };
+  }).filter(({ categoryName, inferred, score }: any) => {
+    if (searchTerm && score <= 0) return false;
     if (normalizedCategory === 'miscellaneous') {
       return categoryNameMatches('miscellaneous', categoryName) || (inferred === 'miscellaneous' && !hasKnownCategoryName(categoryName));
     }
     if (inferred !== 'miscellaneous') return inferred === normalizedCategory;
     return categoryNameMatches(normalizedCategory, categoryName);
-  });
+  }).sort((a: any, b: any) => b.score - a.score || String(a.item.description).localeCompare(String(b.item.description)));
 
-  catalogItems.push(...matchingBomItems.map((item: any) => ({
+  catalogItems.push(...matchingBomItems.map(({ item }: any) => ({
     id: item.id,
     type: 'bom_template',
     catalogType: 'bom_template',
@@ -1173,7 +1551,7 @@ export async function getCatalogItems(category: string, search?: string): Promis
     brand: '',
     model: '',
     unit: item.unit || 'units',
-    defaultQty: 1,
+    defaultQty: defaultQtyFromFormula(item.qty_formula),
     defaultRate: Number(item.default_rate || 0),
     specificationDetails: item.specification_details || item.notes || '',
     gstPct: normalizeGstRate(item.gst_pct, 0.18),
