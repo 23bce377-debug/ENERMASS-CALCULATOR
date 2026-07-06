@@ -30,6 +30,7 @@ import { exportToExcel, importFromExcel } from '@/lib/utils/ImportExportHelper';
 import { formatINR } from '@/lib/engine/calculator';
 import { Select } from '@/components/ui/Select';
 import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
+import { TOP_CATEGORY_LABELS, type PresetTopCategory } from '@/lib/presetTaxonomy';
 
 interface BomItem {
   id: string;
@@ -49,11 +50,12 @@ interface BomItem {
 
 export default function AccessoriesMasterPage() {
   const { data: items, isLoading } = useMasterQuery<BomItem>('accessories');
-  const { data: categories } = useMasterQuery<{id: string, name: string}>('bom_categories');
+  const { data: categories } = useMasterQuery<{id: string, name: string, top_category?: string | null, subcategory_name?: string | null}>('bom_categories');
   const createMutation = useMasterCreateMutation<BomItem>('accessories');
   const updateMutation = useMasterUpdateMutation<BomItem>('accessories');
   const deleteMutation = useMasterDeleteMutation('accessories');
   const bulkUpdateMutation = useMasterBulkUpdateMutation('accessories');
+  const createCategoryMutation = useMasterCreateMutation('bom_categories');
 
   const confirm = useConfirm();
   const { toast } = useToast();
@@ -68,6 +70,8 @@ export default function AccessoriesMasterPage() {
   
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<BomItem | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryTop, setNewCategoryTop] = useState<PresetTopCategory>('bom_item');
 
   // Accessories draft state
   const [draft, setDraft] = useState({
@@ -84,7 +88,10 @@ export default function AccessoriesMasterPage() {
   });
 
   const sectionOptions = useMemo(() => {
-    return (categories || []).map(c => ({ value: c.id, label: c.name }));
+    return (categories || []).map(c => ({
+      value: c.id,
+      label: c.subcategory_name || c.name,
+    }));
   }, [categories]);
 
   // Bulk Edit Schema
@@ -225,6 +232,28 @@ export default function AccessoriesMasterPage() {
       setEditorOpen(false);
     } catch (err: any) {
       toast(err.message || 'Operation failed', 'error');
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      toast('Enter a category or subcategory name first.', 'error');
+      return;
+    }
+    try {
+      const created: any = await createCategoryMutation.mutateAsync({
+        name,
+        top_category: newCategoryTop,
+        subcategory_name: name,
+        display_order: (categories?.length ?? 0) + 1,
+        is_optional: true,
+      });
+      setDraft((current) => ({ ...current, category_id: created?.id ?? current.category_id }));
+      setNewCategoryName('');
+      toast('BOM category added', 'success');
+    } catch (err: any) {
+      toast(err.message || 'Failed to create BOM category', 'error');
     }
   };
 
@@ -459,7 +488,10 @@ export default function AccessoriesMasterPage() {
                       </button>
                     </td>
                     <td className="capitalize font-semibold text-text-secondary">
-                      {categories?.find(c => c.id === item.category_id)?.name || item.category_id.replace(/_/g, ' ')}
+                      {(() => {
+                        const category = categories?.find(c => c.id === item.category_id);
+                        return category?.subcategory_name || category?.name || item.category_id.replace(/_/g, ' ');
+                      })()}
                     </td>
                     <td className="font-mono text-xs">{item.sku_code}</td>
                     <td className="font-semibold text-text-primary">{item.description}</td>
@@ -519,6 +551,31 @@ export default function AccessoriesMasterPage() {
                     onChange={(val) => setDraft({ ...draft, category_id: val as any })}
                     options={sectionOptions}
                     className="w-full"
+                  />
+                  <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      className="min-w-0 rounded-lg border border-border bg-background px-3 py-2 text-xs text-text-primary outline-none focus:border-accent/40"
+                      placeholder="New subcategory"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCreateCategory}
+                      className="rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-bold text-accent hover:bg-accent/20"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <Select
+                    value={newCategoryTop}
+                    onChange={(val) => setNewCategoryTop(val as PresetTopCategory)}
+                    options={(Object.keys(TOP_CATEGORY_LABELS) as PresetTopCategory[]).map((top) => ({
+                      value: top,
+                      label: TOP_CATEGORY_LABELS[top],
+                    }))}
+                    className="mt-2 w-full"
                   />
                 </div>
                 <div className="space-y-1">

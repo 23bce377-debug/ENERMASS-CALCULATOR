@@ -14,6 +14,15 @@ import {
 } from '@/lib/actions/presets';
 import { CatalogItemPicker } from './CatalogItemPicker';
 import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
+import {
+  EXCEL_BOM_SUBCATEGORIES,
+  TOP_CATEGORY_LABELS,
+  defaultSubcategoryForItem,
+  functionalCategoryFromTop,
+  normalizeFunctionalCategory,
+  topCategoryFromFunctional,
+  type PresetTopCategory,
+} from '@/lib/presetTaxonomy';
 
 interface PresetEditorDialogProps {
   presetId: string;
@@ -43,6 +52,8 @@ const CATEGORY_ORDER = [
   'inverter',
   'battery',
   'structure',
+  'bom_item',
+  'miscellaneous',
   'dc_protection',
   'ac_protection',
   'cable',
@@ -54,6 +65,7 @@ const CATEGORY_ORDER = [
 ];
 
 const CORE_CATEGORIES = ['panel', 'inverter', 'battery', 'structure'];
+const EDITABLE_TOP_CATEGORIES: PresetTopCategory[] = ['panel', 'inverter', 'battery', 'structure', 'bom_item', 'miscellaneous'];
 
 const CATEGORY_LABELS: Record<string, string> = {
   all: 'All Saved Items',
@@ -90,16 +102,7 @@ const STAGES = [
 type StageId = (typeof STAGES)[number]['id'];
 
 function normalizeCategory(category: string | null | undefined) {
-  const normalized = String(category ?? '').trim().toLowerCase().replace(/&/g, 'and').replace(/[\s-]+/g, '_');
-  if (!normalized || normalized === 'other' || normalized === 'all') return 'miscellaneous';
-  if (normalized === 'mounting_structure' || normalized === 'monitoring_and_safety' || normalized === 'accessories') return 'accessory';
-  if (normalized === 'cables_and_conduit' || normalized === 'cabling' || normalized === 'wiring') return 'cable';
-  if (normalized === 'dc_side_protection') return 'dc_protection';
-  if (normalized === 'ac_side_protection') return 'ac_protection';
-  if (normalized === 'civil_works' || normalized === 'services') return 'civil';
-  if (normalized === 'logistics_and_handling' || normalized === 'handling') return 'logistics';
-  if (normalized === 'earthings') return 'earthing';
-  return normalized;
+  return normalizeFunctionalCategory(category);
 }
 
 function newBlankItem(catalogItem: any, category: string, sortOrder: number): LineItem {
@@ -108,6 +111,14 @@ function newBlankItem(catalogItem: any, category: string, sortOrder: number): Li
   return {
     id: `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
     category: itemCategory,
+    topCategory: catalogItem.topCategory ?? topCategoryFromFunctional(itemCategory),
+    subcategory: catalogItem.subcategory ?? defaultSubcategoryForItem({
+      topCategory: catalogItem.topCategory,
+      category: itemCategory,
+      brand: catalogItem.brand,
+      model: catalogItem.model,
+      categoryName: catalogItem.categoryName,
+    }),
     catalogItemId: catalogItem.id,
     catalogType: catalogItem.catalogType ?? (['panel', 'inverter', 'battery'].includes(catalogItem.type) ? 'equipment' : 'bom_template'),
     skuCode: catalogItem.skuCode ?? '',
@@ -152,6 +163,9 @@ function resolveAddedCategory(catalogItem: any, pickerCategory: string) {
   if (CORE_CATEGORIES.includes(itemCategory) && !CORE_CATEGORIES.includes(normalizedPickerCategory)) {
     return 'miscellaneous';
   }
+  if (catalogItem.topCategory === 'bom_item' && itemCategory === 'miscellaneous') {
+    return 'accessory';
+  }
   return itemCategory;
 }
 
@@ -172,6 +186,7 @@ function PresetItemEditor({
   lockedCategory?: string;
 }) {
   const amount = item.isSurveyDependent ? null : Number(item.quantity || 0) * Number(item.unitRate || 0);
+  const subcategoryListId = `preset-item-subcategories-${String(item.id ?? item.description).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 
   return (
     <div className={`rounded-xl border p-3 transition-colors ${item.isIncluded ? 'border-border bg-background/60' : 'border-border/60 bg-background/30 opacity-75'}`}>
@@ -193,17 +208,38 @@ function PresetItemEditor({
         <label className="w-full lg:w-44">
           <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-text-muted">Category</span>
           <select
-            value={normalizeCategory(item.category)}
-            onChange={(event) => onUpdate('category', event.target.value)}
+            value={item.topCategory ?? topCategoryFromFunctional(item.category)}
+            onChange={(event) => {
+              const nextTopCategory = event.target.value;
+              onUpdate('topCategory', nextTopCategory);
+              onUpdate('category', functionalCategoryFromTop(nextTopCategory, item.category));
+            }}
             disabled={Boolean(lockedCategory)}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
           >
-            {(lockedCategory ? [lockedCategory] : CATEGORY_ORDER).map((category) => (
+            {(lockedCategory ? [lockedCategory] : EDITABLE_TOP_CATEGORIES).map((category) => (
               <option key={category} value={category}>
-                {CATEGORY_LABELS[category]}
+                {TOP_CATEGORY_LABELS[category as PresetTopCategory]}
               </option>
             ))}
           </select>
+        </label>
+
+        <label className="w-full lg:w-56">
+          <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-text-muted">Subcategory</span>
+          <input
+            value={item.subcategory ?? defaultSubcategoryForItem(item)}
+            onChange={(event) => onUpdate('subcategory', event.target.value)}
+            list={subcategoryListId}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+            placeholder="Brand or BOM subcategory"
+          />
+          <datalist id={subcategoryListId}>
+            {EXCEL_BOM_SUBCATEGORIES.map((subcategory) => (
+              <option key={subcategory} value={subcategory} />
+            ))}
+            {item.brand && <option value={item.brand} />}
+          </datalist>
         </label>
       </div>
 
@@ -357,6 +393,8 @@ export function PresetEditorDialog({
         ...item,
         id: dialogMode === 'duplicate' ? `copy_${Date.now()}_${index}` : item.id,
         category: normalizeCategory(item.category),
+        topCategory: item.topCategory ?? topCategoryFromFunctional(item.category),
+        subcategory: item.subcategory ?? defaultSubcategoryForItem(item),
         sortOrder: index,
       })));
       return;
@@ -385,6 +423,8 @@ export function PresetEditorDialog({
           ...item,
           id: dialogMode === 'duplicate' ? `copy_${Date.now()}_${index}` : item.id,
           category: normalizeCategory(item.category),
+          topCategory: item.topCategory ?? topCategoryFromFunctional(item.category),
+          subcategory: item.subcategory ?? defaultSubcategoryForItem(item),
           sortOrder: index,
         })));
       })
@@ -427,6 +467,24 @@ export function PresetEditorDialog({
     () => lineItems.filter((item) => !CORE_CATEGORIES.includes(normalizeCategory(item.category))),
     [lineItems],
   );
+  const bomItemGroups = useMemo(() => {
+    const groups = new Map<string, { topCategory: string; subcategory: string; items: LineItem[] }>();
+    for (const item of bomItems) {
+      const topCategory = item.topCategory ?? topCategoryFromFunctional(item.category);
+      const subcategory = item.subcategory ?? defaultSubcategoryForItem(item);
+      const key = `${topCategory}:${subcategory}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.items.push(item);
+      } else {
+        groups.set(key, { topCategory, subcategory, items: [item] });
+      }
+    }
+    return Array.from(groups.values()).sort((a, b) => {
+      const topOrder = EDITABLE_TOP_CATEGORIES.indexOf(a.topCategory as PresetTopCategory) - EDITABLE_TOP_CATEGORIES.indexOf(b.topCategory as PresetTopCategory);
+      return topOrder || a.subcategory.localeCompare(b.subcategory);
+    });
+  }, [bomItems]);
   const selectedBomPreset = useMemo(
     () => bomPresets.find((preset) => preset.id === selectedBomPresetId) ?? null,
     [bomPresets, selectedBomPresetId],
@@ -598,8 +656,14 @@ export function PresetEditorDialog({
     }
   }
 
-  function renderPicker(category: string, align: 'left' | 'right' = 'right', excludeCategories: string[] = []) {
-    if (addPickerOpen !== category) return null;
+  function renderPicker(
+    category: string,
+    align: 'left' | 'right' = 'right',
+    excludeCategories: string[] = [],
+    initialSearch = '',
+    key = category,
+  ) {
+    if (addPickerOpen !== key) return null;
 
     return (
       <div className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full z-50 mt-2`}>
@@ -608,6 +672,8 @@ export function PresetEditorDialog({
           onSelect={addItemFromCatalog}
           onClose={() => setAddPickerOpen(false)}
           excludeCategories={excludeCategories}
+          initialSearch={initialSearch}
+          searchPlaceholder="Search by item, SKU, subcategory, specs, unit, or rate..."
         />
       </div>
     );
@@ -879,20 +945,35 @@ export function PresetEditorDialog({
                   </div>
 
                   <section className="rounded-xl border border-dashed border-border bg-background/45 p-4">
-                    <p className="mb-3 text-xs font-bold uppercase tracking-wider text-text-muted">Add by BOM category</p>
+                    <p className="mb-3 text-xs font-bold uppercase tracking-wider text-text-muted">Add by category / subcategory</p>
                     <div className="relative flex flex-wrap gap-2">
-                      {CATEGORY_ORDER.filter((category) => !CORE_CATEGORIES.includes(category)).map((category) => (
+                      {(['bom_item', 'miscellaneous'] as const).map((category) => (
                         <div key={category} className="relative">
                           <button
                             type="button"
                             onClick={() => setAddPickerOpen(addPickerOpen === category ? false : category)}
                             className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-bold text-text-secondary hover:border-accent/40 hover:text-accent"
                           >
-                            + {CATEGORY_LABELS[category]}
+                            + {TOP_CATEGORY_LABELS[category]}
                           </button>
                           {renderPicker(category, 'left')}
                         </div>
                       ))}
+                      {EXCEL_BOM_SUBCATEGORIES.filter((subcategory) => subcategory !== 'Miscellaneous').map((subcategory) => {
+                        const key = `bom_item:${subcategory}`;
+                        return (
+                          <div key={subcategory} className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setAddPickerOpen(addPickerOpen === key ? false : key)}
+                              className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-bold text-text-secondary hover:border-accent/40 hover:text-accent"
+                            >
+                              + {subcategory}
+                            </button>
+                            {renderPicker('bom_item', 'left', CORE_CATEGORIES, subcategory, key)}
+                          </div>
+                        );
+                      })}
                     </div>
                   </section>
 
@@ -938,13 +1019,13 @@ export function PresetEditorDialog({
                   </section>
 
                   {bomItems.length > 0 ? (
-                    CATEGORY_ORDER.filter((category) => !CORE_CATEGORIES.includes(category)).map((category) => {
-                      const items = grouped[category] ?? [];
-                      if (items.length === 0) return null;
+                    bomItemGroups.map((group) => {
                       return (
-                        <section key={category} className="space-y-3">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted">{CATEGORY_LABELS[category]}</h4>
-                          {items.map((item) => (
+                        <section key={`${group.topCategory}:${group.subcategory}`} className="space-y-3">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+                            {TOP_CATEGORY_LABELS[(group.topCategory as PresetTopCategory) || 'bom_item']} / {group.subcategory}
+                          </h4>
+                          {group.items.map((item) => (
                             <PresetItemEditor
                               key={item.id}
                               item={item}

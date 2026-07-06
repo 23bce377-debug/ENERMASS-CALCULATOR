@@ -134,6 +134,7 @@ const mutableColumnsByEntity: Record<string, string[]> = {
   structures: ['name', 'material', 'roof_mount_type', 'elevation_height_mm', 'raw_material_rate', 'fabrication_rate', 'galvanizing_rate', 'wastage_pct', 'fastener_weight_pct', 'base_weight_kg', 'selling_price', 'buy_price', 'per_watt_rate', 'gst_pct', 'description', 'specification_details', 'is_active', 'is_custom'],
   accessories: ['category_id', 'sku_code', 'description', 'specification_details', 'unit', 'unit_rate_min', 'unit_rate_max', 'default_rate', 'gst_pct', 'qty_formula', 'is_survey_dependent', 'civil_required_only', 'notes', 'is_active', 'is_custom'],
   pricing: ['category_id', 'sku_code', 'description', 'specification_details', 'unit', 'unit_rate_min', 'unit_rate_max', 'default_rate', 'gst_pct', 'qty_formula', 'is_survey_dependent', 'civil_required_only', 'notes', 'is_active', 'is_custom'],
+  bom_categories: ['name', 'top_category', 'subcategory_name', 'display_order', 'is_optional'],
 };
 
 async function isReferenced(entity: string, id: string): Promise<boolean> {
@@ -586,7 +587,8 @@ export function useMasterCreateMutation<T>(entity: string) {
       const { orgId, userId } = await getOrgContext();
       const table = getEntityTable(entity);
 
-      const payload = { ...transformToDb(entity, newItem), org_id: orgId, is_custom: true };
+      const payload = { ...transformToDb(entity, newItem), org_id: orgId };
+      if (entity !== 'bom_categories') payload.is_custom = true;
       if (activeFlagEntities.has(entity)) payload.is_active = true;
       return writeMasterInsertOrUpdate<T>(entity, table, payload, orgId, userId);
     },

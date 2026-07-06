@@ -3,10 +3,17 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { normalizeGstRate } from '@/lib/utils/gst';
 import { getBatteryGstRate, TAX_CONSTANTS } from '@/lib/tax-constants';
+import {
+  defaultSubcategoryForItem,
+  normalizeFunctionalCategory,
+  topCategoryFromFunctional,
+} from '@/lib/presetTaxonomy';
 
 export interface LineItem {
   id?: string;
   category: string;
+  topCategory?: string;
+  subcategory?: string;
   catalogItemId?: string;
   catalogType?: string;
   skuCode?: string;
@@ -107,9 +114,8 @@ function catalogSearchScore(searchTerm: string | undefined, parts: Array<string 
 }
 
 function canonicalPresetCategory(category: string | null | undefined) {
-  const normalized = normalizeCatalogName(category ?? '');
-  if (!normalized || normalized === 'other' || normalized === 'misc') return 'miscellaneous';
-  return category as string;
+  if (String(category ?? '').trim().toLowerCase() === 'all') return 'all';
+  return normalizeFunctionalCategory(category);
 }
 
 function inferCatalogCategoryFromText(...parts: Array<string | null | undefined>) {
@@ -148,8 +154,10 @@ function categoryFromBomItem(item: {
   description?: string | null;
   notes?: string | null;
   specification_details?: string | null;
-  bom_categories?: { name?: string | null } | null;
+  bom_categories?: { name?: string | null; top_category?: string | null; subcategory_name?: string | null } | null;
 }, fallback: string) {
+  if (item.bom_categories?.top_category === 'structure') return 'structure';
+  if (item.bom_categories?.top_category === 'miscellaneous') return 'miscellaneous';
   const inferred = inferCatalogCategoryFromText(
     item.sku_code,
     item.description,
@@ -273,7 +281,7 @@ export async function getPresetWithComponents(presetId: string) {
     supabase.from('eq_meters').select('id, brand, model, selling_price, gst_pct, description, specification_details'),
     supabase.from('eq_lightning_arresters').select('id, brand, model, selling_price, gst_pct, description, specification_details'),
     supabase.from('eq_mounting_structures').select('id, name, material, roof_mount_type, selling_price, gst_pct, description, specification_details'),
-    supabase.from('bom_template_items' as any).select('id, description, specification_details, notes, default_rate, gst_pct, category_id, bom_categories(name)'),
+    supabase.from('bom_template_items' as any).select('id, description, specification_details, notes, default_rate, gst_pct, category_id, bom_categories(name, top_category, subcategory_name)'),
     supabase.from('eq_communication_devices').select('id, brand, model, selling_price, gst_pct, description, specification_details'),
     supabase.from('structure_component_master').select('id, name, selling_price, gst_pct, specification_details'),
   ]);
@@ -420,6 +428,15 @@ export async function getPresetWithComponents(presetId: string) {
     return {
       id: item.id,
       category,
+      topCategory: topCategoryFromFunctional(category),
+      subcategory: defaultSubcategoryForItem({
+        category,
+        brand,
+        model,
+        categoryName: (item.bom_item_id ? bomItems.find((x: any) => x.id === item.bom_item_id)?.bom_categories?.subcategory_name : null)
+          || (item.bom_item_id ? bomItems.find((x: any) => x.id === item.bom_item_id)?.bom_categories?.name : null)
+          || undefined,
+      }),
       catalogItemId,
       catalogType,
       skuCode: item.sku_code || '',
@@ -492,6 +509,13 @@ function prepareBomPresetLineItems(lineItems: LineItem[]) {
 
     return {
       category,
+      top_category: item.topCategory || topCategoryFromFunctional(category),
+      subcategory: item.subcategory || defaultSubcategoryForItem({
+        topCategory: item.topCategory,
+        category,
+        brand: item.brand,
+        model: item.model,
+      }),
       catalog_item_id: item.catalogItemId || null,
       catalog_type: item.catalogType || 'custom',
       sku_code: item.skuCode || null,
@@ -640,6 +664,13 @@ export async function getBomPresetWithItems(bomPresetId: string): Promise<{ id: 
     lineItems: ((items || []) as any[]).map((item, index) => ({
       id: `bom_preset_${bomPresetId}_${item.id ?? index}`,
       category: item.category,
+      topCategory: item.top_category ?? topCategoryFromFunctional(item.category),
+      subcategory: item.subcategory ?? defaultSubcategoryForItem({
+        topCategory: item.top_category,
+        category: item.category,
+        brand: item.brand,
+        model: item.model,
+      }),
       catalogItemId: item.catalog_item_id ?? undefined,
       catalogType: item.catalog_type ?? 'custom',
       skuCode: item.sku_code ?? '',
@@ -924,24 +955,34 @@ export async function savePresetWithComponents(
   }
 
   const resolvedCategoryIds = new Map<string, string>();
-  async function ensureBomCategoryId(category: string) {
+  async function ensureBomCategoryId(category: string, subcategory?: string, topCategory?: string) {
     const normalizedCategory = canonicalPresetCategory(category);
-    if (resolvedCategoryIds.has(normalizedCategory)) {
-      return resolvedCategoryIds.get(normalizedCategory)!;
+    const resolvedTopCategory = topCategory || topCategoryFromFunctional(normalizedCategory);
+    const resolvedSubcategory = subcategory || defaultSubcategoryForItem({ topCategory: resolvedTopCategory, category: normalizedCategory });
+    const cacheKey = `${resolvedTopCategory}:${resolvedSubcategory}:${normalizedCategory}`;
+    if (resolvedCategoryIds.has(cacheKey)) {
+      return resolvedCategoryIds.get(cacheKey)!;
     }
     const aliases = CATALOG_CATEGORY_ALIASES[normalizedCategory] ?? [normalizedCategory];
     const aliasSet = new Set(aliases.map(normalizeCatalogName));
 
     const { data: categories, error: categoryLoadErr } = await supabase
       .from('bom_categories' as any)
-      .select('id, name, display_order')
+      .select('id, name, display_order, top_category, subcategory_name')
       .order('display_order', { ascending: true });
 
     if (categoryLoadErr) throw mapDatabaseError(categoryLoadErr, 'Failed to load BOM categories');
 
-    const existing = ((categories || []) as any[]).find((item: any) => aliasSet.has(normalizeCatalogName(item.name || '')));
+    const existing = ((categories || []) as any[]).find((item: any) => {
+      const itemTop = String(item.top_category || topCategoryFromFunctional(normalizedCategory));
+      const itemSubcategory = String(item.subcategory_name || item.name || '');
+      return (
+        normalizeCatalogName(itemTop) === normalizeCatalogName(resolvedTopCategory) &&
+        normalizeCatalogName(itemSubcategory) === normalizeCatalogName(resolvedSubcategory)
+      ) || aliasSet.has(normalizeCatalogName(item.name || ''));
+    });
     if (existing?.id) {
-      resolvedCategoryIds.set(normalizedCategory, existing.id as string);
+      resolvedCategoryIds.set(cacheKey, existing.id as string);
       return existing.id as string;
     }
 
@@ -950,7 +991,9 @@ export async function savePresetWithComponents(
       .from('bom_categories' as any)
       .insert({
         org_id: orgId,
-        name: aliases[0] ?? normalizedCategory,
+        name: resolvedSubcategory,
+        top_category: resolvedTopCategory,
+        subcategory_name: resolvedSubcategory,
         display_order: displayOrder,
         is_optional: ['civil', 'logistics', 'accessory', 'miscellaneous'].includes(normalizedCategory),
       })
@@ -960,7 +1003,7 @@ export async function savePresetWithComponents(
     if (categoryCreateErr) throw mapDatabaseError(categoryCreateErr, 'Failed to create BOM category');
     const id = (newCategory as any)?.id;
     if (!id) throw new Error('Failed to create BOM category.');
-    resolvedCategoryIds.set(normalizedCategory, id as string);
+    resolvedCategoryIds.set(cacheKey, id as string);
     return id as string;
   }
 
@@ -972,7 +1015,7 @@ export async function savePresetWithComponents(
     }
 
     const normalizedCategory = canonicalPresetCategory(item.category);
-    const categoryId = await ensureBomCategoryId(normalizedCategory);
+    const categoryId = await ensureBomCategoryId(normalizedCategory, item.subcategory, item.topCategory);
     const skuCode = `CUSTOM-${normalizedCategory.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}-${Date.now()}-${index + 1}`;
     const unitRate = Number(item.unitRate || 0);
     const { data: customCatalogItem, error: customItemErr } = await supabase
@@ -1325,6 +1368,7 @@ export async function getCatalogItems(category: string, search?: string): Promis
       'inverter',
       'battery',
       'structure',
+      'bom_item',
       'dc_protection',
       'ac_protection',
       'cable',
@@ -1359,6 +1403,9 @@ export async function getCatalogItems(category: string, search?: string): Promis
       .map((item: any) => ({
       id: item.id,
       type: normalizedCategory,
+      topCategory: normalizedCategory,
+      subcategory: item.brand || 'Unbranded',
+      category: normalizedCategory,
       description: [item.brand, item.model].filter(Boolean).join(' ') || item.name || 'Unnamed item',
       brand: item.brand,
       model: item.model,
@@ -1413,6 +1460,9 @@ export async function getCatalogItems(category: string, search?: string): Promis
       id: item.id,
       type: 'structure',
       catalogType: 'eq_structure',
+      topCategory: 'structure',
+      subcategory: item.material || 'Structure & Accessories',
+      category: 'structure',
       description: item.name || item.description || 'Mounting structure',
       brand: item.material ?? '',
       model: item.roof_mount_type ?? '',
@@ -1442,6 +1492,9 @@ export async function getCatalogItems(category: string, search?: string): Promis
       id: item.id,
       type: 'lightning_arrester',
       catalogType: 'equipment',
+      topCategory: 'bom_item',
+      subcategory: 'LA & Earthings',
+      category: 'earthing',
       description: item.description || [item.brand, item.model].filter(Boolean).join(' ') || 'Lightning arrester',
       brand: item.brand ?? '',
       model: item.model ?? '',
@@ -1477,6 +1530,9 @@ export async function getCatalogItems(category: string, search?: string): Promis
       id: item.id,
       type: 'meter',
       catalogType: 'equipment',
+      topCategory: 'bom_item',
+      subcategory: 'Meters',
+      category: 'accessory',
       description: item.description || [item.brand, item.model].filter(Boolean).join(' ') || 'Meter',
       brand: item.brand ?? '',
       model: item.model ?? '',
@@ -1491,6 +1547,9 @@ export async function getCatalogItems(category: string, search?: string): Promis
       id: item.id,
       type: 'communication_device',
       catalogType: 'equipment',
+      topCategory: 'bom_item',
+      subcategory: 'Meters',
+      category: 'accessory',
       description: item.description || [item.brand, item.model].filter(Boolean).join(' ') || 'Communication device',
       brand: item.brand ?? '',
       model: item.model ?? '',
@@ -1505,21 +1564,22 @@ export async function getCatalogItems(category: string, search?: string): Promis
 
   const { data: categories, error: categoryError } = await supabase
     .from('bom_categories' as any)
-    .select('id, name')
+    .select('id, name, top_category, subcategory_name')
     .order('display_order', { ascending: true });
 
   if (categoryError) throw new Error('Failed to fetch BOM categories: ' + categoryError.message);
 
   let bomQuery = supabase
     .from('bom_template_items' as any)
-    .select('id, sku_code, description, specification_details, notes, unit, default_rate, gst_pct, qty_formula, is_survey_dependent, category_id, bom_categories(name)');
+    .select('id, sku_code, description, specification_details, notes, unit, default_rate, gst_pct, qty_formula, is_survey_dependent, category_id, bom_categories(name, top_category, subcategory_name)');
 
   const { data: bomItems, error: bomError } = await bomQuery.limit(500);
   if (bomError) throw new Error('Failed to fetch BOM catalog items: ' + bomError.message);
 
-  const categoryById = new Map(((categories || []) as any[]).map((item: any) => [item.id, item.name]));
+  const categoryById = new Map(((categories || []) as any[]).map((item: any) => [item.id, item]));
   const matchingBomItems = (bomItems || []).map((item: any) => {
-    const categoryName = item.bom_categories?.name ?? categoryById.get(item.category_id);
+    const categoryMeta = item.bom_categories ?? categoryById.get(item.category_id);
+    const categoryName = categoryMeta?.subcategory_name ?? categoryMeta?.name;
     const inferred = inferCatalogCategoryFromText(item.sku_code, item.description, item.notes, item.specification_details);
     const score = catalogSearchScore(searchTerm, [
       item.sku_code,
@@ -1532,9 +1592,12 @@ export async function getCatalogItems(category: string, search?: string): Promis
       inferred,
     ]);
 
-    return { item, categoryName, inferred, score };
-  }).filter(({ categoryName, inferred, score }: any) => {
+    return { item, categoryMeta, categoryName, inferred, score };
+  }).filter(({ categoryMeta, categoryName, inferred, score }: any) => {
     if (searchTerm && score <= 0) return false;
+    if (normalizedCategory === 'bom_item') {
+      return (categoryMeta?.top_category ?? topCategoryFromFunctional(inferred)) === 'bom_item';
+    }
     if (normalizedCategory === 'miscellaneous') {
       return categoryNameMatches('miscellaneous', categoryName) || (inferred === 'miscellaneous' && !hasKnownCategoryName(categoryName));
     }
@@ -1542,10 +1605,17 @@ export async function getCatalogItems(category: string, search?: string): Promis
     return categoryNameMatches(normalizedCategory, categoryName);
   }).sort((a: any, b: any) => b.score - a.score || String(a.item.description).localeCompare(String(b.item.description)));
 
-  catalogItems.push(...matchingBomItems.map(({ item }: any) => ({
+  catalogItems.push(...matchingBomItems.map(({ item, categoryMeta, categoryName, inferred }: any) => {
+    const functionalCategory = categoryFromBomItem({ ...item, bom_categories: categoryMeta }, inferred);
+    const topCategory = categoryMeta?.top_category ?? topCategoryFromFunctional(functionalCategory);
+    return ({
     id: item.id,
     type: 'bom_template',
     catalogType: 'bom_template',
+    category: functionalCategory,
+    topCategory,
+    subcategory: categoryName || defaultSubcategoryForItem({ category: functionalCategory }),
+    categoryName: categoryName || '',
     skuCode: item.sku_code ?? '',
     description: item.description,
     brand: '',
@@ -1556,7 +1626,8 @@ export async function getCatalogItems(category: string, search?: string): Promis
     specificationDetails: item.specification_details || item.notes || '',
     gstPct: normalizeGstRate(item.gst_pct, 0.18),
     isSurveyDependent: Boolean(item.is_survey_dependent ?? false),
-  })));
+  });
+  }));
 
   const seen = new Set<string>();
   return catalogItems.filter((item) => {

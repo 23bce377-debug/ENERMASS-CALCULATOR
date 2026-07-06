@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { getCatalogItems } from '@/lib/actions/presets';
+import { defaultSubcategoryForItem, topCategoryFromFunctional } from '@/lib/presetTaxonomy';
 
 interface CatalogItemPickerProps {
   category: string;
@@ -49,6 +50,9 @@ export function CatalogItemPicker({
     onSelect({
       type: 'custom',
       catalogType: 'custom',
+      category,
+      topCategory: topCategoryFromFunctional(category),
+      subcategory: defaultSubcategoryForItem({ category }),
       description,
       specificationDetails: customSpecification.trim(),
       brand: '',
@@ -121,8 +125,13 @@ export function CatalogItemPicker({
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-text-primary">{item.description}</p>
                 <p className="mt-0.5 text-xs text-text-muted">
-                  {[item.brand, item.model].filter(Boolean).join(' ') || item.unit || 'Catalog item'}
+                  {[item.brand, item.model].filter(Boolean).join(' ') || item.subcategory || item.unit || 'Catalog item'}
                 </p>
+                {item.subcategory && (
+                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
+                    {item.topCategory ? `${String(item.topCategory).replace(/_/g, ' ')} / ` : ''}{item.subcategory}
+                  </p>
+                )}
               </div>
               {item.defaultRate > 0 && (
                 <p className="shrink-0 rounded-md bg-background px-2 py-1 text-xs font-semibold text-text-secondary">

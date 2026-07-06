@@ -12,9 +12,19 @@ import {
 } from '@/lib/actions/presets';
 import { CatalogItemPicker } from '@/components/presets/CatalogItemPicker';
 import { gstRateToPercent, normalizeGstRate } from '@/lib/utils/gst';
+import {
+  EXCEL_BOM_SUBCATEGORIES,
+  TOP_CATEGORY_LABELS,
+  defaultSubcategoryForItem,
+  functionalCategoryFromTop,
+  normalizeFunctionalCategory,
+  topCategoryFromFunctional,
+  type PresetTopCategory,
+} from '@/lib/presetTaxonomy';
 
 const CORE_CATEGORIES = ['panel', 'inverter', 'battery', 'structure'];
 const BOM_CATEGORIES = [
+  'bom_item',
   'dc_protection',
   'ac_protection',
   'cable',
@@ -26,6 +36,7 @@ const BOM_CATEGORIES = [
 ];
 
 const CATEGORY_LABELS: Record<string, string> = {
+  bom_item: 'BOM Items',
   dc_protection: 'DC Protection',
   ac_protection: 'AC Protection',
   cable: 'Cables',
@@ -37,15 +48,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 function normalizeCategory(category: string | null | undefined) {
-  const normalized = String(category ?? '').trim().toLowerCase().replace(/&/g, 'and').replace(/[\s-]+/g, '_');
-  if (normalized === 'other') return 'miscellaneous';
-  if (normalized === 'mounting_structure' || normalized === 'monitoring_and_safety' || normalized === 'accessories') return 'accessory';
-  if (normalized === 'cables_and_conduit' || normalized === 'cabling' || normalized === 'wiring') return 'cable';
-  if (normalized === 'dc_side_protection') return 'dc_protection';
-  if (normalized === 'ac_side_protection') return 'ac_protection';
-  if (normalized === 'civil_works' || normalized === 'services') return 'civil';
-  if (normalized === 'logistics_and_handling' || normalized === 'handling') return 'logistics';
-  if (normalized === 'earthings') return 'earthing';
+  const normalized = normalizeFunctionalCategory(category);
+  if (normalized === 'bom_item') return 'accessory';
   return BOM_CATEGORIES.includes(normalized) ? normalized : 'miscellaneous';
 }
 
@@ -54,6 +58,14 @@ function newItemFromCatalog(catalogItem: any, pickerCategory: string, sortOrder:
   return {
     id: `bom_master_${Date.now()}_${Math.random().toString(36).slice(2)}`,
     category,
+    topCategory: catalogItem.topCategory ?? topCategoryFromFunctional(category),
+    subcategory: catalogItem.subcategory ?? defaultSubcategoryForItem({
+      topCategory: catalogItem.topCategory,
+      category,
+      brand: catalogItem.brand,
+      model: catalogItem.model,
+      categoryName: catalogItem.categoryName,
+    }),
     catalogItemId: catalogItem.id,
     catalogType: catalogItem.catalogType ?? catalogItem.type ?? 'custom',
     skuCode: catalogItem.skuCode ?? catalogItem.sku_code ?? '',
@@ -75,6 +87,8 @@ function emptyLineItem(sortOrder: number): LineItem {
   return {
     id: `bom_custom_${Date.now()}_${Math.random().toString(36).slice(2)}`,
     category: 'miscellaneous',
+    topCategory: 'miscellaneous',
+    subcategory: 'Miscellaneous',
     catalogType: 'custom',
     description: '',
     brand: '',
@@ -412,9 +426,9 @@ export function BomPresetMaster() {
       </section>
 
       <section className="rounded-xl border border-dashed border-border bg-background/45 p-3">
-        <p className="mb-3 text-xs font-bold uppercase tracking-wider text-text-muted">Add by BOM category</p>
+        <p className="mb-3 text-xs font-bold uppercase tracking-wider text-text-muted">Add by category / subcategory</p>
         <div className="relative flex flex-wrap gap-2">
-          {BOM_CATEGORIES.map((category) => (
+          {(['bom_item', 'miscellaneous'] as const).map((category) => (
             <div key={category} className="relative">
               <button
                 type="button"
@@ -426,13 +440,40 @@ export function BomPresetMaster() {
               {renderPicker(category, 'left')}
             </div>
           ))}
+          {EXCEL_BOM_SUBCATEGORIES.filter((subcategory) => subcategory !== 'Miscellaneous').map((subcategory) => {
+            const key = `bom_item:${subcategory}`;
+            return (
+              <div key={subcategory} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(pickerOpen === key ? false : key)}
+                  className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-bold text-text-secondary hover:border-accent/40 hover:text-accent"
+                >
+                  + {subcategory}
+                </button>
+                {pickerOpen === key && (
+                  <div className="absolute left-0 top-full z-50 mt-2">
+                    <CatalogItemPicker
+                      category="bom_item"
+                      onSelect={addCatalogItem}
+                      onClose={() => setPickerOpen(false)}
+                      excludeCategories={CORE_CATEGORIES}
+                      initialSearch={subcategory}
+                      searchPlaceholder="Search by item, SKU, subcategory, specs, unit, or rate..."
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
 
       <section className="overflow-hidden rounded-xl border border-border">
-        <div className="hidden grid-cols-[minmax(220px,1fr)_160px_82px_90px_120px_90px_90px] gap-3 border-b border-border bg-background/70 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-text-muted xl:grid">
+        <div className="hidden grid-cols-[minmax(220px,1fr)_140px_180px_82px_90px_120px_90px_90px] gap-3 border-b border-border bg-background/70 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-text-muted xl:grid">
           <span>Item</span>
           <span>Category</span>
+          <span>Subcategory</span>
           <span>Unit</span>
           <span>Qty</span>
           <span>Rate</span>
@@ -442,8 +483,9 @@ export function BomPresetMaster() {
         <div className="divide-y divide-border">
           {lineItems.map((item) => {
             const amount = Number(item.quantity || 0) * Number(item.unitRate || 0);
+            const subcategoryListId = `bom-preset-subcategories-${String(item.id ?? item.description).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
             return (
-              <div key={item.id} className="grid gap-3 bg-background/45 p-3 xl:grid-cols-[minmax(220px,1fr)_160px_82px_90px_120px_90px_90px] xl:items-center">
+              <div key={item.id} className="grid gap-3 bg-background/45 p-3 xl:grid-cols-[minmax(220px,1fr)_140px_180px_82px_90px_120px_90px_90px] xl:items-center">
                 <label className="grid gap-1">
                   <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">Item</span>
                   <input
@@ -457,14 +499,32 @@ export function BomPresetMaster() {
                 <label className="grid gap-1">
                   <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">Category</span>
                   <select
-                    value={normalizeCategory(item.category)}
-                    onChange={(event) => updateItem(item.id as string, 'category', event.target.value)}
+                    value={item.topCategory ?? topCategoryFromFunctional(item.category)}
+                    onChange={(event) => {
+                      const nextTopCategory = event.target.value;
+                      updateItem(item.id as string, 'topCategory', nextTopCategory);
+                      updateItem(item.id as string, 'category', functionalCategoryFromTop(nextTopCategory, item.category));
+                    }}
                     className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                   >
-                    {BOM_CATEGORIES.map((category) => (
-                      <option key={category} value={category}>{CATEGORY_LABELS[category]}</option>
+                    {(['bom_item', 'miscellaneous'] as PresetTopCategory[]).map((category) => (
+                      <option key={category} value={category}>{TOP_CATEGORY_LABELS[category]}</option>
                     ))}
                   </select>
+                </label>
+                <label className="grid gap-1">
+                  <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">Subcategory</span>
+                  <input
+                    value={item.subcategory ?? defaultSubcategoryForItem(item)}
+                    onChange={(event) => updateItem(item.id as string, 'subcategory', event.target.value)}
+                    list={subcategoryListId}
+                    className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                  />
+                  <datalist id={subcategoryListId}>
+                    {EXCEL_BOM_SUBCATEGORIES.map((subcategory) => (
+                      <option key={subcategory} value={subcategory} />
+                    ))}
+                  </datalist>
                 </label>
                 <label className="grid gap-1">
                   <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">Unit</span>
