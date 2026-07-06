@@ -79,13 +79,62 @@ function quoteSpec(item: any): string | undefined {
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
+function createAbortReason(message: string, name: 'AbortError' | 'TimeoutError' = 'TimeoutError') {
+  if (typeof DOMException !== 'undefined') {
+    return new DOMException(message, name);
+  }
+  const error = new Error(message);
+  error.name = name;
+  return error;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  return 'Unknown error';
+}
+
+function isExpectedFetchAbort(error: unknown): boolean {
+  if (error instanceof DOMException) {
+    return error.name === 'AbortError' || error.name === 'TimeoutError';
+  }
+  if (error instanceof Error) {
+    return error.name === 'AbortError' || error.name === 'TimeoutError';
+  }
+  return false;
+}
+
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = 15_000) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const externalSignal = init.signal;
+
+  if (externalSignal?.aborted) {
+    throw externalSignal.reason ?? createAbortReason('Request was cancelled before it started.', 'AbortError');
+  }
+
+  const abortFromExternal = () => {
+    if (!controller.signal.aborted) {
+      controller.abort(externalSignal?.reason ?? createAbortReason('Request was cancelled.', 'AbortError'));
+    }
+  };
+  externalSignal?.addEventListener('abort', abortFromExternal, { once: true });
+
+  const timeoutId = setTimeout(() => {
+    if (!controller.signal.aborted) {
+      controller.abort(createAbortReason(`Request timed out after ${timeoutMs}ms.`));
+    }
+  }, timeoutMs);
+
   try {
     return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw controller.signal.reason ?? error;
+    }
+    throw error;
   } finally {
     clearTimeout(timeoutId);
+    externalSignal?.removeEventListener('abort', abortFromExternal);
   }
 }
 
@@ -662,7 +711,11 @@ export const createCalculationSlice: StateCreator<
           ...org
         };
       } catch (componentFetchError) {
-        console.warn('[fetchMasterData] Component-level fetch failed, falling back to consolidated bootstrap:', componentFetchError);
+        if (isExpectedFetchAbort(componentFetchError)) {
+          console.info(`[fetchMasterData] Component-level fetch timed out; falling back to consolidated bootstrap. ${getErrorMessage(componentFetchError)}`);
+        } else {
+          console.warn('[fetchMasterData] Component-level fetch failed, falling back to consolidated bootstrap:', componentFetchError);
+        }
 
         let bootstrapRes = await fetchWithTimeout('/api/erp/bootstrap?bomLimit=5000&invLimit=2000', requestInit, 20_000);
         if (bootstrapRes.status === 404) {
@@ -1049,7 +1102,11 @@ export const createCalculationSlice: StateCreator<
         get().recalculate();
       }
     } catch (err) {
-      console.error("Failed to fetch database master data:", err);
+      if (isExpectedFetchAbort(err)) {
+        console.warn(`[fetchMasterData] Master data request timed out. ${getErrorMessage(err)}`);
+      } else {
+        console.error("Failed to fetch database master data:", err);
+      }
       // Fallback: select first static system if none selected or invalid
       const currentSystemId = get().selectedSystemId;
       const systems = SYSTEMS;

@@ -112,7 +112,7 @@ function newBlankItem(catalogItem: any, category: string, sortOrder: number): Li
     id: `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
     category: itemCategory,
     topCategory: catalogItem.topCategory ?? topCategoryFromFunctional(itemCategory),
-    subcategory: catalogItem.subcategory ?? defaultSubcategoryForItem({
+    subcategory: catalogItem.subcategory || defaultSubcategoryForItem({
       topCategory: catalogItem.topCategory,
       category: itemCategory,
       brand: catalogItem.brand,
@@ -228,7 +228,7 @@ function PresetItemEditor({
         <label className="w-full lg:w-56">
           <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-text-muted">Subcategory</span>
           <input
-            value={item.subcategory ?? defaultSubcategoryForItem(item)}
+            value={item.subcategory || defaultSubcategoryForItem(item)}
             onChange={(event) => onUpdate('subcategory', event.target.value)}
             list={subcategoryListId}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
@@ -394,7 +394,7 @@ export function PresetEditorDialog({
         id: dialogMode === 'duplicate' ? `copy_${Date.now()}_${index}` : item.id,
         category: normalizeCategory(item.category),
         topCategory: item.topCategory ?? topCategoryFromFunctional(item.category),
-        subcategory: item.subcategory ?? defaultSubcategoryForItem(item),
+        subcategory: item.subcategory || defaultSubcategoryForItem(item),
         sortOrder: index,
       })));
       return;
@@ -424,7 +424,7 @@ export function PresetEditorDialog({
           id: dialogMode === 'duplicate' ? `copy_${Date.now()}_${index}` : item.id,
           category: normalizeCategory(item.category),
           topCategory: item.topCategory ?? topCategoryFromFunctional(item.category),
-          subcategory: item.subcategory ?? defaultSubcategoryForItem(item),
+          subcategory: item.subcategory || defaultSubcategoryForItem(item),
           sortOrder: index,
         })));
       })
@@ -471,7 +471,7 @@ export function PresetEditorDialog({
     const groups = new Map<string, { topCategory: string; subcategory: string; items: LineItem[] }>();
     for (const item of bomItems) {
       const topCategory = item.topCategory ?? topCategoryFromFunctional(item.category);
-      const subcategory = item.subcategory ?? defaultSubcategoryForItem(item);
+      const subcategory = item.subcategory || defaultSubcategoryForItem(item);
       const key = `${topCategory}:${subcategory}`;
       const existing = groups.get(key);
       if (existing) {

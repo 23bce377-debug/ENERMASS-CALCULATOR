@@ -133,6 +133,31 @@ export default function AccessoriesMasterPage() {
     return Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) < Math.pow(10, -precision);
   };
 
+  const isUuid = (value: unknown) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value ?? '').trim());
+
+  const normalizeImportCategory = (value: unknown) =>
+    String(value ?? '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
+
+  const resolveImportedCategoryId = (rawCategory: unknown) => {
+    const rawValue = String(rawCategory ?? '').trim();
+    const fallback = categories?.[0]?.id ?? 'electrical_protection';
+    if (!rawValue) return fallback;
+    if (isUuid(rawValue)) return rawValue;
+
+    const normalized = normalizeImportCategory(rawValue);
+    const match = categories?.find((category) => {
+      const candidates = [
+        category.id,
+        category.name,
+        category.subcategory_name,
+        category.top_category,
+      ];
+      return candidates.some((candidate) => normalizeImportCategory(candidate) === normalized);
+    });
+    return match?.id ?? fallback;
+  };
+
   const findImportMatch = (row: any) => {
     const ids = [row.__master_id, row.__source_global_id].filter(Boolean).map(String);
     const idMatch = items?.find((item) => ids.includes(item.id) || (item.source_global_id ? ids.includes(item.source_global_id) : false));
@@ -317,20 +342,23 @@ export default function AccessoriesMasterPage() {
     try {
       const rawData = await importFromExcel(file);
       
-      const parsedRows = rawData.map((row: any) => ({
-        __master_id: readImportCell(row, 'Master ID', 'master_id', 'id'),
-        __source_global_id: readImportCell(row, 'Source Global ID', 'source_global_id'),
-        category_id: readImportCell(row, 'Category', 'category_id', 'Section', 'section') || (categories?.[0]?.id ?? 'electrical_protection'),
-        sku_code: readImportCell(row, 'SKU Code', 'sku_code', 'Sub Type', 'sub_type') || 'ACCESSORY',
-        description: readImportCell(row, 'Description', 'description'),
-        specification_details: readImportCell(row, 'Specification Details', 'specification_details', 'Specifications', 'specifications', 'Notes', 'notes', 'Remarks', 'remarks') || '',
-        notes: readImportCell(row, 'Notes', 'notes', 'Remarks', 'remarks') || '',
-        unit: readImportCell(row, 'Unit', 'unit') || 'Nos',
-        default_rate: parseFloat(readImportCell(row, 'Selling Rate (INR)', 'default_rate', 'rate') || 0),
-        gst_pct: normalizeGstRate(readImportCell(row, 'GST Percentage', 'gst_pct'), 0.18),
-        is_survey_dependent: false,
-        civil_required_only: false,
-      })).filter((r) => r.description && !isNaN(r.default_rate));
+      const parsedRows = rawData.map((row: any) => {
+        const importedCategory = readImportCell(row, 'Category', 'category_id', 'Section', 'section');
+        return {
+          __master_id: readImportCell(row, 'Master ID', 'master_id', 'id'),
+          __source_global_id: readImportCell(row, 'Source Global ID', 'source_global_id'),
+          category_id: resolveImportedCategoryId(importedCategory),
+          sku_code: readImportCell(row, 'SKU Code', 'sku_code', 'Sub Type', 'sub_type') || 'ACCESSORY',
+          description: readImportCell(row, 'Description', 'description'),
+          specification_details: readImportCell(row, 'Specification Details', 'specification_details', 'Specifications', 'specifications', 'Notes', 'notes', 'Remarks', 'remarks') || '',
+          notes: readImportCell(row, 'Notes', 'notes', 'Remarks', 'remarks') || '',
+          unit: readImportCell(row, 'Unit', 'unit') || 'Nos',
+          default_rate: parseFloat(readImportCell(row, 'Selling Rate (INR)', 'default_rate', 'rate') || 0),
+          gst_pct: normalizeGstRate(readImportCell(row, 'GST Percentage', 'gst_pct'), 0.18),
+          is_survey_dependent: false,
+          civil_required_only: false,
+        };
+      }).filter((r) => r.description && !isNaN(r.default_rate));
 
       if (parsedRows.length === 0) {
         toast('No valid rows found in Excel sheet. Check column headers.', 'error');

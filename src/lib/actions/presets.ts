@@ -464,12 +464,17 @@ export async function getPresetWithComponents(presetId: string) {
   };
 }
 
-function mapDatabaseError(error: any, fallbackMessage: string): Error {
+function mapDatabaseError(error: any, fallbackMessage: string, duplicateEntity: 'preset' | 'category' | 'item' = 'preset'): Error {
   if (!error) return new Error(fallbackMessage);
   const msg = (error.message || '').toLowerCase();
   const code = error.code || '';
   if (code === '23505' || msg.includes('duplicate key value')) {
-    return new Error(`${fallbackMessage}: a preset with this name already exists.`);
+    const duplicateMessages = {
+      preset: 'a preset with this name already exists.',
+      category: 'a category with this name already exists.',
+      item: 'an item with this identifier already exists.',
+    };
+    return new Error(`${fallbackMessage}: ${duplicateMessages[duplicateEntity]}`);
   }
   if (msg.includes('row-level security') || msg.includes('violates row-level security policy') || code === '42501') {
     if (msg.includes('system_state_availability')) {
@@ -665,7 +670,7 @@ export async function getBomPresetWithItems(bomPresetId: string): Promise<{ id: 
       id: `bom_preset_${bomPresetId}_${item.id ?? index}`,
       category: item.category,
       topCategory: item.top_category ?? topCategoryFromFunctional(item.category),
-      subcategory: item.subcategory ?? defaultSubcategoryForItem({
+      subcategory: item.subcategory || defaultSubcategoryForItem({
         topCategory: item.top_category,
         category: item.category,
         brand: item.brand,
@@ -1000,7 +1005,7 @@ export async function savePresetWithComponents(
       .select('id')
       .maybeSingle();
 
-    if (categoryCreateErr) throw mapDatabaseError(categoryCreateErr, 'Failed to create BOM category');
+    if (categoryCreateErr) throw mapDatabaseError(categoryCreateErr, 'Failed to create BOM category', 'category');
     const id = (newCategory as any)?.id;
     if (!id) throw new Error('Failed to create BOM category.');
     resolvedCategoryIds.set(cacheKey, id as string);

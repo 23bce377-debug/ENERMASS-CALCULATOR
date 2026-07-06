@@ -59,7 +59,7 @@ function newItemFromCatalog(catalogItem: any, pickerCategory: string, sortOrder:
     id: `bom_master_${Date.now()}_${Math.random().toString(36).slice(2)}`,
     category,
     topCategory: catalogItem.topCategory ?? topCategoryFromFunctional(category),
-    subcategory: catalogItem.subcategory ?? defaultSubcategoryForItem({
+    subcategory: catalogItem.subcategory || defaultSubcategoryForItem({
       topCategory: catalogItem.topCategory,
       category,
       brand: catalogItem.brand,
@@ -515,7 +515,7 @@ export function BomPresetMaster() {
                 <label className="grid gap-1">
                   <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">Subcategory</span>
                   <input
-                    value={item.subcategory ?? defaultSubcategoryForItem(item)}
+                    value={item.subcategory || defaultSubcategoryForItem(item)}
                     onChange={(event) => updateItem(item.id as string, 'subcategory', event.target.value)}
                     list={subcategoryListId}
                     className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
