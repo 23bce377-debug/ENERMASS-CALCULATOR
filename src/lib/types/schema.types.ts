@@ -4880,7 +4880,7 @@ export type Database = {
       }
       proc_po_items: {
         Row: {
-          catalog_item_id: string
+          catalog_item_id: string | null
           category: string | null
           estimated_rate: number | null
           gst_pct: number
@@ -4896,7 +4896,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
-          catalog_item_id: string
+          catalog_item_id?: string | null
           category?: string | null
           estimated_rate?: number | null
           gst_pct?: number
@@ -4912,7 +4912,7 @@ export type Database = {
           unit_price: number
         }
         Update: {
-          catalog_item_id?: string
+          catalog_item_id?: string | null
           category?: string | null
           estimated_rate?: number | null
           gst_pct?: number
@@ -9722,11 +9722,11 @@ export type Database = {
       create_purchase_request: {
         Args: {
           p_items: Json
-          p_notes: string
+          p_notes: string | null
           p_org_id: string
-          p_project_id: string
-          p_requested_by: string
-          p_vendor_id: string
+          p_project_id: string | null
+          p_requested_by: string | null
+          p_vendor_id: string | null
         }
         Returns: string
       }
@@ -9783,6 +9783,19 @@ export type Database = {
       is_org_member: { Args: { p_org_id: string }; Returns: boolean }
       is_service_role: { Args: never; Returns: boolean }
       is_superadmin: { Args: never; Returns: boolean }
+      get_gstr3b_summary: {
+        Args: {
+          p_org_id: string
+          p_period_start: string
+          p_period_end: string
+        }
+        Returns: {
+          nature_of_supplies: string
+          total_taxable_value: number
+          total_tax_liability: number
+          total_itc: number
+        }[]
+      }
       mark_acquisition_as_received: {
         Args: { p_acquisition_id: string }
         Returns: Json

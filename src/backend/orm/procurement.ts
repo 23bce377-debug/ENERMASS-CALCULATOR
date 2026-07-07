@@ -26,7 +26,7 @@ export interface ProcurementPO {
 export interface ProcurementPOItem {
   id: string;
   po_id: string;
-  catalog_item_id: string;
+  catalog_item_id: string | null;
   item_description?: string | null;
   category?: string | null;
   unit: string;
@@ -36,6 +36,12 @@ export interface ProcurementPOItem {
   estimated_rate: number;
   gst_pct: number;
   is_pr_item: boolean;
+}
+
+function toProcurementGstPercent(value: unknown, fallback = 18): number {
+  const num = typeof value === 'string' ? Number(value.trim()) : Number(value);
+  if (!Number.isFinite(num) || num < 0) return fallback;
+  return num <= 1 ? num * 100 : num;
 }
 
 export interface ProcurementGRN {
@@ -106,56 +112,28 @@ export const ProcurementORM = {
       qty: number;
       unit: string;
       estimated_rate: number;
+      catalog_item_id?: string | null;
     }>;
   }): Promise<ProcurementPO> {
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const rand = Math.floor(1000 + Math.random() * 9000);
-    const po_number = `PR-${dateStr}-${rand}`;
-
-    const total_taxable = payload.items.reduce((s, i) => s + i.qty * i.estimated_rate, 0);
-
-    const { data: po, error } = await (supabase as any)
-      .from('proc_purchase_orders')
-      .insert({
-        org_id: orgId,
-        vendor_id: payload.vendor_id || null,
-        po_number,
-        project_id: payload.project_id || null,
-        requested_by: payload.requested_by || null,
-        notes: payload.notes || null,
-        pr_status: 'pending',
-        status: 'draft',
-        total_taxable,
-        cgst_amount: 0,
-        sgst_amount: 0,
-        igst_amount: 0,
-        total_amount: total_taxable,
-        items_count: payload.items.length,
-        version: 1,
-      })
-      .select()
-      .maybeSingle();
+    const { data: prId, error } = await (supabase as any).rpc('create_purchase_request', {
+      p_org_id: orgId,
+      p_vendor_id: payload.vendor_id || null,
+      p_project_id: payload.project_id || null,
+      p_requested_by: payload.requested_by || null,
+      p_notes: payload.notes || null,
+      p_items: payload.items.map((item) => ({
+        item_description: item.item_description,
+        category: item.category || null,
+        qty: item.qty,
+        unit: item.unit,
+        estimated_rate: item.estimated_rate,
+        catalog_item_id: item.catalog_item_id || null,
+      })),
+    });
     if (error) throw error;
+    if (!prId) throw new Error('Purchase request was not created');
 
-    if (payload.items.length > 0) {
-      const { error: itemsError } = await (supabase as any)
-        .from('proc_po_items')
-        .insert(payload.items.map(i => ({
-          po_id: po.id,
-          item_description: i.item_description,
-          category: i.category || null,
-          qty_ordered: i.qty,
-          qty_received: 0,
-          unit: i.unit,
-          estimated_rate: i.estimated_rate,
-          unit_price: i.estimated_rate,
-          gst_pct: 0.18,
-          catalog_item_id: null,
-          is_pr_item: true,
-        })));
-      if (itemsError) throw itemsError;
-    }
-
+    const po = await ProcurementORM.getPOById(prId);
     return po;
   },
 
@@ -184,43 +162,16 @@ export const ProcurementORM = {
       gst_pct?: number;
     }>;
   }): Promise<void> {
-    // Update PO items with final rates
-    for (const item of payload.items) {
-      await (supabase as any)
-        .from('proc_po_items')
-        .update({ unit_price: item.unit_price, gst_pct: item.gst_pct || 0.18 })
-        .eq('id', item.id);
-    }
-
-    // Get all items to compute totals
-    const { data: allItems } = await (supabase as any)
-      .from('proc_po_items')
-      .select('qty_ordered, unit_price, gst_pct')
-      .eq('po_id', id);
-
-    const total_taxable = (allItems || []).reduce((s: number, i: any) => s + Number(i.qty_ordered) * Number(i.unit_price), 0);
-    const gst_total = (allItems || []).reduce((s: number, i: any) => s + Number(i.qty_ordered) * Number(i.unit_price) * Number(i.gst_pct), 0);
-
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const rand = Math.floor(1000 + Math.random() * 9000);
-    const po_number = `PO-${dateStr}-${rand}`;
-
-    const { error } = await (supabase as any)
-      .from('proc_purchase_orders')
-      .update({
-        vendor_id: payload.vendor_id,
-        po_number,
-        pr_status: 'po_generated',
-        status: 'sent',
-        delivery_date: payload.delivery_date || null,
-        total_taxable,
-        cgst_amount: gst_total / 2,
-        sgst_amount: gst_total / 2,
-        igst_amount: 0,
-        total_amount: total_taxable + gst_total,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id);
+    const { error } = await (supabase as any).rpc('convert_pr_to_po', {
+      p_po_id: id,
+      p_vendor_id: payload.vendor_id,
+      p_delivery_date: payload.delivery_date || null,
+      p_items: payload.items.map((item) => ({
+        id: item.id,
+        unit_price: item.unit_price,
+        gst_pct: toProcurementGstPercent(item.gst_pct, 18),
+      })),
+    });
     if (error) throw error;
   },
 
@@ -236,120 +187,38 @@ export const ProcurementORM = {
   // ── GRN ────────────────────────────────────────────────────────────────
 
   async createGRN(orgId: string, poId: string, items: Array<{
-    grn_item_id?: string;
-    catalog_item_id: string;
+    po_item_id: string;
+    catalog_item_id?: string | null;
     item_description: string;
     qty_received: number;
     unit: string;
   }>, idempotencyKey?: string): Promise<ProcurementGRN & { duplicate?: boolean }> {
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const rand = Math.floor(1000 + Math.random() * 9000);
-    const grn_number = `GRN-${dateStr}-${rand}`;
+    const { data, error } = await (supabase as any).rpc('create_grn_atomic', {
+      p_org_id: orgId,
+      p_po_id: poId,
+      p_items: items.map((item) => ({
+        po_item_id: item.po_item_id,
+        catalog_item_id: item.catalog_item_id || null,
+        item_description: item.item_description,
+        qty_received: item.qty_received,
+        unit: item.unit,
+      })),
+      p_idempotency_key: idempotencyKey || null,
+    });
+    if (error) throw error;
 
-    // Get/create default warehouse
-    const { data: warehouse } = await (supabase as any)
-      .from('inv_warehouses')
-      .select('id')
-      .eq('org_id', orgId)
-      .eq('is_default', true)
-      .maybeSingle();
+    const grnId = data?.grn_id;
+    if (!grnId) throw new Error('GRN was not created');
 
-    let warehouseId = warehouse?.id;
-    if (!warehouseId) {
-      const { data: newWh } = await (supabase as any)
-        .from('inv_warehouses')
-        .insert({ org_id: orgId, name: 'Main Warehouse', location: 'Default', is_default: true })
-        .select()
-        .maybeSingle();
-      warehouseId = newWh?.id;
-    }
-
-    let grn;
-    const { data: grnData, error } = await (supabase as any)
+    const { data: grn, error: fetchError } = await (supabase as any)
       .from('proc_goods_receipt_notes')
-      .insert({
-        org_id: orgId,
-        po_id: poId,
-        warehouse_id: warehouseId,
-        grn_number,
-        receipt_date: new Date().toISOString().split('T')[0],
-        status: 'pending',
-        is_processed: false,
-        idempotency_key: idempotencyKey || null,
-      })
-      .select()
+      .select('*')
+      .eq('id', grnId)
       .maybeSingle();
-      
-    if (error) {
-      if (idempotencyKey && (error.code === '23505' || error.message?.includes('duplicate key'))) {
-        const { data: existing } = await (supabase as any)
-          .from('proc_goods_receipt_notes')
-          .select('*')
-          .eq('idempotency_key', idempotencyKey)
-          .maybeSingle();
-        if (existing) return { ...existing, duplicate: true };
-      }
-      throw error;
-    }
-    grn = grnData;
+    if (fetchError) throw fetchError;
+    if (!grn) throw new Error('GRN was created but could not be loaded');
 
-    // Insert GRN items (with unique constraint to prevent duplicates)
-    for (const item of items) {
-      if (item.qty_received <= 0) continue;
-      await (supabase as any)
-        .from('proc_grn_items')
-        .upsert({
-          grn_id: grn.id,
-          catalog_item_id: item.catalog_item_id,
-          item_description: item.item_description,
-          qty_received: item.qty_received,
-          unit: item.unit,
-          serials: [],
-        }, { onConflict: 'grn_id,catalog_item_id', ignoreDuplicates: true });
-
-      // Update PO item qty_received
-      const { data: poItem } = await (supabase as any)
-        .from('proc_po_items')
-        .select('qty_received, qty_ordered')
-        .eq('po_id', poId)
-        .eq('catalog_item_id', item.catalog_item_id)
-        .maybeSingle();
-
-      if (poItem) {
-        const newQty = Math.min(Number(poItem.qty_ordered), Number(poItem.qty_received) + item.qty_received);
-        await (supabase as any)
-          .from('proc_po_items')
-          .update({ qty_received: newQty })
-          .eq('po_id', poId)
-          .eq('catalog_item_id', item.catalog_item_id);
-      }
-    }
-
-    // Mark GRN as processed
-    await (supabase as any)
-      .from('proc_goods_receipt_notes')
-      .update({ status: 'approved', is_processed: true, processed_at: new Date().toISOString() })
-      .eq('id', grn.id);
-
-    // Check if PO is fully received
-    const { data: poItems } = await (supabase as any)
-      .from('proc_po_items')
-      .select('qty_ordered, qty_received')
-      .eq('po_id', poId);
-
-    if (poItems) {
-      const allReceived = poItems.every((i: any) => Number(i.qty_received) >= Number(i.qty_ordered));
-      const anyReceived = poItems.some((i: any) => Number(i.qty_received) > 0);
-      await (supabase as any)
-        .from('proc_purchase_orders')
-        .update({
-          status: allReceived ? 'received' : anyReceived ? 'partially_received' : 'sent',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', poId);
-    }
-
-    return grn;
+    return { ...grn, duplicate: Boolean(data?.duplicate) };
   },
 
   async getGRNsForPO(poId: string): Promise<ProcurementGRN[]> {

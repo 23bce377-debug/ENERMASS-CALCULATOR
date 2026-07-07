@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Download, Printer, Calendar, FileText, FileBarChart, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { generateGSTR1CSV } from '@/lib/reports/gstr1';
-import { generateGSTR3BSummary, GSTR3BSummary } from '@/lib/reports/gstr3b';
+import { GSTR3BSummary } from '@/lib/reports/gstr3b';
 import { Select } from '@/components/ui/Select';
 
 const MONTHS = [
@@ -22,6 +22,7 @@ export default function GSTReportPage() {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<GSTR3BSummary | null>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   // Derived date range for DB queries
   const getMonthDateRange = () => {
@@ -33,8 +34,8 @@ export default function GSTReportPage() {
     const endDate = new Date(year, jsMonthIndex + 1, 0, 23, 59, 59);
     
     return { 
-      startDate: startDate.toISOString(), 
-      endDate: endDate.toISOString() 
+      startDate: startDate.toISOString().slice(0, 10), 
+      endDate: endDate.toISOString().slice(0, 10) 
     };
   };
 
@@ -43,30 +44,68 @@ export default function GSTReportPage() {
     const { startDate, endDate } = getMonthDateRange();
     
     try {
+      setError(null);
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const userId = sessionData.session?.user.id;
+      if (!userId) throw new Error('Session not found');
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('org_id')
+        .eq('id', userId)
+        .single();
+      if (profileError) throw profileError;
+      if (!profile?.org_id) throw new Error('Organization not found for user');
+
       // Fetch Invoices
       const { data: invData, error: invError } = await supabase
         .from('acc_invoices')
         .select('*')
+        .eq('org_id', profile.org_id)
         .gte('invoice_date', startDate)
         .lte('invoice_date', endDate);
       
       if (invError) throw invError;
 
-      // Fetch Vendor Payments (ITC)
-      const { data: vpData, error: vpError } = await supabase
-        .from('vendor_payments')
-        .select('*')
-        .gte('created_at', startDate)
-        .lte('created_at', endDate);
-      
-      if (vpError) throw vpError;
+      const { data: gstr3bData, error: gstr3bError } = await (supabase as any).rpc('get_gstr3b_summary', {
+        p_org_id: profile.org_id,
+        p_period_start: startDate,
+        p_period_end: endDate,
+      });
+      if (gstr3bError) throw gstr3bError;
 
       setInvoices(invData || []);
-      const newSummary = generateGSTR3BSummary(invData || [], vpData || []);
-      setSummary(newSummary);
+      const ledgerSummary = Array.isArray(gstr3bData) ? gstr3bData[0] : gstr3bData;
+      const totalTaxLiability = Number(ledgerSummary?.total_tax_liability || 0);
+      const totalItc = Number(ledgerSummary?.total_itc || 0);
+      const taxableValue = Number(ledgerSummary?.total_taxable_value || 0);
+      setSummary({
+        outwardSupplies: {
+          taxableValue,
+          igst: 0,
+          cgst: totalTaxLiability / 2,
+          sgst: totalTaxLiability / 2,
+          totalTax: totalTaxLiability,
+        },
+        itcAvailable: {
+          taxableValue: 0,
+          igst: 0,
+          cgst: totalItc / 2,
+          sgst: totalItc / 2,
+          totalTax: totalItc,
+        },
+        netPayable: {
+          igst: 0,
+          cgst: Math.max(0, (totalTaxLiability - totalItc) / 2),
+          sgst: Math.max(0, (totalTaxLiability - totalItc) / 2),
+          total: Math.max(0, totalTaxLiability - totalItc),
+        },
+      });
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load GST data', err);
+      setError(err.message || 'Failed to load GST data');
     } finally {
       setLoading(false);
     }
@@ -134,6 +173,11 @@ export default function GSTReportPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:hidden">
+        {error && (
+          <div className="md:col-span-4 border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500">
+            {error}
+          </div>
+        )}
         <div className="bg-surface p-5 rounded-xl border border-border shadow-sm">
           <p className="text-text-muted text-sm font-medium mb-1">Total Sales (Taxable)</p>
           <p className="text-2xl font-bold text-text-primary">

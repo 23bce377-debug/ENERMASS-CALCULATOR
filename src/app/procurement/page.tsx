@@ -51,6 +51,7 @@ export default function ProcurementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<ProcurementPO | null>(null);
   const [poItems, setPoItems] = useState<any[]>([]);
+  const [selectingItemId, setSelectingItemId] = useState<string | null>(null);
   const [isPRModalOpen, setIsPRModalOpen] = useState(false);
   const [isGRNModalOpen, setIsGRNModalOpen] = useState(false);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
@@ -118,11 +119,13 @@ export default function ProcurementPage() {
 
   const handleSelectItem = async (item: ProcurementPO) => {
     setSelectedItem(item);
+    setSelectingItemId(item.id);
     try {
       const items = await ProcurementORM.getPOItems(item.id);
       setPoItems(items);
       // Pre-fill GRN form
       setGrnItems(items.map(i => ({
+        po_item_id: i.id,
         catalog_item_id: i.catalog_item_id,
         item_description: i.item_description || `Item #${i.id.slice(0, 8)}`,
         unit: i.unit,
@@ -137,10 +140,12 @@ export default function ProcurementPage() {
         qty_ordered: Number(i.qty_ordered),
         unit: i.unit,
         unit_price: Number(i.estimated_rate || i.unit_price || 0),
-        gst_pct: 0.18,
+        gst_pct: Number(i.gst_pct || 18),
       })));
     } catch (err: any) {
-      console.error(err);
+      toast(err.message || 'Failed to load purchase order items', 'error');
+    } finally {
+      setSelectingItemId(null);
     }
   };
 
@@ -228,6 +233,7 @@ export default function ProcurementPage() {
       }
       const idempotencyKey = `grn_${selectedItem.id}_${Date.now()}`;
       const res = await ProcurementORM.createGRN(orgId, selectedItem.id, itemsToReceive.map(i => ({
+        po_item_id: i.po_item_id,
         catalog_item_id: i.catalog_item_id,
         item_description: i.item_description,
         qty_received: Number(i.qty_to_receive),
@@ -237,7 +243,8 @@ export default function ProcurementPage() {
       if (res.duplicate) {
         toast('GRN already processed.', 'info');
       } else {
-        toast('GRN processed and inventory updated!', 'success');
+        const hasStockItems = itemsToReceive.some(i => Boolean(i.catalog_item_id));
+        toast(hasStockItems ? 'GRN processed and inventory updated!' : 'GRN processed.', 'success');
       }
       setIsGRNModalOpen(false);
       fetchData();
@@ -474,10 +481,11 @@ export default function ProcurementPage() {
                           <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
                             {po.status !== 'received' && po.status !== 'cancelled' && (
                               <button
-                                onClick={() => { handleSelectItem(po); setIsGRNModalOpen(true); }}
-                                className="px-2 py-1 text-[9px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded hover:bg-emerald-500/20 cursor-pointer"
+                                onClick={async () => { await handleSelectItem(po); setIsGRNModalOpen(true); }}
+                                disabled={selectingItemId === po.id}
+                                className="px-2 py-1 text-[9px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded hover:bg-emerald-500/20 cursor-pointer disabled:opacity-50"
                               >
-                                Receive GRN
+                                {selectingItemId === po.id ? 'Loading...' : 'Receive GRN'}
                               </button>
                             )}
                           </td>
@@ -770,13 +778,13 @@ export default function ProcurementPage() {
                         <input type="number" value={item.unit_price} onChange={e => { const n = [...convertItems]; n[i].unit_price = Number(e.target.value); setConvertItems(n); }}
                           placeholder="Final rate (₹)" className="w-full px-2 py-1.5 border border-border rounded bg-background text-text-primary focus:outline-none focus:border-accent font-mono" />
                       </div>
-                      <div className="col-span-1 text-text-muted text-center text-[10px]">18% GST</div>
+                      <div className="col-span-1 text-text-muted text-center text-[10px]">{Number(item.gst_pct || 18)}% GST</div>
                     </div>
                   ))}
                 </div>
 
                 <div className="flex justify-end text-xs font-bold text-text-muted">
-                  Total (incl. GST): <span className="ml-2 text-accent font-mono">{formatINR(convertItems.reduce((s, i) => s + i.qty_ordered * i.unit_price * 1.18, 0))}</span>
+                  Total (incl. GST): <span className="ml-2 text-accent font-mono">{formatINR(convertItems.reduce((s, i) => s + i.qty_ordered * i.unit_price * (1 + Number(i.gst_pct || 18) / 100), 0))}</span>
                 </div>
               </div>
               <div className="p-4 border-t border-border flex justify-end gap-3 shrink-0">

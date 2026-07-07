@@ -17,6 +17,13 @@ export const dynamic = 'force-dynamic';
 
 import { z } from 'zod';
 
+function applyOrgVisibility(rows: any[], hidden: Set<string>) {
+  const overridden = new Set(
+    rows.filter((row) => row.org_id && row.source_global_id).map((row) => row.source_global_id)
+  );
+  return rows.filter((row) => !(!row.org_id && (hidden.has(row.id) || overridden.has(row.id))));
+}
+
 const querySchema = z.object({
   bomLimit: z.coerce.number().min(1).max(5000).default(500),
 });
@@ -53,7 +60,7 @@ export const GET = withLicensedApiRoute(
           };
 
           const [
-            stateRulesRes, slabsRes, schemesRes, systemsRes, hiddenSystemsRes, taxHsnRes, taxGstRatesRes, bomItemsRes,
+            stateRulesRes, slabsRes, schemesRes, systemsRes, hiddenSystemsRes, hiddenItemsRes, taxHsnRes, taxGstRatesRes, bomItemsRes,
             schemeOverridesRes, systemStateAvailRes, stateTermsRes,
           ] =
             await Promise.all([
@@ -85,13 +92,26 @@ export const GET = withLicensedApiRoute(
               ),
               safeQuery(
                 (supabase as any)
+                  .from('master_hidden_items')
+                  .select('entity, global_id')
+                  .eq('org_id', _context.session.orgId)
+              ),
+              safeQuery(
+                (supabase as any)
                   .from('tax_hsn_sac')
                   .select('id, code, description, gst_rate, is_active')
                   .eq('is_active', true)
               ),
               safeQuery((supabase as any).from('tax_gst_rates').select('*')),
               safeQuery(
-                supabase.from('bom_template_items').select('*').limit(bomLimit)
+                (supabase as any)
+                  .from('bom_template_items')
+                  .select('*')
+                  .eq('is_active', true)
+                  .or(`org_id.is.null,org_id.eq.${_context.session.orgId}`)
+                  .order('category_id', { ascending: true })
+                  .order('description', { ascending: true })
+                  .limit(bomLimit)
               ),
               // State-driven pipeline datasets
               safeQuery(
@@ -116,6 +136,11 @@ export const GET = withLicensedApiRoute(
           const hiddenSystemIds = new Set(
             ((hiddenSystemsRes as any)?.data ?? []).map((row: any) => row.system_id)
           );
+          const hiddenAccessoryIds = new Set<string>(
+            (((hiddenItemsRes as any)?.data ?? []) as any[])
+              .filter((row: any) => row.entity === 'accessories')
+              .map((row: any) => String(row.global_id))
+          );
 
           return {
             stateRules: stateRulesRes.data ?? [],
@@ -124,7 +149,7 @@ export const GET = withLicensedApiRoute(
             systems: (systemsRes.data ?? []).filter((row: any) => row.org_id || !hiddenSystemIds.has(row.id)),
             taxHsnCodes: (taxHsnRes as any)?.data ?? [],
             taxGstRates: (taxGstRatesRes as any)?.data ?? [],
-            bomItems: bomItemsRes.data ?? [],
+            bomItems: applyOrgVisibility(bomItemsRes.data ?? [], hiddenAccessoryIds),
             schemeOverrides: schemeOverridesRes.data ?? [],
             systemStateAvailability: systemStateAvailRes.data ?? [],
             stateTermsTemplates: stateTermsRes.data ?? [],

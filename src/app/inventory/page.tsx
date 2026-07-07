@@ -9,21 +9,68 @@ export default function InventoryAndProcurementPage() {
   const [purchaseRequests, setPurchaseRequests] = useState<any[]>([]);
   const [projectLedger, setProjectLedger] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
       try {
+        setError(null);
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        const userId = sessionData.session?.user.id;
+        if (!userId) {
+          setSiteInventory([]);
+          setPurchaseRequests([]);
+          setProjectLedger([]);
+          return;
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('org_id')
+          .eq('id', userId)
+          .single();
+        if (profileError) throw profileError;
+        const orgId = profile?.org_id;
+        if (!orgId) {
+          setSiteInventory([]);
+          setPurchaseRequests([]);
+          setProjectLedger([]);
+          return;
+        }
+
         const [invRes, prRes, plRes] = await Promise.all([
-          supabase.from('site_inventory').select('*').limit(50),
-          supabase.from('purchase_requests').select('*').limit(50),
-          supabase.from('project_ledger').select('*').limit(50)
+          supabase
+            .from('inventory_summary')
+            .select('item_description, category, current_qty, unit, weighted_avg_cost, last_updated')
+            .eq('org_id', orgId)
+            .order('last_updated', { ascending: false })
+            .limit(50),
+          supabase
+            .from('proc_purchase_orders')
+            .select('po_number, pr_status, status, total_amount, created_at')
+            .eq('org_id', orgId)
+            .in('pr_status', ['draft', 'pending', 'approved', 'rejected'])
+            .order('created_at', { ascending: false })
+            .limit(50),
+          supabase
+            .from('acc_journal_entries')
+            .select('entry_date, reference_no, description, created_at')
+            .eq('org_id', orgId)
+            .order('entry_date', { ascending: false })
+            .limit(50)
         ]);
+
+        if (invRes.error) throw invRes.error;
+        if (prRes.error) throw prRes.error;
+        if (plRes.error) throw plRes.error;
         
-        if (invRes.data) setSiteInventory(invRes.data);
-        if (prRes.data) setPurchaseRequests(prRes.data);
-        if (plRes.data) setProjectLedger(plRes.data);
-      } catch (error) {
-        console.error('Error loading data:', error);
+        setSiteInventory(invRes.data || []);
+        setPurchaseRequests(prRes.data || []);
+        setProjectLedger(plRes.data || []);
+      } catch (err: any) {
+        console.error('Error loading data:', err);
+        setError(err.message || 'Failed to load inventory and procurement data.');
       } finally {
         setLoading(false);
       }
@@ -81,9 +128,15 @@ export default function InventoryAndProcurementPage() {
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Inventory & Procurement</h1>
       </div>
 
-      {renderTable(siteInventory, 'Site Inventory', Package)}
+      {error && (
+        <div className="mb-6 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {renderTable(siteInventory, 'Inventory Summary', Package)}
       {renderTable(purchaseRequests, 'Purchase Requests', ShoppingCart)}
-      {renderTable(projectLedger, 'Project Ledger', Building2)}
+      {renderTable(projectLedger, 'Ledger Entries', Building2)}
     </div>
   );
 }

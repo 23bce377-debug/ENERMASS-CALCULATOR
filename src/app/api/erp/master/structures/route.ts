@@ -6,13 +6,21 @@ import { privateJsonCacheHeaders } from '@/lib/cache/httpCache';
 /**
  * GET /api/erp/master/structures
  * Returns mounting structure catalog, weight lookups, BOM, templates, and accessory/material rates.
- * These are all global (non-org-specific) reference tables — cached aggressively for 15 minutes.
+ * Applies org-specific structure visibility before returning calculator reference data.
  */
 export const dynamic = 'force-dynamic';
 
+function applyOrgVisibility(rows: any[], hidden: Set<string>) {
+  const overridden = new Set(
+    rows.filter((row) => row.org_id && row.source_global_id).map((row) => row.source_global_id)
+  );
+  return rows.filter((row) => !(!row.org_id && (hidden.has(row.id) || overridden.has(row.id))));
+}
+
 export const GET = withLicensedApiRoute(
   async (_request, _context) => {
-    const cacheKey = `erp:master:structures:global:v2`;
+    const orgId = _context.session.orgId;
+    const cacheKey = `erp:master:structures:${orgId}:v3`;
 
     try {
       const data = await getOrSetCache(
@@ -43,11 +51,12 @@ export const GET = withLicensedApiRoute(
             walkwayTemplatesRes,
             ladderTemplatesRes,
             structureComponentMasterRes,
+            hiddenRes,
           ] = await Promise.all([
             safeQuery(
               supabase
                 .from('eq_mounting_structures')
-                .select('id, name, material, roof_mount_type, elevation_height_mm, raw_material_rate, fabrication_rate, galvanizing_rate, rate_per_kg, wastage_pct, fastener_weight_pct, base_weight_kg, selling_price, per_watt_rate, gst_pct, description, specification_details, is_active')
+                .select('id, org_id, source_global_id, name, material, roof_mount_type, elevation_height_mm, raw_material_rate, fabrication_rate, galvanizing_rate, rate_per_kg, wastage_pct, fastener_weight_pct, base_weight_kg, selling_price, per_watt_rate, gst_pct, description, specification_details, is_active')
                 .eq('is_active', true)
             ),
             safeQuery(supabase.from('structure_weight_lookup').select('*')),
@@ -81,10 +90,21 @@ export const GET = withLicensedApiRoute(
                 .select('id, name, type, weight_per_meter, material, selling_price, gst_pct, specification_details, is_active')
                 .eq('is_active', true)
             ),
+            safeQuery(
+              (supabase as any)
+                .from('master_hidden_items')
+                .select('entity, global_id')
+                .eq('org_id', orgId)
+            ),
           ]);
 
+          const hiddenRows = hiddenRes.data ?? [];
+          const hiddenStructureIds = new Set<string>(
+            hiddenRows.filter((row: any) => row.entity === 'structures').map((row: any) => String(row.global_id))
+          );
+
           return {
-            structures: structuresRes.data ?? [],
+            structures: applyOrgVisibility(structuresRes.data ?? [], hiddenStructureIds),
             weightLookups: weightLookupsRes.data ?? [],
             structureComponents: structureComponentsRes.data ?? [],
             structureBom: structureBomRes.data ?? [],

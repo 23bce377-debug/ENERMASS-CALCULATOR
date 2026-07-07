@@ -94,7 +94,16 @@ export const GET = withLicensedApiRoute(async (request, context) => {
         ladderTemplatesRes,
         structureComponentMasterRes
       ] = await Promise.all([
-        safeQuery(supabase.from('bom_template_items').select('*').limit(bomLimit)),
+        safeQuery(
+          (supabase as any)
+            .from('bom_template_items')
+            .select('*')
+            .eq('is_active', true)
+            .or(`org_id.is.null,org_id.eq.${orgId}`)
+            .order('category_id', { ascending: true })
+            .order('description', { ascending: true })
+            .limit(bomLimit)
+        ),
         safeQuery(supabase.from('rate_master').select('*').eq('org_id', orgId).eq('is_active', true)),
         safeQuery(supabase.from('structure_accessory_rates').select('*').eq('is_active', true)),
         safeQuery(supabase.from('structure_material_rates').select('*')),

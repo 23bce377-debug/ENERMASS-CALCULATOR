@@ -1576,12 +1576,33 @@ export async function getCatalogItems(category: string, search?: string): Promis
 
   let bomQuery = supabase
     .from('bom_template_items' as any)
-    .select('id, sku_code, description, specification_details, notes, unit, default_rate, gst_pct, qty_formula, is_survey_dependent, category_id, bom_categories(name, top_category, subcategory_name)');
-
-  const { data: bomItems, error: bomError } = await bomQuery.limit(500);
-  if (bomError) throw new Error('Failed to fetch BOM catalog items: ' + bomError.message);
+    .select('id, sku_code, description, specification_details, notes, unit, default_rate, gst_pct, qty_formula, is_survey_dependent, category_id, bom_categories(name, top_category, subcategory_name)')
+    .eq('is_active', true);
 
   const categoryById = new Map(((categories || []) as any[]).map((item: any) => [item.id, item]));
+  const matchingCategoryIds = ((categories || []) as any[])
+    .filter((item: any) => {
+      const categoryName = item.subcategory_name ?? item.name;
+      if (normalizedCategory === 'bom_item') return item.top_category === 'bom_item';
+      if (normalizedCategory === 'miscellaneous') return categoryNameMatches('miscellaneous', categoryName);
+      return categoryNameMatches(normalizedCategory, categoryName);
+    })
+    .map((item: any) => item.id);
+
+  if (matchingCategoryIds.length > 0) {
+    bomQuery = bomQuery.in('category_id', matchingCategoryIds);
+  }
+
+  if (searchTerm) {
+    const safeTerm = searchTerm.replace(/[%,]/g, ' ');
+    bomQuery = bomQuery.or(`sku_code.ilike.%${safeTerm}%,description.ilike.%${safeTerm}%,notes.ilike.%${safeTerm}%,specification_details.ilike.%${safeTerm}%`);
+  }
+
+  const { data: bomItems, error: bomError } = await bomQuery
+    .order('description', { ascending: true })
+    .limit(100);
+  if (bomError) throw new Error('Failed to fetch BOM catalog items: ' + bomError.message);
+
   const matchingBomItems = (bomItems || []).map((item: any) => {
     const categoryMeta = item.bom_categories ?? categoryById.get(item.category_id);
     const categoryName = categoryMeta?.subcategory_name ?? categoryMeta?.name;

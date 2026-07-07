@@ -60,22 +60,47 @@ function applyHiddenSystems(rows: any[], hiddenRows: any[]) {
   return (rows || []).filter((row: any) => row.org_id || !hiddenIds.has(row.id));
 }
 
+function hiddenIdsByEntity(hiddenRows: any[], entity: string): Set<string> {
+  return new Set(
+    (hiddenRows || [])
+      .filter((row: any) => row.entity === entity)
+      .map((row: any) => String(row.global_id))
+  );
+}
+
+function applyOrgVisibility(rows: any[], hiddenIds: Set<string>) {
+  const overridden = new Set(
+    (rows || [])
+      .filter((row: any) => row.org_id && row.source_global_id)
+      .map((row: any) => String(row.source_global_id))
+  );
+  return (rows || []).filter((row: any) => !(!row.org_id && (hiddenIds.has(String(row.id)) || overridden.has(String(row.id)))));
+}
+
+function orgVisibleQuery(query: any, orgId: string | null) {
+  return orgId ? query.or(`org_id.is.null,org_id.eq.${orgId}`) : query.is('org_id', null);
+}
+
 // Equipment master cache (10 min)
 export async function getEquipmentMaster(orgId: string | null) {
   return getLocalCached(`calculator:${orgId ?? 'global'}:equipment`, 600, async () => {
     const supabase = createAdminClient();
-    const [panels, inverters, batteries, meters, las, commDevices] = await Promise.all([
-      supabase.from('eq_panels').select('id, brand, model, wattage_w, selling_price, gst_pct, panel_type').eq('is_active', true),
-      supabase.from('eq_inverters').select('id, brand, model, capacity_kw, selling_price, gst_pct, inverter_type, phases').eq('is_active', true),
-      supabase.from('eq_batteries').select('id, brand, model, capacity_kwh, selling_price, gst_pct, chemistry, dod_pct').eq('is_active', true),
+    const [panels, inverters, batteries, meters, las, commDevices, hiddenItems] = await Promise.all([
+      orgVisibleQuery(supabase.from('eq_panels').select('id, org_id, source_global_id, brand, model, wattage_w, selling_price, gst_pct, panel_type').eq('is_active', true), orgId),
+      orgVisibleQuery(supabase.from('eq_inverters').select('id, org_id, source_global_id, brand, model, capacity_kw, selling_price, gst_pct, inverter_type, phases').eq('is_active', true), orgId),
+      orgVisibleQuery(supabase.from('eq_batteries').select('id, org_id, source_global_id, brand, model, capacity_kwh, selling_price, gst_pct, chemistry, dod_pct').eq('is_active', true), orgId),
       supabase.from('eq_meters').select('id, brand, model, phases, selling_price, gst_pct').eq('is_active', true),
       supabase.from('eq_lightning_arresters').select('id, brand, model, selling_price, gst_pct').eq('is_active', true),
       supabase.from('eq_communication_devices').select('id, brand, model, selling_price, gst_pct').eq('is_active', true),
+      orgId
+        ? (supabase as any).from('master_hidden_items').select('entity, global_id').eq('org_id', orgId)
+        : Promise.resolve({ data: [], error: null }),
     ]);
+    const hiddenRows = (hiddenItems as any)?.data || [];
     return { 
-      panels: panels.data || [], 
-      inverters: inverters.data || [], 
-      batteries: batteries.data || [],
+      panels: applyOrgVisibility(panels.data || [], hiddenIdsByEntity(hiddenRows, 'panels')),
+      inverters: applyOrgVisibility(inverters.data || [], hiddenIdsByEntity(hiddenRows, 'inverters')),
+      batteries: applyOrgVisibility(batteries.data || [], hiddenIdsByEntity(hiddenRows, 'batteries')),
       meters: meters.data || [],
       lightningArresters: las.data || [],
       commDevices: commDevices.data || [],
@@ -99,9 +124,10 @@ export async function getStructuresMaster(orgId: string | null) {
       structureTemplateItems,
       walkwayTemplates,
       ladderTemplates,
-      structureComponentMasters
+      structureComponentMasters,
+      hiddenItems
     ] = await Promise.all([
-      supabase.from('eq_mounting_structures').select('*').eq('is_active', true),
+      orgVisibleQuery(supabase.from('eq_mounting_structures').select('*').eq('is_active', true), orgId),
       supabase.from('structure_weight_lookup').select('*'),
       supabase.from('eq_structure_components').select('*').eq('is_active', true),
       supabase.from('eq_structure_bom').select('*'),
@@ -112,11 +138,15 @@ export async function getStructuresMaster(orgId: string | null) {
       supabase.from('structure_template_items').select('*'),
       supabase.from('walkway_templates').select('*'),
       supabase.from('ladder_templates').select('*'),
-      supabase.from('structure_component_master').select('*').eq('is_active', true)
+      supabase.from('structure_component_master').select('*').eq('is_active', true),
+      orgId
+        ? (supabase as any).from('master_hidden_items').select('entity, global_id').eq('org_id', orgId)
+        : Promise.resolve({ data: [], error: null }),
     ]);
+    const hiddenRows = (hiddenItems as any)?.data || [];
     
     return {
-      structures: structures.data || [],
+      structures: applyOrgVisibility(structures.data || [], hiddenIdsByEntity(hiddenRows, 'structures')),
       weightLookups: weightLookups.data || [],
       structureComponents: structureComponents.data || [],
       structureBom: structureBom.data || [],
@@ -137,7 +167,7 @@ export async function getRulesMaster(orgId: string | null) {
   return getLocalCached(`calculator:${orgId ?? 'global'}:rules`, 600, async () => {
     const supabase = createAdminClient();
     const [
-      stateRules, slabs, schemes, systems, hiddenSystems, taxHsn, taxGstRates, bomItems,
+      stateRules, slabs, schemes, systems, hiddenSystems, hiddenItems, taxHsn, taxGstRates, bomItems,
       systemStateAvailability, stateTermsTemplates,
     ] = await Promise.all([
       supabase.from('state_rules').select('*').eq('is_active', true),
@@ -147,9 +177,15 @@ export async function getRulesMaster(orgId: string | null) {
       orgId
         ? (supabase as any).from('system_hidden_presets').select('system_id').eq('org_id', orgId)
         : Promise.resolve({ data: [], error: null }),
+      orgId
+        ? (supabase as any).from('master_hidden_items').select('entity, global_id').eq('org_id', orgId)
+        : Promise.resolve({ data: [], error: null }),
       (supabase as any).from('tax_hsn_sac').select('*').eq('is_active', true),
       (supabase as any).from('tax_gst_rates').select('*'),
-      supabase.from('bom_template_items').select('*').limit(1000),
+      orgVisibleQuery((supabase as any).from('bom_template_items').select('*').eq('is_active', true), orgId)
+        .order('category_id', { ascending: true })
+        .order('description', { ascending: true })
+        .limit(1000),
       // State-driven pipeline datasets (graceful empty fallback if tables absent)
       (supabase as any).from('system_state_availability').select('system_id, state_id'),
       (supabase as any).from('state_terms_templates').select('id, state_id, clauses, is_active, version').eq('is_active', true),
@@ -161,7 +197,7 @@ export async function getRulesMaster(orgId: string | null) {
       systems: applyHiddenSystems(systems.data || [], (hiddenSystems as any)?.data || []),
       taxHsnCodes: taxHsn?.data || [],
       taxGstRates: taxGstRates?.data || [],
-      bomItems: bomItems.data || [],
+      bomItems: applyOrgVisibility(bomItems.data || [], hiddenIdsByEntity((hiddenItems as any)?.data || [], 'accessories')),
       systemStateAvailability: systemStateAvailability?.data || [],
       stateTermsTemplates: stateTermsTemplates?.data || [],
     };

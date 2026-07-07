@@ -42,12 +42,13 @@ export const GET = withLicensedApiRoute(async (request, context) => {
       .eq('org_id', orgId);
     if (marginError) throw marginError;
 
-    // 4. Fetch real purchase_requests for adoptionRate
+    // 4. Fetch purchase requests from the canonical procurement table for adoptionRate
     const { data: prs, error: prError } = await supabase
-      .from('purchase_requests' as any)
-      .select('status')
-      .eq('org_id', orgId);
-    if (prError) console.warn('Missing purchase_requests table or error:', prError);
+      .from('proc_purchase_orders' as any)
+      .select('pr_status')
+      .eq('org_id', orgId)
+      .in('pr_status', ['draft', 'pending', 'approved', 'rejected', 'po_generated']);
+    if (prError) throw prError;
     
     // Map spend metrics
     const totalBundleSpend = spends?.reduce((sum: number, s: any) => sum + Number(s.total_spend), 0) || 0;
@@ -77,7 +78,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
     // Compute adoptionRate from real PR data
     let adoptionRate = 0;
     if (prs && prs.length > 0) {
-      const adoptedCount = prs.filter((pr: any) => pr.status === 'approved' || pr.status === 'completed').length;
+      const adoptedCount = prs.filter((pr: any) => pr.pr_status === 'po_generated').length;
       adoptionRate = adoptedCount / prs.length;
     }
     
