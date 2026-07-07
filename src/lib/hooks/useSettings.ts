@@ -565,7 +565,8 @@ export function useSettings() {
       if (sessionError || !sessionData.session) return 'Not authenticated.';
 
       const userId = sessionData.session.user.id;
-      const { data: profile } = await supabase.from('profiles').select('org_id').eq('id', userId).single();
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('org_id').eq('id', userId).maybeSingle();
+      if (profileError) return `Could not resolve organisation: ${profileError.message}`;
       if (!profile?.org_id) return 'Could not resolve organisation.';
       const orgId = profile.org_id;
 

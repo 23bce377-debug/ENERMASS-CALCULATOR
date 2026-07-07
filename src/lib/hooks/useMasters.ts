@@ -26,9 +26,11 @@ export async function getOrgContext() {
     .from('profiles')
     .select('org_id, role')
     .eq('id', session.user.id)
-    .single();
+    .maybeSingle();
     
-  if (error || !profile) throw new Error('Profile not found');
+  if (error) throw new Error(`Profile fetch failed: ${error.message}`);
+  if (!profile) throw new Error('Profile not found for the current user');
+  if (!profile.org_id) throw new Error('Current user profile is not assigned to an organisation');
   return { userId: session.user.id, orgId: profile.org_id, role: profile.role };
 }
 

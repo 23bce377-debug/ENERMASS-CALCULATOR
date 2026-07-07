@@ -258,7 +258,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
           .from('crm_leads')
           .select('*')
           .eq('id', leadId)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
         if (lead) {
@@ -418,7 +418,7 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
         ceo_signature_url: ceoSignatureUrl,
         sales_exec_role: salesExecRole,
         sales_exec_phone: salesExecPhone,
-        sales_exec_email: salesExecEmail,
+        sales_exec_email: salesExecEmail.trim() || undefined,
         sales_exec_id: null,
         bank_account_holder: bankAccountHolder,
         bank_name: bankName,
@@ -639,21 +639,30 @@ export function QuoteSaveModal({ isOpen, onClose, onSaved, acknowledgedGuards = 
                     <Input
                       label="Sales Executive"
                       value={sales.execName}
-                      onChange={(e) => setSales({ ...sales, execName: e.target.value })}
+                      onChange={(e) => {
+                        setSales({ ...sales, execName: e.target.value });
+                        setFormError(null);
+                      }}
                       required
                     />
                     <Input
                       label="Sales Executive Phone"
                       value={salesExecPhone}
-                      onChange={(e) => setSalesExecPhone(e.target.value)}
+                      onChange={(e) => {
+                        setSalesExecPhone(e.target.value);
+                        setFormError(null);
+                      }}
                       required
                     />
                     <Input
                       label="Sales Executive Email"
                       value={salesExecEmail}
-                      onChange={(e) => setSalesExecEmail(e.target.value)}
+                      onChange={(e) => {
+                        setSalesExecEmail(e.target.value);
+                        setFormError(null);
+                      }}
                       type="email"
-                      required
+                      placeholder="name@example.com"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -939,8 +948,7 @@ function validateSalesExecutiveContact(sales: SalesInfo, salesExecPhone: string,
   if (!salesExecPhone.trim()) return 'Sales Executive phone is required.';
   const phoneDigits = salesExecPhone.replace(/\D/g, '');
   if (phoneDigits.length < 10) return 'Sales Executive phone should be at least 10 digits.';
-  if (!salesExecEmail.trim()) return 'Sales Executive email is required.';
-  if (!isValidEmail(salesExecEmail)) return 'Sales Executive email is invalid.';
+  if (salesExecEmail.trim() && !isValidEmail(salesExecEmail)) return 'Sales Executive email is invalid.';
   return null;
 }
 

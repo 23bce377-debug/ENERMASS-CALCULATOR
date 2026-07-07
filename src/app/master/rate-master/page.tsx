@@ -47,7 +47,11 @@ export default function RateMasterPage() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setUserId(session.user.id);
-        const { data: profile } = await supabase.from('profiles').select('org_id').eq('id', session.user.id).single();
+        const { data: profile, error: profileError } = await supabase.from('profiles').select('org_id').eq('id', session.user.id).maybeSingle();
+        if (profileError) {
+          toast(`Failed to resolve organisation: ${profileError.message}`, 'error');
+          return;
+        }
         if (profile?.org_id) setOrgId(profile.org_id);
       }
     });

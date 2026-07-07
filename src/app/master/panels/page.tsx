@@ -53,6 +53,18 @@ interface SavedView {
   typeFilter: string;
 }
 
+type PanelImportAction = 'create' | 'update' | 'unchanged' | 'invalid' | 'failed';
+
+interface PanelImportPreviewRow {
+  rowNumber: number;
+  action: PanelImportAction;
+  label: string;
+  reason?: string;
+  existingId?: string;
+  payload?: Omit<Panel, 'id' | 'source_global_id' | 'org_id'>;
+  changes: string[];
+}
+
 export default function PanelsMasterPage() {
   const { data: panels, isLoading } = useMasterQuery<Panel>('panels');
   const createMutation = useMasterCreateMutation<Panel>('panels');
@@ -211,6 +223,10 @@ export default function PanelsMasterPage() {
   const [importMappingOpen, setImportMappingOpen] = useState(false);
   const [importHeaders, setImportHeaders] = useState<string[]>([]);
   const [importDataList, setImportDataList] = useState<any[]>([]);
+  const [importPreviewRows, setImportPreviewRows] = useState<PanelImportPreviewRow[]>([]);
+  const [importReviewOpen, setImportReviewOpen] = useState(false);
+  const [importInProgress, setImportInProgress] = useState(false);
+  const [lastImportSummary, setLastImportSummary] = useState<string | null>(null);
   const [importMappings, setImportMappings] = useState<Record<string, string>>({
     brand: '',
     model: '',
@@ -235,6 +251,12 @@ export default function PanelsMasterPage() {
       }
     }
     return '';
+  };
+
+  const parseImportNumber = (value: unknown): number => {
+    if (typeof value === 'number') return value;
+    const cleaned = String(value ?? '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+    return cleaned ? Number(cleaned[0]) : Number.NaN;
   };
 
   const sameText = (a: unknown, b: unknown) =>
@@ -268,6 +290,89 @@ export default function PanelsMasterPage() {
     !sameNumber(normalizeGstRate(existing.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE), row.gst_pct, 5) ||
     !sameText(existing.description, row.description) ||
     !sameText(existing.specification_details, row.specification_details);
+
+  const buildImportPreviewRows = (): PanelImportPreviewRow[] => {
+    return importDataList.map((row: any, index) => {
+      const brand = String(row[importMappings.brand] || readImportCell(row, 'Brand', 'brand')).trim();
+      const model = String(row[importMappings.model] || readImportCell(row, 'Model', 'model')).trim();
+      const wattage = parseImportNumber(row[importMappings.wattage_w] || readImportCell(row, 'Wattage (W)', 'wattage_w', 'capacity'));
+      const ratePerWatt = parseImportNumber(row[importMappings.rate_per_watt] || readImportCell(row, 'Rate per Watt (INR)', 'rate_per_watt', 'rate'));
+      const panelType = String(row[importMappings.panel_type] || readImportCell(row, 'Panel Type', 'panel_type') || 'Mono PERC').trim();
+      const description = String(row[importMappings.description] || readImportCell(row, 'Description', 'description') || '').trim();
+      const specificationDetails = String(
+        row[importMappings.specification_details] ||
+        readImportCell(row, 'Specification Details', 'specification_details', 'Specifications', 'specifications') ||
+        description ||
+        '',
+      ).trim();
+
+      const baseLabel = `${brand || 'Missing brand'} ${model || 'Missing model'}`.trim();
+      const invalidReasons = [
+        !brand ? 'Brand is missing' : null,
+        !model ? 'Model/SKU is missing' : null,
+        !Number.isFinite(wattage) || wattage <= 0 ? 'Wattage is missing or invalid' : null,
+        !Number.isFinite(ratePerWatt) || ratePerWatt <= 0 ? 'Rate per watt is missing or invalid' : null,
+      ].filter(Boolean) as string[];
+
+      if (invalidReasons.length > 0) {
+        return {
+          rowNumber: index + 2,
+          action: 'invalid',
+          label: baseLabel,
+          reason: invalidReasons.join(', '),
+          changes: [],
+        };
+      }
+
+      const payload = {
+        brand,
+        model,
+        wattage_w: Math.round(wattage),
+        panel_type: panelType || 'Mono PERC',
+        rate_per_watt: ratePerWatt,
+        gst_pct: normalizeGstRate(row[importMappings.gst_pct] || readImportCell(row, 'GST Percentage', 'gst_pct'), TAX_CONSTANTS.PANEL_GST_RATE),
+        description,
+        specification_details: specificationDetails,
+      };
+
+      const lookupRow = {
+        __master_id: readImportCell(row, 'Master ID', 'master_id', 'id'),
+        __source_global_id: readImportCell(row, 'Source Global ID', 'source_global_id'),
+        ...payload,
+      };
+      const existing = findImportMatch(lookupRow);
+
+      if (!existing) {
+        return {
+          rowNumber: index + 2,
+          action: 'create',
+          label: `${payload.brand} ${payload.model}`,
+          payload,
+          changes: ['New panel will be added'],
+        };
+      }
+
+      const changes = [
+        !sameText(existing.brand, payload.brand) ? 'brand' : null,
+        !sameText(existing.model, payload.model) ? 'model' : null,
+        !sameNumber(existing.wattage_w, payload.wattage_w, 0) ? 'wattage' : null,
+        !sameText(existing.panel_type, payload.panel_type) ? 'type' : null,
+        !sameNumber(existing.rate_per_watt, payload.rate_per_watt, 4) ? 'rate' : null,
+        !sameNumber(normalizeGstRate(existing.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE), payload.gst_pct, 5) ? 'GST' : null,
+        !sameText(existing.description, payload.description) ? 'description' : null,
+        !sameText(existing.specification_details, payload.specification_details) ? 'specifications' : null,
+      ].filter(Boolean) as string[];
+
+      return {
+        rowNumber: index + 2,
+        action: changes.length > 0 ? 'update' : 'unchanged',
+        label: `${payload.brand} ${payload.model}`,
+        existingId: existing.id,
+        payload,
+        changes: changes.length > 0 ? changes : ['Already matches database'],
+      };
+    });
+  };
 
   const handleImportFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -303,47 +408,69 @@ export default function PanelsMasterPage() {
     }
   };
 
-  const executeMappedImport = async () => {
+  const executeMappedImport = () => {
+    const previewRows = buildImportPreviewRows();
+    setImportPreviewRows(previewRows);
     setImportMappingOpen(false);
-    
-    // Parse raw rows based on mappings
-    const parsedRows = importDataList.map((row: any) => {
-      return {
-        __master_id: readImportCell(row, 'Master ID', 'master_id', 'id'),
-        __source_global_id: readImportCell(row, 'Source Global ID', 'source_global_id'),
-        brand: row[importMappings.brand] || readImportCell(row, 'Brand', 'brand') || 'Unknown Brand',
-        model: row[importMappings.model] || readImportCell(row, 'Model', 'model') || 'Unknown Model',
-        wattage_w: parseInt(row[importMappings.wattage_w] || readImportCell(row, 'Wattage (W)', 'wattage_w', 'capacity'), 10) || 550,
-        panel_type: row[importMappings.panel_type] || readImportCell(row, 'Panel Type', 'panel_type') || 'Mono PERC',
-        rate_per_watt: parseFloat(row[importMappings.rate_per_watt] || readImportCell(row, 'Rate per Watt (INR)', 'rate_per_watt', 'rate')) || 20,
-        gst_pct: normalizeGstRate(row[importMappings.gst_pct] || readImportCell(row, 'GST Percentage', 'gst_pct'), TAX_CONSTANTS.PANEL_GST_RATE),
-        description: row[importMappings.description] || readImportCell(row, 'Description', 'description') || '',
-        specification_details: row[importMappings.specification_details] || readImportCell(row, 'Specification Details', 'specification_details', 'Specifications', 'specifications') || row[importMappings.description] || readImportCell(row, 'Description', 'description') || '',
-      };
-    }).filter((row) => row.brand && row.model && !Number.isNaN(row.wattage_w) && !Number.isNaN(row.rate_per_watt));
+    setImportReviewOpen(true);
+    setLastImportSummary(null);
+  };
 
+  const commitMappedImport = async () => {
+    setImportInProgress(true);
     let created = 0;
     let updated = 0;
-    let skipped = 0;
+    let unchanged = 0;
+    let invalid = 0;
+    let failed = 0;
+    const nextRows = [...importPreviewRows];
 
-    for (const row of parsedRows) {
-      const { __master_id, __source_global_id, ...payload } = row;
-      const existing = findImportMatch(row);
+    for (let index = 0; index < nextRows.length; index += 1) {
+      const row = nextRows[index];
+      if (row.action === 'invalid') {
+        invalid += 1;
+        continue;
+      }
+      if (row.action === 'unchanged') {
+        unchanged += 1;
+        continue;
+      }
+      if (!row.payload) {
+        nextRows[index] = { ...row, action: 'failed', reason: 'Import payload was not generated.', changes: row.changes };
+        failed += 1;
+        continue;
+      }
 
-      if (existing) {
-        if (panelRowChanged(existing, payload)) {
-          await updateMutation.mutateAsync({ id: existing.id, updates: payload });
+      try {
+        if (row.action === 'update' && row.existingId) {
+          await updateMutation.mutateAsync({ id: row.existingId, updates: row.payload });
           updated += 1;
-        } else {
-          skipped += 1;
+        } else if (row.action === 'create') {
+          await createMutation.mutateAsync(row.payload);
+          created += 1;
         }
-      } else {
-        await createMutation.mutateAsync(payload);
-        created += 1;
+      } catch (err: any) {
+        failed += 1;
+        nextRows[index] = {
+          ...row,
+          action: 'failed',
+          reason: err?.message || 'Database write failed.',
+        };
       }
     }
 
-    toast(`Import complete: ${created} created, ${updated} updated, ${skipped} unchanged`, 'success');
+    const summary = `${created} added, ${updated} updated, ${unchanged} unchanged, ${invalid} invalid, ${failed} failed`;
+    setImportPreviewRows(nextRows);
+    setLastImportSummary(summary);
+    setImportInProgress(false);
+
+    if (failed > 0 || invalid > 0) {
+      toast(`Import finished with issues: ${summary}`, failed > 0 ? 'error' : 'info');
+      return;
+    }
+
+    setImportReviewOpen(false);
+    toast(`Import complete: ${summary}`, 'success');
   };
 
   const resolveDuplicateConflicts = async (strategy: 'overwrite' | 'skip' | 'duplicate') => {
@@ -515,6 +642,16 @@ export default function PanelsMasterPage() {
       return matchSearch && matchType && matchBrand;
     });
   }, [panels, search, typeFilter, brandFilter]);
+
+  const importPreviewCounts = useMemo(() => {
+    return importPreviewRows.reduce(
+      (acc, row) => {
+        acc[row.action] += 1;
+        return acc;
+      },
+      { create: 0, update: 0, unchanged: 0, invalid: 0, failed: 0 } as Record<PanelImportAction, number>,
+    );
+  }, [importPreviewRows]);
 
   // ─── Selection Logic ────────────────────────────────────────────────────────
 
@@ -1239,8 +1376,133 @@ export default function PanelsMasterPage() {
                 onClick={executeMappedImport}
                 className="px-5 py-2 text-xs font-semibold text-background bg-accent hover:bg-accent-hover rounded-lg transition-colors"
               >
-                Apply Map & Import
+                Review Import
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Review / Acknowledgement Modal */}
+      {importReviewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !importInProgress && setImportReviewOpen(false)} />
+          <div className="relative w-full max-w-4xl bg-surface border border-border rounded-xl shadow-2xl overflow-hidden animate-scale-in">
+            <div className="p-5 border-b border-border bg-surface-2 flex justify-between items-center">
+              <div>
+                <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                  <FileSpreadsheet size={16} className="text-accent" />
+                  Review Panel Import
+                </h3>
+                <p className="text-xs text-text-muted mt-1">Confirm exactly which rows will be added, updated, skipped, or rejected before writing to DB.</p>
+              </div>
+              <button
+                onClick={() => setImportReviewOpen(false)}
+                disabled={importInProgress}
+                className="text-text-muted hover:text-text-primary disabled:opacity-40"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                {[
+                  ['Add', importPreviewCounts.create, 'text-success border-success/25 bg-success/5'],
+                  ['Update', importPreviewCounts.update, 'text-accent border-accent/25 bg-accent/5'],
+                  ['Unchanged', importPreviewCounts.unchanged, 'text-text-muted border-border bg-background'],
+                  ['Invalid', importPreviewCounts.invalid, 'text-warning border-warning/25 bg-warning/5'],
+                  ['Failed', importPreviewCounts.failed, 'text-error border-error/25 bg-error/5'],
+                ].map(([label, count, className]) => (
+                  <div key={label} className={`rounded-lg border px-3 py-2 ${className}`}>
+                    <div className="text-[10px] uppercase tracking-wider font-bold">{label}</div>
+                    <div className="text-lg font-bold font-mono">{count}</div>
+                  </div>
+                ))}
+              </div>
+
+              {lastImportSummary && (
+                <div className="rounded-lg border border-accent/25 bg-accent/5 px-3 py-2 text-xs font-semibold text-accent">
+                  Last import result: {lastImportSummary}
+                </div>
+              )}
+
+              <div className="max-h-[420px] overflow-y-auto border border-border rounded-xl bg-background">
+                <table className="w-full text-left text-xs">
+                  <thead className="sticky top-0 bg-surface-2 border-b border-border">
+                    <tr>
+                      <th className="px-3 py-2 font-bold text-text-muted uppercase tracking-wider">Row</th>
+                      <th className="px-3 py-2 font-bold text-text-muted uppercase tracking-wider">Panel</th>
+                      <th className="px-3 py-2 font-bold text-text-muted uppercase tracking-wider">Action</th>
+                      <th className="px-3 py-2 font-bold text-text-muted uppercase tracking-wider">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importPreviewRows.map((row) => {
+                      const badgeClass =
+                        row.action === 'create' ? 'bg-success/10 text-success border-success/25' :
+                        row.action === 'update' ? 'bg-accent/10 text-accent border-accent/25' :
+                        row.action === 'invalid' ? 'bg-warning/10 text-warning border-warning/25' :
+                        row.action === 'failed' ? 'bg-error/10 text-error border-error/25' :
+                        'bg-surface text-text-muted border-border';
+
+                      return (
+                        <tr key={`${row.rowNumber}-${row.label}`} className="border-b border-border/70 last:border-0">
+                          <td className="px-3 py-2 font-mono text-text-muted">{row.rowNumber}</td>
+                          <td className="px-3 py-2">
+                            <div className="font-semibold text-text-primary">{row.label}</div>
+                            {row.payload && (
+                              <div className="text-[11px] text-text-muted font-mono">
+                                {row.payload.wattage_w}W · ₹{row.payload.rate_per_watt}/W · GST {gstRateToPercent(row.payload.gst_pct, TAX_CONSTANTS.PANEL_GST_RATE)}%
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            <span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${badgeClass}`}>
+                              {row.action}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-text-secondary">
+                            {row.reason || row.changes.join(', ')}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-border bg-surface-2 flex flex-wrap justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setImportReviewOpen(false);
+                  setImportMappingOpen(true);
+                }}
+                disabled={importInProgress}
+                className="px-4 py-2 text-xs border border-border hover:bg-surface-hover rounded-lg text-text-secondary font-semibold disabled:opacity-40"
+              >
+                Back to Mapping
+              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setImportReviewOpen(false)}
+                  disabled={importInProgress}
+                  className="px-4 py-2 text-xs border border-border hover:bg-surface-hover rounded-lg text-text-secondary font-semibold disabled:opacity-40"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={commitMappedImport}
+                  disabled={importInProgress || (importPreviewCounts.create + importPreviewCounts.update === 0)}
+                  className="px-5 py-2 text-xs font-semibold text-background bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {importInProgress ? 'Importing...' : `Commit Import (${importPreviewCounts.create + importPreviewCounts.update})`}
+                </button>
+              </div>
             </div>
           </div>
         </div>

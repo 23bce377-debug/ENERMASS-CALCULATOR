@@ -212,10 +212,14 @@ export default function SecuritySettingsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data: profile } = await supabase.from('profiles').select('org_id').eq('id', session.user.id).single();
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('org_id').eq('id', session.user.id).maybeSingle();
+      if (profileError || !profile?.org_id) {
+        toast(profileError ? `Failed to resolve organisation: ${profileError.message}` : 'Could not resolve organisation for this user.', 'error');
+        return;
+      }
       
       const { error } = await supabase.from('user_devices').insert({
-        org_id: profile?.org_id,
+        org_id: profile.org_id,
         user_id: session.user.id,
         device_name: backupKeyLabel.trim() || 'Backup Security Key',
         browser: 'Chrome (Simulated)',

@@ -51,6 +51,22 @@ interface BomMasterUpdate {
   gst_pct?: number;
 }
 
+interface PricingCreatePayload {
+  bom_item_id: string;
+  override_rate: number;
+  gst_pct?: number;
+  is_active?: boolean;
+  silent?: boolean;
+}
+
+interface PricingUpdatePayload {
+  id: string;
+  override_rate: number;
+  gst_pct?: number;
+  is_active?: boolean;
+  silent?: boolean;
+}
+
 function normalizeItemName(value: any) {
   return String(value || '').trim().toLowerCase();
 }
@@ -176,14 +192,15 @@ export default function PricingMasterPage() {
 
   // 3. Mutations
   const createMutation = useMutation({
-    mutationFn: async (payload: any) => {
+    mutationFn: async (payload: PricingCreatePayload) => {
+      const { silent: _silent, ...writePayload } = payload;
       const { orgId } = await getOrgContext();
       
       // Get the metadata of the target global BOM item
       const { data: targetItem, error: fetchError } = await supabase
         .from('bom_template_items')
         .select('*')
-        .eq('id', payload.bom_item_id)
+        .eq('id', writePayload.bom_item_id)
         .single();
       if (fetchError) throw fetchError;
 
@@ -193,9 +210,9 @@ export default function PricingMasterPage() {
         .upsert({
           org_id: orgId,
           item_name: itemName,
-          override_rate: Number(payload.override_rate || 0),
+          override_rate: Number(writePayload.override_rate || 0),
           bom_item_id: null,
-          is_active: payload.is_active ?? true,
+          is_active: writePayload.is_active ?? true,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'org_id,item_name' })
         .select()
@@ -203,7 +220,8 @@ export default function PricingMasterPage() {
       if (error) throw error;
       return data;
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, variables) => {
+      if (variables.silent) return;
       await refreshPricingCaches();
       toast('Pricing override created ✓', 'success');
       setEditorOpen(false);
@@ -211,7 +229,7 @@ export default function PricingMasterPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, override_rate, is_active }: { id: string; override_rate: number; gst_pct?: number; is_active?: boolean }) => {
+    mutationFn: async ({ id, override_rate, is_active }: PricingUpdatePayload) => {
       const { data, error } = await supabase
         .from('rate_master')
         .update({
@@ -225,7 +243,8 @@ export default function PricingMasterPage() {
       if (error) throw error;
       return data;
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, variables) => {
+      if (variables.silent) return;
       await refreshPricingCaches();
       toast('Pricing override updated ✓', 'success');
       setEditorOpen(false);
@@ -295,11 +314,11 @@ export default function PricingMasterPage() {
       for (let index = 0; index < rows.length; index += 1) {
         const { row, newRate } = rows[index];
         try {
-        if (!(row as any).is_override) {
-          await createMutation.mutateAsync({ bom_item_id: row.bom_item_id, override_rate: newRate, gst_pct: row.gst_pct });
-        } else {
-          await updateMutation.mutateAsync({ id: row.id, override_rate: newRate });
-        }
+          if (!(row as any).is_override) {
+            await createMutation.mutateAsync({ bom_item_id: row.bom_item_id, override_rate: newRate, gst_pct: normalizeGstRate(row.gst_pct, 0.18), silent: true });
+          } else {
+            await updateMutation.mutateAsync({ id: row.id, override_rate: newRate, silent: true });
+          }
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           throw new Error(`Markup failed on row ${index + 1} of ${rows.length}: ${message}`);
@@ -399,13 +418,16 @@ export default function PricingMasterPage() {
     try {
       const rawData = await importFromExcel(file);
       const availableBomItems = bomItems || [];
+      const currentRows = pricingRows || [];
       const parsedRows = rawData.map((row: any) => {
         const description = row['BOM Component Description'] || row.Description || row.description || row.item_name || '';
         const bomItem = availableBomItems.find((item: any) => normalizeItemName(getBomItemName(item)) === normalizeItemName(description));
+        const currentRow = currentRows.find((pricingRow) => pricingRow.bom_item_id === bomItem?.id);
         return {
           bom_item_id: bomItem?.id,
           override_rate: parseFloat(row['Selling Override Rate (INR)'] || row.override_rate || row.rate || 0),
           gst_pct: normalizeGstRate(row['GST Percentage'] || row.gst_pct || bomItem?.gst_pct, 0.18),
+          currentRow,
         };
       }).filter((row) => row.bom_item_id && !isNaN(row.override_rate));
 
@@ -423,11 +445,61 @@ export default function PricingMasterPage() {
       });
       if (!confirmed) return;
 
+      const summary = { created: 0, modified: 0, skipped: 0, failed: 0 };
+      toast(`Import started: processing ${parsedRows.length} pricing row(s)`, 'info');
+
       for (const row of parsedRows) {
-        await updateBomGstMutation.mutateAsync({ id: row.bom_item_id, updates: { gst_pct: row.gst_pct } });
-        await createMutation.mutateAsync(row);
+        try {
+          const existing = row.currentRow;
+          const existingRate = Number(existing?.override_rate ?? 0);
+          const existingGst = normalizeGstRate(existing?.gst_pct, 0.18);
+          const nextRate = Number(row.override_rate || 0);
+          const nextGst = normalizeGstRate(row.gst_pct, 0.18);
+          const rateChanged = !existing || Math.abs(existingRate - nextRate) > 0.0001;
+          const gstChanged = Math.abs(existingGst - nextGst) > 0.0001;
+
+          if (!rateChanged && !gstChanged) {
+            summary.skipped += 1;
+            continue;
+          }
+
+          if (gstChanged) {
+            await updateBomGstMutation.mutateAsync({ id: row.bom_item_id, updates: { gst_pct: nextGst } });
+          }
+
+          if (rateChanged) {
+            if (existing?.is_override && existing.rate_master_id) {
+              await updateMutation.mutateAsync({
+                id: existing.rate_master_id,
+                override_rate: nextRate,
+                gst_pct: nextGst,
+                is_active: true,
+                silent: true,
+              });
+              summary.modified += 1;
+            } else {
+              await createMutation.mutateAsync({
+                bom_item_id: row.bom_item_id,
+                override_rate: nextRate,
+                gst_pct: nextGst,
+                is_active: true,
+                silent: true,
+              });
+              summary.created += 1;
+            }
+          } else if (gstChanged) {
+            summary.modified += 1;
+          }
+        } catch (rowError) {
+          console.error('[pricing] import row failed', rowError);
+          summary.failed += 1;
+        }
       }
-      toast(`Successfully imported ${parsedRows.length} pricing overrides`, 'success');
+      await refreshPricingCaches();
+      await refetch();
+
+      const message = `Import complete: ${summary.created} created, ${summary.modified} modified, ${summary.skipped} skipped${summary.failed ? `, ${summary.failed} failed` : ''}.`;
+      toast(message, summary.failed ? 'error' : 'success');
     } catch (err: any) {
       toast(err.message || 'Import failed', 'error');
     } finally {

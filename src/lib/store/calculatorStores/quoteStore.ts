@@ -73,6 +73,9 @@ export const createQuoteSlice: StateCreator<
 
     const { ProfileORM } = await import('../../../backend/orm/profile');
     const profile = await ProfileORM.getById(session.user.id);
+    if (!profile?.org_id) {
+      throw new Error('Current user profile is not assigned to an organisation');
+    }
     const orgId = profile.org_id;
     try {
       const { error: snapshotError } = await (supabase as any).rpc('snapshot_catalog_rates', {

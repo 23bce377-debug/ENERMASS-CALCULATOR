@@ -238,6 +238,9 @@ export async function fetchQuotesForCurrentUser(): Promise<Quote[]> {
 
   const { ProfileORM } = await import('../../backend/orm/profile')
   const profile = await ProfileORM.getById(session.user.id)
+  if (!profile?.org_id) {
+    throw new Error('Current user profile is not assigned to an organisation')
+  }
   const orgId = profile.org_id
 
   const { data, error } = await supabase

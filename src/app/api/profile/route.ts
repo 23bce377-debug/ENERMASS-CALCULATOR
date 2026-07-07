@@ -30,7 +30,7 @@ export const GET = withLicensedApiRoute(async (request, context) => {
     .from('profiles')
     .select('*')
     .eq('id', fetchId)
-    .single();
+    .maybeSingle();
 
   if (profileError || !profile) {
     console.error('[GET /api/profile] Profile fetch error:', profileError);
@@ -64,9 +64,9 @@ export const PUT = withLicensedApiRoute(async (request, context) => {
     })
     .eq('id', userId)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (profileError) {
+  if (profileError || !profile) {
     console.error('[PUT /api/profile] Profile update error:', profileError);
     return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }

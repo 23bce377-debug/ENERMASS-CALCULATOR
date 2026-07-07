@@ -10,9 +10,13 @@ export async function getCurrentOrgId(): Promise<string> {
     .from('profiles')
     .select('org_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
   
-  if (error || !data?.org_id) {
+  if (error) {
+    throw new Error(`Failed to fetch current organisation: ${error.message}`);
+  }
+
+  if (!data?.org_id) {
     throw new Error('User has no org_id — cannot proceed');
   }
   

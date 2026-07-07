@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, History, Clock, FileText, ChevronRight } from 'lucide-react';
+import { X, History, Clock } from 'lucide-react';
 import { useAuditLogsQuery, useChangesLogQuery } from '@/lib/hooks/useMasters';
 
 interface HistoryDrawerProps {
@@ -9,6 +9,170 @@ interface HistoryDrawerProps {
   onClose: () => void;
   entityTable: string;
   title: string;
+}
+
+type RevisionValues = Record<string, unknown> | null | undefined;
+
+const HIDDEN_CHANGE_FIELDS = new Set([
+  'id',
+  'org_id',
+  'created_at',
+  'updated_at',
+  'deleted_at',
+  'source_global_id',
+  'category_id',
+  'scope_global_id',
+]);
+
+const FIELD_LABELS: Record<string, string> = {
+  brand: 'Brand',
+  model: 'Model',
+  description: 'Description',
+  sku_code: 'SKU',
+  unit: 'Unit',
+  rate: 'Rate',
+  default_rate: 'Default Rate',
+  standard_rate: 'Standard Rate',
+  selling_price: 'Selling Price',
+  selling_rate: 'Selling Rate',
+  unit_rate_min: 'Minimum Rate',
+  unit_rate_max: 'Maximum Rate',
+  gst_pct: 'GST',
+  gst_rate: 'GST',
+  qty_formula: 'Quantity Formula',
+  notes: 'Notes',
+  specification_details: 'Specification Details',
+  is_active: 'Active',
+  is_custom: 'Custom',
+  civil_required_only: 'Civil Only',
+  is_survey_dependent: 'Survey Dependent',
+};
+
+const IMPORTANT_FIELDS = [
+  'description',
+  'brand',
+  'model',
+  'sku_code',
+  'rate',
+  'default_rate',
+  'selling_price',
+  'gst_pct',
+  'gst_rate',
+  'unit',
+  'qty_formula',
+  'notes',
+  'specification_details',
+  'is_active',
+];
+
+function toRecord(value: RevisionValues): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function stableValue(value: unknown) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+function formatFieldLabel(key: string) {
+  return FIELD_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function formatValue(key: string, value: unknown) {
+  if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'number') {
+    const isMoney = /rate|price|cost|amount|mrp/i.test(key);
+    const isPercent = /gst|pct|percent|margin/i.test(key);
+    if (isMoney) return `INR ${value.toLocaleString('en-IN')}`;
+    if (isPercent) return `${value}%`;
+    return value.toLocaleString('en-IN');
+  }
+  if (Array.isArray(value)) return `${value.length} item${value.length === 1 ? '' : 's'}`;
+  if (typeof value === 'object') return 'Updated';
+
+  const text = String(value).trim();
+  return text.length > 140 ? `${text.slice(0, 137)}...` : text;
+}
+
+function getDisplayKeys(record: Record<string, unknown>) {
+  const available = Object.keys(record).filter(key => !HIDDEN_CHANGE_FIELDS.has(key));
+  const important = IMPORTANT_FIELDS.filter(key => key in record && !HIDDEN_CHANGE_FIELDS.has(key));
+  const remaining = available.filter(key => !important.includes(key));
+  return [...important, ...remaining].slice(0, 8);
+}
+
+function getChangedFields(oldValues: RevisionValues, newValues: RevisionValues) {
+  const oldRecord = toRecord(oldValues);
+  const newRecord = toRecord(newValues);
+  const keys = Array.from(new Set([...Object.keys(oldRecord), ...Object.keys(newRecord)]))
+    .filter(key => !HIDDEN_CHANGE_FIELDS.has(key))
+    .filter(key => stableValue(oldRecord[key]) !== stableValue(newRecord[key]));
+
+  const importantKeys = IMPORTANT_FIELDS.filter(key => keys.includes(key));
+  const remainingKeys = keys.filter(key => !importantKeys.includes(key));
+
+  return [...importantKeys, ...remainingKeys].map(key => ({
+    key,
+    label: formatFieldLabel(key),
+    before: formatValue(key, oldRecord[key]),
+    after: formatValue(key, newRecord[key]),
+  }));
+}
+
+function RevisionSummary({ revision }: { revision: any }) {
+  const changeType = String(revision.change_type || '').toLowerCase();
+  const oldRecord = toRecord(revision.old_values);
+  const newRecord = toRecord(revision.new_values);
+  const changedFields = getChangedFields(revision.old_values, revision.new_values);
+  const createdOrDeletedRecord = changeType === 'deleted' ? oldRecord : newRecord;
+  const displayKeys = getDisplayKeys(createdOrDeletedRecord);
+
+  if (changeType === 'updated' && changedFields.length > 0) {
+    return (
+      <div className="rounded-lg border border-border/60 overflow-hidden">
+        <div className="px-3 py-2 bg-background text-[10px] uppercase tracking-wider text-text-muted font-bold">
+          {changedFields.length} field{changedFields.length === 1 ? '' : 's'} changed
+        </div>
+        <div className="divide-y divide-border/50">
+          {changedFields.map(field => (
+            <div key={field.key} className="grid grid-cols-[120px_1fr] gap-3 px-3 py-2">
+              <div className="text-text-muted font-semibold">{field.label}</div>
+              <div className="space-y-1 min-w-0">
+                <div className="text-error/90 line-through break-words">{field.before}</div>
+                <div className="text-success break-words">{field.after}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if ((changeType === 'created' || changeType === 'deleted') && displayKeys.length > 0) {
+    return (
+      <div className="rounded-lg border border-border/60 overflow-hidden">
+        <div className="px-3 py-2 bg-background text-[10px] uppercase tracking-wider text-text-muted font-bold">
+          {changeType === 'deleted' ? 'Removed record details' : 'New record details'}
+        </div>
+        <div className="divide-y divide-border/50">
+          {displayKeys.map(key => (
+            <div key={key} className="grid grid-cols-[120px_1fr] gap-3 px-3 py-2">
+              <div className="text-text-muted font-semibold">{formatFieldLabel(key)}</div>
+              <div className="text-text-primary break-words min-w-0">{formatValue(key, createdOrDeletedRecord[key])}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-background px-3 py-3 text-text-muted">
+      Only internal metadata changed.
+    </div>
+  );
 }
 
 export function HistoryDrawer({ isOpen, onClose, entityTable, title }: HistoryDrawerProps) {
@@ -90,22 +254,8 @@ export function HistoryDrawer({ isOpen, onClose, entityTable, title }: HistoryDr
                     </span>
                   </div>
 
-                  {/* Diff Inspector */}
                   {(rev.old_values || rev.new_values) && (
-                    <div className="p-2.5 rounded-lg bg-background border border-border/60 font-mono text-[10px] space-y-1.5 overflow-x-auto">
-                      {rev.old_values && (
-                        <div className="text-error flex items-start gap-1">
-                          <span className="font-bold shrink-0">- BEFORE:</span>
-                          <span className="whitespace-pre-wrap">{JSON.stringify(rev.old_values, null, 2)}</span>
-                        </div>
-                      )}
-                      {rev.new_values && (
-                        <div className="text-success flex items-start gap-1">
-                          <span className="font-bold shrink-0">+ AFTER:</span>
-                          <span className="whitespace-pre-wrap">{JSON.stringify(rev.new_values, null, 2)}</span>
-                        </div>
-                      )}
-                    </div>
+                    <RevisionSummary revision={rev} />
                   )}
                 </div>
               ))

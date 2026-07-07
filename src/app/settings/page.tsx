@@ -9,10 +9,16 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { revalidateMasterCache } from '@/app/actions/revalidateMasters';
 import { supabase } from '@/lib/supabase/client';
 import {
+  PWA_INSTALL_READY_EVENT,
+  hasPwaInstallPrompt,
+  isPwaStandalone,
+  requestPwaInstallShortcut,
+} from '@/components/layout/PwaPrompt';
+import {
   Settings as SettingsIcon, Percent, Zap, Building2,
   Download, Upload, RotateCcw, Check, ChevronDown, Sun, Moon,
   CloudUpload, CloudDownload, Loader2, Cloud, RefreshCcw, Lock,
-  Users, CreditCard, ShieldAlert, History, Key, Eye, HelpCircle
+  Users, CreditCard, ShieldAlert, History, Key, Eye, HelpCircle, Laptop
 } from 'lucide-react';
 
 // ─── Section Wrapper ────────────────────────────────────────────────────────────
@@ -162,6 +168,7 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saveFlash, setSaveFlash] = useState(false);
   const [isRefreshingCache, setIsRefreshingCache] = useState(false);
+  const [shortcutAvailable, setShortcutAvailable] = useState(false);
   const { toast } = useToast();
   const confirm = useConfirm();
 
@@ -185,6 +192,16 @@ export default function SettingsPage() {
       }
     }
     fetchBilling();
+  }, []);
+
+  useEffect(() => {
+    const syncShortcutState = () => {
+      setShortcutAvailable(hasPwaInstallPrompt() || isPwaStandalone());
+    };
+
+    syncShortcutState();
+    window.addEventListener(PWA_INSTALL_READY_EVENT, syncShortcutState);
+    return () => window.removeEventListener(PWA_INSTALL_READY_EVENT, syncShortcutState);
   }, []);
 
   if (!loaded) {
@@ -297,6 +314,25 @@ export default function SettingsPage() {
       toast('Latest settings pulled from database ✓', 'success');
       flash();
     }
+  };
+
+  const handleAddShortcut = async () => {
+    const result = await requestPwaInstallShortcut();
+    if (result.status === 'accepted') {
+      toast('Shortcut added successfully', 'success');
+      setShortcutAvailable(false);
+      return;
+    }
+    if (result.status === 'installed') {
+      toast('Shortcut is already installed for this device', 'info');
+      setShortcutAvailable(true);
+      return;
+    }
+    if (result.status === 'dismissed') {
+      toast('Shortcut installation was dismissed', 'info');
+      return;
+    }
+    toast('Shortcut install is not available here. Use your browser menu to add this app as a shortcut.', 'info');
   };
 
   return (
@@ -556,6 +592,13 @@ export default function SettingsPage() {
       {/* Data Management */}
       <Section title="Data Management" icon={<Download size={18} />}>
         <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleAddShortcut}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-surface border border-accent/30 text-accent text-sm font-semibold hover:bg-accent/10 transition-all cursor-pointer"
+          >
+            <Laptop size={16} /> {shortcutAvailable ? 'Add Shortcut' : 'Shortcut Help'}
+          </button>
+
           <button
             onClick={() => {
               exportData();
