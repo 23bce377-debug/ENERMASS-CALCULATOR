@@ -661,6 +661,7 @@ export function PresetEditorDialog({
     align: 'left' | 'right' = 'right',
     excludeCategories: string[] = [],
     initialSearch = '',
+    initialSubcategory = 'all',
     key = category,
   ) {
     if (addPickerOpen !== key) return null;
@@ -673,6 +674,7 @@ export function PresetEditorDialog({
           onClose={() => setAddPickerOpen(false)}
           excludeCategories={excludeCategories}
           initialSearch={initialSearch}
+          initialSubcategory={initialSubcategory}
           searchPlaceholder="Search by item, SKU, subcategory, specs, unit, or rate..."
         />
       </div>
@@ -970,7 +972,7 @@ export function PresetEditorDialog({
                             >
                               + {subcategory}
                             </button>
-                            {renderPicker('bom_item', 'left', CORE_CATEGORIES, subcategory, key)}
+                            {renderPicker('bom_item', 'left', CORE_CATEGORIES, '', subcategory, key)}
                           </div>
                         );
                       })}

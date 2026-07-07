@@ -282,7 +282,7 @@ export function BomPresetMaster() {
     }
   }
 
-  function renderPicker(category: string, align: 'left' | 'right' = 'right', initialSearch = '') {
+  function renderPicker(category: string, align: 'left' | 'right' = 'right', initialSearch = '', initialSubcategory = 'all') {
     if (pickerOpen !== category) return null;
     return (
       <div className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full z-50 mt-2`}>
@@ -292,6 +292,7 @@ export function BomPresetMaster() {
           onClose={() => setPickerOpen(false)}
           excludeCategories={CORE_CATEGORIES}
           initialSearch={initialSearch}
+          initialSubcategory={initialSubcategory}
           searchPlaceholder="Search by item, SKU, category, specs, unit, or rate..."
         />
       </div>
@@ -458,7 +459,7 @@ export function BomPresetMaster() {
                       onSelect={addCatalogItem}
                       onClose={() => setPickerOpen(false)}
                       excludeCategories={CORE_CATEGORIES}
-                      initialSearch={subcategory}
+                      initialSubcategory={subcategory}
                       searchPlaceholder="Search by item, SKU, subcategory, specs, unit, or rate..."
                     />
                   </div>
