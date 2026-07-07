@@ -5,6 +5,105 @@
 
 BEGIN;
 
+-- Fresh replays need these tables before RLS policies and RPCs below run.
+-- Later remediation migrations add/repair additional columns idempotently.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'po_status') THEN
+    CREATE TYPE public.po_status AS ENUM (
+      'draft',
+      'submitted_for_approval',
+      'approved',
+      'sent',
+      'partially_received',
+      'received',
+      'closed',
+      'cancelled'
+    );
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.inventory_summary (
+  org_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE CASCADE,
+  catalog_item_id uuid REFERENCES public.catalog_items(id) ON DELETE SET NULL,
+  item_description text NOT NULL,
+  category text,
+  current_qty numeric NOT NULL DEFAULT 0,
+  weighted_avg_cost numeric NOT NULL DEFAULT 0,
+  reorder_level numeric NOT NULL DEFAULT 0,
+  unit text DEFAULT 'Nos',
+  last_updated timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (org_id, item_description)
+);
+
+CREATE TABLE IF NOT EXISTS public.proc_purchase_orders (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE CASCADE,
+  vendor_id uuid REFERENCES public.vendors(id) ON DELETE RESTRICT,
+  project_id uuid REFERENCES public.epc_projects(id) ON DELETE SET NULL,
+  po_number text NOT NULL,
+  status po_status NOT NULL DEFAULT 'draft',
+  pr_status text NOT NULL DEFAULT 'draft',
+  total_taxable numeric NOT NULL DEFAULT 0,
+  cgst_amount numeric NOT NULL DEFAULT 0,
+  sgst_amount numeric NOT NULL DEFAULT 0,
+  igst_amount numeric NOT NULL DEFAULT 0,
+  total_amount numeric NOT NULL DEFAULT 0,
+  delivery_date date,
+  notes text,
+  items_count integer NOT NULL DEFAULT 0,
+  requested_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT proc_purchase_orders_org_number_unique UNIQUE (org_id, po_number)
+);
+
+CREATE TABLE IF NOT EXISTS public.proc_po_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  po_id uuid NOT NULL REFERENCES public.proc_purchase_orders(id) ON DELETE CASCADE,
+  catalog_item_id uuid REFERENCES public.catalog_items(id) ON DELETE SET NULL,
+  item_id uuid,
+  item_type text,
+  item_description text,
+  category text,
+  unit text NOT NULL DEFAULT 'Nos',
+  qty_ordered numeric NOT NULL DEFAULT 0,
+  qty_received numeric NOT NULL DEFAULT 0,
+  unit_price numeric NOT NULL DEFAULT 0,
+  estimated_rate numeric,
+  gst_pct numeric NOT NULL DEFAULT 0.18,
+  is_pr_item boolean NOT NULL DEFAULT false
+);
+
+CREATE TABLE IF NOT EXISTS public.proc_goods_receipt_notes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE CASCADE,
+  po_id uuid NOT NULL REFERENCES public.proc_purchase_orders(id) ON DELETE CASCADE,
+  warehouse_id uuid REFERENCES public.inv_warehouses(id) ON DELETE RESTRICT,
+  grn_number text NOT NULL,
+  receipt_date date NOT NULL DEFAULT CURRENT_DATE,
+  status text NOT NULL DEFAULT 'pending',
+  is_processed boolean NOT NULL DEFAULT false,
+  idempotency_key text UNIQUE,
+  processed_at timestamptz,
+  created_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.proc_grn_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  grn_id uuid NOT NULL REFERENCES public.proc_goods_receipt_notes(id) ON DELETE CASCADE,
+  catalog_item_id uuid REFERENCES public.catalog_items(id) ON DELETE SET NULL,
+  item_id uuid,
+  item_type text,
+  item_description text,
+  qty_received numeric NOT NULL DEFAULT 0,
+  unit text NOT NULL DEFAULT 'Nos',
+  serials text[] DEFAULT '{}'::text[],
+  CONSTRAINT proc_grn_items_grn_catalog_unique UNIQUE (grn_id, catalog_item_id)
+);
+
 -- ============================================================
 -- 1. Enable RLS and define policies for inventory & procurement
 -- ============================================================
@@ -209,7 +308,7 @@ BEGIN
     version
   ) VALUES (
     p_org_id,
-    COALESCE(p_vendor_id, '00000000-0000-0000-0000-000000000000'::uuid),
+    p_vendor_id,
     v_pr_number,
     p_project_id,
     p_requested_by,
@@ -249,7 +348,7 @@ BEGIN
       (v_item->>'estimated_rate')::numeric,
       (v_item->>'estimated_rate')::numeric,
       0.18,
-      COALESCE((v_item->>'catalog_item_id')::uuid, '00000000-0000-0000-0000-000000000000'::uuid),
+      NULLIF(v_item->>'catalog_item_id', '')::uuid,
       true
     );
   END LOOP;
@@ -453,7 +552,7 @@ BEGIN
   END LOOP;
 
   UPDATE public.proc_purchase_orders
-  SET status = CASE WHEN v_all_received THEN 'received'::po_status WHEN v_any_received THEN 'partial'::po_status ELSE 'sent'::po_status END,
+  SET status = CASE WHEN v_all_received THEN 'received'::po_status WHEN v_any_received THEN 'partially_received'::po_status ELSE 'sent'::po_status END,
       updated_at = now()
   WHERE id = p_po_id;
 

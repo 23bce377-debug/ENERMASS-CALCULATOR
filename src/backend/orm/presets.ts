@@ -33,7 +33,7 @@ export interface PresetFavoriteRow {
   created_at: string;
 }
 
-export const PresetORM: any = {
+export const PresetORM = {
   async getAll(options: { tags?: string[]; authorId?: string; isOrgTemplate?: boolean; isFavoriteFor?: string; status?: string[] } = {}) {
     const { data: { session } } = await supabase.auth.getSession();
     let orgId = null;

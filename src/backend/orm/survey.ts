@@ -1,9 +1,9 @@
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/lib/types/schema.types';
 
-export type SurveyRow = any;
-export type SurveyInsert = any;
-export type SurveyUpdate = any;
+export type SurveyRow = Database['public']['Tables']['crm_site_surveys']['Row'];
+export type SurveyInsert = Database['public']['Tables']['crm_site_surveys']['Insert'];
+export type SurveyUpdate = Database['public']['Tables']['crm_site_surveys']['Update'];
 
 export const SurveyORM = {
   async getByLeadId(leadId: string): Promise<SurveyRow[]> {

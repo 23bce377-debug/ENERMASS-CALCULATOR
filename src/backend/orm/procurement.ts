@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 export interface ProcurementPO {
   id: string;
   org_id: string;
-  vendor_id: string;
+  vendor_id?: string | null;
   project_id?: string | null;
   po_number: string;
   status: string;
@@ -118,7 +118,7 @@ export const ProcurementORM = {
       .from('proc_purchase_orders')
       .insert({
         org_id: orgId,
-        vendor_id: payload.vendor_id || '00000000-0000-0000-0000-000000000000', // placeholder
+        vendor_id: payload.vendor_id || null,
         po_number,
         project_id: payload.project_id || null,
         requested_by: payload.requested_by || null,
@@ -150,7 +150,7 @@ export const ProcurementORM = {
           estimated_rate: i.estimated_rate,
           unit_price: i.estimated_rate,
           gst_pct: 0.18,
-          catalog_item_id: '00000000-0000-0000-0000-000000000000', // placeholder for free-text items
+          catalog_item_id: null,
           is_pr_item: true,
         })));
       if (itemsError) throw itemsError;
@@ -343,7 +343,7 @@ export const ProcurementORM = {
       await (supabase as any)
         .from('proc_purchase_orders')
         .update({
-          status: allReceived ? 'received' : anyReceived ? 'partial' : 'sent',
+          status: allReceived ? 'received' : anyReceived ? 'partially_received' : 'sent',
           updated_at: new Date().toISOString(),
         })
         .eq('id', poId);

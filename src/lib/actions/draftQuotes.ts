@@ -19,7 +19,7 @@ export async function saveDraftQuote(params: {
 
   if (params.draftId) {
     const { error } = await supabase
-      .from('draft_quotes' as any)
+      .from('draft_quotes')
       .update({
         state_json: JSON.parse(params.calculatorState),
         updated_at: new Date().toISOString(),
@@ -31,7 +31,7 @@ export async function saveDraftQuote(params: {
     return { draftId: params.draftId };
   } else {
     const { data, error } = await supabase
-      .from('draft_quotes' as any)
+      .from('draft_quotes')
       .upsert({
         org_id: orgId,
         user_id: user.id,
@@ -43,6 +43,6 @@ export async function saveDraftQuote(params: {
 
     if (error) throw new Error(`Failed to insert draft: ${error.message}`);
     if (!data) throw new Error('Failed to insert draft: no data returned');
-    return { draftId: (data as any).id };
+    return { draftId: data.id };
   }
 }

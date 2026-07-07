@@ -38,11 +38,19 @@ export function CreateSurveyModal({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const { data: quote, error: quoteError } = await supabase
+        .from('quotes')
+        .select('id')
+        .eq('quote_number', quoteNumber)
+        .maybeSingle();
+      if (quoteError) throw quoteError;
+
       await createMutation.mutateAsync({
         lead_id: leadId,
         org_id: orgId,
-        quote_id: quoteNumber,
+        quote_id: quote?.id ?? null,
         conducted_by: user.id,
+        conducted_at: new Date().toISOString(),
         status: 'completed',
         roof_area_sqft: parseFloat(formData.roof_area_sqft) || 0,
         roof_type: formData.roof_type,

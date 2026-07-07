@@ -32,10 +32,12 @@ const PR_STATUS_STYLES: Record<string, string> = {
 
 const PO_STATUS_LABELS: Record<string, string> = {
   draft: 'Draft',
+  submitted_for_approval: 'Submitted',
+  approved: 'Approved',
   sent: 'Sent to Vendor',
-  acknowledged: 'Acknowledged',
-  partial: 'Partially Received',
+  partially_received: 'Partially Received',
   received: 'Fully Received',
+  closed: 'Closed',
   cancelled: 'Cancelled',
 };
 
