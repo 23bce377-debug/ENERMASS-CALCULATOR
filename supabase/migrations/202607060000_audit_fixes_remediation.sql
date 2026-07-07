@@ -157,6 +157,7 @@ CREATE POLICY eq_lightning_arresters_write ON public.eq_lightning_arresters FOR 
 
 -- ─── 5. Update structure_component_master RLS write policy ───
 DROP POLICY IF EXISTS structure_component_master_visibility ON public.structure_component_master;
+DROP POLICY IF EXISTS structure_component_master_select ON public.structure_component_master;
 DROP POLICY IF EXISTS structure_component_master_write ON public.structure_component_master;
 CREATE POLICY structure_component_master_select ON public.structure_component_master FOR SELECT TO authenticated
   USING (org_id IS NULL OR org_id = public.auth_org_id());

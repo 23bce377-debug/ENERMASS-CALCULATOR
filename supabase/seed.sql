@@ -1,0 +1,2 @@
+-- Empty seed file required by supabase/config.toml.
+-- Project seed data is managed separately under db/seeds.

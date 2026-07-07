@@ -961,7 +961,7 @@ export type Database = {
           allocated_cost_override: number | null
           base_cost: number
           bundle_preset_id: string
-          catalog_item_id: string
+          catalog_item_id: string | null
           category: Database["public"]["Enums"]["bom_section"]
           created_at: string
           gst_pct: number | null
@@ -974,7 +974,7 @@ export type Database = {
           allocated_cost_override?: number | null
           base_cost?: number
           bundle_preset_id: string
-          catalog_item_id: string
+          catalog_item_id?: string | null
           category: Database["public"]["Enums"]["bom_section"]
           created_at?: string
           gst_pct?: number | null
@@ -987,7 +987,7 @@ export type Database = {
           allocated_cost_override?: number | null
           base_cost?: number
           bundle_preset_id?: string
-          catalog_item_id?: string
+          catalog_item_id?: string | null
           category?: Database["public"]["Enums"]["bom_section"]
           created_at?: string
           gst_pct?: number | null
@@ -3710,16 +3710,20 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          is_default: boolean
+          location: string | null
           name: string
           org_id: string
           updated_at: string
         }
         Insert: {
           address?: string | null
-          code: string
+          code?: string
           created_at?: string
           id?: string
           is_active?: boolean
+          is_default?: boolean
+          location?: string | null
           name: string
           org_id: string
           updated_at?: string
@@ -3730,6 +3734,8 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_default?: boolean
+          location?: string | null
           name?: string
           org_id?: string
           updated_at?: string
@@ -3910,7 +3916,7 @@ export type Database = {
       }
       inventory_summary: {
         Row: {
-          catalog_item_id: string
+          catalog_item_id: string | null
           category: Database["public"]["Enums"]["bom_section"] | null
           current_qty: number
           item_description: string
@@ -3921,7 +3927,7 @@ export type Database = {
           weighted_avg_cost: number
         }
         Insert: {
-          catalog_item_id: string
+          catalog_item_id?: string | null
           category?: Database["public"]["Enums"]["bom_section"] | null
           current_qty?: number
           item_description: string
@@ -3932,7 +3938,7 @@ export type Database = {
           weighted_avg_cost?: number
         }
         Update: {
-          catalog_item_id?: string
+          catalog_item_id?: string | null
           category?: Database["public"]["Enums"]["bom_section"] | null
           current_qty?: number
           item_description?: string
@@ -4823,7 +4829,7 @@ export type Database = {
       }
       proc_grn_items: {
         Row: {
-          catalog_item_id: string
+          catalog_item_id: string | null
           grn_id: string
           id: string
           item_description: string | null
@@ -4834,7 +4840,7 @@ export type Database = {
           unit: string
         }
         Insert: {
-          catalog_item_id: string
+          catalog_item_id?: string | null
           grn_id: string
           id?: string
           item_description?: string | null
@@ -4845,7 +4851,7 @@ export type Database = {
           unit?: string
         }
         Update: {
-          catalog_item_id?: string
+          catalog_item_id?: string | null
           grn_id?: string
           id?: string
           item_description?: string | null

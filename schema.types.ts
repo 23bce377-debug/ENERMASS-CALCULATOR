@@ -362,7 +362,7 @@ export interface Database {
           gst_pct: number | null
           created_at: string
           acquisition_bundle_id: string | null
-          catalog_item_id: string
+          catalog_item_id: string | null
         }
         Insert: {
           id?: string
@@ -375,7 +375,7 @@ export interface Database {
           gst_pct?: number | null
           created_at?: string
           acquisition_bundle_id?: string | null
-          catalog_item_id: string
+          catalog_item_id?: string | null
         }
         Update: {
           id?: string
@@ -388,7 +388,7 @@ export interface Database {
           gst_pct?: number | null
           created_at?: string
           acquisition_bundle_id?: string | null
-          catalog_item_id?: string
+          catalog_item_id?: string | null
         }
         Relationships: []
       }
@@ -554,7 +554,7 @@ export interface Database {
           allocated_cost_override: number | null
           gst_pct: number | null
           created_at: string
-          catalog_item_id: string
+          catalog_item_id: string | null
         }
         Insert: {
           id?: string
@@ -567,7 +567,7 @@ export interface Database {
           allocated_cost_override?: number | null
           gst_pct?: number | null
           created_at?: string
-          catalog_item_id: string
+          catalog_item_id?: string | null
         }
         Update: {
           id?: string
@@ -580,7 +580,7 @@ export interface Database {
           allocated_cost_override?: number | null
           gst_pct?: number | null
           created_at?: string
-          catalog_item_id?: string
+          catalog_item_id?: string | null
         }
         Relationships: []
       }
@@ -2554,6 +2554,8 @@ export interface Database {
           code: string
           address: string | null
           is_active: boolean
+          is_default: boolean
+          location: string | null
           created_at: string
           updated_at: string
         }
@@ -2561,9 +2563,11 @@ export interface Database {
           id?: string
           org_id: string
           name: string
-          code: string
+          code?: string
           address?: string | null
           is_active?: boolean
+          is_default?: boolean
+          location?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -2574,6 +2578,8 @@ export interface Database {
           code?: string
           address?: string | null
           is_active?: boolean
+          is_default?: boolean
+          location?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -3331,7 +3337,7 @@ export interface Database {
           item_id: string | null
           qty_received: number
           serials: string[] | null
-          catalog_item_id: string
+          catalog_item_id: string | null
           item_description: string | null
           unit: string
         }
@@ -3342,7 +3348,7 @@ export interface Database {
           item_id?: string | null
           qty_received: number
           serials?: string[] | null
-          catalog_item_id: string
+          catalog_item_id?: string | null
           item_description?: string | null
           unit?: string
         }
@@ -3353,7 +3359,7 @@ export interface Database {
           item_id?: string | null
           qty_received?: number
           serials?: string[] | null
-          catalog_item_id?: string
+          catalog_item_id?: string | null
           item_description?: string | null
           unit?: string
         }
