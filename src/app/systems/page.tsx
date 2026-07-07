@@ -267,10 +267,10 @@ function SystemCard({ system, selected, compareMode, isCustom, stateLabel, onTog
       </div>
 
       {/* Actions */}
-      <div className="px-5 pb-4 flex items-center justify-between gap-2 mt-auto">
+      <div className="px-5 pb-4 mt-auto flex flex-wrap items-center gap-2">
         <button
           onClick={onQuickCalc}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg
+          className="min-w-[9.5rem] flex-[1_1_9.5rem] flex items-center justify-center gap-2 px-3 py-2 rounded-lg
             bg-accent/10 text-accent text-xs font-semibold
             hover:bg-accent/20 transition-all group/btn"
         >
@@ -279,12 +279,13 @@ function SystemCard({ system, selected, compareMode, isCustom, stateLabel, onTog
           <ArrowRight size={14} className="transition-transform group-hover/btn:translate-x-0.5" />
         </button>
 
-        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex shrink-0 items-center gap-1.5">
           {onEdit && (
             <button
               onClick={() => onEdit(system.id)}
-              className="p-2 rounded-lg bg-surface hover:bg-surface-hover border border-border text-text-secondary hover:text-text-primary transition-all cursor-pointer"
+              className="shrink-0 p-2 rounded-lg bg-surface hover:bg-surface-hover border border-border text-text-secondary hover:text-text-primary transition-all cursor-pointer"
               title="Edit preset"
+              aria-label={`Edit ${system.name}`}
             >
               <Edit3 size={14} />
             </button>
@@ -292,15 +293,18 @@ function SystemCard({ system, selected, compareMode, isCustom, stateLabel, onTog
           {onDuplicate && (
             <button
               onClick={() => onDuplicate(system.id)}
-              className="p-2 rounded-lg bg-surface hover:bg-surface-hover border border-border text-text-secondary hover:text-accent transition-all cursor-pointer"
+              className="shrink-0 p-2 rounded-lg bg-surface hover:bg-surface-hover border border-border text-text-secondary hover:text-accent transition-all cursor-pointer"
               title="Create duplicate"
+              aria-label={`Duplicate ${system.name}`}
             >
               <Copy size={14} />
             </button>
           )}
           <button
             onClick={() => onDelete?.(system.id)}
-            className="p-2 rounded-lg bg-surface hover:bg-error/10 border border-border hover:border-error/30 text-text-secondary hover:text-error transition-all cursor-pointer"
+            className="shrink-0 p-2 rounded-lg bg-surface hover:bg-error/10 border border-border hover:border-error/30 text-text-secondary hover:text-error transition-all cursor-pointer"
+            title="Delete preset"
+            aria-label={`Delete ${system.name}`}
           >
             <Trash2 size={14} />
           </button>
@@ -339,13 +343,13 @@ function SystemList({
         <table className="w-full table-fixed text-sm">
           <colgroup>
             {compareMode && <col className="w-[3%]" />}
-            <col className={compareMode ? 'w-[38%]' : 'w-[40%]'} />
-            <col className="w-[13%]" />
-            <col className="w-[8%]" />
+            <col className={compareMode ? 'w-[34%]' : 'w-[36%]'} />
+            <col className="w-[12%]" />
+            <col className="w-[10%]" />
             <col className="w-[7%]" />
             <col className="w-[8%]" />
-            <col className="w-[5%]" />
-            <col className={compareMode ? 'w-[18%]' : 'w-[19%]'} />
+            <col className="w-[6%]" />
+            <col className={compareMode ? 'w-[20%]' : 'w-[21%]'} />
           </colgroup>
           <thead className="bg-background/70">
             <tr className="border-b border-border">
@@ -411,21 +415,23 @@ function SystemList({
                   <td className="px-3 py-3 align-middle">
                     <CategoryBadge category={system.category} />
                   </td>
-                  <td className="px-3 py-3 text-right align-middle font-mono text-text-primary">{system.capacityKW} kW</td>
-                  <td className="px-3 py-3 text-right align-middle font-mono text-text-primary">
+                  <td className="px-2 py-3 text-right align-middle font-mono text-text-primary whitespace-nowrap">{system.capacityKW} kW</td>
+                  <td className="px-2 py-3 text-right align-middle font-mono text-text-primary">
                     {system.panelQty} x {system.panelWattage}W
                   </td>
-                  <td className="px-3 py-3 text-right align-middle font-mono text-text-primary">
+                  <td className="px-2 py-3 text-right align-middle font-mono text-text-primary whitespace-nowrap">
                     {(system.targetMarginPct * 100).toFixed(0)}%
                   </td>
-                  <td className="px-3 py-3 align-middle">
-                    <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                  <td className="px-3 py-3 align-middle overflow-hidden">
+                    <div className="flex min-w-0 items-center justify-end gap-1.5 whitespace-nowrap">
                       <button
                         onClick={() => onQuickCalc(system.id)}
-                        className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-accent/10 px-3 py-2 text-xs font-semibold text-accent transition-all hover:bg-accent/20"
+                        className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-accent/10 px-2.5 py-2 text-xs font-semibold text-accent transition-all hover:bg-accent/20 2xl:px-3"
+                        title="Quick Calculate"
                       >
                         <Zap size={14} />
-                        Quick Calculate
+                        <span className="hidden 2xl:inline">Quick Calculate</span>
+                        <span className="2xl:hidden">Calc</span>
                       </button>
                       <button
                         onClick={() => onEdit(system.id)}
