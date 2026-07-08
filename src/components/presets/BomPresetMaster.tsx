@@ -460,8 +460,8 @@ export function BomPresetMaster() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-border">
-        <div className="hidden grid-cols-[minmax(220px,1fr)_140px_180px_82px_90px_120px_90px_90px] gap-3 border-b border-border bg-background/70 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-text-muted xl:grid">
+      <section className="overflow-x-auto rounded-xl border border-border">
+        <div className="hidden min-w-[1180px] grid-cols-[minmax(260px,1fr)_150px_200px_96px_96px_120px_96px_122px] gap-3 border-b border-border bg-background/70 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-text-muted xl:grid">
           <span>Item</span>
           <span>Category</span>
           <span>Subcategory</span>
@@ -476,18 +476,18 @@ export function BomPresetMaster() {
             const amount = Number(item.quantity || 0) * Number(item.unitRate || 0);
             const subcategoryListId = `bom-preset-subcategories-${String(item.id ?? item.description).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
             return (
-              <div key={item.id} className="grid gap-3 bg-background/45 p-3 xl:grid-cols-[minmax(220px,1fr)_140px_180px_82px_90px_120px_90px_90px] xl:items-center">
-                <label className="grid gap-1">
+              <div key={item.id} className="grid gap-3 bg-background/45 p-3 xl:min-w-[1180px] xl:grid-cols-[minmax(260px,1fr)_150px_200px_96px_96px_120px_96px_122px] xl:items-center">
+                <label className="grid min-w-0 gap-1">
                   <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">Item</span>
                   <input
                     value={item.description}
                     onChange={(event) => updateItem(item.id as string, 'description', event.target.value)}
                     placeholder="BOM item description"
-                    className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text-primary outline-none focus:border-accent"
+                    className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text-primary outline-none focus:border-accent"
                   />
                   <span className="text-xs text-text-muted">INR {formatMoney(amount)}</span>
                 </label>
-                <label className="grid gap-1">
+                <label className="grid min-w-0 gap-1">
                   <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">Category</span>
                   <select
                     value={item.topCategory ?? topCategoryFromFunctional(item.category)}
@@ -496,20 +496,20 @@ export function BomPresetMaster() {
                       updateItem(item.id as string, 'topCategory', nextTopCategory);
                       updateItem(item.id as string, 'category', functionalCategoryFromTop(nextTopCategory, item.category));
                     }}
-                    className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                    className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                   >
                     {(['bom_item', 'miscellaneous'] as PresetTopCategory[]).map((category) => (
                       <option key={category} value={category}>{TOP_CATEGORY_LABELS[category]}</option>
                     ))}
                   </select>
                 </label>
-                <label className="grid gap-1">
+                <label className="grid min-w-0 gap-1">
                   <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">Subcategory</span>
                   <input
                     value={item.subcategory || defaultSubcategoryForItem(item)}
                     onChange={(event) => updateItem(item.id as string, 'subcategory', event.target.value)}
                     list={subcategoryListId}
-                    className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                    className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                   />
                   <datalist id={subcategoryListId}>
                     {EXCEL_BOM_SUBCATEGORIES.map((subcategory) => (
@@ -517,35 +517,35 @@ export function BomPresetMaster() {
                     ))}
                   </datalist>
                 </label>
-                <label className="grid gap-1">
+                <label className="grid min-w-0 gap-1">
                   <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">Unit</span>
                   <input
                     value={item.unit}
                     onChange={(event) => updateItem(item.id as string, 'unit', event.target.value)}
-                    className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                    className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                   />
                 </label>
-                <label className="grid gap-1">
+                <label className="grid min-w-0 gap-1">
                   <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">Qty</span>
                   <input
                     type="number"
                     min="0"
                     value={item.quantity}
                     onChange={(event) => updateItem(item.id as string, 'quantity', Number(event.target.value))}
-                    className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                    className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                   />
                 </label>
-                <label className="grid gap-1">
+                <label className="grid min-w-0 gap-1">
                   <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">Rate</span>
                   <input
                     type="number"
                     min="0"
                     value={item.unitRate}
                     onChange={(event) => updateItem(item.id as string, 'unitRate', Number(event.target.value))}
-                    className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                    className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                   />
                 </label>
-                <label className="grid gap-1">
+                <label className="grid min-w-0 gap-1">
                   <span className="xl:hidden text-[11px] font-bold uppercase tracking-wider text-text-muted">GST %</span>
                   <input
                     type="number"
@@ -553,13 +553,13 @@ export function BomPresetMaster() {
                     step="0.01"
                     value={gstRateToPercent(item.gstPct, 0.18)}
                     onChange={(event) => updateItem(item.id as string, 'gstPct', normalizeGstRate(event.target.value, 0.18))}
-                    className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
+                    className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary outline-none focus:border-accent"
                   />
                 </label>
                 <button
                   type="button"
                   onClick={() => removeItem(item.id as string)}
-                  className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-500/20"
+                  className="min-w-0 whitespace-nowrap rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-500/20 xl:w-full"
                 >
                   Remove
                 </button>
