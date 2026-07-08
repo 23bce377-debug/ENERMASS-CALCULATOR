@@ -90,6 +90,7 @@ export function CatalogItemPicker({
   const normalizedPickerCategory = normalizeFunctionalCategory(category);
   const isAllPicker = category === 'all';
   const showCategoryPane = isAllPicker;
+  const lockedSubcategory = initialSubcategory && initialSubcategory !== 'all' ? initialSubcategory : null;
   const categoryLabel = FUNCTIONAL_CATEGORY_LABELS[category] || FUNCTIONAL_CATEGORY_LABELS[normalizedPickerCategory] || displayLabel(category);
   const excludedCategoriesKey = excludeCategories.join('|');
 
@@ -165,11 +166,17 @@ export function CatalogItemPicker({
   }, [activeSubcategory, topFilteredItems]);
 
   useEffect(() => {
+    if (lockedSubcategory) {
+      if (activeSubcategory !== lockedSubcategory) {
+        setActiveSubcategory(lockedSubcategory);
+      }
+      return;
+    }
     if (activeSubcategory === 'all') return;
     if (!subcategories.some((subcategory) => subcategory.name === activeSubcategory)) {
       setActiveSubcategory('all');
     }
-  }, [activeSubcategory, subcategories]);
+  }, [activeSubcategory, lockedSubcategory, subcategories]);
 
   const customTopCategory = selectedTopCategory === 'all'
     ? topCategoryFromFunctional(category)
@@ -236,7 +243,9 @@ export function CatalogItemPicker({
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-text-muted">Add {categoryLabel}</p>
           <p className="mt-0.5 text-[11px] text-text-muted">
-            {showCategoryPane ? 'Pick category, subcategory, then item.' : 'Pick subcategory, then item.'}
+            {lockedSubcategory
+              ? `Pick an item from ${lockedSubcategory}.`
+              : showCategoryPane ? 'Pick category, subcategory, then item.' : 'Pick subcategory, then item.'}
           </p>
         </div>
         <button
@@ -297,38 +306,40 @@ export function CatalogItemPicker({
         )}
 
         <section className="min-w-0">
-          <div className="border-b border-border bg-background/30 p-2">
-            <p className="px-1 py-1 text-[10px] font-bold uppercase tracking-wider text-text-muted">
-              {showCategoryPane ? 'Subcategory' : 'Browse subcategories'}
-            </p>
-            <div className="flex gap-1 overflow-x-auto pb-1">
-              <button
-                type="button"
-                onClick={() => setActiveSubcategory('all')}
-                className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold ${
-                  activeSubcategory === 'all'
-                    ? 'border-accent bg-accent/15 text-accent'
-                    : 'border-border bg-surface text-text-secondary hover:border-accent/40 hover:text-accent'
-                }`}
-              >
-                All ({topFilteredItems.length})
-              </button>
-              {subcategories.map((subcategory) => (
+          {!lockedSubcategory && (
+            <div className="border-b border-border bg-background/30 p-2">
+              <p className="px-1 py-1 text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                {showCategoryPane ? 'Subcategory' : 'Browse subcategories'}
+              </p>
+              <div className="flex gap-1 overflow-x-auto pb-1">
                 <button
-                  key={subcategory.name}
                   type="button"
-                  onClick={() => setActiveSubcategory(subcategory.name)}
+                  onClick={() => setActiveSubcategory('all')}
                   className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold ${
-                    activeSubcategory === subcategory.name
+                    activeSubcategory === 'all'
                       ? 'border-accent bg-accent/15 text-accent'
                       : 'border-border bg-surface text-text-secondary hover:border-accent/40 hover:text-accent'
                   }`}
                 >
-                  {subcategory.name} ({subcategory.count})
+                  All ({topFilteredItems.length})
                 </button>
-              ))}
+                {subcategories.map((subcategory) => (
+                  <button
+                    key={subcategory.name}
+                    type="button"
+                    onClick={() => setActiveSubcategory(subcategory.name)}
+                    className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold ${
+                      activeSubcategory === subcategory.name
+                        ? 'border-accent bg-accent/15 text-accent'
+                        : 'border-border bg-surface text-text-secondary hover:border-accent/40 hover:text-accent'
+                    }`}
+                  >
+                    {subcategory.name} ({subcategory.count})
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="max-h-80 overflow-y-auto p-1">
             {loading ? (
@@ -348,11 +359,13 @@ export function CatalogItemPicker({
                     <p className="mt-0.5 text-xs text-text-muted">
                       {[item.brand, item.model].filter(Boolean).join(' ') || item.unit || 'Catalog item'}
                     </p>
-                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
-                      {showCategoryPane
-                        ? `${TOP_CATEGORY_LABELS[getItemTopCategory(item)] || displayLabel(getItemTopCategory(item))} / ${getItemSubcategory(item)}`
-                        : getItemSubcategory(item)}
-                    </p>
+                    {!lockedSubcategory && (
+                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
+                        {showCategoryPane
+                          ? `${TOP_CATEGORY_LABELS[getItemTopCategory(item)] || displayLabel(getItemTopCategory(item))} / ${getItemSubcategory(item)}`
+                          : getItemSubcategory(item)}
+                      </p>
+                    )}
                   </div>
                   {item.defaultRate > 0 && (
                     <p className="shrink-0 rounded-md bg-background px-2 py-1 text-xs font-semibold text-text-secondary">

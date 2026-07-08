@@ -17,6 +17,7 @@ import {
   TOP_CATEGORY_LABELS,
   defaultSubcategoryForItem,
   functionalCategoryFromTop,
+  isBomItemSubcategory,
   normalizeFunctionalCategory,
   topCategoryFromFunctional,
   type PresetTopCategory,
@@ -55,17 +56,18 @@ function normalizeCategory(category: string | null | undefined) {
 
 function newItemFromCatalog(catalogItem: any, pickerCategory: string, sortOrder: number): LineItem {
   const category = normalizeCategory(catalogItem.category ?? pickerCategory);
+  const subcategory = catalogItem.subcategory || defaultSubcategoryForItem({
+    topCategory: catalogItem.topCategory,
+    category,
+    brand: catalogItem.brand,
+    model: catalogItem.model,
+    categoryName: catalogItem.categoryName,
+  });
   return {
     id: `bom_master_${Date.now()}_${Math.random().toString(36).slice(2)}`,
     category,
-    topCategory: catalogItem.topCategory ?? topCategoryFromFunctional(category),
-    subcategory: catalogItem.subcategory || defaultSubcategoryForItem({
-      topCategory: catalogItem.topCategory,
-      category,
-      brand: catalogItem.brand,
-      model: catalogItem.model,
-      categoryName: catalogItem.categoryName,
-    }),
+    topCategory: isBomItemSubcategory(subcategory) ? 'bom_item' : catalogItem.topCategory ?? topCategoryFromFunctional(category),
+    subcategory,
     catalogItemId: catalogItem.id,
     catalogType: catalogItem.catalogType ?? catalogItem.type ?? 'custom',
     skuCode: catalogItem.skuCode ?? catalogItem.sku_code ?? '',
@@ -429,19 +431,7 @@ export function BomPresetMaster() {
       <section className="rounded-xl border border-dashed border-border bg-background/45 p-3">
         <p className="mb-3 text-xs font-bold uppercase tracking-wider text-text-muted">Add by category / subcategory</p>
         <div className="relative flex flex-wrap gap-2">
-          {(['bom_item', 'miscellaneous'] as const).map((category) => (
-            <div key={category} className="relative">
-              <button
-                type="button"
-                onClick={() => setPickerOpen(pickerOpen === category ? false : category)}
-                className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-bold text-text-secondary hover:border-accent/40 hover:text-accent"
-              >
-                + {CATEGORY_LABELS[category]}
-              </button>
-              {renderPicker(category, 'left')}
-            </div>
-          ))}
-          {EXCEL_BOM_SUBCATEGORIES.filter((subcategory) => subcategory !== 'Miscellaneous').map((subcategory) => {
+          {EXCEL_BOM_SUBCATEGORIES.map((subcategory) => {
             const key = `bom_item:${subcategory}`;
             return (
               <div key={subcategory} className="relative">

@@ -19,6 +19,7 @@ import {
   TOP_CATEGORY_LABELS,
   defaultSubcategoryForItem,
   functionalCategoryFromTop,
+  isBomItemSubcategory,
   normalizeFunctionalCategory,
   topCategoryFromFunctional,
   type PresetTopCategory,
@@ -107,18 +108,19 @@ function normalizeCategory(category: string | null | undefined) {
 
 function newBlankItem(catalogItem: any, category: string, sortOrder: number): LineItem {
   const itemCategory = normalizeCategory(catalogItem.category ?? category);
+  const subcategory = catalogItem.subcategory || defaultSubcategoryForItem({
+    topCategory: catalogItem.topCategory,
+    category: itemCategory,
+    brand: catalogItem.brand,
+    model: catalogItem.model,
+    categoryName: catalogItem.categoryName,
+  });
 
   return {
     id: `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
     category: itemCategory,
-    topCategory: catalogItem.topCategory ?? topCategoryFromFunctional(itemCategory),
-    subcategory: catalogItem.subcategory || defaultSubcategoryForItem({
-      topCategory: catalogItem.topCategory,
-      category: itemCategory,
-      brand: catalogItem.brand,
-      model: catalogItem.model,
-      categoryName: catalogItem.categoryName,
-    }),
+    topCategory: isBomItemSubcategory(subcategory) ? 'bom_item' : catalogItem.topCategory ?? topCategoryFromFunctional(itemCategory),
+    subcategory,
     catalogItemId: catalogItem.id,
     catalogType: catalogItem.catalogType ?? (['panel', 'inverter', 'battery'].includes(catalogItem.type) ? 'equipment' : 'bom_template'),
     skuCode: catalogItem.skuCode ?? '',
@@ -949,19 +951,7 @@ export function PresetEditorDialog({
                   <section className="rounded-xl border border-dashed border-border bg-background/45 p-4">
                     <p className="mb-3 text-xs font-bold uppercase tracking-wider text-text-muted">Add by category / subcategory</p>
                     <div className="relative flex flex-wrap gap-2">
-                      {(['bom_item', 'miscellaneous'] as const).map((category) => (
-                        <div key={category} className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setAddPickerOpen(addPickerOpen === category ? false : category)}
-                            className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-bold text-text-secondary hover:border-accent/40 hover:text-accent"
-                          >
-                            + {TOP_CATEGORY_LABELS[category]}
-                          </button>
-                          {renderPicker(category, 'left')}
-                        </div>
-                      ))}
-                      {EXCEL_BOM_SUBCATEGORIES.filter((subcategory) => subcategory !== 'Miscellaneous').map((subcategory) => {
+                      {EXCEL_BOM_SUBCATEGORIES.map((subcategory) => {
                         const key = `bom_item:${subcategory}`;
                         return (
                           <div key={subcategory} className="relative">

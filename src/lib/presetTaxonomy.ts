@@ -19,15 +19,21 @@ export const TOP_CATEGORY_LABELS: Record<PresetTopCategory, string> = {
 };
 
 export const EXCEL_BOM_SUBCATEGORIES = [
-  'Structure & Accessories',
-  'Distribution Boxes',
-  'Meters',
-  'Wiring Accessories',
-  'Cables & Wires',
+  'Cables & Conduit',
+  'AC Protection',
+  'DC Protection',
+  'Earthing',
   'LA & Earthings',
+  'Monitoring & Safety',
   'Meter Boxes',
-  'Miscellaneous',
+  'Cables & Wires',
+  'Civil Works',
+  'Wiring Accessories',
 ] as const;
+
+const BOM_ITEM_SUBCATEGORY_KEYS = new Set(
+  EXCEL_BOM_SUBCATEGORIES.map((subcategory) => normalizeTaxonomyKey(subcategory))
+);
 
 export const FUNCTIONAL_CATEGORY_LABELS: Record<string, string> = {
   all: 'All Saved Items',
@@ -76,8 +82,8 @@ export function normalizeFunctionalCategory(category: string | null | undefined)
   if (normalized === 'batteries') return 'battery';
   if (normalized === 'structures' || normalized === 'mounting_structure') return 'structure';
   if (normalized === 'bom_items' || normalized === 'bom') return 'bom_item';
-  if (normalized === 'accessories' || normalized === 'monitoring_and_safety') return 'accessory';
-  if (normalized === 'cables_and_conduit' || normalized === 'cabling' || normalized === 'wiring') return 'cable';
+  if (normalized === 'accessories' || normalized === 'monitoring_and_safety' || normalized === 'wiring_accessories' || normalized === 'meter_boxes') return 'accessory';
+  if (normalized === 'cables_and_conduit' || normalized === 'cables_and_wires' || normalized === 'cabling' || normalized === 'wiring') return 'cable';
   if (normalized === 'dc_side_protection') return 'dc_protection';
   if (normalized === 'ac_side_protection') return 'ac_protection';
   if (normalized === 'civil_works' || normalized === 'services') return 'civil';
@@ -86,6 +92,10 @@ export function normalizeFunctionalCategory(category: string | null | undefined)
   return BOM_FUNCTIONAL_CATEGORIES.has(normalized) || CORE_FUNCTIONAL_CATEGORIES.has(normalized)
     ? normalized
     : 'miscellaneous';
+}
+
+export function isBomItemSubcategory(value: string | null | undefined) {
+  return BOM_ITEM_SUBCATEGORY_KEYS.has(normalizeTaxonomyKey(value));
 }
 
 export function topCategoryFromFunctional(category: string | null | undefined): PresetTopCategory {
@@ -134,4 +144,3 @@ export function isCoreTopCategory(topCategory: string | null | undefined) {
   const normalized = normalizeTaxonomyKey(topCategory);
   return normalized === 'panel' || normalized === 'inverter' || normalized === 'battery' || normalized === 'structure';
 }
-

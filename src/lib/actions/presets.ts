@@ -5,6 +5,7 @@ import { normalizeGstRate } from '@/lib/utils/gst';
 import { getBatteryGstRate, TAX_CONSTANTS } from '@/lib/tax-constants';
 import {
   defaultSubcategoryForItem,
+  isBomItemSubcategory,
   normalizeFunctionalCategory,
   topCategoryFromFunctional,
 } from '@/lib/presetTaxonomy';
@@ -75,11 +76,11 @@ const CATALOG_CATEGORY_ALIASES: Record<string, string[]> = {
   structure: ['Structure', 'Structures'],
   dc_protection: ['DC Protection', 'DC Side Protection', 'Electrical Protection'],
   ac_protection: ['AC Protection', 'AC Side Protection', 'Electrical Protection'],
-  cable: ['Cables', 'Cables & Conduit', 'Cabling', 'Cable', 'Wiring'],
-  earthing: ['Earthing', 'Earthings'],
+  cable: ['Cables', 'Cables & Conduit', 'Cables & Wires', 'Cabling', 'Cable', 'Wiring'],
+  earthing: ['Earthing', 'Earthings', 'LA & Earthings'],
   civil: ['Civil Works', 'Civil', 'Services'],
   logistics: ['Logistics', 'Logistics & Handling', 'Handling', 'Services'],
-  accessory: ['Accessories', 'Accessory', 'Monitoring & Safety', 'Wiring', 'Mounting Structure'],
+  accessory: ['Accessories', 'Accessory', 'Monitoring & Safety', 'Meter Boxes', 'Wiring Accessories', 'Wiring', 'Mounting Structure'],
   miscellaneous: ['Miscellaneous', 'Miscellenous', 'Misc', 'Other'],
 };
 
@@ -1536,7 +1537,7 @@ export async function getCatalogItems(category: string, search?: string): Promis
       type: 'meter',
       catalogType: 'equipment',
       topCategory: 'bom_item',
-      subcategory: 'Meters',
+      subcategory: 'Meter Boxes',
       category: 'accessory',
       description: item.description || [item.brand, item.model].filter(Boolean).join(' ') || 'Meter',
       brand: item.brand ?? '',
@@ -1553,7 +1554,7 @@ export async function getCatalogItems(category: string, search?: string): Promis
       type: 'communication_device',
       catalogType: 'equipment',
       topCategory: 'bom_item',
-      subcategory: 'Meters',
+      subcategory: 'Monitoring & Safety',
       category: 'accessory',
       description: item.description || [item.brand, item.model].filter(Boolean).join(' ') || 'Communication device',
       brand: item.brand ?? '',
@@ -1583,7 +1584,7 @@ export async function getCatalogItems(category: string, search?: string): Promis
   const matchingCategoryIds = ((categories || []) as any[])
     .filter((item: any) => {
       const categoryName = item.subcategory_name ?? item.name;
-      if (normalizedCategory === 'bom_item') return item.top_category === 'bom_item';
+      if (normalizedCategory === 'bom_item') return item.top_category === 'bom_item' || isBomItemSubcategory(categoryName);
       if (normalizedCategory === 'miscellaneous') return categoryNameMatches('miscellaneous', categoryName);
       return categoryNameMatches(normalizedCategory, categoryName);
     })
@@ -1633,7 +1634,9 @@ export async function getCatalogItems(category: string, search?: string): Promis
 
   catalogItems.push(...matchingBomItems.map(({ item, categoryMeta, categoryName, inferred }: any) => {
     const functionalCategory = categoryFromBomItem({ ...item, bom_categories: categoryMeta }, inferred);
-    const topCategory = categoryMeta?.top_category ?? topCategoryFromFunctional(functionalCategory);
+    const topCategory = isBomItemSubcategory(categoryName)
+      ? 'bom_item'
+      : categoryMeta?.top_category ?? topCategoryFromFunctional(functionalCategory);
     return ({
     id: item.id,
     type: 'bom_template',
