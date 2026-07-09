@@ -426,6 +426,84 @@ export function buildQuotedLines(
   });
 }
 
+function normalizeBomDescription(value: unknown): string {
+  return String(value ?? '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+}
+
+function isAcdbDescription(text: string): boolean {
+  return /^ACDB\b/.test(text) || text.includes('AC DISTRIBUTION BOX');
+}
+
+function isDcdbDescription(text: string): boolean {
+  return /^DCDB\b/.test(text) || text.includes('DC DISTRIBUTION BOX');
+}
+
+function replacementKeyForBomLine(line: Pick<LineResult, 'description' | 'sourceLabel'>): string | null {
+  const text = normalizeBomDescription(`${line.description} ${line.sourceLabel ?? ''}`);
+  const includesSurgeProtection = text.includes('SURGE') && text.includes('PROTECTION');
+  const isSurgeProtection = text.includes('SPD') || includesSurgeProtection;
+
+  if (isAcdbDescription(text)) return 'acdb';
+  if (isDcdbDescription(text)) return 'dcdb';
+  if (text.includes('AC') && isSurgeProtection) return 'ac-spd';
+  if (text.includes('DC') && isSurgeProtection) return 'dc-spd';
+  return null;
+}
+
+function exactBomLineKey(line: LineResult): string {
+  return [
+    normalizeBomDescription(line.description),
+    normalizeBomDescription(line.remarks),
+    normalizeBomDescription(line.unit),
+    line.effectiveQty,
+    line.effectiveRate,
+    line.effectiveGstPct,
+    line.sourceTable ?? '',
+    line.sourceItemId ?? '',
+  ].join('|');
+}
+
+function removeDuplicateBomLines(lines: LineResult[]): LineResult[] {
+  const selectedReplacementKeys = new Set(
+    lines
+      .filter((line) => line.sourceTable === 'bom_template_items' && Boolean(line.sourceItemId))
+      .map(replacementKeyForBomLine)
+      .filter((key): key is string => Boolean(key)),
+  );
+
+  const seenSelectedReplacementKeys = new Set<string>();
+  const seenSavedItems = new Set<string>();
+  const seenExactRows = new Set<string>();
+
+  return lines.filter((line) => {
+    const isSavedBomLine = line.sourceTable === 'bom_template_items' && Boolean(line.sourceItemId);
+    const replacementKey = replacementKeyForBomLine(line);
+    const exactKey = exactBomLineKey(line);
+
+    if (seenExactRows.has(exactKey)) return false;
+    seenExactRows.add(exactKey);
+
+    if (isSavedBomLine && line.sourceItemId) {
+      const sourceKey = `${line.sourceTable}:${line.sourceItemId}`;
+      if (seenSavedItems.has(sourceKey)) return false;
+      seenSavedItems.add(sourceKey);
+
+      if (replacementKey) {
+        if (seenSelectedReplacementKeys.has(replacementKey)) return false;
+        seenSelectedReplacementKeys.add(replacementKey);
+      }
+
+      return true;
+    }
+
+    if (replacementKey && selectedReplacementKeys.has(replacementKey)) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
 // Equipment descriptions that are resolved from the DB model selection,
 // NOT via Rate Master or equipment overrides.
 // Now loaded from database - no hardcoded values.
@@ -1495,7 +1573,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
 
   // ── Step 4: Apply Overrides, Rate Master, and Calculate Totals ──
   const allItems = [...resolvedItems];
-  const lines: LineResult[] = allItems.map((item, index) => {
+  let lines: LineResult[] = allItems.map((item, index) => {
     const rowOverride = input.overrides?.[index];
     const isDisabled = input.disabledItemIndices?.[index] === true;
     const resolvedDescription = rowOverride?.description ?? item.description;
@@ -1601,6 +1679,7 @@ export function calculateSystem(rawInput: CalcInput): CalcResult {
       sourceLabel,
     };
   });
+  lines = removeDuplicateBomLines(lines);
 
   // ── Step 5: Cost aggregates ──
   const activeLines = lines.filter(l => !l.isDisabled);

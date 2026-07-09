@@ -180,7 +180,10 @@ export default function SystemPresetsPage() {
         if (preset?.source === 'custom_presets') {
           await PresetORM.delete(id);
         } else {
-          await deleteSystemPreset(id);
+          const result = await deleteSystemPreset(id);
+          if (!result.ok) {
+            throw new Error(result.error || 'Unknown preset delete error.');
+          }
         }
         fetchPresets();
       } catch (err: any) {

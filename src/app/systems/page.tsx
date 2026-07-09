@@ -745,7 +745,10 @@ export default function SystemsPage() {
       toast('Preset deleted locally. Commit to sync.', 'success');
     } else {
       try {
-        await deleteSystemPreset(id);
+        const result = await deleteSystemPreset(id);
+        if (!result.ok) {
+          throw new Error(result.error || 'Unknown preset delete error.');
+        }
         toast('Preset removed from your available presets.', 'success');
         await fetchMasterData();
       } catch (err) {

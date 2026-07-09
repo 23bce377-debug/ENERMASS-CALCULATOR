@@ -182,6 +182,15 @@ export default function PanelsMasterPage() {
     toast(`Loaded view: ${view.name}`, 'info');
   };
 
+  const handleDeleteView = (viewName: string) => {
+    const updated = savedViews.filter((view) => view.name !== viewName);
+    setSavedViews(updated);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('enermass_saved_views_panels', JSON.stringify(updated));
+    }
+    toast(`Deleted view: ${viewName}`, 'success');
+  };
+
   // 5. Inline Cell Editing with validation & dirty indicators (Item 93)
   const [activeEditCell, setActiveEditCell] = useState<{ rowId: string; field: string } | null>(null);
   const [inlineEditValue, setInlineEditValue] = useState('');
@@ -497,25 +506,11 @@ export default function PanelsMasterPage() {
   // 8. Row Audit Sidebar Drawer (Item 98) & Row Details Click
   const [selectedAuditRowId, setSelectedAuditRowId] = useState<string | null>(null);
 
-  // 9. Dependency Deletion Check (Item 99)
-  const handleDeleteRowWithDependencyCheck = async (id: string, label: string) => {
-    // Mock check: panels with ratings > 500W are referenced in simulated quotes
-    const referencedQuotesCount = id.charCodeAt(0) % 2 === 0 ? 12 : 0;
-
-    if (referencedQuotesCount > 0) {
-      await confirm({
-        title: '🔒 Cannot Delete Panel PV Spec',
-        message: `The panel spec "${label}" is currently referenced in ${referencedQuotesCount} active solar quotes & customer BOMs. Deletion is locked to maintain data integrity.`,
-        confirmLabel: 'Acknowledge',
-        cancelLabel: 'Close',
-        type: 'danger',
-      });
-      return;
-    }
-
+  // 9. Delete row through the shared master mutation.
+  const handleDeleteRow = async (id: string, label: string) => {
     const confirmed = await confirm({
       title: 'Remove Panel PV Spec?',
-      message: 'Are you sure you want to delete this panel from the active master directory?',
+      message: `Delete "${label}" from the active master directory? Referenced records will be hidden from active lists instead of breaking existing quotes.`,
       confirmLabel: 'Delete Panel',
       cancelLabel: 'Cancel',
       type: 'danger',
@@ -586,7 +581,8 @@ export default function PanelsMasterPage() {
         if (selected) handleOpenEdit(selected);
       } else if (e.key === 'Delete' && selectedIds.length > 0) {
         e.preventDefault();
-        handleDeleteRowWithDependencyCheck(selectedIds[0], 'Selected Item');
+        const selected = panels?.find(p => p.id === selectedIds[0]);
+        handleDeleteRow(selectedIds[0], selected ? `${selected.brand} ${selected.model}` : 'Selected item');
       } else if (e.key === '/') {
         e.preventDefault();
         searchInputRef.current?.focus();
@@ -783,13 +779,28 @@ export default function PanelsMasterPage() {
           ) : (
             <div className="flex flex-wrap gap-2">
               {savedViews.map((view) => (
-                <button
+                <div
                   key={view.name}
-                  onClick={() => handleLoadView(view)}
-                  className="px-2.5 py-1 text-xs rounded-full border border-border bg-background hover:border-accent hover:text-accent font-semibold transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-1 py-1 text-xs font-semibold transition-colors hover:border-accent"
                 >
-                  {view.name}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLoadView(view)}
+                    className="px-2 py-0.5 text-text-primary hover:text-accent transition-colors cursor-pointer"
+                  >
+                    {view.name}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteView(view.name)}
+                    aria-label={`Delete saved view ${view.name}`}
+                    title={`Delete saved view ${view.name}`}
+                    className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-300 hover:border-red-400 hover:bg-red-500/20 hover:text-red-200 transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={11} />
+                    Delete
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -1193,9 +1204,9 @@ export default function PanelsMasterPage() {
                               >
                                 <Edit2 size={12} />
                               </button>
-                              {/* Delete with dependencies warning check (Item 99) */}
+                              {/* Delete row */}
                               <button
-                                onClick={() => handleDeleteRowWithDependencyCheck(p.id, `${p.brand} ${p.model}`)}
+                                onClick={() => handleDeleteRow(p.id, `${p.brand} ${p.model}`)}
                                 className="p-1 rounded bg-surface border border-border text-text-secondary hover:text-error hover:border-error/30 cursor-pointer"
                                 title="Delete Row"
                               >

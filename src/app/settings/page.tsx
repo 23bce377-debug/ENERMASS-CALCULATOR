@@ -84,6 +84,37 @@ function formatMarginInput(value: number) {
   return (value * 100).toFixed(2).replace(/\.?0+$/, '');
 }
 
+function downloadDesktopShortcut() {
+  if (typeof window === 'undefined') return;
+
+  const appUrl = `${window.location.origin}/`;
+  const isApplePlatform = /Mac|iPhone|iPad|iPod/i.test(window.navigator.platform);
+  const shortcutContent = isApplePlatform
+    ? `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>URL</key>
+  <string>${appUrl}</string>
+</dict>
+</plist>
+`
+    : `[InternetShortcut]
+URL=${appUrl}
+IconFile=${window.location.origin}/favicon.ico
+IconIndex=0
+`;
+  const blob = new Blob([shortcutContent], { type: isApplePlatform ? 'application/xml' : 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = isApplePlatform ? 'ENERMASS Solar Calculator.webloc' : 'ENERMASS Solar Calculator.url';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -101,6 +132,23 @@ export default function SettingsPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [showDiffModal, setShowDiffModal] = useState(false);
   const [diffMode, setDiffMode] = useState<'commit' | 'load'>('commit');
+
+  // Local input editing states to support graceful empty/cleared states (Item 61)
+  const [localTariff, setLocalTariff] = useState<string>('');
+  const [localMargins, setLocalMargins] = useState<Record<string, string>>({});
+  const [hasInitializedLocal, setHasInitializedLocal] = useState(false);
+
+  useEffect(() => {
+    if (loaded && settings && !hasInitializedLocal) {
+      setLocalTariff(String(settings.defaultGridTariff ?? ''));
+      const initialMargins: Record<string, string> = {};
+      (Object.keys(CATEGORY_LABELS) as (keyof CategoryMargins)[]).forEach((key) => {
+        initialMargins[key] = formatMarginInput(settings.categoryMargins[key]);
+      });
+      setLocalMargins(initialMargins);
+      setHasInitializedLocal(true);
+    }
+  }, [loaded, settings, hasInitializedLocal]);
 
   // Load user profile
   useEffect(() => {
@@ -229,7 +277,32 @@ export default function SettingsPage() {
     e.target.value = '';
   };
 
-  const updateMargin = (key: keyof CategoryMargins, value: string) => {
+  const handleTariffChange = (value: string) => {
+    setLocalTariff(value);
+    if (value === '') {
+      setSettings({ defaultGridTariff: 0 });
+      flash();
+      return;
+    }
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) {
+      setSettings({ defaultGridTariff: parsed });
+      flash();
+    }
+  };
+
+  const handleMarginChange = (key: keyof CategoryMargins, value: string) => {
+    setLocalMargins((prev) => ({ ...prev, [key]: value }));
+    if (value === '') {
+      setSettings({
+        categoryMargins: {
+          ...settings.categoryMargins,
+          [key]: 0,
+        },
+      });
+      flash();
+      return;
+    }
     const num = parseFloat(value);
     if (isNaN(num)) return;
     const clampedPercent = Math.min(100, Math.max(0, num));
@@ -311,12 +384,29 @@ export default function SettingsPage() {
     } else {
       setOriginalSettings(null); // triggers reload of original settings on next effect
       setIsDirty(false);
+      setHasInitializedLocal(false);
       toast('Latest settings pulled from database ✓', 'success');
       flash();
     }
   };
 
   const handleAddShortcut = async () => {
+    if (isPwaStandalone()) {
+      toast('Shortcut is already installed for this device', 'info');
+      setShortcutAvailable(true);
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Create Desktop Shortcut?',
+      message: 'Add ENERMASS Solar Calculator as an app shortcut for faster access from this device.',
+      confirmLabel: 'Create Shortcut',
+      cancelLabel: 'Cancel',
+      type: 'warning',
+    });
+
+    if (!confirmed) return;
+
     const result = await requestPwaInstallShortcut();
     if (result.status === 'accepted') {
       toast('Shortcut added successfully', 'success');
@@ -332,8 +422,16 @@ export default function SettingsPage() {
       toast('Shortcut installation was dismissed', 'info');
       return;
     }
-    toast('Shortcut install is not available here. Use your browser menu to add this app as a shortcut.', 'info');
+
+    downloadDesktopShortcut();
+    toast('Shortcut file downloaded. Open or move it to your desktop if the browser did not place it there automatically.', 'success');
   };
+
+  const shortcutButtonLabel = isPwaStandalone()
+    ? 'Shortcut Installed'
+    : shortcutAvailable
+      ? 'Add Shortcut'
+      : 'Create Shortcut';
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 p-4 pb-24 animate-fade-in md:p-6">
@@ -407,8 +505,8 @@ export default function SettingsPage() {
               <div className="relative">
                 <input
                   type="number"
-                  value={formatMarginInput(settings.categoryMargins[key])}
-                  onChange={(e) => updateMargin(key, e.target.value)}
+                  value={localMargins[key] ?? ''}
+                  onChange={(e) => handleMarginChange(key, e.target.value)}
                   min={0}
                   max={100}
                   step={0.1}
@@ -429,11 +527,8 @@ export default function SettingsPage() {
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">₹</span>
             <input
               type="number"
-              value={settings.defaultGridTariff}
-              onChange={(e) => {
-                const v = parseFloat(e.target.value);
-                if (!isNaN(v)) { setSettings({ defaultGridTariff: v }); flash(); }
-              }}
+              value={localTariff}
+              onChange={(e) => handleTariffChange(e.target.value)}
               min={0}
               step={0.5}
               disabled={disableInputs}
@@ -596,7 +691,7 @@ export default function SettingsPage() {
             onClick={handleAddShortcut}
             className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-surface border border-accent/30 text-accent text-sm font-semibold hover:bg-accent/10 transition-all cursor-pointer"
           >
-            <Laptop size={16} /> {shortcutAvailable ? 'Add Shortcut' : 'Shortcut Help'}
+            <Laptop size={16} /> {shortcutButtonLabel}
           </button>
 
           <button
@@ -631,6 +726,7 @@ export default function SettingsPage() {
               });
               if (confirmed) {
                 await resetSettings();
+                setHasInitializedLocal(false);
                 toast('Settings reset to defaults', 'success');
                 flash();
               }

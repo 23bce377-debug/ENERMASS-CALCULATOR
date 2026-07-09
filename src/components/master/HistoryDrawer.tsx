@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, History, Clock } from 'lucide-react';
 import { useAuditLogsQuery, useChangesLogQuery } from '@/lib/hooks/useMasters';
 
@@ -179,8 +179,14 @@ export function HistoryDrawer({ isOpen, onClose, entityTable, title }: HistoryDr
   const [activeTab, setActiveTab] = useState<'revisions' | 'audits'>('revisions');
 
   // Fetch changes & audits
-  const { data: revisions, isLoading: revLoading } = useChangesLogQuery(entityTable);
-  const { data: audits, isLoading: audLoading } = useAuditLogsQuery(entityTable);
+  const { data: revisions, isLoading: revLoading, refetch: refetchRevisions } = useChangesLogQuery(entityTable);
+  const { data: audits, isLoading: audLoading, refetch: refetchAudits } = useAuditLogsQuery(entityTable);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    refetchRevisions();
+    refetchAudits();
+  }, [isOpen, refetchAudits, refetchRevisions]);
 
   if (!isOpen) return null;
 

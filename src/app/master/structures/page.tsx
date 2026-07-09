@@ -34,6 +34,7 @@ import {
   Droplets,
   Construction,
   Milestone,
+  AlertTriangle,
 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
@@ -99,6 +100,12 @@ interface StructureAddon {
   notes: string | null;
 }
 
+interface StructureImportConflict {
+  row: any;
+  existing?: Structure | null;
+  reason: 'existing' | 'file_duplicate';
+}
+
 const CATEGORY_META: Record<string, { label: string; color: string; bg: string }> = {
   steel_section: { label: 'Steel Sections',  color: '#6366f1', bg: 'rgba(99,102,241,0.10)' },
   hardware:      { label: 'Hardware',         color: '#0ea5e9', bg: 'rgba(14,165,233,0.10)' },
@@ -128,6 +135,9 @@ export default function StructuresMasterPage() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Structure | null>(null);
+  const [duplicateConflicts, setDuplicateConflicts] = useState<StructureImportConflict[]>([]);
+  const [pendingImportRows, setPendingImportRows] = useState<any[]>([]);
+  const [showConflictsModal, setShowConflictsModal] = useState(false);
 
   // State for tabs
   const [mainTab, setMainTab] = useState<'erp' | 'legacy'>('erp');
@@ -164,6 +174,64 @@ export default function StructuresMasterPage() {
       sameText(item.material, row.material) &&
       sameText(item.roof_mount_type, row.roof_mount_type)
     );
+  };
+
+  const structureNaturalKey = (row: any) =>
+    [
+      String(row.name ?? '').trim().toLowerCase(),
+      String(row.material ?? '').trim().toLowerCase(),
+      String(row.roof_mount_type ?? '').trim().toLowerCase(),
+    ].join('|');
+
+  const isDuplicateStructureError = (err: any) => {
+    const message = String(err?.message || err?.details || '').toLowerCase();
+    return err?.code === '23505' || message.includes('duplicate key') || message.includes('uq_eq_structures');
+  };
+
+  const mapStructureFromDb = (row: any): Structure => ({
+    ...row,
+    flat_rate: row.selling_price ?? row.flat_rate ?? null,
+  });
+
+  const findImportMatchFromDb = async (row: any): Promise<Structure | null> => {
+    const localMatch = findImportMatch(row);
+    if (localMatch) return localMatch;
+
+    const { orgId } = await getOrgContext();
+    let query = (supabase as any)
+      .from('eq_mounting_structures')
+      .select('*')
+      .eq('name', row.name)
+      .eq('material', row.material)
+      .eq('roof_mount_type', row.roof_mount_type)
+      .eq('is_active', true);
+
+    query = orgId ? query.or(`org_id.eq.${orgId},org_id.is.null`) : query.is('org_id', null);
+
+    const { data, error } = await query.limit(5);
+    if (error) throw error;
+    const rows = (data || []) as any[];
+    const preferred = orgId ? rows.find((item) => item.org_id === orgId) || rows[0] : rows[0];
+    return preferred ? mapStructureFromDb(preferred) : null;
+  };
+
+  const findStructureImportConflicts = async (rows: any[]) => {
+    const seen = new Map<string, any>();
+    const conflicts: StructureImportConflict[] = [];
+
+    for (const row of rows) {
+      const key = structureNaturalKey(row);
+      if (seen.has(key)) {
+        conflicts.push({ row, existing: null, reason: 'file_duplicate' });
+        continue;
+      }
+      seen.set(key, row);
+
+      const existing = await findImportMatchFromDb(row);
+      if (existing) conflicts.push({ row, existing, reason: 'existing' });
+    }
+
+    return conflicts;
   };
 
   const structureRowChanged = (existing: Structure, row: any) =>
@@ -410,15 +478,42 @@ export default function StructuresMasterPage() {
     e.preventDefault();
     try {
       if (editingItem) {
+        const existing = await findImportMatchFromDb(draft);
+        if (existing && existing.id !== editingItem.id) {
+          toast('Another structure already uses this name, material, and mount type. Update that row instead of creating a duplicate key.', 'error');
+          return;
+        }
+
         await updateMutation.mutateAsync({ id: editingItem.id, updates: draft });
         toast('Mounting structure specification updated ✓', 'success');
       } else {
+        const existing = await findImportMatchFromDb(draft);
+        if (existing) {
+          const updateExisting = await confirm({
+            title: 'Duplicate Structure Found',
+            message: `"${draft.name}" already exists for this material and mount type. Update the existing structure instead of creating a duplicate?`,
+            confirmLabel: 'Update Existing',
+            cancelLabel: 'Cancel',
+            type: 'warning',
+          });
+          if (!updateExisting) return;
+
+          await updateMutation.mutateAsync({ id: existing.id, updates: draft });
+          toast('Existing mounting structure updated ✓', 'success');
+          setEditorOpen(false);
+          return;
+        }
+
         await createMutation.mutateAsync(draft);
         toast('New mounting structure spec added ✓', 'success');
       }
       setEditorOpen(false);
     } catch (err: any) {
-      toast(err.message || 'Operation failed', 'error');
+      if (isDuplicateStructureError(err)) {
+        toast('A structure with the same name, material, and mount type already exists. Use edit/update instead of creating another copy.', 'error');
+      } else {
+        toast(err.message || 'Operation failed', 'error');
+      }
     }
   };
 
@@ -553,6 +648,86 @@ export default function StructuresMasterPage() {
     toast('Master list exported to Excel', 'success');
   };
 
+  const runStructureImport = async (
+    rows: any[],
+    strategy: 'overwrite' | 'skip' | 'duplicate' = 'overwrite',
+    conflicts: StructureImportConflict[] = [],
+    askConfirm = true,
+  ) => {
+    if (askConfirm) {
+      const confirmed = await confirm({
+        title: `Import ${rows.length} Structures?`,
+        message: `This will import ${rows.length} structure spec rows into the database. Existing rows with the same name, material, and mount type will be updated.`,
+        confirmLabel: 'Import Now',
+        cancelLabel: 'Cancel',
+        type: 'warning',
+      });
+
+      if (!confirmed) return;
+    }
+
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+    let failed = 0;
+    const conflictByKey = new Map(conflicts.map((conflict) => [structureNaturalKey(conflict.row), conflict]));
+    const copySuffix = Date.now().toString().slice(-5);
+
+    for (const [index, row] of rows.entries()) {
+      try {
+        const conflict = conflictByKey.get(structureNaturalKey(row));
+        if (conflict && strategy === 'skip') {
+          skipped += 1;
+          continue;
+        }
+
+        const importRow = conflict && strategy === 'duplicate'
+          ? { ...row, name: `${row.name} (Copy ${copySuffix}-${index + 1})` }
+          : row;
+        const { __master_id, __source_global_id, ...payload } = importRow;
+        const existing = conflict && strategy === 'duplicate' ? null : await findImportMatchFromDb(importRow);
+
+        if (existing) {
+          if (structureRowChanged(existing, payload)) {
+            await updateMutation.mutateAsync({ id: existing.id, updates: payload });
+            updated += 1;
+          } else {
+            skipped += 1;
+          }
+        } else {
+          await createMutation.mutateAsync(payload);
+          created += 1;
+        }
+      } catch (rowError) {
+        console.error('[structures] import row failed', rowError);
+        failed += 1;
+      }
+    }
+
+    const message = `Import complete: ${created} created, ${updated} updated, ${skipped} unchanged/skipped${failed ? `, ${failed} failed` : ''}.`;
+    toast(message, failed ? 'error' : 'success');
+  };
+
+  const resolveStructureImportConflicts = async (strategy: 'overwrite' | 'skip' | 'duplicate') => {
+    const rows = pendingImportRows;
+    const conflicts = duplicateConflicts;
+    setShowConflictsModal(false);
+    setPendingImportRows([]);
+    setDuplicateConflicts([]);
+
+    try {
+      await runStructureImport(rows, strategy, conflicts, false);
+    } catch (err: any) {
+      toast(err.message || 'Import failed', 'error');
+    }
+  };
+
+  const closeStructureImportConflicts = () => {
+    setShowConflictsModal(false);
+    setPendingImportRows([]);
+    setDuplicateConflicts([]);
+  };
+
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -585,40 +760,21 @@ export default function StructuresMasterPage() {
         return;
       }
 
-      const confirmed = await confirm({
-        title: `Import ${parsedRows.length} Structures?`,
-        message: `This will insert ${parsedRows.length} structure spec rows into database. Continue?`,
-        confirmLabel: 'Import Now',
-        cancelLabel: 'Cancel',
-        type: 'warning',
-      });
-
-      if (!confirmed) return;
-
-      let created = 0;
-      let updated = 0;
-      let skipped = 0;
-
-      for (const row of parsedRows) {
-        const { __master_id, __source_global_id, ...payload } = row;
-        const existing = findImportMatch(row);
-
-        if (existing) {
-          if (structureRowChanged(existing, payload)) {
-            await updateMutation.mutateAsync({ id: existing.id, updates: payload });
-            updated += 1;
-          } else {
-            skipped += 1;
-          }
-        } else {
-          await createMutation.mutateAsync(payload);
-          created += 1;
-        }
+      const conflicts = await findStructureImportConflicts(parsedRows);
+      if (conflicts.length > 0) {
+        setPendingImportRows(parsedRows);
+        setDuplicateConflicts(conflicts);
+        setShowConflictsModal(true);
+        return;
       }
 
-      toast(`Import complete: ${created} created, ${updated} updated, ${skipped} unchanged`, 'success');
+      await runStructureImport(parsedRows);
     } catch (err: any) {
-      toast(err.message || 'Import failed', 'error');
+      if (isDuplicateStructureError(err)) {
+        toast('Duplicate structures were detected. Re-import and choose update, copy, or skip from the duplicate review dialog.', 'error');
+      } else {
+        toast(err.message || 'Import failed', 'error');
+      }
     } finally {
       e.target.value = '';
     }
@@ -1293,6 +1449,63 @@ export default function StructuresMasterPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Structure Import Modal */}
+      {showConflictsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeStructureImportConflicts} />
+          <div className="relative w-full max-w-lg bg-surface border border-border rounded-xl shadow-2xl overflow-hidden animate-scale-in">
+            <div className="p-5 border-b border-border bg-surface-2 flex justify-between items-center">
+              <h3 className="text-sm font-bold text-warning flex items-center gap-2">
+                <AlertTriangle size={16} />
+                Duplicate Structure Import
+              </h3>
+              <button onClick={closeStructureImportConflicts} className="text-text-muted hover:text-text-primary">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              <p className="text-text-secondary">
+                We detected <strong>{duplicateConflicts.length}</strong> imported structure row(s) with the same name, material, and mount type as an existing row or another imported row. Choose how to continue:
+              </p>
+
+              <div className="border border-border rounded-lg bg-background p-3 max-h-40 overflow-y-auto space-y-1 font-mono">
+                {duplicateConflicts.map((conflict, index) => (
+                  <div key={`${structureNaturalKey(conflict.row)}-${index}`} className="text-text-muted">
+                    <span className="font-bold text-text-primary">{conflict.row.name}</span>
+                    <span> / {conflict.row.material} / {conflict.row.roof_mount_type}</span>
+                    <span className="ml-2 text-warning">
+                      {conflict.reason === 'file_duplicate' ? 'duplicate in file' : 'already exists'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5 pt-2">
+                <button
+                  onClick={() => resolveStructureImportConflicts('overwrite')}
+                  className="p-3 border border-warning/30 bg-warning/5 text-warning font-semibold text-center rounded-lg hover:bg-warning/15 text-[10px] cursor-pointer"
+                >
+                  Update Existing
+                </button>
+                <button
+                  onClick={() => resolveStructureImportConflicts('duplicate')}
+                  className="p-3 border border-accent/30 bg-accent/5 text-accent font-semibold text-center rounded-lg hover:bg-accent/15 text-[10px] cursor-pointer"
+                >
+                  Import as Copies
+                </button>
+                <button
+                  onClick={() => resolveStructureImportConflicts('skip')}
+                  className="p-3 border border-border bg-surface text-text-secondary text-center rounded-lg hover:bg-surface-hover text-[10px] cursor-pointer"
+                >
+                  Skip Duplicates
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

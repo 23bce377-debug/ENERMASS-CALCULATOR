@@ -60,6 +60,31 @@ async function logAudit(
   }
 }
 
+async function logMasterChange(
+  entityType: string,
+  entityId: string,
+  changeType: 'created' | 'updated' | 'deleted' | 'deactivated' | 'hidden',
+  oldValues: any,
+  newValues: any,
+) {
+  try {
+    await supabase.from('master_data_changes_log').insert({
+      entity_type: entityType,
+      entity_id: entityId,
+      change_type: changeType,
+      old_values: oldValues,
+      new_values: newValues,
+    });
+  } catch (err) {
+    console.error('Failed to write master change log:', err);
+  }
+}
+
+function invalidateHistoryQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ['changes-log'] });
+  queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+}
+
 // ─── Generic Masters Fetch / Mutation Hooks ───────────────────────────────────
 
 function getEntityTable(entity: string): string {
@@ -443,7 +468,7 @@ async function writeMasterInsertOrUpdate<T>(entity: string, table: string, paylo
     }
 
     if (existingBeforeInsert.org_id === null && orgId !== null && overrideableEntities.has(entity)) {
-      return writeOrgOverride<T>(
+      const data = await writeOrgOverride<any>(
         entity,
         table,
         existingBeforeInsert,
@@ -454,6 +479,8 @@ async function writeMasterInsertOrUpdate<T>(entity: string, table: string, paylo
         'import_create_override',
         'import_update_override',
       );
+      await logMasterChange(table, data.id, 'created', existingBeforeInsert, data);
+      return transformFromDb(entity, data) as T;
     }
 
     const { data, error } = await ((supabase as any)
@@ -465,6 +492,7 @@ async function writeMasterInsertOrUpdate<T>(entity: string, table: string, paylo
     if (error) throw error;
 
     await logAudit(orgId, userId, 'masters', table, data.id, 'import_update', existingBeforeInsert, data);
+    await logMasterChange(table, data.id, 'updated', existingBeforeInsert, data);
     return transformFromDb(entity, data) as T;
   }
 
@@ -476,6 +504,7 @@ async function writeMasterInsertOrUpdate<T>(entity: string, table: string, paylo
 
   if (!insertResult.error) {
     await logAudit(orgId, userId, 'masters', table, insertResult.data.id, 'create', null, insertResult.data);
+    await logMasterChange(table, insertResult.data.id, 'created', null, insertResult.data);
     return transformFromDb(entity, insertResult.data) as T;
   }
 
@@ -492,7 +521,7 @@ async function writeMasterInsertOrUpdate<T>(entity: string, table: string, paylo
   };
 
   if (existing.org_id === null && orgId !== null && overrideableEntities.has(entity)) {
-    return writeOrgOverride<T>(
+    const data = await writeOrgOverride<any>(
       entity,
       table,
       existing,
@@ -503,6 +532,8 @@ async function writeMasterInsertOrUpdate<T>(entity: string, table: string, paylo
       'import_create_override',
       'import_update_override',
     );
+    await logMasterChange(table, data.id, 'created', existing, data);
+    return transformFromDb(entity, data) as T;
   }
 
   const { data, error } = await ((supabase as any)
@@ -514,6 +545,7 @@ async function writeMasterInsertOrUpdate<T>(entity: string, table: string, paylo
   if (error) throw error;
 
   await logAudit(orgId, userId, 'masters', table, data.id, 'import_update', existing, data);
+  await logMasterChange(table, data.id, 'updated', existing, data);
   return transformFromDb(entity, data) as T;
 }
 
@@ -608,6 +640,7 @@ export function useMasterCreateMutation<T>(entity: string) {
       }
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
       queryClient.invalidateQueries({ queryKey: ['masters', 'dashboard'] });
+      invalidateHistoryQueries(queryClient);
       notifyMasterDataUpdated(entity);
     }
   });
@@ -707,6 +740,7 @@ export function useMasterUpdateMutation<T>(entity: string) {
         console.error('Failed to revalidate master cache:', err);
       }
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
+      invalidateHistoryQueries(queryClient);
       notifyMasterDataUpdated(entity);
     }
   });
@@ -791,6 +825,7 @@ export function useMasterDeleteMutation(entity: string) {
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
       queryClient.invalidateQueries({ queryKey: ['masters', 'dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['bom-items-pricing'] });
+      invalidateHistoryQueries(queryClient);
       notifyMasterDataUpdated(entity);
     }
   });
@@ -896,6 +931,7 @@ export function useMasterBulkUpdateMutation(entity: string) {
         console.error('Failed to revalidate master cache:', err);
       }
       queryClient.invalidateQueries({ queryKey: ['masters', entity] });
+      invalidateHistoryQueries(queryClient);
       notifyMasterDataUpdated(entity);
     }
   });

@@ -63,7 +63,7 @@ export default function RateMasterPage() {
     try {
       const [ratesRes, auditRes] = await Promise.all([
         supabase.from('rate_master').select('*').eq('org_id', orgId).eq('is_active', true).order('item_name'),
-        (supabase as any).from('rate_master_audit_logs').select('*').eq('org_id', orgId).order('changed_at', { ascending: false }).limit(100),
+        supabase.from('rate_master_audit_log').select('*').eq('org_id', orgId).order('changed_at', { ascending: false }).limit(100),
       ]);
       if (ratesRes.error) throw ratesRes.error;
       setRates(ratesRes.data || []);
@@ -98,16 +98,17 @@ export default function RateMasterPage() {
       }).eq('id', item.id);
       if (error) throw error;
 
-      // Also insert audit log entry with reason
-      await (supabase as any).from('rate_master_audit_logs').insert({
-        org_id: orgId,
-        rate_master_id: item.id,
-        item_name: item.item_name,
-        old_rate: item.override_rate,
-        new_rate: newRate,
-        changed_by: userId,
-        reason: editReason || null,
-      });
+      // Update the audit log entry just created by the trigger to supply reason and actor
+      await supabase.from('rate_master_audit_log')
+        .update({
+          reason: editReason || null,
+          changed_by: userId,
+        })
+        .eq('rate_master_id', item.id)
+        .eq('old_rate', item.override_rate)
+        .eq('new_rate', newRate)
+        .is('reason', null)
+        .is('changed_by', null);
 
       toast(`Rate for "${item.item_name}" updated to ${formatINR(newRate)}`, 'success');
       setEditingId(null);

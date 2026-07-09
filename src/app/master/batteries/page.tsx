@@ -350,25 +350,32 @@ export default function BatteriesMasterPage() {
       let created = 0;
       let updated = 0;
       let skipped = 0;
+      let failed = 0;
 
       for (const row of parsedRows) {
-        const { __master_id, __source_global_id, ...payload } = row;
-        const existing = findImportMatch(row);
+        try {
+          const { __master_id, __source_global_id, ...payload } = row;
+          const existing = findImportMatch(row);
 
-        if (existing) {
-          if (batteryRowChanged(existing, payload)) {
-            await updateMutation.mutateAsync({ id: existing.id, updates: payload });
-            updated += 1;
+          if (existing) {
+            if (batteryRowChanged(existing, payload)) {
+              await updateMutation.mutateAsync({ id: existing.id, updates: payload });
+              updated += 1;
+            } else {
+              skipped += 1;
+            }
           } else {
-            skipped += 1;
+            await createMutation.mutateAsync(payload);
+            created += 1;
           }
-        } else {
-          await createMutation.mutateAsync(payload);
-          created += 1;
+        } catch (rowError) {
+          console.error('[batteries] import row failed', rowError);
+          failed += 1;
         }
       }
 
-      toast(`Import complete: ${created} created, ${updated} updated, ${skipped} unchanged`, 'success');
+      const message = `Import complete: ${created} created, ${updated} updated, ${skipped} skipped${failed ? `, ${failed} failed` : ''}.`;
+      toast(message, failed ? 'error' : 'success');
     } catch (err: any) {
       toast(err.message || 'Import failed', 'error');
     } finally {

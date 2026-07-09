@@ -215,6 +215,56 @@ describe('math integrity checks', () => {
     expect(result?.capacityKW).toBeCloseTo(((2 * 540) + 620) / 1000, 5);
   });
 
+  it('uses one saved ACDB line instead of repeating generated or baseline ACDB rows', () => {
+    const system = makeSystem([
+      { description: 'PANEL', qty: 10, ratePerUnit: 1000, gstPct: 0.05, unit: 'Nos' },
+      { description: 'INVERTER', qty: 1, ratePerUnit: 20000, gstPct: 0.05, unit: 'Nos' },
+      {
+        description: 'AC Distribution Box (ACDB)',
+        qty: 1,
+        ratePerUnit: 4200,
+        gstPct: 0.18,
+        unit: 'units',
+        remarks: '1 per inverter output. IP65 for outdoor installations.',
+        sourceTable: 'bom_template_items',
+        sourceItemId: 'bom-acdb',
+        sourceLabel: 'AC Distribution Box (ACDB)',
+      },
+      {
+        description: 'ACDB',
+        qty: 1,
+        ratePerUnit: 1395,
+        gstPct: 0.18,
+        unit: 'Nos',
+        remarks: 'AC distribution box as per workbook baseline.',
+      },
+      {
+        description: 'Equipment Foundation Pads (Inverter/ACDB)',
+        qty: 2,
+        ratePerUnit: 3500,
+        gstPct: 0.18,
+        unit: 'Lot',
+        remarks: 'Engineered BOM',
+      },
+    ]);
+
+    const result = calculateSystem({
+      systemId: system.id,
+      systems: [system],
+      state: 'Kerala',
+      stateData,
+      projectType: 'commercial',
+      dbOrientationMultipliers: { South: 1, 'East/West': 0.9, Flat: 0.85 },
+      applySubsidy: false,
+    });
+
+    expect(result.lines.filter((line) => line.sourceItemId === 'bom-acdb')).toHaveLength(1);
+    expect(result.lines.some((line) => line.description === 'ACDB')).toBe(false);
+    expect(result.lines.some((line) => line.description.startsWith('ACDB Enclosure'))).toBe(false);
+    expect(result.lines.some((line) => line.description === 'Equipment Foundation Pads (Inverter/ACDB)')).toBe(true);
+    expect(() => assertCalcResultIntegrity(result, { projectType: 'commercial' })).not.toThrow();
+  });
+
   it('allows explicit output GST override for future tax changes', () => {
     const system = makeSystem([
       { description: 'PANEL', qty: 2, ratePerUnit: 1000, gstPct: 0.05, unit: 'Nos' },

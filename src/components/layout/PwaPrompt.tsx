@@ -43,6 +43,13 @@ export function PwaPrompt() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || isLocalhost)) {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.warn('[pwa] Service worker registration failed:', err);
+      });
+    }
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       deferredPrompt = e as BeforeInstallPromptEvent;

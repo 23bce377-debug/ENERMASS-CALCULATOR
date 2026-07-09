@@ -366,6 +366,18 @@ export function PresetEditorDialog({
   const dialogMode = mode ?? (presetId ? 'edit' : 'create');
   const parsedCapacity = Number(capacityKw);
   const hasValidBasics = name.trim().length > 0 && Number.isFinite(parsedCapacity) && parsedCapacity > 0 && Boolean(stateId);
+  const saveBlockReason = (() => {
+    if (saving) return 'Preset save is already in progress.';
+    if (loading) return 'Preset data is still loading.';
+
+    const missing: string[] = [];
+    if (!name.trim()) missing.push('enter a preset name');
+    if (!Number.isFinite(parsedCapacity) || parsedCapacity <= 0) missing.push('set capacity greater than 0 kW');
+    if (!stateId) missing.push('select a state');
+
+    return missing.length > 0 ? `Create Preset is disabled until you ${missing.join(', ')}.` : '';
+  })();
+  const isSaveDisabled = saving || loading || !hasValidBasics;
 
   useEffect(() => setMounted(true), []);
 
@@ -1067,6 +1079,14 @@ export function PresetEditorDialog({
                         <p className="font-bold text-text-primary">INR {totalCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
                         {surveyPendingCount > 0 && <p className="mt-1 text-xs text-amber-600">{surveyPendingCount} survey-dependent item(s)</p>}
                       </div>
+                      {saveBlockReason && (
+                        <div
+                          id="preset-save-block-reason"
+                          className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-semibold text-amber-500"
+                        >
+                          {saveBlockReason}
+                        </div>
+                      )}
                     </div>
                   </aside>
 
@@ -1113,12 +1133,19 @@ export function PresetEditorDialog({
 
         <div className="flex flex-col gap-3 border-t border-border bg-background/75 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="text-sm text-text-muted">
-            <span className="font-semibold text-text-secondary">{STAGES[stageIndex]?.label}</span>
-            <span className="mx-2">-</span>
-            {STAGES[stageIndex]?.hint}
-            <span className="ml-3 hidden font-semibold text-text-primary sm:inline">
-              {includedCount} included item(s), INR {totalCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            </span>
+            <div>
+              <span className="font-semibold text-text-secondary">{STAGES[stageIndex]?.label}</span>
+              <span className="mx-2">-</span>
+              {STAGES[stageIndex]?.hint}
+              <span className="ml-3 hidden font-semibold text-text-primary sm:inline">
+                {includedCount} included item(s), INR {totalCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+              </span>
+            </div>
+            {activeStage === 'review' && saveBlockReason && (
+              <span className="mt-1 block text-xs font-semibold text-amber-500">
+                {saveBlockReason}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center justify-end gap-2">
@@ -1147,14 +1174,17 @@ export function PresetEditorDialog({
                 Continue
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving || loading || !hasValidBasics}
-                className="rounded-lg bg-accent px-5 py-2 text-sm font-bold text-background hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {primaryLabel}
-              </button>
+              <span title={saveBlockReason || undefined}>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isSaveDisabled}
+                  aria-describedby={saveBlockReason ? 'preset-save-block-reason' : undefined}
+                  className="rounded-lg bg-accent px-5 py-2 text-sm font-bold text-background hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {primaryLabel}
+                </button>
+              </span>
             )}
           </div>
         </div>

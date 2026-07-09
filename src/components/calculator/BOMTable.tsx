@@ -145,6 +145,14 @@ function normalizeBomText(value: unknown): string {
   return String(value ?? '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
 }
 
+function isAcdbDescription(text: string): boolean {
+  return /^ACDB\b/.test(text) || text.includes('AC DISTRIBUTION BOX');
+}
+
+function isDcdbDescription(text: string): boolean {
+  return /^DCDB\b/.test(text) || text.includes('DC DISTRIBUTION BOX');
+}
+
 function getSavedBomMatcher(lineDescription: string): ((item: any) => boolean) | null {
   const text = normalizeBomText(lineDescription);
   const includesSurgeProtection = (value: string) => value.includes('SURGE') && value.includes('PROTECTION');
@@ -164,12 +172,12 @@ function getSavedBomMatcher(lineDescription: string): ((item: any) => boolean) |
     };
   }
 
-  if (text.includes('ACDB')) {
-    return (item) => normalizeBomText(item.description).includes('ACDB');
+  if (isAcdbDescription(text)) {
+    return (item) => isAcdbDescription(normalizeBomText(item.description));
   }
 
-  if (text.includes('DCDB')) {
-    return (item) => normalizeBomText(item.description).includes('DCDB');
+  if (isDcdbDescription(text)) {
+    return (item) => isDcdbDescription(normalizeBomText(item.description));
   }
 
   return null;
@@ -346,6 +354,10 @@ const BOMRow = memo(function BOMRow({
 
     return Array.from(uniqueItems.values());
   }, [dbSavedBomItems, line.description, line.sourceItemId, line.sourceTable]);
+  const hasSelectedSavedBomItem =
+    line.sourceTable === 'bom_template_items' &&
+    Boolean(line.sourceItemId) &&
+    savedBomOptions.some((item: any) => item.id === line.sourceItemId);
 
   return (
     <tr className={`border-b border-border/30 group transition-all duration-200 hover:bg-surface-hover/50
@@ -453,7 +465,7 @@ const BOMRow = memo(function BOMRow({
               ]}
             />
           </div>
-        ) : savedBomOptions.length > 0 ? (
+        ) : !hasSelectedSavedBomItem && savedBomOptions.length > 0 ? (
           <div className="flex flex-col gap-1 w-72">
             <span className={`text-[10px] uppercase font-bold text-text-secondary tracking-wider ${dimClass}`}>
               {line.sourceLabel || displayName || line.description}

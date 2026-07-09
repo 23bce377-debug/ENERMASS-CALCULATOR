@@ -1112,72 +1112,67 @@ export async function savePresetWithComponents(
   return targetPresetId;
 }
 
-export async function deleteSystemPreset(presetId: string) {
-  const authClient = await createClient();
-  const supabase = createAdminClient();
-  const { data: { user } } = await authClient.auth.getUser();
-  if (!user?.id) throw new Error('Unauthorized');
+export async function deleteSystemPreset(presetId: string): Promise<{ ok: boolean; error?: string; mode?: 'hidden' | 'deactivated' }> {
+  try {
+    const authClient = await createClient();
+    const supabase = createAdminClient();
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user?.id) return { ok: false, error: 'Unauthorized. Please sign in again.' };
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('org_id')
-    .eq('id', user.id)
-    .maybeSingle();
-  const orgId = profile?.org_id ?? null;
-  if (!orgId) throw new Error('Organisation context not found.');
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('org_id')
+      .eq('id', user.id)
+      .maybeSingle();
+    const orgId = profile?.org_id ?? null;
+    if (!orgId) return { ok: false, error: 'Organisation context not found. Please reload and try again.' };
 
-  const { data: preset, error: presetError } = await supabase
-    .from('systems' as any)
-    .select('id, org_id')
-    .eq('id', presetId)
-    .maybeSingle();
-  if (presetError) throw mapDatabaseError(presetError, 'Failed to load preset');
-  if (!preset) throw new Error('Preset not found.');
-  if ((preset as any).org_id === null) {
-    const { error } = await (supabase as any)
-      .from('system_hidden_presets')
-      .upsert({
-        org_id: orgId,
-        system_id: presetId,
-        hidden_by: user.id,
-        created_at: new Date().toISOString(),
-      }, { onConflict: 'org_id,system_id' });
-    if (error) throw mapDatabaseError(error, 'Failed to hide built-in preset');
+    const { data: preset, error: presetError } = await supabase
+      .from('systems' as any)
+      .select('id, org_id')
+      .eq('id', presetId)
+      .maybeSingle();
+    if (presetError) return { ok: false, error: mapDatabaseError(presetError, 'Failed to load preset').message };
+    if (!preset) return { ok: false, error: 'Preset not found.' };
+
+    if ((preset as any).org_id === null) {
+      const { error } = await (supabase as any)
+        .from('system_hidden_presets')
+        .upsert({
+          org_id: orgId,
+          system_id: presetId,
+          hidden_by: user.id,
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'org_id,system_id' });
+      if (error) return { ok: false, error: mapDatabaseError(error, 'Failed to hide built-in preset').message };
+
+      revalidatePath('/settings/presets');
+      revalidatePath('/systems');
+      revalidatePath('/calculator');
+      return { ok: true, mode: 'hidden' };
+    }
+
+    if ((preset as any).org_id !== orgId) {
+      return { ok: false, error: 'You can only delete presets that belong to your organisation.' };
+    }
+
+    const { error } = await supabase
+      .from('systems' as any)
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', presetId)
+      .eq('org_id', orgId);
+    if (error) return { ok: false, error: mapDatabaseError(error, 'Failed to deactivate preset').message };
 
     revalidatePath('/settings/presets');
     revalidatePath('/systems');
     revalidatePath('/calculator');
-    return;
+    return { ok: true, mode: 'deactivated' };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Failed to remove preset.',
+    };
   }
-
-  if ((preset as any).org_id !== orgId) {
-    throw new Error('You can only delete presets that belong to your organisation.');
-  }
-
-  const { count, error: refError } = await (supabase
-    .from('quotes' as any)
-    .select('id', { count: 'exact', head: true })
-    .eq('system_id', presetId) as any);
-  if (refError) throw mapDatabaseError(refError, 'Failed to check preset usage');
-
-  if ((count ?? 0) > 0) {
-    const { error } = await supabase
-      .from('systems' as any)
-      .update({ is_active: false, updated_at: new Date().toISOString() })
-      .eq('id', presetId);
-    if (error) throw mapDatabaseError(error, 'Failed to deactivate preset');
-  } else {
-    const { error } = await supabase
-      .from('systems' as any)
-      .delete()
-      .eq('id', presetId)
-      .eq('org_id', orgId);
-    if (error) throw mapDatabaseError(error, 'Failed to delete preset');
-  }
-
-  revalidatePath('/settings/presets');
-  revalidatePath('/systems');
-  revalidatePath('/calculator');
 }
 
 function buildDuplicateName(baseName: string, existingNames: Set<string>) {
