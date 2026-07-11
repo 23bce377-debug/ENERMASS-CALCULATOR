@@ -915,7 +915,8 @@ function PanelTable({
               const isSelected = selectedQty > 0 || isLegacySelected;
               const defaultBrand = dbPanels.find((p) => p.id === brand.id);
               const defaultRatePerWatt = defaultBrand?.ratePerWatt ?? brand.ratePerWatt;
-              const isOverridden = settings.currentEquipmentRates.panels[brand.id] !== undefined;
+              const isOverridden = settings.currentEquipmentRates.panels[brand.id] !== undefined && 
+                                   Math.abs(Number(settings.currentEquipmentRates.panels[brand.id]) - Number(defaultRatePerWatt)) > 0.0001;
               const defaultPanelPrice = defaultRatePerWatt * brand.wattage;
               const currentPanelPrice = brand.ratePerWatt * brand.wattage;
 
@@ -1762,7 +1763,8 @@ function PanelRateCell({ brand }: { brand: PanelBrand }) {
   const defaultBrand = dbPanels.find((p) => p.id === brand.id);
   const defaultRatePerWatt = (defaultBrand?.ratePerWatt ?? brand.ratePerWatt) || 0;
   const currentRatePerWatt = brand.ratePerWatt || 0;
-  const isOverridden = settings.currentEquipmentRates.panels[brand.id] !== undefined;
+  const isOverridden = settings.currentEquipmentRates.panels[brand.id] !== undefined && 
+                       Math.abs(Number(settings.currentEquipmentRates.panels[brand.id]) - Number(defaultRatePerWatt)) > 0.0001;
 
   const handleSave = () => {
     const newRate = parseFloat(editValue);
@@ -1848,7 +1850,8 @@ function InverterRateCell({ brand }: { brand: InverterBrand }) {
   const defaultBrand = dbInverters.find((i) => i.id === brand.id);
   const defaultRate = defaultBrand?.rate ?? brand.rate;
   const currentRate = brand.rate;
-  const isOverridden = settings.currentEquipmentRates.inverters[brand.id] !== undefined;
+  const isOverridden = settings.currentEquipmentRates.inverters[brand.id] !== undefined && 
+                       Math.abs(Number(settings.currentEquipmentRates.inverters[brand.id]) - Number(defaultRate)) > 0.0001;
 
   const handleSave = () => {
     const val = parseFloat(editValue);
@@ -1931,7 +1934,8 @@ function BatteryRateCell({ brand }: { brand: BatteryBrand }) {
   const defaultBrand = dbBatteries.find((b) => b.id === brand.id);
   const defaultRate = defaultBrand?.rate ?? brand.rate;
   const currentRate = brand.rate;
-  const isOverridden = settings.currentEquipmentRates.batteries[brand.id] !== undefined;
+  const isOverridden = settings.currentEquipmentRates.batteries[brand.id] !== undefined && 
+                       Math.abs(Number(settings.currentEquipmentRates.batteries[brand.id]) - Number(defaultRate)) > 0.0001;
 
   const handleSave = () => {
     const val = parseFloat(editValue);
