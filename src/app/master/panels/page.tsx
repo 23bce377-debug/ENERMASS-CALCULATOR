@@ -400,7 +400,7 @@ export default function PanelsMasterPage() {
           const lh = h.toLowerCase();
           if (lh.includes('brand')) mapping.brand = h;
           if (lh.includes('model') || lh.includes('sku')) mapping.model = h;
-          if (lh.includes('watt') || lh.includes('capacity')) mapping.wattage_w = h;
+          if ((lh.includes('watt') || lh.includes('capacity')) && !lh.includes('rate') && !lh.includes('price') && !lh.includes('/w')) mapping.wattage_w = h;
           if (lh.includes('type') || lh.includes('tech')) mapping.panel_type = h;
           if (lh.includes('rate') || lh.includes('price')) mapping.rate_per_watt = h;
           if (lh.includes('gst')) mapping.gst_pct = h;
