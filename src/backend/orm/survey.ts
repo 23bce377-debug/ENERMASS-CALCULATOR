@@ -1,5 +1,15 @@
-import { supabase } from '@/lib/supabase/client';
+import { supabase as defaultBrowserClient } from '@/lib/supabase/client';
+import { getOrmClient } from './client';
 import type { Database } from '@/lib/types/schema.types';
+
+export const getSurveyDb = (client?: any) => getOrmClient(client);
+const supabase = new Proxy({} as any, {
+  get(_target, prop) {
+    const client = getSurveyDb();
+    const val = (client as any)[prop];
+    return typeof val === 'function' ? val.bind(client) : val;
+  }
+});
 
 export type SurveyRow = Database['public']['Tables']['crm_site_surveys']['Row'];
 export type SurveyInsert = Database['public']['Tables']['crm_site_surveys']['Insert'];

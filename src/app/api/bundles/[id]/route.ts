@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { BundlePresetORM } from '@/backend/orm/bundle';
+import { createAdminClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
@@ -22,7 +23,8 @@ export const GET = withLicensedApiRoute<BundleRouteContext>(async (_request, con
   try {
     const { orgId } = context.session;
     const { id } = await context.route.params;
-    const preset = await BundlePresetORM.getById(id);
+    const adminClient = createAdminClient();
+    const preset = await BundlePresetORM.getById(id, adminClient);
 
     // Verify tenant ownership
     if (preset.org_id !== orgId) {
@@ -43,7 +45,8 @@ export const PUT = withLicensedApiRoute<BundleRouteContext>(async (request, cont
   try {
     const { orgId } = context.session;
     const { id } = await context.route.params;
-    const preset = await BundlePresetORM.getById(id);
+    const adminClient = createAdminClient();
+    const preset = await BundlePresetORM.getById(id, adminClient);
 
     // Verify tenant ownership
     if (preset.org_id !== orgId) {
@@ -69,7 +72,8 @@ export const PUT = withLicensedApiRoute<BundleRouteContext>(async (request, cont
         notes: notes !== undefined ? notes : preset.notes,
         gst_pct: gst_pct !== undefined ? gst_pct : preset.gst_pct
       },
-      items
+      items,
+      adminClient
     );
 
     return NextResponse.json(updatedPreset);
@@ -86,14 +90,15 @@ export const DELETE = withLicensedApiRoute<BundleRouteContext>(async (_request, 
   try {
     const { orgId } = context.session;
     const { id } = await context.route.params;
-    const preset = await BundlePresetORM.getById(id);
+    const adminClient = createAdminClient();
+    const preset = await BundlePresetORM.getById(id, adminClient);
 
     // Verify tenant ownership
     if (preset.org_id !== orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await BundlePresetORM.delete(id);
+    await BundlePresetORM.delete(id, adminClient);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[DELETE /api/bundles/[id]] Error:', err);

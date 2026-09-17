@@ -10,9 +10,19 @@
  *   (enforced at DB via FK; this ORM raises a typed error).
  */
 
-import { supabase } from '../../lib/supabase/client';
+import { supabase as defaultBrowserClient } from '../../lib/supabase/client';
+import { getOrmClient } from './client';
 import type { Database } from '../../lib/types/schema.types';
 import { safeEvalFormula } from '../../lib/engine/formulaParser';
+
+export const getBomDb = (client?: any) => getOrmClient(client);
+const supabase = new Proxy({} as any, {
+  get(_target, prop) {
+    const client = getBomDb();
+    const val = (client as any)[prop];
+    return typeof val === 'function' ? val.bind(client) : val;
+  }
+});
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

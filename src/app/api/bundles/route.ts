@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { BundlePresetORM } from '@/backend/orm/bundle';
 import { withLicensedApiRoute } from '@/lib/auth/withLicensedApiRoute';
+import { createAdminClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 const createBundleSchema = z.object({
@@ -27,7 +28,8 @@ const BundleCreateSchema = z.object({
 
 export const GET = withLicensedApiRoute(async (_request, context) => {
   const { orgId } = context.session;
-  const presets = await BundlePresetORM.getAll(orgId);
+  const adminClient = createAdminClient();
+  const presets = await BundlePresetORM.getAll(orgId, adminClient);
   return NextResponse.json(presets);
 }, {
   feature: 'inventory',
@@ -46,6 +48,7 @@ export const POST = withLicensedApiRoute(async (request, context) => {
 
   const { name, vendor_id, effective_bundle_price, allocation_strategy, notes, gst_pct, items } = parsed.data;
 
+  const adminClient = createAdminClient();
   const newPreset = await BundlePresetORM.create(
     {
       org_id: orgId,
@@ -58,7 +61,8 @@ export const POST = withLicensedApiRoute(async (request, context) => {
       created_by: user.id,
       is_active: true
     },
-    items
+    items,
+    adminClient
   );
 
   return NextResponse.json(newPreset, { status: 201 });

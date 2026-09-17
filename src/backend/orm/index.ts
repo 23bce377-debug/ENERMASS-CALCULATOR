@@ -15,3 +15,4 @@ export * from './amc';
 export * from './acquisition';
 export * from './procurement';
 export * from './bundle';
+export * from './client';

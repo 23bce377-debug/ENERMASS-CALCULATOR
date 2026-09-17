@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase/client';
+import { getOrmClient } from './client';
 import type { Database } from '../../lib/types/schema.types';
 
 export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -6,7 +6,7 @@ export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
 export const ProfileORM = {
-  async getById(id: string) {
+  async getById(id: string, client?: any) {
     if (typeof window !== 'undefined') {
       const res = await fetch(`/api/profile?id=${encodeURIComponent(id)}`, { credentials: 'include' });
       if (!res.ok) {
@@ -15,7 +15,8 @@ export const ProfileORM = {
       return await res.json();
     }
 
-    const { data, error } = await supabase
+    const db = getOrmClient(client);
+    const { data, error } = await db
       .from('profiles')
       .select('*')
       .eq('id', id)
@@ -24,8 +25,9 @@ export const ProfileORM = {
     return data;
   },
 
-  async getByOrgId(orgId: string) {
-    const { data, error } = await supabase
+  async getByOrgId(orgId: string, client?: any) {
+    const db = getOrmClient(client);
+    const { data, error } = await db
       .from('profiles')
       .select('*')
       .eq('org_id', orgId);
@@ -33,8 +35,9 @@ export const ProfileORM = {
     return data;
   },
 
-  async create(profile: ProfileInsert) {
-    const { data, error } = await supabase
+  async create(profile: ProfileInsert, client?: any) {
+    const db = getOrmClient(client);
+    const { data, error } = await db
       .from('profiles')
       .insert(profile)
       .select()
@@ -43,7 +46,7 @@ export const ProfileORM = {
     return data;
   },
 
-  async update(id: string, updates: ProfileUpdate) {
+  async update(id: string, updates: ProfileUpdate, client?: any) {
     if (typeof window !== 'undefined') {
       const res = await fetch('/api/profile', {
         method: 'PUT',
@@ -57,7 +60,8 @@ export const ProfileORM = {
       return await res.json();
     }
 
-    const { data, error } = await supabase
+    const db = getOrmClient(client);
+    const { data, error } = await db
       .from('profiles')
       .update(updates)
       .eq('id', id)
@@ -67,8 +71,9 @@ export const ProfileORM = {
     return data;
   },
 
-  async delete(id: string) {
-    const { error } = await supabase
+  async delete(id: string, client?: any) {
+    const db = getOrmClient(client);
+    const { error } = await db
       .from('profiles')
       .delete()
       .eq('id', id);
@@ -76,4 +81,3 @@ export const ProfileORM = {
     return true;
   }
 };
-

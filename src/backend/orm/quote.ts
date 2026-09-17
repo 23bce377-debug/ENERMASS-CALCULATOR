@@ -1,5 +1,8 @@
-import { supabase } from '../../lib/supabase/client';
+import { supabase as defaultSupabase } from '../../lib/supabase/client';
+import { getOrmClient } from './client';
 import type { Database } from '../../lib/types/schema.types';
+
+const getDb = (client?: any) => (client ? getOrmClient(client) : defaultSupabase);
 
 // Types
 export type QuoteRow = Database['public']['Tables']['quotes']['Row'];
@@ -27,8 +30,9 @@ export type QuoteVariantUpdate = Database['public']['Tables']['quote_variants'][
 
 // ORMs
 export const QuoteORM = {
-  async getById(id: string) {
-    const { data, error } = await supabase
+  async getById(id: string, client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quotes')
       .select('*, quote_items(*), quote_additional_costs(*), quote_variants(*)')
       .eq('id', id)
@@ -37,8 +41,9 @@ export const QuoteORM = {
     return data as any;
   },
 
-  async getAll(orgId: string) {
-    const { data, error } = await supabase
+  async getAll(orgId: string, client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quotes')
       .select('*')
       .eq('org_id', orgId)
@@ -47,11 +52,12 @@ export const QuoteORM = {
     return data;
   },
 
-  async create(quote: QuoteInsert) {
+  async create(quote: QuoteInsert, client?: any) {
+    const db = getDb(client);
     // 1. Rate drift validation
     if (quote.panel_rate_per_panel !== undefined && quote.panel_rate_per_panel !== null) {
       if (quote.panel_id) {
-        const { data: panel } = await supabase
+        const { data: panel } = await db
           .from('eq_panels')
           .select('selling_price')
           .eq('id', quote.panel_id)
@@ -65,11 +71,11 @@ export const QuoteORM = {
           }
         }
       } else if (quote.panel_brand_model) {
-        const { data: panels } = await supabase
+        const { data: panels } = await db
           .from('eq_panels')
           .select('selling_price, brand, model')
           .eq('is_active', true);
-        const matched = panels?.find(p => 
+        const matched = panels?.find((p: any) => 
           `${p.brand} ${p.model}`.toUpperCase().includes(String(quote.panel_brand_model).toUpperCase()) ||
           String(quote.panel_brand_model).toUpperCase().includes(`${p.brand} ${p.model}`.toUpperCase())
         );
@@ -85,7 +91,7 @@ export const QuoteORM = {
 
     if (quote.inverter_rate !== undefined && quote.inverter_rate !== null) {
       if (quote.inverter_id) {
-        const { data: inverter } = await supabase
+        const { data: inverter } = await db
           .from('eq_inverters')
           .select('selling_price')
           .eq('id', quote.inverter_id)
@@ -99,11 +105,11 @@ export const QuoteORM = {
           }
         }
       } else if (quote.inverter_brand_model) {
-        const { data: inverters } = await supabase
+        const { data: inverters } = await db
           .from('eq_inverters')
           .select('selling_price, brand, model')
           .eq('is_active', true);
-        const matched = inverters?.find(inv => 
+        const matched = inverters?.find((inv: any) => 
           `${inv.brand} ${inv.model}`.toUpperCase().includes(String(quote.inverter_brand_model).toUpperCase()) ||
           String(quote.inverter_brand_model).toUpperCase().includes(`${inv.brand} ${inv.model}`.toUpperCase())
         );
@@ -119,7 +125,7 @@ export const QuoteORM = {
 
     if (quote.battery_rate !== undefined && quote.battery_rate !== null) {
       if (quote.battery_id) {
-        const { data: battery } = await supabase
+        const { data: battery } = await db
           .from('eq_batteries')
           .select('selling_price')
           .eq('id', quote.battery_id)
@@ -133,11 +139,11 @@ export const QuoteORM = {
           }
         }
       } else if (quote.battery_brand_model) {
-        const { data: batteries } = await supabase
+        const { data: batteries } = await db
           .from('eq_batteries')
           .select('selling_price, brand, model')
           .eq('is_active', true);
-        const matched = batteries?.find(b => 
+        const matched = batteries?.find((b: any) => 
           `${b.brand} ${b.model}`.toUpperCase().includes(String(quote.battery_brand_model).toUpperCase()) ||
           String(quote.battery_brand_model).toUpperCase().includes(`${b.brand} ${b.model}`.toUpperCase())
         );
@@ -153,7 +159,7 @@ export const QuoteORM = {
 
     // 2. Perform insert, excluding non-database columns panel_id, inverter_id, battery_id
     const { panel_id, inverter_id, battery_id, ...dbQuote } = quote;
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('quotes')
       .insert(dbQuote)
       .select()
@@ -162,8 +168,9 @@ export const QuoteORM = {
     return data;
   },
 
-  async update(id: string, updates: QuoteUpdate, expectedVersion?: number) {
-    let query = supabase
+  async update(id: string, updates: QuoteUpdate, expectedVersion?: number, client?: any) {
+    const db = getDb(client);
+    let query = db
       .from('quotes')
       .update(updates)
       .eq('id', id);
@@ -188,8 +195,9 @@ export const QuoteORM = {
     return data;
   },
 
-  async delete(id: string) {
-    const { error } = await supabase
+  async delete(id: string, client?: any) {
+    const db = getDb(client);
+    const { error } = await db
       .from('quotes')
       .delete()
       .eq('id', id);
@@ -199,8 +207,9 @@ export const QuoteORM = {
 };
 
 export const QuoteItemORM = {
-  async getByQuoteId(quoteId: string) {
-    const { data, error } = await supabase
+  async getByQuoteId(quoteId: string, client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quote_items')
       .select('*')
       .eq('quote_id', quoteId)
@@ -209,8 +218,9 @@ export const QuoteItemORM = {
     return data;
   },
 
-  async createMany(items: QuoteItemInsert[]) {
-    const { data, error } = await supabase
+  async createMany(items: QuoteItemInsert[], client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quote_items')
       .insert(items)
       .select();
@@ -218,8 +228,9 @@ export const QuoteItemORM = {
     return data;
   },
 
-  async update(id: string, updates: QuoteItemUpdate) {
-    const { data, error } = await supabase
+  async update(id: string, updates: QuoteItemUpdate, client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quote_items')
       .update(updates)
       .eq('id', id)
@@ -229,8 +240,9 @@ export const QuoteItemORM = {
     return data;
   },
 
-  async delete(id: string) {
-    const { error } = await supabase
+  async delete(id: string, client?: any) {
+    const db = getDb(client);
+    const { error } = await db
       .from('quote_items')
       .delete()
       .eq('id', id);
@@ -240,8 +252,9 @@ export const QuoteItemORM = {
 };
 
 export const QuoteAdditionalCostORM = {
-  async getByQuoteId(quoteId: string) {
-    const { data, error } = await supabase
+  async getByQuoteId(quoteId: string, client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quote_additional_costs')
       .select('*')
       .eq('quote_id', quoteId)
@@ -250,8 +263,9 @@ export const QuoteAdditionalCostORM = {
     return data;
   },
 
-  async create(cost: QuoteAdditionalCostInsert) {
-    const { data, error } = await supabase
+  async create(cost: QuoteAdditionalCostInsert, client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quote_additional_costs')
       .insert(cost)
       .select()
@@ -260,8 +274,9 @@ export const QuoteAdditionalCostORM = {
     return data;
   },
 
-  async delete(id: string) {
-    const { error } = await supabase
+  async delete(id: string, client?: any) {
+    const db = getDb(client);
+    const { error } = await db
       .from('quote_additional_costs')
       .delete()
       .eq('id', id);
@@ -271,8 +286,9 @@ export const QuoteAdditionalCostORM = {
 };
 
 export const QuoteStatusHistoryORM = {
-  async getByQuoteId(quoteId: string) {
-    const { data, error } = await supabase
+  async getByQuoteId(quoteId: string, client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quote_status_history')
       .select('*')
       .eq('quote_id', quoteId)
@@ -281,8 +297,9 @@ export const QuoteStatusHistoryORM = {
     return data;
   },
 
-  async create(log: QuoteStatusHistoryInsert) {
-    const { data, error } = await supabase
+  async create(log: QuoteStatusHistoryInsert, client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quote_status_history')
       .insert(log)
       .select()
@@ -293,8 +310,9 @@ export const QuoteStatusHistoryORM = {
 };
 
 export const QuoteVariantORM = {
-  async getByQuoteId(quoteId: string) {
-    const { data, error } = await supabase
+  async getByQuoteId(quoteId: string, client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quote_variants')
       .select('*')
       .eq('quote_id', quoteId);
@@ -302,8 +320,9 @@ export const QuoteVariantORM = {
     return data;
   },
 
-  async create(variant: QuoteVariantInsert) {
-    const { data, error } = await supabase
+  async create(variant: QuoteVariantInsert, client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quote_variants')
       .insert(variant)
       .select()
@@ -312,8 +331,9 @@ export const QuoteVariantORM = {
     return data;
   },
 
-  async update(id: string, updates: QuoteVariantUpdate) {
-    const { data, error } = await supabase
+  async update(id: string, updates: QuoteVariantUpdate, client?: any) {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('quote_variants')
       .update(updates)
       .eq('id', id)
@@ -323,8 +343,9 @@ export const QuoteVariantORM = {
     return data;
   },
 
-  async delete(id: string) {
-    const { error } = await supabase
+  async delete(id: string, client?: any) {
+    const db = getDb(client);
+    const { error } = await db
       .from('quote_variants')
       .delete()
       .eq('id', id);

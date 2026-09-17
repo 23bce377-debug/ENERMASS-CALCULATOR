@@ -1,5 +1,15 @@
-import { supabase } from '../../lib/supabase/client';
+import { supabase as defaultBrowserClient } from '../../lib/supabase/client';
+import { getOrmClient } from './client';
 import type { Database } from '../../lib/types/schema.types';
+
+export const getSystemDb = (client?: any) => getOrmClient(client);
+const supabase = new Proxy({} as any, {
+  get(_target, prop) {
+    const client = getSystemDb();
+    const val = (client as any)[prop];
+    return typeof val === 'function' ? val.bind(client) : val;
+  }
+});
 
 export type SystemRow = Database['public']['Tables']['systems']['Row'];
 export type SystemInsert = Database['public']['Tables']['systems']['Insert'];

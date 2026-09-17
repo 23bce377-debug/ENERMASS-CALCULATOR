@@ -1,5 +1,15 @@
-import { supabase } from '@/lib/supabase/client';
+import { supabase as defaultBrowserClient } from '@/lib/supabase/client';
+import { getOrmClient } from './client';
 import { allocateBundlePrice } from '@/lib/engine/bundleAllocation';
+
+export const getAcquisitionDb = (client?: any) => getOrmClient(client);
+const supabase = new Proxy({} as any, {
+  get(_target, prop) {
+    const client = getAcquisitionDb();
+    const val = (client as any)[prop];
+    return typeof val === 'function' ? val.bind(client) : val;
+  }
+});
 
 
 // Local types until schema.types.ts is regenerated

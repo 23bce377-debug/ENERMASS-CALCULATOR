@@ -1,4 +1,14 @@
-import { supabase } from '../../lib/supabase/client';
+import { supabase as defaultBrowserClient } from '../../lib/supabase/client';
+import { getOrmClient } from './client';
+
+export const getExportDb = (client?: any) => getOrmClient(client);
+const supabase = new Proxy({} as any, {
+  get(_target, prop) {
+    const client = getExportDb();
+    const val = (client as any)[prop];
+    return typeof val === 'function' ? val.bind(client) : val;
+  }
+});
 
 export type GSTR1ExportRow = {
   org_id: string;

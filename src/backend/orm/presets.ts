@@ -1,4 +1,14 @@
-import { supabase } from '../../lib/supabase/client';
+import { supabase as defaultBrowserClient } from '../../lib/supabase/client';
+import { getOrmClient } from './client';
+
+export const getPresetsDb = (client?: any) => getOrmClient(client);
+const supabase = new Proxy({} as any, {
+  get(_target, prop) {
+    const client = getPresetsDb();
+    const val = (client as any)[prop];
+    return typeof val === 'function' ? val.bind(client) : val;
+  }
+});
 
 export interface PresetRow {
   id: string;
@@ -52,10 +62,10 @@ export const PresetORM = {
       .from('state_rules')
       .select('id, state_name, state_code')
       .eq('is_active', true);
-    const stateById = new Map((stateRows || []).map((state: any) => [state.id, state]));
-    const stateByName = new Map((stateRows || []).map((state: any) => [String(state.state_name).toLowerCase(), state]));
-    const stateByCode = new Map((stateRows || []).map((state: any) => [String(state.state_code).toLowerCase(), state]));
-    const resolveState = (row: any) => {
+    const stateById = new Map<string, any>((stateRows || []).map((state: any) => [state.id, state]));
+    const stateByName = new Map<string, any>((stateRows || []).map((state: any) => [String(state.state_name).toLowerCase(), state]));
+    const stateByCode = new Map<string, any>((stateRows || []).map((state: any) => [String(state.state_code).toLowerCase(), state]));
+    const resolveState = (row: any): any => {
       if (row.state_id && stateById.has(row.state_id)) return stateById.get(row.state_id);
       const config = row.config_json ?? row.calculator_state ?? {};
       const byId = config.stateId ? stateById.get(config.stateId) : null;
@@ -178,7 +188,7 @@ export const PresetORM = {
       .from('state_rules')
       .select('id, state_name, state_code')
       .eq('is_active', true);
-    const stateById = new Map((states || []).map((state: any) => [state.id, state]));
+    const stateById = new Map<string, any>((states || []).map((state: any) => [state.id, state]));
 
     const { data, error } = await supabase
       .from('custom_presets')

@@ -12,8 +12,11 @@
  *   must pre-check stock availability before allocating.
  */
 
-import { supabase } from '../../lib/supabase/client';
+import { supabase as defaultSupabase } from '../../lib/supabase/client';
+import { getOrmClient } from './client';
 import type { Database } from '../../lib/types/schema.types';
+
+const getDb = (client?: any) => (client ? getOrmClient(client) : defaultSupabase);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,7 +47,7 @@ export interface MovementFilter {
   offset?: number;
 }
 
-// ─── InventoryMovementORM ─────────────────────────────────────────────────────
+// ─── ORM Implementation ───────────────────────────────────────────────────────
 
 export const InventoryMovementORM = {
   /**
@@ -53,8 +56,9 @@ export const InventoryMovementORM = {
    *
    * @throws Supabase error if the DB trigger blocks the write.
    */
-  async insert(record: InventoryMovementInsert): Promise<InventoryMovementRow> {
-    const { data, error } = await supabase
+  async insert(record: InventoryMovementInsert, client?: any): Promise<InventoryMovementRow> {
+    const db = getDb(client);
+    const { data, error } = await db
       .from('inventory_movements')
       .insert(record)
       .select()
@@ -70,7 +74,7 @@ export const InventoryMovementORM = {
    * @throws Error if org_ids are inconsistent across rows.
    * @throws Supabase error if any row is rejected by DB constraints.
    */
-  async bulkInsert(records: InventoryMovementInsert[]): Promise<InventoryMovementRow[]> {
+  async bulkInsert(records: InventoryMovementInsert[], client?: any): Promise<InventoryMovementRow[]> {
     if (records.length === 0) return [];
 
     const firstOrgId = records[0].org_id;
@@ -81,7 +85,8 @@ export const InventoryMovementORM = {
       );
     }
 
-    const { data, error } = await supabase
+    const db = getDb(client);
+    const { data, error } = await db
       .from('inventory_movements')
       .insert(records)
       .select();
@@ -92,8 +97,9 @@ export const InventoryMovementORM = {
   /**
    * Fetch movements with tenant-scoped filtering.
    */
-  async query(filter: MovementFilter): Promise<InventoryMovementRow[]> {
-    let q = supabase
+  async query(filter: MovementFilter, client?: any): Promise<InventoryMovementRow[]> {
+    const db = getDb(client);
+    let q = db
       .from('inventory_movements')
       .select('*')
       .eq('org_id', filter.orgId)
@@ -117,9 +123,11 @@ export const InventoryMovementORM = {
   async getByItem(
     orgId: string,
     itemId: string,
-    limit = 100
+    limit = 100,
+    client?: any
   ): Promise<InventoryMovementRow[]> {
-    const { data, error } = await supabase
+    const db = getDb(client);
+    const { data, error } = await db
       .from('inventory_movements')
       .select('*')
       .eq('org_id', orgId)
@@ -135,9 +143,11 @@ export const InventoryMovementORM = {
    */
   async getByProject(
     orgId: string,
-    projectId: string
+    projectId: string,
+    client?: any
   ): Promise<InventoryMovementRow[]> {
-    const { data, error } = await supabase
+    const db = getDb(client);
+    const { data, error } = await db
       .from('inventory_movements')
       .select('*')
       .eq('org_id', orgId)
@@ -158,9 +168,10 @@ export const InventoryMovementORM = {
    */
   async aggregatePosition(
     orgId: string,
-    itemId: string
+    itemId: string,
+    client?: any
   ): Promise<AggregatedPosition> {
-    const movements = await InventoryMovementORM.getByItem(orgId, itemId, 10000);
+    const movements = await InventoryMovementORM.getByItem(orgId, itemId, 10000, client);
 
     const quantity_on_hand = movements.reduce((sum, m) => {
       // IN movements have positive quantity, OUT movements have negative quantity
@@ -186,9 +197,10 @@ export const InventoryMovementORM = {
   async checkStock(
     orgId: string,
     itemId: string,
-    requiredQty: number
+    requiredQty: number,
+    client?: any
   ): Promise<{ sufficient: boolean; available: number }> {
-    const position = await InventoryMovementORM.aggregatePosition(orgId, itemId);
+    const position = await InventoryMovementORM.aggregatePosition(orgId, itemId, client);
     const available = position.quantity_on_hand;
     return {
       sufficient: available >= requiredQty,
