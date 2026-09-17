@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
-import { DeviceClientError, registerOrVerifyDevice } from '@/lib/device/deviceClient';
 import { Shield, Mail, Lock, Loader2, HelpCircle, AlertCircle, Key } from 'lucide-react';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 
@@ -33,22 +32,12 @@ export default function LoginPage() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutTime, setLockoutTime] = useState(0);
 
-  const redirectForDeviceError = (error: unknown) => {
-    if (error instanceof DeviceClientError) {
-      if (error.redirectTo) {
-        const reason = 'device';
-        router.replace(`${error.redirectTo}?reason=${encodeURIComponent(reason)}`);
-        return;
-      }
-      toast(error.message, 'error');
-      return;
+  const completeSessionLogin = async () => {
+    try {
+      await fetch('/api/auth/session-start', { method: 'POST' });
+    } catch (e) {
+      console.warn('Session start error:', e);
     }
-
-    toast(error instanceof Error ? error.message : 'Device verification failed. Please try again.', 'error');
-  };
-
-  const completeDeviceLogin = async () => {
-    await registerOrVerifyDevice();
     toast('Logged in successfully!', 'success');
     router.replace('/calculator');
   };
@@ -60,10 +49,15 @@ export default function LoginPage() {
       const reason = params.get('reason');
       if (reason === 'expired') {
         setSessionMessage('Your session has expired. Please sign in again.');
-      } else if (reason === 'device') {
-        setSessionMessage('This account is registered to another device. Direct login is blocked.');
+      } else if (reason === 'concurrent_session') {
+        setSessionMessage('You were logged out because this account was logged into from another device. Only one device can use this credential at a time.');
       } else if (reason === 'unauthorized') {
         setSessionMessage('You do not have permission to access that resource. Please sign in.');
+      }
+
+      const mode = params.get('mode');
+      if (mode === 'credentials') {
+        setLoginMode('credentials');
       }
 
       // Load remembered email
@@ -72,6 +66,7 @@ export default function LoginPage() {
         if (savedEmail) {
           setEmail(savedEmail);
           setRememberMe(true);
+          setLoginMode('credentials');
         }
       }
     }
@@ -83,11 +78,18 @@ export default function LoginPage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          await completeDeviceLogin();
+          const checkRes = await fetch('/api/auth/session-check');
+          const checkData = await checkRes.json();
+          if (checkData.active) {
+            router.replace('/calculator');
+            return;
+          } else if (checkData.reason === 'superseded') {
+            await supabase.auth.signOut();
+            setSessionMessage('You were logged out because this account was logged into from another device. Only one device can use this credential at a time.');
+          }
         }
       } catch (err) {
         console.error('Error checking session:', err);
-        redirectForDeviceError(err);
       } finally {
         setVerifying(false);
       }
@@ -154,6 +156,19 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed.');
       }
 
+      // If key is linked to a user with a personal email, switch to credentials tab
+      if (data.requiresCredentials) {
+        setLoginMode('credentials');
+        if (data.email) {
+          setEmail(data.email);
+        }
+        toast(data.message || `This key is linked to ${data.email}. Please enter your password to sign in.`, 'info');
+        setTimeout(() => {
+          document.getElementById('password-input')?.focus();
+        }, 100);
+        return;
+      }
+
       // Login with Supabase using email and the key as password
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: data.email,
@@ -164,7 +179,7 @@ export default function LoginPage() {
         throw new Error(signInError.message);
       }
 
-      await completeDeviceLogin();
+      await completeSessionLogin();
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Login failed.', 'error');
     } finally {
@@ -222,10 +237,10 @@ export default function LoginPage() {
             localStorage.removeItem('remembered_email');
           }
         }
-        await completeDeviceLogin();
+        await completeSessionLogin();
       }
     } catch (err) {
-      redirectForDeviceError(err);
+      toast(err instanceof Error ? err.message : 'Login failed.', 'error');
     } finally {
       setLoading(false);
     }
@@ -262,8 +277,45 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Auth Mode Segmented Tabs */}
+        <div className="px-8 pt-6 pb-1">
+          <div className="grid grid-cols-2 p-1 bg-surface-hover/80 border border-border/60 rounded-xl">
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMode('key');
+                setKeyError('');
+              }}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                loginMode === 'key'
+                  ? 'bg-accent text-background shadow-md shadow-accent/20 font-bold'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              <Key size={14} />
+              License Key
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMode('credentials');
+                setEmailError('');
+                setPasswordError('');
+              }}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                loginMode === 'credentials'
+                  ? 'bg-accent text-background shadow-md shadow-accent/20 font-bold'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              <Mail size={14} />
+              Email & Password
+            </button>
+          </div>
+        </div>
+
         {/* Form area */}
-        <form onSubmit={loginMode === 'key' ? handleKeyLogin : handleLogin} className="p-8 space-y-5" noValidate>
+        <form onSubmit={loginMode === 'key' ? handleKeyLogin : handleLogin} className="p-8 pt-4 space-y-5" noValidate>
           
           {/* Session Notification Banner */}
           {sessionMessage && (
@@ -461,7 +513,7 @@ export default function LoginPage() {
               onClick={() => setLoginMode('credentials')}
               className="block w-full text-xs text-text-muted hover:text-accent transition-colors cursor-pointer font-semibold underline"
             >
-              Sign in with Admin Credentials
+              Have an Email & Password set up? Sign in here
             </button>
           ) : (
             <button
@@ -469,7 +521,7 @@ export default function LoginPage() {
               onClick={() => setLoginMode('key')}
               className="block w-full text-xs text-text-muted hover:text-accent transition-colors cursor-pointer font-semibold underline"
             >
-              Back to License Key Login
+              Have a License Key? Sign in with License Key
             </button>
           )}
           <p className="text-[10px] font-semibold text-text-muted uppercase tracking-widest pt-1">

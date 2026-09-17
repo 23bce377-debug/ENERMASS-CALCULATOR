@@ -176,7 +176,7 @@ function StepIndicator({ step }: { step: Step }) {
               }`}>{s.label}</span>
             </div>
             {i < steps.length - 1 && (
-              <div className={`h-[2px] flex-1 mx-2 mb-4 transition-all duration-500 ${isDone ? 'bg-accent' : 'bg-border'}`} />
+              <div className={`h-0.5 flex-1 mx-2 mb-4 transition-all duration-500 ${isDone ? 'bg-accent' : 'bg-border'}`} />
             )}
           </div>
         );
@@ -638,16 +638,9 @@ export default function ActivatePage() {
             attestationObject: bufferToBase64Url(response.attestationObject),
           };
         } catch (err: any) {
-          console.error('WebAuthn registration failed:', err);
-          setPasskeyError(err.message || 'Passkey setup was cancelled or failed.');
-          toast('Passkey setup failed. Device binding is required.', 'error');
-          setRegistering(false);
-          return;
+          console.warn('[activate] WebAuthn passkey skipped:', err?.message);
+          webauthnRegistration = null;
         }
-      } else {
-        toast('WebAuthn challenge missing. Re-validate your activation key.', 'error');
-        setRegistering(false);
-        return;
       }
 
       let fingerprintHash = null;

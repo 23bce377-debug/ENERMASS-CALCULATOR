@@ -176,11 +176,26 @@ export function safeEvalFormula(expression: string, variables?: FormulaVariables
           throw new FormulaParseError(`Unknown operator: ${node.operator}`);
         case 'FunctionCall':
           const args = node.args.map(evaluate);
-          if (node.name === 'CEIL') return Math.ceil(args[0]);
-          if (node.name === 'FLOOR') return Math.floor(args[0]);
-          if (node.name === 'ROUND') return Math.round(args[0]);
-          if (node.name === 'MAX') return Math.max(...args);
-          if (node.name === 'MIN') return Math.min(...args);
+          if (node.name === 'CEIL') {
+            if (args.length !== 1 || !Number.isFinite(args[0])) throw new FormulaParseError('CEIL requires 1 numeric argument');
+            return Math.ceil(args[0]);
+          }
+          if (node.name === 'FLOOR') {
+            if (args.length !== 1 || !Number.isFinite(args[0])) throw new FormulaParseError('FLOOR requires 1 numeric argument');
+            return Math.floor(args[0]);
+          }
+          if (node.name === 'ROUND') {
+            if (args.length !== 1 || !Number.isFinite(args[0])) throw new FormulaParseError('ROUND requires 1 numeric argument');
+            return Math.round(args[0]);
+          }
+          if (node.name === 'MAX') {
+            if (args.length === 0 || args.some(a => !Number.isFinite(a))) throw new FormulaParseError('MAX requires at least 1 numeric argument');
+            return Math.max(...args);
+          }
+          if (node.name === 'MIN') {
+            if (args.length === 0 || args.some(a => !Number.isFinite(a))) throw new FormulaParseError('MIN requires at least 1 numeric argument');
+            return Math.min(...args);
+          }
           throw new FormulaParseError(`Unknown function: ${node.name}`);
       }
     } finally {
@@ -192,5 +207,9 @@ export function safeEvalFormula(expression: string, variables?: FormulaVariables
   if (pos < tokens.length) {
     throw new FormulaParseError(`Unexpected token at end: ${tokens[pos]}`);
   }
-  return evaluate(ast);
+  const result = evaluate(ast);
+  if (!Number.isFinite(result)) {
+    throw new FormulaParseError(`Formula evaluated to invalid non-finite value: ${result}`);
+  }
+  return result;
 }

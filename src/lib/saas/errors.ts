@@ -81,6 +81,12 @@ const errorMetadata = {
     userMessage: 'Please confirm your email address before continuing.',
     internalMessage: 'Access denied because the user email has not been confirmed.',
   },
+  ConcurrentSessionError: {
+    statusCode: 401,
+    redirectTo: '/login?reason=concurrent_session',
+    userMessage: 'This account was logged in from another device. Only one device can use this credential at a time.',
+    internalMessage: 'Session superseded by a more recent login on another device.',
+  },
 } satisfies Record<string, SaasErrorMetadata>;
 
 class DefinedSaasError extends SaasError {
@@ -134,6 +140,12 @@ export class UnauthorizedRoleError extends DefinedSaasError {
 export class MembershipMissingError extends DefinedSaasError {
   constructor(cause?: unknown) {
     super('MembershipMissingError', cause);
+  }
+}
+
+export class ConcurrentSessionError extends DefinedSaasError {
+  constructor(cause?: unknown) {
+    super('ConcurrentSessionError', cause);
   }
 }
 

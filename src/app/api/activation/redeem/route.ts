@@ -46,52 +46,39 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!body.webauthn_registration) {
-      return NextResponse.json(
-        { success: false, message: 'WebAuthn registration (passkey binding) is required.' },
-        { status: 400 }
-      );
-    }
+    let publicKeyJwkStr: string | null = null;
+    if (body.webauthn_registration) {
+      try {
+        const clientDataStr = Buffer.from(body.webauthn_registration.clientDataJSON, 'base64url').toString('utf8');
+        const clientData = JSON.parse(clientDataStr) as { challenge: string };
+        const challenge = clientData.challenge;
 
-    // Decode and verify challenge from clientDataJSON
-    let challenge: string;
-    try {
-      const clientDataStr = Buffer.from(body.webauthn_registration.clientDataJSON, 'base64url').toString('utf8');
-      const clientData = JSON.parse(clientDataStr) as { challenge: string };
-      challenge = clientData.challenge;
-    } catch {
-      return NextResponse.json({ success: false, message: 'Invalid clientDataJSON structure.' }, { status: 400 });
-    }
+        let sessionNonce = '';
+        const cookieHeader = request.headers.get('cookie');
+        if (cookieHeader) {
+          const match = cookieHeader.match(/(?:^|;\s*)enermass_activation_session=([^;]*)/);
+          if (match) {
+            sessionNonce = match[1];
+          }
+        }
 
-    // Read the session nonce from cookie
-    let sessionNonce = '';
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      const match = cookieHeader.match(/(?:^|;\s*)enermass_activation_session=([^;]*)/);
-      if (match) {
-        sessionNonce = match[1];
+        const keyHash = hashActivationKey(body.key);
+        if (verifyWebAuthnChallenge(challenge, keyHash, sessionNonce)) {
+          const host = request.headers.get('host') || 'localhost';
+          const expectedOrigin = host.split(':')[0];
+          const verification = await verifyWebAuthnRegistration(
+            body.webauthn_registration,
+            challenge,
+            expectedOrigin
+          );
+          if (verification.success) {
+            publicKeyJwkStr = JSON.stringify(verification.publicKeyJwk);
+          }
+        }
+      } catch (err) {
+        console.warn('[activation/redeem] WebAuthn optional registration error:', err);
       }
     }
-
-    const keyHash = hashActivationKey(body.key);
-    if (!verifyWebAuthnChallenge(challenge, keyHash, sessionNonce)) {
-      return NextResponse.json({ success: false, message: 'WebAuthn challenge expired or invalid.' }, { status: 400 });
-    }
-
-    const host = request.headers.get('host') || 'localhost';
-    const expectedOrigin = host.split(':')[0];
-
-    const verification = await verifyWebAuthnRegistration(
-      body.webauthn_registration,
-      challenge,
-      expectedOrigin
-    );
-
-    if (!verification.success) {
-      return NextResponse.json({ success: false, message: `WebAuthn verification failed: ${verification.error}` }, { status: 400 });
-    }
-
-    const publicKeyJwkStr = JSON.stringify(verification.publicKeyJwk);
 
     const result = await redeemActivationKey({
       rawKey: body.key,

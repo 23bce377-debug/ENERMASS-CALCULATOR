@@ -73,34 +73,7 @@ export async function registerDevice(
         return device;
       }
 
-      // Check device limit
-      const countRes = await pgClient.query(
-        "SELECT count(*) FROM public.user_devices WHERE user_id = $1 AND status = 'active'",
-        [userId]
-      );
-      const activeCount = parseInt(countRes.rows[0].count, 10);
 
-      const keyRes = await pgClient.query(
-        "SELECT max_uses FROM public.activation_keys WHERE activated_by = $1 LIMIT 1",
-        [userId]
-      );
-      const maxUses = keyRes.rows[0]?.max_uses ?? 5;
-
-      if (activeCount >= maxUses) {
-        await pgClient.query('COMMIT');
-        await audit({
-          orgId,
-          userId,
-          entityType: 'user_device',
-          eventType: 'device_mismatch_blocked',
-          eventData: {
-            reason: 'device_limit_reached',
-            activeCount,
-            maxUses,
-          },
-        });
-        throw new DeviceMismatchError({ orgId, userId, reason: 'device_limit_reached' });
-      }
 
       const deviceId = crypto.randomUUID();
       const insertRes = await pgClient.query(

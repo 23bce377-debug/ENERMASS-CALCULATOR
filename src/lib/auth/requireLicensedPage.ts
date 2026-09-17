@@ -10,6 +10,7 @@ import {
   type RequireLicensedSessionOptions,
 } from './requireLicensedSession';
 import {
+  ConcurrentSessionError,
   DeviceMismatchError,
   DeviceNotRegisteredError,
   FeatureNotEnabledError,
@@ -26,6 +27,10 @@ export interface LicensedPageOptions extends RequireLicensedSessionOptions {
 function redirectPathForError(error: unknown) {
   if (error instanceof AuthenticationRequiredError || error instanceof MembershipMissingError) {
     return '/login';
+  }
+
+  if (error instanceof ConcurrentSessionError) {
+    return '/login?reason=concurrent_session';
   }
 
   if (

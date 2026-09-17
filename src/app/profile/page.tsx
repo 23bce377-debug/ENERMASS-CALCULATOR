@@ -81,8 +81,12 @@ export default function ProfilePage() {
   // Email update modal flow
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmail, setNewEmail] = useState('');
+  const [newEmailPassword, setNewEmailPassword] = useState('');
+  const [newEmailConfirmPassword, setNewEmailConfirmPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [updatingEmail, setUpdatingEmail] = useState(false);
+
+  const isKeyAccount = email.endsWith('@enermass.local');
 
   // Phone helper state
   const [countryCode, setCountryCode] = useState('+91');
@@ -230,22 +234,26 @@ export default function ProfilePage() {
   async function handleChangePassword() {
     if (!newPw) { toast('Enter a new password', 'error'); return; }
     if (newPw !== confirmPw) { toast('Passwords do not match', 'error'); return; }
-    if (newPw.length < 12) { toast('Password must be at least 12 characters long', 'error'); return; }
+    if (newPw.length < 6) { toast('Password must be at least 6 characters long', 'error'); return; }
     if (passwordHistoryError) { toast(passwordHistoryError, 'error'); return; }
 
     setChangingPassword(true);
     try {
-      if (!isRecovery) {
-        const { error: signInErr } = await supabase.auth.signInWithPassword({
-          email, password: currentPw
-        });
-        if (signInErr) { toast('Current password is incorrect', 'error'); return; }
+      const res = await fetch('/api/profile/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: newPw.trim(),
+          currentPassword: isKeyAccount || isRecovery ? undefined : currentPw.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Password change failed');
       }
 
-      const { error } = await supabase.auth.updateUser({ password: newPw });
-      if (error) throw error;
-
-      toast('Password changed successfully ✓', 'success');
+      toast(data.message || 'Password changed successfully ✓', 'success');
       setCurrentPw(''); setNewPw(''); setConfirmPw('');
       setShowPwSection(false);
       if (isRecovery) {
@@ -258,24 +266,53 @@ export default function ProfilePage() {
     }
   }
 
-  // Email update verification
+  // Email & Password update
   const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
       setEmailError('Please enter a valid new email address.');
       return;
     }
+
+    if (isKeyAccount && !newEmailPassword) {
+      setEmailError('Please set a password for your direct login.');
+      return;
+    }
+
+    if (isKeyAccount && newEmailPassword.length < 6) {
+      setEmailError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (isKeyAccount && newEmailPassword !== newEmailConfirmPassword) {
+      setEmailError('Passwords do not match.');
+      return;
+    }
+
     setUpdatingEmail(true);
     try {
-      const { error } = await supabase.auth.updateUser({ email: newEmail });
-      if (error) {
-        toast(error.message, 'error');
-      } else {
-        toast('Verification emails sent to both addresses. Please confirm to apply changes.', 'success');
-        setShowEmailModal(false);
+      const res = await fetch('/api/profile/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newEmail.trim(),
+          password: newEmailPassword ? newEmailPassword.trim() : undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update credentials');
       }
+
+      setEmail(data.email);
+      toast(data.message || 'Credentials updated successfully!', 'success');
+      setShowEmailModal(false);
+      setNewEmail('');
+      setNewEmailPassword('');
+      setNewEmailConfirmPassword('');
     } catch (err: any) {
-      toast(err.message || 'Failed to trigger email change.', 'error');
+      toast(err.message || 'Failed to update email and password.', 'error');
     } finally {
       setUpdatingEmail(false);
     }
@@ -419,7 +456,7 @@ export default function ProfilePage() {
                   className="w-20 h-20 rounded-2xl object-cover shadow-lg border border-border"
                 />
               ) : (
-                <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${avatarGradient} flex items-center justify-center shadow-lg`}>
+                <div className={`w-20 h-20 rounded-2xl bg-linear-to-br ${avatarGradient} flex items-center justify-center shadow-lg`}>
                   <span className="text-2xl font-black text-white tracking-tight">{initials}</span>
                 </div>
               )}
@@ -501,16 +538,46 @@ export default function ProfilePage() {
             />
           </Field>
 
-          {/* Self-service Email modification (Item 42) */}
+          {/* Key Account setup banner */}
+          {isKeyAccount && (
+            <div className="p-4 rounded-xl border border-accent/40 bg-accent/5 mb-2 animate-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-accent/20 text-accent mb-1.5">
+                    <Key size={12} /> License Key Account
+                  </span>
+                  <h4 className="text-sm font-bold text-text-primary">Enable Direct Email & Password Login</h4>
+                  <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
+                    Set up your email and password to log in directly without typing your license key every time.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewEmail('');
+                    setNewEmailPassword('');
+                    setNewEmailConfirmPassword('');
+                    setEmailError('');
+                    setShowEmailModal(true);
+                  }}
+                  className="shrink-0 px-4 py-2 gold-gradient text-background font-bold text-xs rounded-lg shadow-md shadow-accent/20 hover:brightness-110 transition-all cursor-pointer"
+                >
+                  Set Email & Password
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Self-service Email modification */}
           <Field label="Email Address">
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <input
                   id="profile-email"
-                  type="email"
-                  value={email}
+                  type="text"
+                  value={isKeyAccount ? 'Not configured (Signed in via License Key)' : email}
                   disabled
-                  className={`${inputCls} opacity-60 cursor-not-allowed pr-10`}
+                  className={`${inputCls} opacity-60 cursor-not-allowed pr-10 ${isKeyAccount ? 'text-text-muted italic' : ''}`}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2">
                   <Mail size={14} className="text-text-muted" />
@@ -518,14 +585,22 @@ export default function ProfilePage() {
               </div>
               <button
                 type="button"
-                onClick={() => setShowEmailModal(true)}
+                onClick={() => {
+                  setNewEmail('');
+                  setNewEmailPassword('');
+                  setNewEmailConfirmPassword('');
+                  setEmailError('');
+                  setShowEmailModal(true);
+                }}
                 className="px-4 border border-accent/30 text-accent hover:bg-accent hover:text-background font-bold text-xs uppercase tracking-wider rounded-lg transition-all cursor-pointer"
               >
-                Change Email
+                {isKeyAccount ? 'Set Email' : 'Change Email'}
               </button>
             </div>
             <p className="text-[10px] text-text-muted mt-1">
-              Changes will send confirmation links to both your old and new email addresses.
+              {isKeyAccount
+                ? 'Link your personal email and password to log in directly.'
+                : 'Primary email used for direct account sign-in.'}
             </p>
           </Field>
 
@@ -606,7 +681,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-4 animate-fade-in">
-              {!isRecovery && (
+              {!isRecovery && !isKeyAccount && (
                 /* Current password visibility toggle (Item 46) */
                 <Field label="Current Password">
                   <PasswordInput
@@ -834,23 +909,36 @@ export default function ProfilePage() {
 
       </div>
 
-      {/* Self Service Email Change Modal (Item 42) */}
+      {/* Self Service Email Change Modal */}
       {showEmailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
           <div className="w-full max-w-sm glass border border-border/80 rounded-2xl overflow-hidden shadow-2xl p-6 relative">
             <button
               type="button"
-              onClick={() => { setShowEmailModal(false); setNewEmail(''); setEmailError(''); }}
+              onClick={() => {
+                setShowEmailModal(false);
+                setNewEmail('');
+                setNewEmailPassword('');
+                setNewEmailConfirmPassword('');
+                setEmailError('');
+              }}
               className="absolute top-4 right-4 text-text-muted hover:text-text-primary cursor-pointer"
             >
               <X size={18} />
             </button>
-            <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest text-center mb-4">
-              Change Email Address
+            <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest text-center mb-1">
+              {isKeyAccount ? 'Link Email & Password' : 'Change Email Address'}
             </h3>
-            <form onSubmit={handleUpdateEmail} className="space-y-4">
+            <p className="text-xs text-text-muted text-center mb-4">
+              {isKeyAccount
+                ? 'Enable direct email and password login for your account'
+                : 'Update the email address for your login'}
+            </p>
+            <form onSubmit={handleUpdateEmail} className="space-y-3.5">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">New Email Address</label>
+                <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  {isKeyAccount ? 'Your Personal Email' : 'New Email Address'}
+                </label>
                 <input
                   type="email"
                   value={newEmail}
@@ -858,23 +946,71 @@ export default function ProfilePage() {
                     setNewEmail(e.target.value);
                     if (emailError) setEmailError('');
                   }}
-                  placeholder="newemail@company.com"
+                  placeholder="name@company.com"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background/50 text-sm text-text-primary focus:outline-none focus:border-accent"
                   required
                 />
-                {emailError && (
-                  <p className="text-[10px] text-red-400 flex items-center gap-1 mt-1 font-medium animate-slide-down">
-                    <AlertCircle size={12} className="shrink-0" />
-                    {emailError}
-                  </p>
-                )}
               </div>
+
+              {isKeyAccount && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                      Set Login Password
+                    </label>
+                    <input
+                      type="password"
+                      value={newEmailPassword}
+                      onChange={(e) => {
+                        setNewEmailPassword(e.target.value);
+                        if (emailError) setEmailError('');
+                      }}
+                      placeholder="Min 6 characters"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background/50 text-sm text-text-primary focus:outline-none focus:border-accent"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                      Confirm Password
+                    </label>
+                    <input
+                      type="password"
+                      value={newEmailConfirmPassword}
+                      onChange={(e) => {
+                        setNewEmailConfirmPassword(e.target.value);
+                        if (emailError) setEmailError('');
+                      }}
+                      placeholder="Repeat password"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background/50 text-sm text-text-primary focus:outline-none focus:border-accent"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+
+              {emailError && (
+                <p className="text-[10px] text-red-400 flex items-center gap-1 mt-1 font-medium animate-slide-down">
+                  <AlertCircle size={12} className="shrink-0" />
+                  {emailError}
+                </p>
+              )}
+
               <button
                 type="submit"
-                disabled={updatingEmail || !newEmail}
-                className="w-full gold-gradient py-3 px-4 rounded-xl text-background font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
+                disabled={updatingEmail || !newEmail || (isKeyAccount && !newEmailPassword)}
+                className="w-full gold-gradient py-3 px-4 rounded-xl text-background font-bold text-sm flex items-center justify-center gap-2 cursor-pointer mt-2"
               >
-                {updatingEmail ? <><Loader2 size={16} className="animate-spin" /> Updating...</> : 'Send Verification Links'}
+                {updatingEmail ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Saving...
+                  </>
+                ) : isKeyAccount ? (
+                  'Save & Enable Direct Login'
+                ) : (
+                  'Update Email'
+                )}
               </button>
             </form>
           </div>

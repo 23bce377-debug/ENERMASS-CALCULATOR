@@ -111,6 +111,24 @@ export async function POST(request: Request) {
         .eq('id', key.id);
     }
 
+    // If the key is linked to a user with a personal email, instruct client to use credentials
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profile?.email && !profile.email.endsWith('@enermass.local')) {
+        return NextResponse.json({
+          success: true,
+          requiresCredentials: true,
+          email: profile.email,
+          message: `This license key is linked to ${profile.email}. Please sign in with your password.`
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       email: `key-${key.id}@enermass.local`

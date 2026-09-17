@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { z } from 'zod';
+import crypto from 'node:crypto';
 
 const cronQuerySchema = z.object({
   key: z.string().min(1),
@@ -16,14 +17,32 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const parseResult = cronQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
-    if (!parseResult.success) {
-      return NextResponse.json({ error: 'Missing or invalid key parameter' }, { status: 400 });
+    const authHeader = request.headers.get('authorization');
+    let providedKey = '';
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      providedKey = authHeader.slice(7).trim();
+    } else {
+      const { searchParams } = new URL(request.url);
+      const parseResult = cronQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
+      if (parseResult.success) {
+        providedKey = parseResult.data.key;
+      }
     }
-    const { key } = parseResult.data;
-    
-    if (key !== process.env.SUPABASE_SERVICE_ROLE_KEY) {
+
+    if (!providedKey) {
+      return NextResponse.json({ error: 'Missing or invalid authorization' }, { status: 401 });
+    }
+
+    const expectedKey = process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    const providedBuffer = Buffer.from(providedKey);
+    const expectedBuffer = Buffer.from(expectedKey);
+
+    const isAuthorized =
+      providedBuffer.length === expectedBuffer.length &&
+      crypto.timingSafeEqual(providedBuffer, expectedBuffer);
+
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

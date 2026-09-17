@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SubscriptionProvider } from '@/lib/hooks/useSubscription'
+import { SessionHeartbeat } from '@/components/auth/SessionHeartbeat'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -55,6 +56,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SubscriptionProvider>
+        <SessionHeartbeat />
         {children}
       </SubscriptionProvider>
     </QueryClientProvider>

@@ -3,6 +3,7 @@ import 'server-only';
 import type { User } from '@supabase/supabase-js';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import {
+  ConcurrentSessionError,
   DeviceMismatchError,
   DeviceNotRegisteredError,
   MembershipMissingError,
@@ -319,6 +320,24 @@ export async function requireLicensedSession(
     !user.email_confirmed_at
   ) {
     throw new EmailNotConfirmedError();
+  }
+
+  // Enforce Single Active Session (no 2 devices can be logged in concurrently with same credential)
+  const cookieHeader = request.headers.get('cookie') || '';
+  const sessionMatch = cookieHeader.match(/(?:^|;\s*)enermass_session_id=([^;]*)/);
+  const cookieSessionId = sessionMatch ? sessionMatch[1] : null;
+
+  const sessionAdminClient = createAdminClient();
+  const { data: profile } = await (sessionAdminClient as any)
+    .from('profiles')
+    .select('active_session_id')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profile?.active_session_id) {
+    if (!cookieSessionId || cookieSessionId !== profile.active_session_id) {
+      throw new ConcurrentSessionError();
+    }
   }
 
   const resolveActiveMembership = deps.resolveActiveMembership ?? defaultResolveActiveMembership;

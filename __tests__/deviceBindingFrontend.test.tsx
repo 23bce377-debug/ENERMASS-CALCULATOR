@@ -110,16 +110,13 @@ describe('device binding frontend', () => {
     deviceClient.requestDeviceReset.mockResolvedValue({ request: { id: 'reset-1' } });
   });
 
-  it('redirects to the blocked page when device verification is blocked after login', async () => {
-    deviceClient.registerOrVerifyDevice.mockRejectedValue(
-      new deviceClient.DeviceClientError('device_blocked', 'blocked', { redirectTo: '/device-blocked' })
-    );
+  it('logs in successfully and redirects to /calculator', async () => {
     const view = render(<LoginPage />);
     await flush();
 
     // Switch to credentials mode
     const switchBtn = Array.from(view.container.querySelectorAll('button')).find(
-      b => b.textContent?.includes('Admin Credentials')
+      b => b.textContent?.includes('Email & Password') || b.textContent?.includes('Admin Credentials')
     );
     if (switchBtn) {
       await act(async () => {
@@ -132,34 +129,18 @@ describe('device binding frontend', () => {
     changeValue(view.container.querySelector('input[type="password"]') as HTMLInputElement, 'password');
     await submit(view.container.querySelector('form') as HTMLFormElement);
 
-    expect(deviceClient.registerOrVerifyDevice).toHaveBeenCalled();
-    expect(router.replace).toHaveBeenCalledWith('/device-blocked?reason=device');
+    expect(router.replace).toHaveBeenCalledWith('/calculator');
     view.unmount();
   });
 
-  it('shows the missing IndexedDB error state as a blocked-device redirect', async () => {
-    deviceClient.registerOrVerifyDevice.mockRejectedValue(
-      new deviceClient.DeviceClientError('cookies_blocked', 'cookies unavailable', { redirectTo: '/device-blocked' })
-    );
+  it('displays the concurrent session message when logged out due to another device', async () => {
+    delete (window as any).location;
+    (window as any).location = new URL('https://example.test/login?reason=concurrent_session');
+
     const view = render(<LoginPage />);
     await flush();
 
-    // Switch to credentials mode
-    const switchBtn = Array.from(view.container.querySelectorAll('button')).find(
-      b => b.textContent?.includes('Admin Credentials')
-    );
-    if (switchBtn) {
-      await act(async () => {
-        switchBtn.click();
-      });
-      await flush();
-    }
-
-    changeValue(view.container.querySelector('input[type="email"]') as HTMLInputElement, 'user@example.com');
-    changeValue(view.container.querySelector('input[type="password"]') as HTMLInputElement, 'password');
-    await submit(view.container.querySelector('form') as HTMLFormElement);
-
-    expect(router.replace).toHaveBeenCalledWith('/device-blocked?reason=device');
+    expect(view.container.textContent).toContain('You were logged out because this account was logged into from another device');
     view.unmount();
   });
 
