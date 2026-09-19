@@ -1,14 +1,32 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+
+const PUBLIC_ROUTES = [
+  '/login',
+  '/signup',
+  '/activate',
+  '/forgot-password',
+  '/device-blocked',
+  '/device-reset-request',
+  '/subscription-expired',
+  '/unauthorized',
+  '/email-not-confirmed',
+];
 
 export function SessionHeartbeat() {
   const router = useRouter();
+  const pathname = usePathname();
   const checkingRef = useRef(false);
 
   useEffect(() => {
+    // Never run concurrent session kicks while the user is on public/auth routes
+    if (PUBLIC_ROUTES.some((route) => pathname === route || pathname?.startsWith(`${route}/`))) {
+      return;
+    }
+
     let timer: NodeJS.Timeout;
 
     const verifySession = async () => {
@@ -26,9 +44,24 @@ export function SessionHeartbeat() {
         const data = await res.json();
 
         if (res.status === 401 || data.active === false) {
-          if (data.reason === 'superseded' || data.reason === 'missing_session_cookie') {
+          if (data.reason === 'superseded') {
             await supabase.auth.signOut();
             router.replace('/login?reason=concurrent_session');
+          } else if (data.reason === 'missing_session_cookie') {
+            // Attempt self-healing instead of kicking user off immediately
+            try {
+              await fetch('/api/auth/session-start', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  'content-type': 'application/json',
+                  authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ accessToken: session.access_token }),
+              });
+            } catch (err) {
+              console.warn('[SessionHeartbeat] Session restore error:', err);
+            }
           }
         }
       } catch (err) {
@@ -57,7 +90,8 @@ export function SessionHeartbeat() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', verifySession);
     };
-  }, [router]);
+  }, [pathname, router]);
 
   return null;
 }
+

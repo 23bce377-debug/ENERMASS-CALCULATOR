@@ -32,14 +32,31 @@ export default function LoginPage() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutTime, setLockoutTime] = useState(0);
 
-  const completeSessionLogin = async () => {
+  const completeSessionLogin = async (sessionToken?: string) => {
     try {
-      await fetch('/api/auth/session-start', { method: 'POST' });
+      const headers: Record<string, string> = { 'content-type': 'application/json' };
+      if (sessionToken) {
+        headers['authorization'] = `Bearer ${sessionToken}`;
+      }
+      const res = await fetch('/api/auth/session-start', {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+        body: JSON.stringify({ accessToken: sessionToken }),
+      });
+      if (!res.ok) {
+        console.warn('[completeSessionLogin] session-start returned status:', res.status);
+      }
     } catch (e) {
       console.warn('Session start error:', e);
     }
     toast('Logged in successfully!', 'success');
     router.replace('/calculator');
+    if (typeof window !== 'undefined' && window.location) {
+      try {
+        window.location.href = '/calculator';
+      } catch {}
+    }
   };
 
   // 1. Parse URL query params and load Remembered email
@@ -81,11 +98,14 @@ export default function LoginPage() {
           const checkRes = await fetch('/api/auth/session-check');
           const checkData = await checkRes.json();
           if (checkData.active) {
-            router.replace('/calculator');
+            window.location.href = '/calculator';
             return;
           } else if (checkData.reason === 'superseded') {
             await supabase.auth.signOut();
             setSessionMessage('You were logged out because this account was logged into from another device. Only one device can use this credential at a time.');
+          } else if (checkData.reason === 'missing_session_cookie') {
+            await completeSessionLogin(session.access_token);
+            return;
           }
         }
       } catch (err) {
@@ -170,7 +190,7 @@ export default function LoginPage() {
       }
 
       // Login with Supabase using email and the key as password
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: keySignInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: licenseKey.trim(),
       });
@@ -179,7 +199,7 @@ export default function LoginPage() {
         throw new Error(signInError.message);
       }
 
-      await completeSessionLogin();
+      await completeSessionLogin(keySignInData.session?.access_token);
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Login failed.', 'error');
     } finally {
@@ -237,7 +257,7 @@ export default function LoginPage() {
             localStorage.removeItem('remembered_email');
           }
         }
-        await completeSessionLogin();
+        await completeSessionLogin(data.session.access_token);
       }
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Login failed.', 'error');

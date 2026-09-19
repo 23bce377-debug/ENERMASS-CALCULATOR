@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
   AuthenticationRequiredError,
@@ -18,6 +18,7 @@ import {
   SubscriptionExpiredError,
   UnauthorizedRoleError,
   SeatLimitReachedError,
+  EmailNotConfirmedError,
 } from '@/lib/saas/errors';
 
 export interface LicensedPageOptions extends RequireLicensedSessionOptions {
@@ -31,6 +32,10 @@ function redirectPathForError(error: unknown) {
 
   if (error instanceof ConcurrentSessionError) {
     return '/login?reason=concurrent_session';
+  }
+
+  if (error instanceof EmailNotConfirmedError) {
+    return '/email-not-confirmed';
   }
 
   if (
@@ -54,11 +59,17 @@ function redirectPathForError(error: unknown) {
 
 export async function requireLicensedPage(options: LicensedPageOptions): Promise<LicensedSession> {
   try {
-    const headerList = await headers();
+    const cookieStore = await cookies();
+    const cookieStr = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join('; ');
+    const headerList = new Headers(await headers());
+    if (cookieStr) {
+      headerList.set('cookie', cookieStr);
+    }
     const request = new Request('https://licensed-page.local', { headers: headerList });
     return await requireLicensedSession(request, options, options.deps);
   } catch (error) {
     redirect(redirectPathForError(error));
   }
 }
+
 

@@ -127,8 +127,8 @@ export async function proxy(request: NextRequest) {
     return addSecurityHeaders(NextResponse.redirect(redirectUrl))
   }
 
-  // Redirect logged-in users away from login only after the licensed device handoff exists.
-  if (user && pathname === '/login' && request.cookies.has(DEVICE_TOKEN_COOKIE_NAME)) {
+  // Redirect logged-in users away from login
+  if (user && pathname === '/login') {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/calculator'
     return addSecurityHeaders(NextResponse.redirect(redirectUrl))

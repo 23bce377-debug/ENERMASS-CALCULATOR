@@ -421,9 +421,22 @@ export default function ActivatePage() {
       }
 
       if (data.session) {
+        try {
+          await fetch('/api/auth/session-start', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'content-type': 'application/json',
+              authorization: `Bearer ${data.session.access_token}`,
+            },
+            body: JSON.stringify({ accessToken: data.session.access_token }),
+          });
+        } catch (e) {
+          console.warn('[activate] session-start error:', e);
+        }
         await registerOrVerifyDevice();
         toast('Signed in successfully.', 'success');
-        router.replace('/calculator');
+        window.location.href = '/calculator';
       }
     } catch (err) {
       handleLoginDeviceError(err);
